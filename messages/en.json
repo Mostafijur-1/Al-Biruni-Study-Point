@@ -1,0 +1,12 @@
+{
+  "brand": {
+    "name": "ABSP",
+    "fullName": "Al-Biruni Study Point"
+  },
+  "navigation": {
+    "home": "Home",
+    "courses": "Courses",
+    "batches": "Batches",
+    "contact": "Contact"
+  }
+}
