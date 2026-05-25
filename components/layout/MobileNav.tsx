@@ -9,16 +9,9 @@ import { GuestAuthLinks, UserMenu } from "@/components/layout/UserMenu";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { publicNavPaths } from "@/lib/routes";
 import type { SessionUser } from "@/types";
 import { cn } from "@/lib/utils";
-
-const navPaths = [
-  { key: "home" as const, path: "/" },
-  { key: "about" as const, path: "/about" },
-  { key: "courses" as const, path: "/courses" },
-  { key: "batches" as const, path: "/batches" },
-  { key: "contact" as const, path: "/contact" },
-];
 
 type MobileNavProps = {
   locale: Locale;
@@ -71,7 +64,7 @@ export function MobileNav({
         <div className="fixed inset-0 z-50 flex flex-col bg-primary pt-[var(--header-height)] lg:hidden">
           <div className="flex-1 overflow-y-auto px-4 pb-6">
             <nav className="space-y-1">
-              {navPaths.map(({ key, path }) => {
+              {publicNavPaths.map(({ key, path }) => {
                 const href = getLocalizedPath(path, locale);
                 const active = pathname === href;
 

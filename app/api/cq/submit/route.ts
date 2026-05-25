@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
+import { placeholderResponse } from "@/lib/api/placeholder";
 
 export async function POST() {
-  return NextResponse.json({ message: "CQ submit API placeholder." }, { status: 501 });
+  return placeholderResponse("CQ submit API placeholder.");
 }

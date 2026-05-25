@@ -1,23 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { GuestAuthLinks, UserMenu } from "@/components/layout/UserMenu";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { useSession } from "@/lib/hooks/use-session";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { publicNavPaths } from "@/lib/routes";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
-import type { SessionUser } from "@/types";
-
-const navPaths = [
-  { key: "home" as const, path: "/" },
-  { key: "about" as const, path: "/about" },
-  { key: "courses" as const, path: "/courses" },
-  { key: "batches" as const, path: "/batches" },
-  { key: "contact" as const, path: "/contact" },
-];
 
 type NavbarProps = {
   locale: Locale;
@@ -25,45 +17,10 @@ type NavbarProps = {
   auth: Dictionary["auth"];
 };
 
-type MeResponse = {
-  success: boolean;
-  data?: { user: SessionUser };
-};
-
 export function Navbar({ locale, navigation, auth }: NavbarProps) {
-  const [session, setSession] = useState<SessionUser | null>(null);
-  const [checkingSession, setCheckingSession] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadSession() {
-      if (active) setCheckingSession(true);
-
-      try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
-        if (!response.ok) {
-          if (active) setSession(null);
-          return;
-        }
-        const payload = (await response.json()) as MeResponse;
-        if (active && payload.success && payload.data?.user) {
-          setSession(payload.data.user);
-        }
-      } catch {
-        if (active) setSession(null);
-      } finally {
-        if (active) setCheckingSession(false);
-      }
-    }
-
-    loadSession();
-    window.addEventListener("absp-auth-changed", loadSession);
-    return () => {
-      active = false;
-      window.removeEventListener("absp-auth-changed", loadSession);
-    };
-  }, []);
+  const { user: session, checking: checkingSession, setUser: setSession } = useSession({
+    listenToAuthChanges: true,
+  });
 
   return (
     <header className="sticky top-0 z-50 border-b-4 border-brand-yellow bg-primary shadow-[var(--shadow-md)]">
@@ -71,7 +28,7 @@ export function Navbar({ locale, navigation, auth }: NavbarProps) {
         <Logo locale={locale} size="sm" priority className="min-w-0 flex-1 sm:flex-none" />
 
         <nav className="hidden items-center gap-0.5 lg:flex">
-          {navPaths.map(({ key, path }) => (
+          {publicNavPaths.map(({ key, path }) => (
             <Link
               key={path}
               href={getLocalizedPath(path, locale)}

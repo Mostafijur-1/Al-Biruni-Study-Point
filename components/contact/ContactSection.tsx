@@ -3,6 +3,7 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { buttonVariants } from "@/components/ui/button";
+import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
@@ -11,13 +12,6 @@ type ContactSectionProps = {
   locale: Locale;
   contact: Dictionary["contact"];
 };
-
-function formatPhoneDisplay(phone: string) {
-  if (phone.length === 11 && phone.startsWith("01")) {
-    return `${phone.slice(0, 5)}-${phone.slice(5, 9)}-${phone.slice(9)}`;
-  }
-  return phone;
-}
 
 export function ContactSection({ locale, contact }: ContactSectionProps) {
   const primaryPhone = contact.phones[0];
@@ -56,7 +50,7 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
                   {contact.phones.map((phone) => (
                     <li key={phone}>
                       <a
-                        href={`tel:+88${phone}`}
+                        href={phoneTelHref(phone)}
                         className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-base font-semibold text-primary transition hover:border-primary hover:bg-secondary"
                       >
                         <Phone className="size-4 shrink-0 text-brand-red" />
@@ -112,7 +106,7 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
 
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
             <a
-              href={`tel:+88${primaryPhone}`}
+              href={phoneTelHref(primaryPhone)}
               className={cn(buttonVariants({ size: "lg" }), "justify-center")}
             >
               <Phone className="size-4" />

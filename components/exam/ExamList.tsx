@@ -1,55 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import type { Locale } from "@/lib/i18n";
-
-type Exam = {
-  _id: string;
-  title: string;
-  duration: number;
-  totalMarks: number;
-  passMark: number;
-  questionCount: number;
-};
-
-type ExamsResponse = {
-  success: boolean;
-  data?: { exams: Exam[] };
-  error?: { message: string };
-};
+import { useApiQuery } from "@/lib/hooks/use-api-query";
+import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { formatMcqExamMeta } from "@/lib/mcq/format";
+import type { McqExamSummary } from "@/types/mcq";
 
 export function ExamList({ locale }: { locale: Locale }) {
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [message, setMessage] = useState("Loading exams...");
+  const path = createLocalizedPath(locale);
+  const { data, message } = useApiQuery<{ exams: McqExamSummary[] }>("/api/mcq/exams", {
+    loadingMessage: "Loading exams...",
+    errorMessage: "Could not load exams.",
+  });
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadExams() {
-      const response = await fetch("/api/mcq/exams", { cache: "no-store" });
-      const payload = (await response.json()) as ExamsResponse;
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (!response.ok || !payload.success) {
-        setMessage(payload.error?.message || "Could not load exams.");
-        return;
-      }
-
-      setExams(payload.data?.exams || []);
-      setMessage("");
-    }
-
-    loadExams().catch(() => setMessage("Could not load exams."));
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const exams = data?.exams ?? [];
 
   if (message) {
     return <p className="rounded border border-border bg-surface p-4 text-muted">{message}</p>;
@@ -70,12 +35,10 @@ export function ExamList({ locale }: { locale: Locale }) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-primary">{exam.title}</h2>
-              <p className="mt-2 text-sm text-muted">
-                {exam.questionCount} questions · {exam.duration} minutes · {exam.totalMarks} marks · pass {exam.passMark}
-              </p>
+              <p className="mt-2 text-sm text-muted">{formatMcqExamMeta(exam, "minutes")}</p>
             </div>
             <Link
-              href={`/${locale}/student/exams/${exam._id}`}
+              href={path(`/student/exams/${exam._id}`)}
               className="rounded bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground"
             >
               Start

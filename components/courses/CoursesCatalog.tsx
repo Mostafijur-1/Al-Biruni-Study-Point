@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { subjectsForLevel } from "@/lib/data/subjects";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { CourseLevel, CourseSubject } from "@/types";
 
@@ -15,7 +15,7 @@ function subjectLabel(home: Dictionary["home"], subject: CourseSubject) {
 }
 
 export function CoursesCatalog({ locale, home }: CoursesCatalogProps) {
-  const path = (p: string) => getLocalizedPath(p, locale);
+  const path = createLocalizedPath(locale);
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-8 sm:px-4 sm:py-12 lg:px-6 lg:py-16">

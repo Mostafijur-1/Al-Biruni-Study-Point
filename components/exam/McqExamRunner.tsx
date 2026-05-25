@@ -2,44 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-
-type Question = {
-  _id: string;
-  question: string;
-  questionBn?: string;
-  options: string[];
-  marks: number;
-};
-
-type Exam = {
-  _id: string;
-  title: string;
-  duration: number;
-  totalMarks: number;
-  passMark: number;
-};
-
-type ExamResponse = {
-  success: boolean;
-  data?: { exam: Exam; questions: Question[] };
-  error?: { message: string };
-};
-
-type SubmitResponse = {
-  success: boolean;
-  data?: {
-    result: {
-      score: number;
-      percentage: number;
-      isPassed: boolean;
-      attemptNo: number;
-    };
-    totalMarks: number;
-    solutions: { questionId: string; correctIndex: number; explanation?: string }[];
-  };
-  error?: { message: string };
-};
+import type { McqExamRunnerMeta, McqQuestionPublic, McqSubmitResultData } from "@/types/mcq";
 
 function getOptionResultMode(
   optionIndex: number,
@@ -63,12 +28,12 @@ function getOptionResultMode(
 }
 
 export function McqExamRunner({ examId }: { examId: string }) {
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [exam, setExam] = useState<McqExamRunnerMeta | null>(null);
+  const [questions, setQuestions] = useState<McqQuestionPublic[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [message, setMessage] = useState("Loading exam...");
-  const [result, setResult] = useState<SubmitResponse["data"] | null>(null);
+  const [result, setResult] = useState<McqSubmitResultData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
@@ -80,15 +45,17 @@ export function McqExamRunner({ examId }: { examId: string }) {
     let isMounted = true;
 
     async function loadExam() {
-      const response = await fetch(`/api/mcq/exams/${examId}`, { cache: "no-store" });
-      const payload = (await response.json()) as ExamResponse;
+      const { ok, payload } = await apiFetch<{
+        exam: McqExamRunnerMeta;
+        questions: McqQuestionPublic[];
+      }>(`/api/mcq/exams/${examId}`);
 
       if (!isMounted) {
         return;
       }
 
-      if (!response.ok || !payload.success || !payload.data) {
-        setMessage(payload.error?.message || "Could not load exam.");
+      if (!ok || !isApiSuccess(payload)) {
+        setMessage(getApiErrorMessage(payload, "Could not load exam."));
         return;
       }
 
@@ -124,7 +91,7 @@ export function McqExamRunner({ examId }: { examId: string }) {
 
     setIsSubmitting(true);
     const elapsedSeconds = exam.duration * 60 - (secondsLeft || 0);
-    const response = await fetch("/api/mcq/submit", {
+    const { ok, payload } = await apiFetch<McqSubmitResultData>("/api/mcq/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -136,10 +103,9 @@ export function McqExamRunner({ examId }: { examId: string }) {
         })),
       }),
     });
-    const payload = (await response.json()) as SubmitResponse;
 
-    if (!response.ok || !payload.success || !payload.data) {
-      setMessage(payload.error?.message || "Could not submit exam.");
+    if (!ok || !isApiSuccess(payload)) {
+      setMessage(getApiErrorMessage(payload, "Could not submit exam."));
       setIsSubmitting(false);
       return;
     }

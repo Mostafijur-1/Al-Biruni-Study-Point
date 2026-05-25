@@ -1,14 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import type { SessionUser } from "@/types";
-
-type MeResponse = {
-  success: boolean;
-  data?: { user: SessionUser };
-  error?: { message: string };
-};
+import { useApiQuery } from "@/lib/hooks/use-api-query";
+import type { MeResponseData } from "@/types/api";
 
 const classLabels: Record<string, string> = {
   "class-9": "Class 9",
@@ -24,41 +17,12 @@ const roleLabels: Record<string, string> = {
 };
 
 export function ProfilePanel() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [message, setMessage] = useState("Loading profile...");
+  const { data, message } = useApiQuery<MeResponseData>("/api/auth/me", {
+    loadingMessage: "Loading profile...",
+    errorMessage: "Could not load profile.",
+  });
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadProfile() {
-      try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const payload = (await response.json()) as MeResponse;
-
-        if (!active) {
-          return;
-        }
-
-        if (!response.ok || !payload.success || !payload.data?.user) {
-          setMessage(payload.error?.message || "Could not load profile.");
-          return;
-        }
-
-        setUser(payload.data.user);
-        setMessage("");
-      } catch {
-        if (active) {
-          setMessage("Could not load profile.");
-        }
-      }
-    }
-
-    loadProfile();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const user = data?.user;
 
   if (message) {
     return <p className="rounded-xl border border-border bg-card p-5 text-muted">{message}</p>;

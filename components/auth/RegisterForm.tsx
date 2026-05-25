@@ -10,16 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import type { Locale } from "@/lib/i18n";
 import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { registerSchema, type RegisterFormInput } from "@/lib/validations/auth.schema";
-
-type RegisterResponse = {
-  success: boolean;
-  data?: { message: string };
-  error?: { message: string };
-};
 
 type RegisterFormProps = {
   locale: Locale;
@@ -50,15 +45,20 @@ export function RegisterForm({ locale, auth }: RegisterFormProps) {
   async function onSubmit(values: RegisterFormInput) {
     setMessage(null);
     setIsSuccess(false);
-    const response = await fetch("/api/auth/register", {
+    const { ok, payload } = await apiFetch<{ message: string }>("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
-    const payload = (await response.json()) as RegisterResponse;
 
-    setMessage(payload.data?.message || payload.error?.message || "Registration failed.");
-    setIsSuccess(response.ok && payload.success);
+    if (ok && isApiSuccess(payload)) {
+      setMessage(payload.data.message);
+      setIsSuccess(true);
+      return;
+    }
+
+    setMessage(getApiErrorMessage(payload, "Registration failed."));
+    setIsSuccess(false);
   }
 
   return (

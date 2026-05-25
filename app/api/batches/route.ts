@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
+import { placeholderResponse } from "@/lib/api/placeholder";
 
 export async function GET() {
-  return NextResponse.json({ message: "Batches API placeholder." }, { status: 501 });
+  return placeholderResponse("Batches API placeholder.");
 }

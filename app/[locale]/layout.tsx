@@ -37,6 +37,7 @@ export default async function LocaleLayout({
         brand={dict.brand}
         footer={dict.footer}
         navigation={dict.navigation}
+        contact={dict.contact}
       />
     </div>
   );

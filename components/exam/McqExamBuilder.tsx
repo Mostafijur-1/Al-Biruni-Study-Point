@@ -5,39 +5,11 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import { createMcqExamSchema, type CreateMcqExamFormInput } from "@/lib/validations/mcq.schema";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-
-type ExamMeta = {
-  title: string;
-  duration: number;
-  passMark: number;
-  negativeMarking?: number;
-  attempts: number;
-  isRandomized: boolean;
-  isPublished: boolean;
-};
-
-type QuestionRow = {
-  question: string;
-  questionBn?: string;
-  options: string[];
-  correctIndex: number;
-  explanation?: string;
-  marks: number;
-  difficulty: "easy" | "medium" | "hard";
-  topic?: string;
-};
-
-type ExamResponse = {
-  success: boolean;
-  data?: {
-    exam: ExamMeta;
-    questions: QuestionRow[];
-  };
-  error?: { message: string };
-};
+import type { McqExamDetailTeacher, McqQuestionTeacher } from "@/types/mcq";
 
 type McqExamBuilderProps = {
   locale: Locale;
@@ -52,7 +24,7 @@ const emptyQuestion = {
   difficulty: "medium" as const,
 };
 
-function mapQuestions(questions: QuestionRow[]) {
+function mapQuestions(questions: McqQuestionTeacher[]) {
   return questions.map((q) => ({
     question: q.question,
     questionBn: q.questionBn || "",
@@ -66,6 +38,7 @@ function mapQuestions(questions: QuestionRow[]) {
 }
 
 export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
+  const path = createLocalizedPath(locale);
   const isEdit = Boolean(examId);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(isEdit);
@@ -99,15 +72,17 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
     let active = true;
 
     async function loadExam() {
-      const response = await fetch(`/api/mcq/exams/${examId}`, { cache: "no-store" });
-      const payload = (await response.json()) as ExamResponse;
+      const { ok, payload } = await apiFetch<{
+        exam: McqExamDetailTeacher;
+        questions: McqQuestionTeacher[];
+      }>(`/api/mcq/exams/${examId}`);
 
       if (!active) {
         return;
       }
 
-      if (!response.ok || !payload.success || !payload.data) {
-        setMessage(payload.error?.message || "Could not load exam.");
+      if (!ok || !isApiSuccess(payload)) {
+        setMessage(getApiErrorMessage(payload, "Could not load exam."));
         setLoading(false);
         return;
       }
@@ -143,19 +118,18 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
     const url = isEdit ? `/api/mcq/exams/${examId}` : "/api/mcq/exams";
     const method = isEdit ? "PATCH" : "POST";
 
-    const response = await fetch(url, {
+    const { ok, payload } = await apiFetch<{ exam: { title: string } }>(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
-    const payload = (await response.json()) as ExamResponse & { data?: { exam: { title: string } } };
 
-    if (!response.ok || !payload.success) {
-      setMessage(payload.error?.message || `Could not ${isEdit ? "update" : "create"} exam.`);
+    if (!ok || !isApiSuccess(payload)) {
+      setMessage(getApiErrorMessage(payload, `Could not ${isEdit ? "update" : "create"} exam.`));
       return;
     }
 
-    const title = payload.data?.exam.title ?? values.title;
+    const title = payload.data.exam.title ?? values.title;
     setMessage(isEdit ? `Exam updated: ${title}` : `Exam created: ${title}`);
 
     if (!isEdit) {
@@ -180,14 +154,14 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={getLocalizedPath("/teacher/mcq", locale)}
+          href={path("/teacher/mcq")}
           className="text-sm font-semibold text-primary hover:underline"
         >
           ← Back to MCQ exams
         </Link>
         {isEdit && examId && (
           <Link
-            href={getLocalizedPath(`/teacher/mcq/${examId}/results`, locale)}
+            href={path(`/teacher/mcq/${examId}/results`)}
             className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold text-primary"
           >
             View student results

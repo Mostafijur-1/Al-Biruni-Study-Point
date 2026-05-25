@@ -1,5 +1,15 @@
 import type { RouteAccess, UserRole } from "@/types";
 
+export const publicNavPaths = [
+  { key: "home" as const, path: "/" },
+  { key: "about" as const, path: "/about" },
+  { key: "courses" as const, path: "/courses" },
+  { key: "batches" as const, path: "/batches" },
+  { key: "contact" as const, path: "/contact" },
+] as const;
+
+export type PublicNavKey = (typeof publicNavPaths)[number]["key"];
+
 export function dashboardPath(role: UserRole, locale: string) {
   return `/${locale}/${role}`;
 }

@@ -11,18 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import type { Locale } from "@/lib/i18n";
 import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth.schema";
-
-type ApiResponse = {
-  success: boolean;
-  data?: {
-    user: { role: "admin" | "teacher" | "student" };
-  };
-  error?: { message: string };
-};
+import type { SessionUser } from "@/types";
 
 type LoginFormProps = {
   locale: Locale;
@@ -43,15 +37,14 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
 
   async function onSubmit(values: LoginInput) {
     setMessage(null);
-    const response = await fetch("/api/auth/login", {
+    const { ok, payload } = await apiFetch<{ user: SessionUser; redirectTo: string }>("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
-    const payload = (await response.json()) as ApiResponse;
 
-    if (!response.ok || !payload.success || !payload.data) {
-      setMessage(payload.error?.message || "Login failed.");
+    if (!ok || !isApiSuccess(payload)) {
+      setMessage(getApiErrorMessage(payload, "Login failed."));
       return;
     }
 

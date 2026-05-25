@@ -4,7 +4,7 @@ import { BookOpen, GraduationCap, Monitor, Users } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button";
 import { subjectsForLevel } from "@/lib/data/subjects";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
 import type { CourseSubject } from "@/types";
@@ -26,7 +26,7 @@ const featureColors = [
 ];
 
 export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
-  const path = (p: string) => getLocalizedPath(p, locale);
+  const path = createLocalizedPath(locale);
 
   return (
     <>
@@ -229,6 +229,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
             <div className="text-center md:text-left">
               <h3 className="font-display text-xl font-bold text-primary sm:text-2xl">{dict.tutor.name}</h3>
               <p className="mt-1 font-semibold text-brand-red">{dict.tutor.role}</p>
+              <p className="mt-2 text-sm font-medium text-primary sm:text-base">{dict.tutor.education}</p>
               <p className="mt-4 text-sm leading-7 text-muted sm:text-base">{dict.tutor.bio}</p>
             </div>
           </div>

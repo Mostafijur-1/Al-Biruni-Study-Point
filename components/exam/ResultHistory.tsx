@@ -1,43 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Result = {
-  _id: string;
-  score: number;
-  percentage: number;
-  isPassed: boolean;
-  attemptNo: number;
-  submittedAt: string;
-  exam?: { title?: string; totalMarks?: number };
-};
-
-type ResultsResponse = {
-  success: boolean;
-  data?: { results: Result[] };
-  error?: { message: string };
-};
+import { useApiQuery } from "@/lib/hooks/use-api-query";
+import type { McqResultStudent } from "@/types/mcq";
 
 export function ResultHistory() {
-  const [results, setResults] = useState<Result[]>([]);
-  const [message, setMessage] = useState("Loading results...");
+  const { data, message } = useApiQuery<{ results: McqResultStudent[] }>("/api/mcq/results", {
+    loadingMessage: "Loading results...",
+    errorMessage: "Could not load results.",
+  });
 
-  useEffect(() => {
-    async function loadResults() {
-      const response = await fetch("/api/mcq/results", { cache: "no-store" });
-      const payload = (await response.json()) as ResultsResponse;
-
-      if (!response.ok || !payload.success) {
-        setMessage(payload.error?.message || "Could not load results.");
-        return;
-      }
-
-      setResults(payload.data?.results || []);
-      setMessage("");
-    }
-
-    loadResults().catch(() => setMessage("Could not load results."));
-  }, []);
+  const results = data?.results ?? [];
 
   if (message) {
     return <p className="rounded border border-border bg-surface p-4 text-muted">{message}</p>;
@@ -53,7 +25,8 @@ export function ResultHistory() {
         <article key={result._id} className="rounded border border-border bg-surface p-4 shadow-sm">
           <h2 className="font-bold text-primary">{result.exam?.title || "MCQ Exam"}</h2>
           <p className="mt-2 text-sm text-muted">
-            Score {result.score}/{result.exam?.totalMarks || "-"} · {result.percentage}% · Attempt {result.attemptNo} · {result.isPassed ? "Passed" : "Not passed"}
+            Score {result.score}/{result.exam?.totalMarks || "-"} · {result.percentage}% · Attempt{" "}
+            {result.attemptNo} · {result.isPassed ? "Passed" : "Not passed"}
           </p>
         </article>
       ))}

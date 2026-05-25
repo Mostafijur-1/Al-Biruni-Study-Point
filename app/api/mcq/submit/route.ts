@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
-import { connectDB } from "@/lib/db/connect";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { Result } from "@/lib/db/models/Result";
@@ -13,8 +12,6 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request, ["admin", "student"]);
     const parsed = submitMcqExamSchema.parse(await request.json());
-
-    await connectDB();
 
     const exam = await McqExam.findById(parsed.examId);
 

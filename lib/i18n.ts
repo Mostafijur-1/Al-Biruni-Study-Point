@@ -8,3 +8,7 @@ export function getLocalizedPath(path: string, locale: Locale = defaultLocale) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `/${locale}${normalizedPath === "/" ? "" : normalizedPath}`;
 }
+
+export function createLocalizedPath(locale: Locale) {
+  return (path: string) => getLocalizedPath(path, locale);
+}

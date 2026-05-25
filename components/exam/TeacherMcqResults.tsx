@@ -1,96 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
-
-type PopulatedStudent = {
-  _id: string;
-  name: string;
-  phone?: string;
-};
-
-type PopulatedExam = {
-  _id: string;
-  title: string;
-  totalMarks: number;
-  passMark: number;
-  duration: number;
-};
-
-type ResultRow = {
-  _id: string;
-  score: number;
-  percentage: number;
-  isPassed: boolean;
-  timeTaken: number;
-  attemptNo: number;
-  submittedAt: string;
-  student: PopulatedStudent;
-  exam: PopulatedExam;
-};
-
-type ResultsResponse = {
-  success: boolean;
-  data?: { results: ResultRow[] };
-  error?: { message: string };
-};
+import { useApiQuery } from "@/lib/hooks/use-api-query";
+import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { formatDurationSeconds } from "@/lib/format/time";
+import type { McqResultTeacherRow } from "@/types/mcq";
 
 type TeacherMcqResultsProps = {
   locale: Locale;
   examId: string;
 };
 
-function formatDuration(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${minutes}m ${remainder}s`;
-}
-
 export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
-  const [results, setResults] = useState<ResultRow[]>([]);
-  const [message, setMessage] = useState("Loading results...");
+  const path = createLocalizedPath(locale);
+  const { data, message } = useApiQuery<{ results: McqResultTeacherRow[] }>(
+    `/api/mcq/results?examId=${examId}`,
+    {
+      loadingMessage: "Loading results...",
+      errorMessage: "Could not load results.",
+    },
+  );
+
+  const results = data?.results ?? [];
   const examTitle = results[0]?.exam?.title;
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadResults() {
-      const response = await fetch(`/api/mcq/results?examId=${examId}`, { cache: "no-store" });
-      const payload = (await response.json()) as ResultsResponse;
-
-      if (!active) {
-        return;
-      }
-
-      if (!response.ok || !payload.success) {
-        setMessage(payload.error?.message || "Could not load results.");
-        return;
-      }
-
-      setResults(payload.data?.results || []);
-      setMessage("");
-    }
-
-    loadResults().catch(() => setMessage("Could not load results."));
-
-    return () => {
-      active = false;
-    };
-  }, [examId]);
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={getLocalizedPath("/teacher/mcq", locale)}
+          href={path("/teacher/mcq")}
           className="text-sm font-semibold text-primary hover:underline"
         >
           ← Back to MCQ exams
         </Link>
         <Link
-          href={getLocalizedPath(`/teacher/mcq/${examId}/edit`, locale)}
+          href={path(`/teacher/mcq/${examId}/edit`)}
           className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold text-primary"
         >
           Edit exam
@@ -152,7 +97,7 @@ export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
                       {row.isPassed ? "Passed" : "Failed"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">{formatDuration(row.timeTaken)}</td>
+                  <td className="px-4 py-3">{formatDurationSeconds(row.timeTaken)}</td>
                   <td className="px-4 py-3">{row.attemptNo}</td>
                   <td className="px-4 py-3 text-muted">
                     {new Date(row.submittedAt).toLocaleString()}

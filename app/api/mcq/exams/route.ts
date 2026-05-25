@@ -5,6 +5,12 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
+import {
+  buildQuestionDocuments,
+  computeTotalMarks,
+  createExamPayload,
+  isPassMarkValid,
+} from "@/lib/mcq/exam-service";
 import { createMcqExamSchema } from "@/lib/validations/mcq.schema";
 
 export async function GET(request: NextRequest) {
@@ -47,47 +53,15 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request, ["admin", "teacher"]);
     const parsed = createMcqExamSchema.parse(await request.json());
 
-    await connectDB();
+    const totalMarks = computeTotalMarks(parsed.questions);
 
-    const totalMarks = parsed.questions.reduce(
-      (sum, question) => sum + question.marks,
-      0,
-    );
-
-    if (parsed.passMark > totalMarks) {
+    if (!isPassMarkValid(parsed.passMark, totalMarks)) {
       return fail("Pass mark cannot be greater than total marks.", 400);
     }
 
-    const exam = await McqExam.create({
-      title: parsed.title,
-      course: parsed.courseId,
-      teacher: user.id,
-      duration: parsed.duration,
-      totalMarks,
-      passMark: parsed.passMark,
-      negativeMarking: parsed.negativeMarking,
-      isRandomized: parsed.isRandomized,
-      isPublished: parsed.isPublished,
-      startTime: parsed.startTime ? new Date(parsed.startTime) : undefined,
-      endTime: parsed.endTime ? new Date(parsed.endTime) : undefined,
-      attempts: parsed.attempts,
-      questionCount: parsed.questions.length,
-    });
+    const exam = await McqExam.create(createExamPayload(parsed, user.id));
 
-    await McqQuestion.insertMany(
-      parsed.questions.map((question, index) => ({
-        exam: exam._id,
-        question: question.question,
-        questionBn: question.questionBn || undefined,
-        options: question.options,
-        correctIndex: question.correctIndex,
-        explanation: question.explanation || undefined,
-        marks: question.marks,
-        difficulty: question.difficulty,
-        topic: question.topic || undefined,
-        order: index,
-      })),
-    );
+    await McqQuestion.insertMany(buildQuestionDocuments(exam._id, parsed.questions));
 
     return success({ exam }, { status: 201 });
   } catch (error) {

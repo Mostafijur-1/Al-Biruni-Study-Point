@@ -78,7 +78,8 @@
       "title": "Lead instructor",
       "name": "Mostafijur Rahman",
       "role": "Founder & lead teacher",
-      "bio": "5+ years teaching experience. Known for explaining concepts clearly and running structured classes."
+      "education": "Student, Computer Science and Engineering (CSE), Islamic University of Technology (IUT)",
+      "bio": "5+ years of teaching experience. Brings an engineering mindset to —clear concepts, plenty of practice, and regular MCQ and CQ assessment."
     }
   },
   "auth": {
@@ -155,6 +156,7 @@
     "mapHint": "Mollabari Mosjid Jamgora Ashulia Savar Dhaka"
   },
   "footer": {
+    "quickLinks": "Quick links",
     "rights": "©ABSP — Al-Biruni Study Point. All rights reserved."
   }
 }

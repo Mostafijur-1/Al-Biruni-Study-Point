@@ -1,57 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
-
-type Exam = {
-  _id: string;
-  title: string;
-  duration: number;
-  totalMarks: number;
-  passMark: number;
-  questionCount: number;
-  isPublished: boolean;
-  createdAt: string;
-};
-
-type ExamsResponse = {
-  success: boolean;
-  data?: { exams: Exam[] };
-  error?: { message: string };
-};
+import { useApiQuery } from "@/lib/hooks/use-api-query";
+import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { formatMcqExamMeta } from "@/lib/mcq/format";
+import type { McqExamSummaryTeacher } from "@/types/mcq";
 
 export function TeacherMcqHub({ locale }: { locale: Locale }) {
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [message, setMessage] = useState("Loading your exams...");
+  const path = createLocalizedPath(locale);
+  const { data, message } = useApiQuery<{ exams: McqExamSummaryTeacher[] }>(
+    "/api/mcq/exams?published=false",
+    {
+      loadingMessage: "Loading your exams...",
+      errorMessage: "Could not load exams.",
+    },
+  );
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadExams() {
-      const response = await fetch("/api/mcq/exams?published=false", { cache: "no-store" });
-      const payload = (await response.json()) as ExamsResponse;
-
-      if (!active) {
-        return;
-      }
-
-      if (!response.ok || !payload.success) {
-        setMessage(payload.error?.message || "Could not load exams.");
-        return;
-      }
-
-      setExams(payload.data?.exams || []);
-      setMessage("");
-    }
-
-    loadExams().catch(() => setMessage("Could not load exams."));
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const exams = data?.exams ?? [];
 
   return (
     <div className="space-y-5">
@@ -62,7 +28,7 @@ export function TeacherMcqHub({ locale }: { locale: Locale }) {
           <p className="mt-2 text-sm text-muted">Create exams, edit questions, and review student scores.</p>
         </div>
         <Link
-          href={getLocalizedPath("/teacher/mcq/create", locale)}
+          href={path("/teacher/mcq/create")}
           className="rounded-lg bg-brand-red px-4 py-3 text-center text-sm font-semibold text-white"
         >
           Create new exam
@@ -96,20 +62,17 @@ export function TeacherMcqHub({ locale }: { locale: Locale }) {
                       {exam.isPublished ? "Published" : "Draft"}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-muted">
-                    {exam.questionCount} questions · {exam.duration} min · {exam.totalMarks} marks · pass{" "}
-                    {exam.passMark}
-                  </p>
+                  <p className="mt-2 text-sm text-muted">{formatMcqExamMeta(exam, "min")}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    href={getLocalizedPath(`/teacher/mcq/${exam._id}/results`, locale)}
+                    href={path(`/teacher/mcq/${exam._id}/results`)}
                     className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary"
                   >
                     Results
                   </Link>
                   <Link
-                    href={getLocalizedPath(`/teacher/mcq/${exam._id}/edit`, locale)}
+                    href={path(`/teacher/mcq/${exam._id}/edit`)}
                     className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
                   >
                     Edit

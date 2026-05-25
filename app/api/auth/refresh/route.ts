@@ -1,20 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import { fail, handleApiError } from "@/lib/api/response";
-import {
-  ACCESS_COOKIE,
-  accessCookieOptions,
-  clearAuthCookies,
-  REFRESH_COOKIE,
-  refreshCookieOptions,
-  ROLE_COOKIE,
-  roleCookieOptions,
-} from "@/lib/auth/cookies";
+import { fail, handleApiError, success } from "@/lib/api/response";
+import { clearAuthCookies, REFRESH_COOKIE } from "@/lib/auth/cookies";
+import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { serializeUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
+
+function invalidSessionResponse() {
+  const response = fail("Invalid session.", 401);
+  clearAuthCookies(response);
+  return response;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,23 +29,13 @@ export async function POST(request: NextRequest) {
     const user = await User.findById(payload.userId).select("+refreshTokenHash");
 
     if (!user?.refreshTokenHash || !user.isActive) {
-      const response = NextResponse.json(
-        { success: false, error: { message: "Invalid session." } },
-        { status: 401 },
-      );
-      clearAuthCookies(response);
-      return response;
+      return invalidSessionResponse();
     }
 
     const matchesStoredToken = await verifyPassword(refreshToken, user.refreshTokenHash);
 
     if (!matchesStoredToken) {
-      const response = NextResponse.json(
-        { success: false, error: { message: "Invalid session." } },
-        { status: 401 },
-      );
-      clearAuthCookies(response);
-      return response;
+      return invalidSessionResponse();
     }
 
     const nextPayload = {
@@ -61,14 +50,9 @@ export async function POST(request: NextRequest) {
     user.refreshTokenHash = await hashPassword(nextRefreshToken);
     await user.save();
 
-    const response = NextResponse.json({
-      success: true,
-      data: { user: serializeUser(user) },
-    });
+    const response = success({ user: serializeUser(user) });
 
-    response.cookies.set(ACCESS_COOKIE, nextAccessToken, accessCookieOptions);
-    response.cookies.set(REFRESH_COOKIE, nextRefreshToken, refreshCookieOptions);
-    response.cookies.set(ROLE_COOKIE, user.role, roleCookieOptions);
+    setAuthCookies(response, { accessToken: nextAccessToken, refreshToken: nextRefreshToken }, user.role);
 
     return response;
   } catch (error) {

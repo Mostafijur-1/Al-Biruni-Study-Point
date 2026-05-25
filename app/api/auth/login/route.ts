@@ -1,14 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import { fail, handleApiError } from "@/lib/api/response";
-import {
-  ACCESS_COOKIE,
-  accessCookieOptions,
-  REFRESH_COOKIE,
-  refreshCookieOptions,
-  ROLE_COOKIE,
-  roleCookieOptions,
-} from "@/lib/auth/cookies";
+import { fail, handleApiError, success } from "@/lib/api/response";
+import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { serializeUser } from "@/lib/auth/session";
@@ -59,17 +52,12 @@ export async function POST(request: NextRequest) {
     user.refreshTokenHash = await hashPassword(refreshToken);
     await user.save();
 
-    const response = NextResponse.json({
-      success: true,
-      data: {
-        user: serializeUser(user),
-        redirectTo: `/${user.role}`,
-      },
+    const response = success({
+      user: serializeUser(user),
+      redirectTo: `/${user.role}`,
     });
 
-    response.cookies.set(ACCESS_COOKIE, accessToken, accessCookieOptions);
-    response.cookies.set(REFRESH_COOKIE, refreshToken, refreshCookieOptions);
-    response.cookies.set(ROLE_COOKIE, user.role, roleCookieOptions);
+    setAuthCookies(response, { accessToken, refreshToken }, user.role);
 
     return response;
   } catch (error) {

@@ -1,0 +1,77 @@
+export type McqDifficulty = "easy" | "medium" | "hard";
+
+export type McqExamSummary = {
+  _id: string;
+  title: string;
+  duration: number;
+  totalMarks: number;
+  passMark: number;
+  questionCount: number;
+};
+
+export type McqExamSummaryTeacher = McqExamSummary & {
+  isPublished: boolean;
+  createdAt: string;
+};
+
+export type McqExamRunnerMeta = McqExamSummary & {
+  _id: string;
+};
+
+export type McqQuestionPublic = {
+  _id: string;
+  question: string;
+  questionBn?: string;
+  options: string[];
+  marks: number;
+};
+
+export type McqQuestionTeacher = McqQuestionPublic & {
+  correctIndex: number;
+  explanation?: string;
+  difficulty: McqDifficulty;
+  topic?: string;
+};
+
+export type McqExamDetailTeacher = {
+  title: string;
+  duration: number;
+  passMark: number;
+  negativeMarking?: number;
+  attempts: number;
+  isRandomized: boolean;
+  isPublished: boolean;
+};
+
+export type McqResultStudent = {
+  _id: string;
+  score: number;
+  percentage: number;
+  isPassed: boolean;
+  attemptNo: number;
+  submittedAt: string;
+  exam?: { title?: string; totalMarks?: number };
+};
+
+export type McqResultTeacherRow = {
+  _id: string;
+  score: number;
+  percentage: number;
+  isPassed: boolean;
+  timeTaken: number;
+  attemptNo: number;
+  submittedAt: string;
+  student: { _id: string; name: string; phone?: string };
+  exam: McqExamSummary & { _id: string };
+};
+
+export type McqSubmitResultData = {
+  result: {
+    score: number;
+    percentage: number;
+    isPassed: boolean;
+    attemptNo: number;
+  };
+  totalMarks: number;
+  solutions: { questionId: string; correctIndex: number; explanation?: string }[];
+};
