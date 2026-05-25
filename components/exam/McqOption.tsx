@@ -11,7 +11,7 @@ type McqOptionProps = {
   optionText: string;
   isSelected: boolean;
   disabled?: boolean;
-  resultMode?: "idle" | "correct" | "wrong" | "missed-correct";
+  resultMode?: "idle" | "correct" | "wrong" | "missed-correct" | "unchanged";
   onSelect: () => void;
 };
 
@@ -43,7 +43,7 @@ export function McqOption({
         showResult &&
           resultMode === "missed-correct" &&
           "border-emerald-400/80 bg-emerald-50/60",
-        showResult && resultMode === "idle" && "border-border bg-surface opacity-80",
+        showResult && resultMode === "unchanged" && "border-border bg-surface opacity-70",
         disabled && !showResult && "cursor-default",
       )}
     >
@@ -55,9 +55,10 @@ export function McqOption({
           showResult && resultMode === "correct" && "border-emerald-600 bg-emerald-600 text-white",
           showResult && resultMode === "wrong" && "border-brand-red bg-brand-red text-white",
           showResult && resultMode === "missed-correct" && "border-emerald-500 bg-emerald-500 text-white",
+          showResult && resultMode === "unchanged" && "border-border bg-background text-muted",
         )}
       >
-        {showResult && resultMode === "correct" ? (
+        {showResult && (resultMode === "correct" || resultMode === "missed-correct") ? (
           <Check className="size-5" strokeWidth={3} />
         ) : showResult && resultMode === "wrong" ? (
           <X className="size-5" strokeWidth={3} />
@@ -76,6 +77,7 @@ export function McqOption({
           showResult && resultMode === "correct" && "text-emerald-900",
           showResult && resultMode === "wrong" && "text-red-900",
           showResult && resultMode === "missed-correct" && "text-emerald-800",
+          showResult && resultMode === "unchanged" && "text-muted",
         )}
       >
         {optionText}

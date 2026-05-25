@@ -46,7 +46,7 @@ function getOptionResultMode(
   selectedIndex: number | undefined,
   correctIndex: number | undefined,
   hasResult: boolean,
-): "idle" | "correct" | "wrong" | "missed-correct" {
+): "idle" | "correct" | "wrong" | "missed-correct" | "unchanged" {
   if (!hasResult || correctIndex === undefined) {
     return "idle";
   }
@@ -59,7 +59,7 @@ function getOptionResultMode(
     return "wrong";
   }
 
-  return "idle";
+  return "unchanged";
 }
 
 export function McqExamRunner({ examId }: { examId: string }) {
