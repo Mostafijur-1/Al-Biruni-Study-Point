@@ -134,6 +134,26 @@
     "dashboard": "Dashboard",
     "logout": "Logout"
   },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Get in touch with ABSP",
+    "subtitle": "Call or email us for admission, batches, or course information.",
+    "addressTitle": "Address",
+    "addressLines": [
+      "Jamgora, near Mollabari Mosque & Munsi Market",
+      "Adjacent to SafeWay Doctors Chambers",
+      "Ashulia, Savar, Dhaka"
+    ],
+    "phoneTitle": "Phone",
+    "phones": ["01633939262", "01581696422"],
+    "emailTitle": "Email",
+    "email": "albirunistudypoint@gmail.com",
+    "hoursTitle": "Contact hours",
+    "hours": "7 AM to 11 PM",
+    "ctaRegister": "Register online",
+    "ctaCall": "Call now",
+    "mapHint": "Mollabari Mosjid Jamgora Ashulia Savar Dhaka"
+  },
   "footer": {
     "rights": "©ABSP — Al-Biruni Study Point. All rights reserved."
   }

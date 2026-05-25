@@ -1,11 +1,14 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { ContactSection } from "@/components/contact/ContactSection";
+import type { Locale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 
-export default function ContactPage() {
-  return (
-    <RoutePlaceholder
-      eyebrow="Contact"
-      title="Visit or Contact ABSP"
-      description="Phone, location, social links, class inquiry form, and map integration."
-    />
-  );
+type ContactPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+export default async function ContactPage({ params }: ContactPageProps) {
+  const { locale } = await params;
+  const dict = getDictionary(locale);
+
+  return <ContactSection locale={locale} contact={dict.contact} />;
 }

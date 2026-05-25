@@ -1,0 +1,147 @@
+import Link from "next/link";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+
+import { PageHeader } from "@/components/shared/PageHeader";
+import { buttonVariants } from "@/components/ui/button";
+import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { cn } from "@/lib/utils";
+
+type ContactSectionProps = {
+  locale: Locale;
+  contact: Dictionary["contact"];
+};
+
+function formatPhoneDisplay(phone: string) {
+  if (phone.length === 11 && phone.startsWith("01")) {
+    return `${phone.slice(0, 5)}-${phone.slice(5, 9)}-${phone.slice(9)}`;
+  }
+  return phone;
+}
+
+export function ContactSection({ locale, contact }: ContactSectionProps) {
+  const primaryPhone = contact.phones[0];
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12 lg:px-6 lg:py-16">
+      <PageHeader eyebrow={contact.eyebrow} title={contact.title} description={contact.subtitle} />
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-2 lg:gap-8">
+        <div className="space-y-4">
+          <article className="rounded-xl border-2 border-border border-t-4 border-t-brand-yellow bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <MapPin className="size-5" />
+              </span>
+              <div>
+                <h2 className="font-display text-lg font-bold text-primary">{contact.addressTitle}</h2>
+                <address className="mt-3 space-y-1 text-sm not-italic leading-7 text-foreground sm:text-base">
+                  {contact.addressLines.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </address>
+                <p className="mt-3 text-xs text-muted">{contact.mapHint}</p>
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-red/10 text-brand-red">
+                <Phone className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-lg font-bold text-primary">{contact.phoneTitle}</h2>
+                <ul className="mt-3 space-y-2">
+                  {contact.phones.map((phone) => (
+                    <li key={phone}>
+                      <a
+                        href={`tel:+88${phone}`}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-base font-semibold text-primary transition hover:border-primary hover:bg-secondary"
+                      >
+                        <Phone className="size-4 shrink-0 text-brand-red" />
+                        {formatPhoneDisplay(phone)}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent/30 text-accent-foreground">
+                <Mail className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-lg font-bold text-primary">{contact.emailTitle}</h2>
+                <a
+                  href={`mailto:${contact.email}`}
+                  className="mt-3 inline-block break-all text-base font-semibold text-brand-red underline-offset-4 hover:underline"
+                >
+                  {contact.email}
+                </a>
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-xl border border-border bg-secondary/60 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <Clock className="size-5 shrink-0 text-primary" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-muted">{contact.hoursTitle}</p>
+                <p className="mt-1 text-sm font-medium text-foreground">{contact.hours}</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <aside className="flex flex-col justify-between gap-6 rounded-xl border-2 border-primary/20 bg-[linear-gradient(160deg,#fff9e6_0%,#ffffff_50%,#e8f4fc_100%)] p-6 shadow-[var(--shadow-md)] sm:p-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-accent">ABSP</p>
+            <h2 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
+              {locale === "bn" ? "ভর্তি ও পরামর্শ" : "Admission & inquiry"}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
+              {locale === "bn"
+                ? "SSC ও HSC বিজ্ঞান কোচিং, ব্যাচ ও অনলাইন ক্লাস সম্পর্কে জানতে আজই যোগাযোগ করুন।"
+                : "Contact us today about SSC and HSC science coaching, batches, and online classes."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <a
+              href={`tel:+88${primaryPhone}`}
+              className={cn(buttonVariants({ size: "lg" }), "justify-center")}
+            >
+              <Phone className="size-4" />
+              {contact.ctaCall}
+            </a>
+            <Link
+              href={getLocalizedPath("/register", locale)}
+              className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
+            >
+              {contact.ctaRegister}
+            </Link>
+          </div>
+
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              "Mollabari Mosjid Jamgora Ashulia Savar Dhaka",
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              buttonVariants({ variant: "secondary", size: "default" }),
+              "w-full justify-center text-center",
+            )}
+          >
+            <MapPin className="size-4" />
+            {locale === "bn" ? "গুগল ম্যাপে দেখুন" : "Open in Google Maps"}
+          </a>
+        </aside>
+      </div>
+    </div>
+  );
+}

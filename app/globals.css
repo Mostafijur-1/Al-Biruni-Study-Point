@@ -81,8 +81,8 @@
   --color-brand-yellow: var(--brand-yellow);
   --color-brand-blue: var(--brand-blue);
   --color-navy: var(--navy);
-  --font-sans: var(--font-sans-bn), "Hind Siliguri", system-ui, sans-serif;
-  --font-serif: var(--font-serif-brand), "Noto Serif Bengali", Georgia, serif;
+  --font-sans: "Noto Sans Bengali", "Hind Siliguri", "Inter", system-ui, sans-serif;
+  --font-serif: "Playfair Display", "Noto Serif Bengali", Georgia, serif;
 }
 
 body {

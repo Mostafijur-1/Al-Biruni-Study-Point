@@ -133,6 +133,26 @@
     "dashboard": "ড্যাশবোর্ড",
     "logout": "লগআউট"
   },
+  "contact": {
+    "eyebrow": "যোগাযোগ",
+    "title": "আমাদের সাথে যোগাযোগ করুন",
+    "subtitle": "ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে কল করুন অথবা ইমেইল করুন।",
+    "addressTitle": "ঠিকানা",
+    "addressLines": [
+      "জামগড়া, মোল্লাবাড়ী মসজিদ ও মুন্সী",
+      "মার্কেটের কাছে, সেফওয়ে ডক্টরস চেম্বারস সংলগ্ন",
+      "আশুলিয়া, সাভার, ঢাকা।"
+    ],
+    "phoneTitle": "ফোন",
+    "phones": ["01633939262", "01581696422"],
+    "emailTitle": "ইমেইল",
+    "email": "albirunistudypoint@gmail.com",
+    "hoursTitle": "যোগাযোগের সময়",
+    "hours": "সকাল ৭টা থেকে রাত ১১টা পর্যন্ত",
+    "ctaRegister": "অনলাইনে ভর্তি হোন",
+    "ctaCall": "এখনই কল করুন",
+    "mapHint": "Mollabari Mosjid Jamgora Ashulia Savar Dhaka জামগড়া মোল্লাবাড়ী মসজিদ আশুলিয়া সাভার ঢাকা"
+  },
   "footer": {
     "rights": "©ABSP — আল-বিরুনি স্টাডি পয়েন্ট। All rights reserved."
   }
