@@ -1,5 +1,5 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { McqExamBuilder } from "@/components/exam/McqExamBuilder";
 
 export default function CreateExamPage() {
-  return <RoutePlaceholder eyebrow="Teacher panel" title="Create MCQ Exam" description="Exam builder with questions, marks, timer, and publishing controls." />;
+  return <McqExamBuilder />;
 }

@@ -1,12 +1,25 @@
 import type { ReactNode } from "react";
 
-import { Sidebar } from "@/components/layout/Sidebar";
+import {
+  DashboardMobileNav,
+  DashboardSidebar,
+} from "@/components/layout/DashboardMobileNav";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+type DashboardLayoutProps = {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+};
+
+export default async function DashboardLayout({ children, params }: DashboardLayoutProps) {
+  const { locale } = await params;
+
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 md:grid-cols-[240px_1fr] lg:px-6">
-      <Sidebar />
-      <section className="min-w-0">{children}</section>
-    </div>
+    <>
+      <div className="mx-auto grid w-full max-w-7xl gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 md:grid-cols-[220px_1fr] lg:px-6 lg:py-8">
+        <DashboardSidebar locale={locale} />
+        <section className="min-w-0 pb-20 md:pb-0">{children}</section>
+      </div>
+      <DashboardMobileNav locale={locale} />
+    </>
   );
 }

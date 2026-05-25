@@ -2,6 +2,17 @@ export type UserRole = "admin" | "teacher" | "student";
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
+export type StudentClass = "class-9" | "class-10" | "class-11" | "class-12";
+
+export type SessionUser = {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  role: UserRole;
+  studentClass?: StudentClass;
+};
+
 export type CourseLevel = "SSC" | "HSC";
 
 export type CourseSubject =

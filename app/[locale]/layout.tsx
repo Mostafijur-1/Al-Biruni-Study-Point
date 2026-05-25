@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { locales, type Locale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 type LocaleLayoutProps = {
   children: ReactNode;
@@ -24,11 +25,19 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  const resolvedLocale = locale as Locale;
+  const dict = getDictionary(resolvedLocale);
+
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar locale={locale as Locale} />
+      <Navbar locale={resolvedLocale} navigation={dict.navigation} auth={dict.auth} />
       <main className="flex-1">{children}</main>
-      <Footer locale={locale as Locale} />
+      <Footer
+        locale={resolvedLocale}
+        brand={dict.brand}
+        footer={dict.footer}
+        navigation={dict.navigation}
+      />
     </div>
   );
 }

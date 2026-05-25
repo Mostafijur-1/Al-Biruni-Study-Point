@@ -1,5 +1,13 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { McqExamRunner } from "@/components/exam/McqExamRunner";
 
-export default function StudentExamAttemptPage() {
-  return <RoutePlaceholder eyebrow="MCQ exam" title="Exam Attempt" description="Timed MCQ interface with autosave-ready state." />;
+type StudentExamAttemptPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function StudentExamAttemptPage({
+  params,
+}: StudentExamAttemptPageProps) {
+  const { id } = await params;
+
+  return <McqExamRunner examId={id} />;
 }

@@ -1,36 +1,105 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fbff;
-  --foreground: #102033;
-  --muted: #5f6f83;
-  --primary: #0b4ea2;
+  /* ABSP — navy header, red buttons, yellow accents */
+  --navy: #0b2545;
+  --navy-hover: #081c34;
+  --brand-red: #d62828;
+  --brand-red-hover: #b91f1f;
+  --brand-yellow: #f5c518;
+  --brand-yellow-hover: #e0b010;
+  --brand-blue: #4da8e0;
+  --brand-blue-light: #e8f4fc;
+
+  --background: #ffffff;
+  --foreground: #0b2545;
+  --muted: #5a6b7d;
+  --muted-foreground: #5a6b7d;
+  --primary: var(--navy);
+  --primary-hover: var(--navy-hover);
   --primary-foreground: #ffffff;
-  --accent: #c99a2e;
-  --accent-foreground: #102033;
-  --border: #d8e2ef;
+  --accent: var(--brand-yellow);
+  --accent-hover: var(--brand-yellow-hover);
+  --accent-foreground: #0b2545;
+  --secondary: var(--brand-blue-light);
+  --secondary-foreground: var(--navy);
+  --border: #dce4ee;
+  --input: #dce4ee;
+  --ring: var(--brand-blue);
   --surface: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #0b2545;
+  --destructive: var(--brand-red);
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --radius: 0.75rem;
+  --shadow-sm: 0 1px 3px rgb(11 37 69 / 0.08);
+  --shadow-md: 0 6px 20px rgb(11 37 69 / 0.1);
+  --shadow-lg: 0 14px 36px rgb(11 37 69 / 0.12);
+  --gradient-hero: linear-gradient(
+    160deg,
+    #ffffff 0%,
+    #fff9e6 38%,
+    #ffe8e8 72%,
+    #e8f4fc 100%
+  );
+  --gradient-auth: linear-gradient(
+    165deg,
+    #081c34 0%,
+    #0b2545 50%,
+    #123a6b 100%
+  );
+  --header-height: 4.25rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-surface: var(--surface);
-  --font-sans: "Noto Sans Bengali", "Hind Siliguri", "Inter", system-ui, sans-serif;
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-brand-red: var(--brand-red);
+  --color-brand-red-hover: var(--brand-red-hover);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue: var(--brand-blue);
+  --color-navy: var(--navy);
+  --font-sans: var(--font-sans-bn), "Hind Siliguri", system-ui, sans-serif;
+  --font-serif: var(--font-serif-brand), "Noto Serif Bengali", Georgia, serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Noto Sans Bengali", "Hind Siliguri", "Inter", system-ui, sans-serif;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
 a {
   text-underline-offset: 4px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand-yellow) 45%, transparent);
+}
+
+.font-display {
+  font-family: var(--font-serif);
 }

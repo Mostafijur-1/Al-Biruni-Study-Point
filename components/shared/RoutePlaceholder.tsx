@@ -1,20 +1,17 @@
+import { PageHeader } from "@/components/shared/PageHeader";
+
 type RoutePlaceholderProps = {
   eyebrow: string;
   title: string;
   description: string;
 };
 
-export function RoutePlaceholder({
-  eyebrow,
-  title,
-  description,
-}: RoutePlaceholderProps) {
+export function RoutePlaceholder({ eyebrow, title, description }: RoutePlaceholderProps) {
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-16 lg:px-6">
-      <div className="rounded border border-border bg-surface p-6 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wide text-accent">{eyebrow}</p>
-        <h1 className="mt-3 text-3xl font-bold text-primary md:text-4xl">{title}</h1>
-        <p className="mt-4 max-w-2xl leading-7 text-muted">{description}</p>
+    <section className="px-0">
+      <PageHeader eyebrow={eyebrow} title={title} description={description} />
+      <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-10 text-center text-sm text-muted sm:px-6 sm:py-12">
+        Content coming soon.
       </div>
     </section>
   );

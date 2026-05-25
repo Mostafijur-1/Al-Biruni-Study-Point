@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { ACCESS_COOKIE, ROLE_COOKIE } from "@/lib/auth/cookies";
+import { verifyAccessToken } from "@/lib/auth/jwt";
 import { defaultLocale, locales, type Locale } from "@/lib/i18n";
 import type { UserRole } from "@/types";
 
@@ -14,7 +16,7 @@ function getLocale(pathname: string): Locale | null {
   return locales.includes(segment as Locale) ? (segment as Locale) : null;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/api") || pathname.startsWith("/_next")) {
@@ -35,10 +37,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const accessToken = request.cookies.get("absp_access_token")?.value;
-  const role = request.cookies.get("absp_role")?.value as UserRole | undefined;
+  const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
+  const role = request.cookies.get(ROLE_COOKIE)?.value as UserRole | undefined;
 
   if (!accessToken || role !== matchedRole) {
+    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+  }
+
+  try {
+    const payload = verifyAccessToken(accessToken);
+
+    if (payload.role !== matchedRole) {
+      return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+    }
+  } catch {
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
 

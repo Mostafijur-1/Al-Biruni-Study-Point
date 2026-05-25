@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ABSP — Al-Biruni Study Point
 
-## Getting Started
+Bangla-first coaching center website and LMS for **SSC** (grades 9–10) and **HSC** (grades 11–12) science students.
 
-First, run the development server:
+## Brand
+
+- Logo: `public/absp-logo.png` (red, white, yellow)
+- Colors: red `#D00000`, yellow `#FFD700`, white backgrounds
+
+## Stack
+
+- Next.js 16 (App Router) + TypeScript
+- MongoDB + Mongoose
+- JWT auth (phone + password)
+- Bangla (`/bn`, default) and English (`/en`)
+
+## Local development
+
+1. Copy `.env.example` to `.env.local` and fill in values.
+2. Run:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Open [http://localhost:3000/bn](http://localhost:3000/bn).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server |
+| `npm run build` | Production build (same as Vercel) |
+| `npm run start` | Run production build locally |
+| `npm run lint` | ESLint |
 
-## Learn More
+## Deploy to Vercel (GitHub → production)
 
-To learn more about Next.js, take a look at the following resources:
+1. Push this repo to GitHub.
+2. Import the repo in [Vercel](https://vercel.com).
+3. Add environment variables from `.env.example` (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)).
+4. Deploy — every push to `main` rebuilds automatically.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Required env vars on Vercel:** `MONGODB_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `NEXT_PUBLIC_APP_URL`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Docs
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [docs/PRD.md](docs/PRD.md) — product requirements
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — technical architecture
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — step-by-step Vercel + MongoDB setup

@@ -1,12 +1,140 @@
 {
   "brand": {
     "name": "ABSP",
-    "fullName": "Al-Biruni Study Point"
+    "fullName": "Al-Biruni Study Point",
+    "tagline": "Science coaching center"
   },
   "navigation": {
     "home": "Home",
+    "about": "About",
     "courses": "Courses",
     "batches": "Batches",
-    "contact": "Contact"
+    "contact": "Contact",
+    "login": "Login",
+    "register": "Register"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "On the path to success, Al-Biruni is with you",
+      "title": "Al-Biruni Study Point",
+      "subtitle": "Physics, Chemistry, Math, Higher Math & ICT for SSC and HSC. Offline and online batches, recorded classes, MCQ and CQ assessments.",
+      "ctaCourses": "View courses",
+      "ctaRegister": "Enroll now"
+    },
+    "about": {
+      "title": "About ABSP",
+      "body": "Al-Biruni Study Point (ABSP) is a science-focused coaching center. We help SSC and HSC students prepare for exams through clear concepts, regular practice, and structured assessment. Small batches, experienced teachers, and our digital platform work together for your progress.",
+      "points": [
+        "In-depth classes",
+        "Weekly MCQ and CQ assessments",
+        "Offline classrooms and online batches"
+      ],
+      "link": "Learn more"
+    },
+    "courses": {
+      "title": "Our courses",
+      "subtitle": "SSC and HSC science — separate tracks with video classes and exams",
+      "ssc": "SSC (Class 9–10)",
+      "hsc": "HSC (Class 11–12)",
+      "link": "All courses"
+    },
+    "subjects": {
+      "Physics": "Physics",
+      "Chemistry": "Chemistry",
+      "Math": "Mathematics",
+      "Higher Math": "Higher Mathematics",
+      "ICT": "ICT"
+    },
+    "batches": {
+      "title": "Current batches",
+      "subtitle": "Active offline and online batches — limited seats",
+      "offline": "Offline",
+      "online": "Online",
+      "seats": "Seats",
+      "schedule": "Schedule",
+      "link": "All batches",
+      "sample": [
+        {
+          "name": "SSC 2026 (Offline)",
+          "mode": "offline",
+          "schedule": "Sat–Mon, 6:00 PM",
+          "seats": "3/9"
+        },
+        {
+          "name": "HSC 2028 (Offline)",
+          "mode": "offline",
+          "schedule": "Fri-Wed, 5:30 PM",
+          "seats": "limited"
+        },
+        {
+          "name": "HSC 2028 (Online)",
+          "mode": "online",
+          "schedule": "Tue–Thu, 9:00 PM",
+          "seats": "limited"
+        }
+      ]
+    },
+    "tutor": {
+      "title": "Lead instructor",
+      "name": "Mostafijur Rahman",
+      "role": "Founder & lead teacher",
+      "bio": "5+ years teaching experience. Known for explaining concepts clearly and running structured classes."
+    }
+  },
+  "auth": {
+    "shell": {
+      "title": "Start your journey with Al-Biruni Study Point",
+      "subtitle": "Recorded classes, MCQ tests, and teacher-graded CQ — all in one platform.",
+      "points": [
+        "Quick registration with phone number",
+        "SSC and HSC subject-based courses"
+      ],
+      "footer": "©ABSP — Al-Biruni Study Point"
+    },
+    "login": {
+      "title": "Login",
+      "subtitle": "Sign in to your account",
+      "identifier": "Phone or email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Join as a student or teacher",
+      "name": "Full name",
+      "phone": "Phone number",
+      "email": "Email",
+      "password": "Password",
+      "role": "Account type",
+      "studentClass": "Class",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Login",
+      "continueLogin": "Continue to login",
+      "roles": {
+        "student": "Student",
+        "teacher": "Teacher"
+      },
+      "classes": {
+        "class-9": "Class 9",
+        "class-10": "Class 10",
+        "class-11": "Class 11",
+        "class-12": "Class 12"
+      }
+    },
+    "roles": {
+      "student": "Student",
+      "teacher": "Teacher",
+      "admin": "Admin"
+    },
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "footer": {
+    "rights": "©ABSP — Al-Biruni Study Point. All rights reserved."
   }
 }

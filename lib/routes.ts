@@ -1,5 +1,9 @@
 import type { RouteAccess, UserRole } from "@/types";
 
+export function dashboardPath(role: UserRole, locale: string) {
+  return `/${locale}/${role}`;
+}
+
 export type AppRoute = {
   path: string;
   access: RouteAccess;

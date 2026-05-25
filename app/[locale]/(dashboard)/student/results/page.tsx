@@ -1,5 +1,13 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { ResultHistory } from "@/components/exam/ResultHistory";
 
 export default function StudentResultsPage() {
-  return <RoutePlaceholder eyebrow="Student panel" title="Results" description="MCQ attempt history and teacher-reviewed CQ marks." />;
+  return (
+    <section className="space-y-5">
+      <div>
+        <p className="text-sm font-bold uppercase tracking-wide text-accent">Student panel</p>
+        <h1 className="mt-2 text-3xl font-bold text-primary">Results</h1>
+      </div>
+      <ResultHistory />
+    </section>
+  );
 }
