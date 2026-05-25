@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
+import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import type { McqExamRunnerMeta, McqQuestionPublic, McqSubmitResultData } from "@/types/mcq";
@@ -274,14 +275,18 @@ export function McqExamRunner({ examId }: { examId: string }) {
           </p>
         </div>
       ) : (
-        <button
+        <Button
           type="button"
+          size="lg"
+          className="w-full rounded-xl"
           onClick={submitAttempt}
-          disabled={isSubmitting || answeredCount === 0}
-          className="w-full rounded-xl bg-brand-red px-4 py-3.5 font-semibold text-white shadow-sm transition hover:bg-brand-red-hover disabled:cursor-not-allowed disabled:opacity-50"
+          loading={isSubmitting}
+          disabled={answeredCount === 0}
         >
-          {isSubmitting ? "Submitting..." : `Submit exam (${answeredCount}/${questions.length})`}
-        </button>
+          {isSubmitting
+            ? "Submitting..."
+            : `Submit exam (${answeredCount}/${questions.length})`}
+        </Button>
       )}
     </section>
   );

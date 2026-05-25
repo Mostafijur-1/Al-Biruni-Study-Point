@@ -11,6 +11,7 @@ import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { publicNavPaths } from "@/lib/routes";
 import type { SessionUser } from "@/types";
+import { pressableClasses } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type MobileNavProps = {
@@ -53,7 +54,10 @@ export function MobileNav({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="grid size-10 place-items-center rounded-lg border border-border bg-surface text-primary"
+        className={cn(
+          "grid size-10 place-items-center rounded-lg border border-border bg-surface text-primary",
+          pressableClasses,
+        )}
         aria-expanded={open}
         aria-label={open ? "Close menu" : "Open menu"}
       >

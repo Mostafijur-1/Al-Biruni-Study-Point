@@ -75,10 +75,10 @@ export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps
           size="lg"
           className="w-full border-white/30 bg-transparent text-white hover:bg-white/10"
           onClick={handleLogout}
-          disabled={loading}
+          loading={loading}
         >
           <LogOut className="size-4" />
-          {loading ? "..." : auth.logout}
+          {auth.logout}
         </Button>
       </div>
     );
@@ -108,12 +108,12 @@ export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps
         variant="ghost"
         size="sm"
         onClick={handleLogout}
-        disabled={loading}
+        loading={loading}
         title={auth.logout}
         className="text-muted"
       >
         <LogOut className="size-4" />
-        <span className="sr-only sm:not-sr-only sm:inline">{loading ? "..." : auth.logout}</span>
+        <span className="sr-only sm:not-sr-only sm:inline">{auth.logout}</span>
       </Button>
     </div>
   );

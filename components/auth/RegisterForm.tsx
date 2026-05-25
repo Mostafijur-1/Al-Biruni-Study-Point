@@ -133,7 +133,7 @@ export function RegisterForm({ locale, auth }: RegisterFormProps) {
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button type="submit" form="register-form" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" form="register-form" className="w-full" loading={isSubmitting}>
           {isSubmitting ? auth.register.submitting : auth.register.submit}
         </Button>
         {isSuccess ? (

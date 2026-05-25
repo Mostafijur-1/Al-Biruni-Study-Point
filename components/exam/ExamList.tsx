@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 
+import { pressableClasses } from "@/components/ui/button";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
+import { cn } from "@/lib/utils";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import { formatMcqExamMeta } from "@/lib/mcq/format";
 import type { McqExamSummary } from "@/types/mcq";
@@ -39,7 +41,10 @@ export function ExamList({ locale }: { locale: Locale }) {
             </div>
             <Link
               href={path(`/student/exams/${exam._id}`)}
-              className="rounded bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground"
+              className={cn(
+                pressableClasses,
+                "rounded-lg bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover",
+              )}
             >
               Start
             </Link>

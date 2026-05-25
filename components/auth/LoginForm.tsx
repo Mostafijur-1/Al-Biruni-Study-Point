@@ -85,7 +85,7 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button type="submit" form="login-form" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" form="login-form" className="w-full" loading={isSubmitting}>
           {isSubmitting ? auth.login.submitting : auth.login.submit}
         </Button>
         <p className="text-center text-sm text-muted">

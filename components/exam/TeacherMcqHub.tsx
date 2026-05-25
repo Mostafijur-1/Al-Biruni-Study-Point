@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 
+import { buttonVariants, pressableClasses } from "@/components/ui/button";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
+import { cn } from "@/lib/utils";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import { formatMcqExamMeta } from "@/lib/mcq/format";
 import type { McqExamSummaryTeacher } from "@/types/mcq";
@@ -29,7 +31,7 @@ export function TeacherMcqHub({ locale }: { locale: Locale }) {
         </div>
         <Link
           href={path("/teacher/mcq/create")}
-          className="rounded-lg bg-brand-red px-4 py-3 text-center text-sm font-semibold text-white"
+          className={cn(buttonVariants(), "justify-center shadow-sm")}
         >
           Create new exam
         </Link>
@@ -67,13 +69,19 @@ export function TeacherMcqHub({ locale }: { locale: Locale }) {
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href={path(`/teacher/mcq/${exam._id}/results`)}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary"
+                    className={cn(
+                      pressableClasses,
+                      "rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary hover:bg-secondary",
+                    )}
                   >
                     Results
                   </Link>
                   <Link
                     href={path(`/teacher/mcq/${exam._id}/edit`)}
-                    className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+                    className={cn(
+                      pressableClasses,
+                      "rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover",
+                    )}
                   >
                     Edit
                   </Link>

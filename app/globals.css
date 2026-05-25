@@ -103,3 +103,23 @@ a {
 .font-display {
   font-family: var(--font-serif);
 }
+
+@keyframes btn-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.55;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(18);
+    opacity: 0;
+  }
+}
+
+.animate-btn-ripple {
+  animation: btn-ripple 0.55s ease-out forwards;
+}
+
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}

@@ -2,6 +2,7 @@
 
 import { Check, X } from "lucide-react";
 
+import { pressableClasses } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E", "F"] as const;
@@ -32,7 +33,9 @@ export function McqOption({
       onClick={onSelect}
       aria-pressed={isSelected}
       className={cn(
-        "group flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3.5 text-left transition-all duration-200 sm:px-4 sm:py-4",
+        "group flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3.5 text-left sm:px-4 sm:py-4",
+        pressableClasses,
+        "duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         !showResult && !isSelected && "border-border bg-surface hover:border-primary/40 hover:bg-secondary/60",
         !showResult &&

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, pressableClasses } from "@/components/ui/button";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
@@ -51,7 +51,10 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
                     <li key={phone}>
                       <a
                         href={phoneTelHref(phone)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-base font-semibold text-primary transition hover:border-primary hover:bg-secondary"
+                        className={cn(
+                          pressableClasses,
+                          "inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-base font-semibold text-primary hover:border-primary hover:bg-secondary",
+                        )}
                       >
                         <Phone className="size-4 shrink-0 text-brand-red" />
                         {formatPhoneDisplay(phone)}

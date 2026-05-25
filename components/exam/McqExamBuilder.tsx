@@ -7,6 +7,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
 import { createMcqExamSchema, type CreateMcqExamFormInput } from "@/lib/validations/mcq.schema";
 import { cn } from "@/lib/utils";
 import type { McqExamDetailTeacher, McqQuestionTeacher } from "@/types/mcq";
@@ -220,13 +221,15 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
           <div className="flex items-center justify-between gap-4">
             <legend className="font-display text-lg font-bold text-primary">Question {questionIndex + 1}</legend>
             {fields.length > 1 && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => remove(questionIndex)}
-                className="rounded-lg border border-border px-3 py-1 text-sm font-semibold text-muted hover:text-brand-red"
+                className="text-muted hover:text-brand-red"
               >
                 Remove
-              </button>
+              </Button>
             )}
           </div>
           <label className="mt-4 block">
@@ -304,20 +307,12 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => append(emptyQuestion)}
-          className="rounded-lg border border-border bg-surface px-4 py-3 font-semibold text-primary"
-        >
+        <Button type="button" variant="outline" onClick={() => append(emptyQuestion)}>
           Add question
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-lg bg-brand-red px-4 py-3 font-semibold text-white disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
           {isSubmitting ? "Saving..." : isEdit ? "Update exam" : "Save exam"}
-        </button>
+        </Button>
       </div>
     </form>
   );
