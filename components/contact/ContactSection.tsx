@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { buttonVariants, pressableClasses } from "@/components/ui/button";
+import { buttonVariants, pressableClasses } from "@/components/ui/button-variants";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";

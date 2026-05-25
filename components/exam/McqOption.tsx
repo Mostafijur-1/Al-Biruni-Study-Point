@@ -2,7 +2,7 @@
 
 import { Check, X } from "lucide-react";
 
-import { pressableClasses } from "@/components/ui/button";
+import { pressableClasses } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E", "F"] as const;

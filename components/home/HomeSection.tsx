@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BookOpen, GraduationCap, Monitor, Users } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { subjectsForLevel } from "@/lib/data/subjects";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";

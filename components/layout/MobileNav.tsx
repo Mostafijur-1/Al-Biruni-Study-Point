@@ -11,7 +11,7 @@ import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { publicNavPaths } from "@/lib/routes";
 import type { SessionUser } from "@/types";
-import { pressableClasses } from "@/components/ui/button";
+import { pressableClasses } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 type MobileNavProps = {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { buttonVariants, pressableClasses } from "@/components/ui/button";
+import { buttonVariants, pressableClasses } from "@/components/ui/button-variants";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { cn } from "@/lib/utils";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
