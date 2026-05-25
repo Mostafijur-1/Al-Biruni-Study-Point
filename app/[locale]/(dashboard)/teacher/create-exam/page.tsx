@@ -1,5 +1,12 @@
-import { McqExamBuilder } from "@/components/exam/McqExamBuilder";
+import { redirect } from "next/navigation";
 
-export default function CreateExamPage() {
-  return <McqExamBuilder />;
+import type { Locale } from "@/lib/i18n";
+
+type LegacyCreateExamPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+export default async function LegacyCreateExamPage({ params }: LegacyCreateExamPageProps) {
+  const { locale } = await params;
+  redirect(`/${locale}/teacher/mcq/create`);
 }

@@ -40,6 +40,9 @@ export const submitMcqExamSchema = z.object({
   timeTaken: z.number().int().min(0),
 });
 
+export const updateMcqExamSchema = createMcqExamSchema;
+
 export type CreateMcqExamFormInput = z.input<typeof createMcqExamSchema>;
 export type CreateMcqExamInput = z.output<typeof createMcqExamSchema>;
+export type UpdateMcqExamInput = z.output<typeof updateMcqExamSchema>;
 export type SubmitMcqExamInput = z.output<typeof submitMcqExamSchema>;

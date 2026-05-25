@@ -1,25 +1,81 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { createMcqExamSchema, type CreateMcqExamFormInput } from "@/lib/validations/mcq.schema";
+import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-type CreateExamResponse = {
+type ExamMeta = {
+  title: string;
+  duration: number;
+  passMark: number;
+  negativeMarking?: number;
+  attempts: number;
+  isRandomized: boolean;
+  isPublished: boolean;
+};
+
+type QuestionRow = {
+  question: string;
+  questionBn?: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+  marks: number;
+  difficulty: "easy" | "medium" | "hard";
+  topic?: string;
+};
+
+type ExamResponse = {
   success: boolean;
-  data?: { exam: { _id: string; title: string } };
+  data?: {
+    exam: ExamMeta;
+    questions: QuestionRow[];
+  };
   error?: { message: string };
 };
 
-export function McqExamBuilder() {
+type McqExamBuilderProps = {
+  locale: Locale;
+  examId?: string;
+};
+
+const emptyQuestion = {
+  question: "",
+  options: ["", "", "", ""],
+  correctIndex: 0,
+  marks: 1,
+  difficulty: "medium" as const,
+};
+
+function mapQuestions(questions: QuestionRow[]) {
+  return questions.map((q) => ({
+    question: q.question,
+    questionBn: q.questionBn || "",
+    options: q.options,
+    correctIndex: q.correctIndex,
+    explanation: q.explanation || "",
+    marks: q.marks,
+    difficulty: q.difficulty,
+    topic: q.topic || "",
+  }));
+}
+
+export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
+  const isEdit = Boolean(examId);
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isEdit);
+
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
     reset,
+    formState: { errors, isSubmitting },
   } = useForm<CreateMcqExamFormInput>({
     resolver: zodResolver(createMcqExamSchema),
     defaultValues: {
@@ -30,97 +86,200 @@ export function McqExamBuilder() {
       attempts: 1,
       isRandomized: false,
       isPublished: false,
-      questions: [
-        {
-          question: "",
-          options: ["", "", "", ""],
-          correctIndex: 0,
-          marks: 1,
-          difficulty: "medium",
-        },
-      ],
+      questions: [emptyQuestion],
     },
   });
   const { fields, append, remove } = useFieldArray({ control, name: "questions" });
 
-  async function onSubmit(values: CreateMcqExamFormInput) {
-    setMessage(null);
-    const response = await fetch("/api/mcq/exams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    const payload = (await response.json()) as CreateExamResponse;
-
-    if (!response.ok || !payload.success) {
-      setMessage(payload.error?.message || "Could not create exam.");
+  useEffect(() => {
+    if (!examId) {
       return;
     }
 
-    setMessage(`Exam created: ${payload.data?.exam.title}`);
-    reset();
+    let active = true;
+
+    async function loadExam() {
+      const response = await fetch(`/api/mcq/exams/${examId}`, { cache: "no-store" });
+      const payload = (await response.json()) as ExamResponse;
+
+      if (!active) {
+        return;
+      }
+
+      if (!response.ok || !payload.success || !payload.data) {
+        setMessage(payload.error?.message || "Could not load exam.");
+        setLoading(false);
+        return;
+      }
+
+      const { exam, questions } = payload.data;
+
+      reset({
+        title: exam.title,
+        duration: exam.duration,
+        passMark: exam.passMark,
+        negativeMarking: exam.negativeMarking ?? 0,
+        attempts: exam.attempts,
+        isRandomized: exam.isRandomized,
+        isPublished: exam.isPublished,
+        questions: mapQuestions(questions),
+      });
+
+      setLoading(false);
+    }
+
+    loadExam().catch(() => {
+      setMessage("Could not load exam.");
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [examId, reset]);
+
+  async function onSubmit(values: CreateMcqExamFormInput) {
+    setMessage(null);
+    const url = isEdit ? `/api/mcq/exams/${examId}` : "/api/mcq/exams";
+    const method = isEdit ? "PATCH" : "POST";
+
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+    const payload = (await response.json()) as ExamResponse & { data?: { exam: { title: string } } };
+
+    if (!response.ok || !payload.success) {
+      setMessage(payload.error?.message || `Could not ${isEdit ? "update" : "create"} exam.`);
+      return;
+    }
+
+    const title = payload.data?.exam.title ?? values.title;
+    setMessage(isEdit ? `Exam updated: ${title}` : `Exam created: ${title}`);
+
+    if (!isEdit) {
+      reset({
+        title: "",
+        duration: 30,
+        passMark: 5,
+        negativeMarking: 0,
+        attempts: 1,
+        isRandomized: false,
+        isPublished: false,
+        questions: [emptyQuestion],
+      });
+    }
+  }
+
+  if (loading) {
+    return <p className="rounded-xl border border-border bg-card p-6 text-muted">Loading exam...</p>;
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div className="rounded border border-border bg-surface p-5 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wide text-accent">Teacher panel</p>
-        <h1 className="mt-2 text-3xl font-bold text-primary">Create MCQ Exam</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={getLocalizedPath("/teacher/mcq", locale)}
+          className="text-sm font-semibold text-primary hover:underline"
+        >
+          ← Back to MCQ exams
+        </Link>
+        {isEdit && examId && (
+          <Link
+            href={getLocalizedPath(`/teacher/mcq/${examId}/results`, locale)}
+            className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold text-primary"
+          >
+            View student results
+          </Link>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
+        <p className="text-xs font-bold uppercase tracking-widest text-accent">Teacher panel</p>
+        <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
+          {isEdit ? "Edit MCQ Exam" : "Create MCQ Exam"}
+        </h1>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <label className="block md:col-span-3">
             <span className="text-sm font-semibold">Title</span>
-            <input {...register("title")} className="mt-2 w-full rounded border border-border bg-background px-3 py-3" />
-            {errors.title && <span className="text-sm text-red-600">{errors.title.message}</span>}
+            <input {...register("title")} className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3" />
+            {errors.title && <span className="mt-1 block text-sm text-destructive">{errors.title.message}</span>}
           </label>
           <label className="block">
-            <span className="text-sm font-semibold">Duration</span>
-            <input type="number" {...register("duration", { valueAsNumber: true })} className="mt-2 w-full rounded border border-border bg-background px-3 py-3" />
+            <span className="text-sm font-semibold">Duration (minutes)</span>
+            <input
+              type="number"
+              {...register("duration", { valueAsNumber: true })}
+              className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+            />
           </label>
           <label className="block">
             <span className="text-sm font-semibold">Pass mark</span>
-            <input type="number" {...register("passMark", { valueAsNumber: true })} className="mt-2 w-full rounded border border-border bg-background px-3 py-3" />
+            <input
+              type="number"
+              {...register("passMark", { valueAsNumber: true })}
+              className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+            />
           </label>
           <label className="block">
-            <span className="text-sm font-semibold">Attempts</span>
-            <input type="number" {...register("attempts", { valueAsNumber: true })} className="mt-2 w-full rounded border border-border bg-background px-3 py-3" />
+            <span className="text-sm font-semibold">Max attempts</span>
+            <input
+              type="number"
+              {...register("attempts", { valueAsNumber: true })}
+              className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+            />
           </label>
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-3">
             <input type="checkbox" {...register("isRandomized")} />
             <span className="text-sm font-semibold">Randomize questions</span>
           </label>
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-3">
             <input type="checkbox" {...register("isPublished")} />
-            <span className="text-sm font-semibold">Publish now</span>
+            <span className="text-sm font-semibold">Published (visible to students)</span>
           </label>
         </div>
       </div>
 
       {fields.map((field, questionIndex) => (
-        <fieldset key={field.id} className="rounded border border-border bg-surface p-5 shadow-sm">
+        <fieldset key={field.id} className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
           <div className="flex items-center justify-between gap-4">
-            <legend className="text-lg font-bold text-primary">Question {questionIndex + 1}</legend>
+            <legend className="font-display text-lg font-bold text-primary">Question {questionIndex + 1}</legend>
             {fields.length > 1 && (
-              <button type="button" onClick={() => remove(questionIndex)} className="rounded border border-border px-3 py-1 text-sm font-semibold text-muted">
+              <button
+                type="button"
+                onClick={() => remove(questionIndex)}
+                className="rounded-lg border border-border px-3 py-1 text-sm font-semibold text-muted hover:text-brand-red"
+              >
                 Remove
               </button>
             )}
           </div>
           <label className="mt-4 block">
             <span className="text-sm font-semibold">Question</span>
-            <textarea {...register(`questions.${questionIndex}.question`)} className="mt-2 min-h-24 w-full rounded border border-border bg-background px-3 py-3" />
+            <textarea
+              {...register(`questions.${questionIndex}.question`)}
+              className="mt-2 min-h-24 w-full rounded-lg border border-input bg-surface px-3 py-3"
+            />
           </label>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {[0, 1, 2, 3].map((optionIndex) => (
               <label key={optionIndex} className="block">
                 <span className="text-sm font-semibold">Option {optionIndex + 1}</span>
-                <input {...register(`questions.${questionIndex}.options.${optionIndex}`)} className="mt-2 w-full rounded border border-border bg-background px-3 py-3" />
+                <input
+                  {...register(`questions.${questionIndex}.options.${optionIndex}`)}
+                  className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+                />
               </label>
             ))}
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <label className="block">
               <span className="text-sm font-semibold">Correct option</span>
-              <select {...register(`questions.${questionIndex}.correctIndex`, { valueAsNumber: true })} className="mt-2 w-full rounded border border-border bg-background px-3 py-3">
+              <select
+                {...register(`questions.${questionIndex}.correctIndex`, { valueAsNumber: true })}
+                className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+              >
                 <option value={0}>Option 1</option>
                 <option value={1}>Option 2</option>
                 <option value={2}>Option 3</option>
@@ -129,11 +288,18 @@ export function McqExamBuilder() {
             </label>
             <label className="block">
               <span className="text-sm font-semibold">Marks</span>
-              <input type="number" {...register(`questions.${questionIndex}.marks`, { valueAsNumber: true })} className="mt-2 w-full rounded border border-border bg-background px-3 py-3" />
+              <input
+                type="number"
+                {...register(`questions.${questionIndex}.marks`, { valueAsNumber: true })}
+                className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+              />
             </label>
             <label className="block">
               <span className="text-sm font-semibold">Difficulty</span>
-              <select {...register(`questions.${questionIndex}.difficulty`)} className="mt-2 w-full rounded border border-border bg-background px-3 py-3">
+              <select
+                {...register(`questions.${questionIndex}.difficulty`)}
+                className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3"
+              >
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
                 <option value="hard">Hard</option>
@@ -141,31 +307,42 @@ export function McqExamBuilder() {
             </label>
           </div>
           <label className="mt-4 block">
-            <span className="text-sm font-semibold">Explanation</span>
-            <textarea {...register(`questions.${questionIndex}.explanation`)} className="mt-2 min-h-20 w-full rounded border border-border bg-background px-3 py-3" />
+            <span className="text-sm font-semibold">Explanation (shown after submit)</span>
+            <textarea
+              {...register(`questions.${questionIndex}.explanation`)}
+              className="mt-2 min-h-20 w-full rounded-lg border border-input bg-surface px-3 py-3"
+            />
           </label>
         </fieldset>
       ))}
 
-      {message && <p className="rounded border border-border bg-surface px-3 py-2 text-sm text-muted">{message}</p>}
+      {message && (
+        <p
+          className={cn(
+            "rounded-xl border px-4 py-3 text-sm",
+            message.includes("created") || message.includes("updated")
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-border bg-card text-muted",
+          )}
+        >
+          {message}
+        </p>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
-          onClick={() =>
-            append({
-              question: "",
-              options: ["", "", "", ""],
-              correctIndex: 0,
-              marks: 1,
-              difficulty: "medium",
-            })
-          }
-          className="rounded border border-border bg-surface px-4 py-3 font-semibold text-primary"
+          onClick={() => append(emptyQuestion)}
+          className="rounded-lg border border-border bg-surface px-4 py-3 font-semibold text-primary"
         >
-          Add Question
+          Add question
         </button>
-        <button type="submit" disabled={isSubmitting} className="rounded bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:opacity-60">
-          {isSubmitting ? "Saving..." : "Save Exam"}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="rounded-lg bg-brand-red px-4 py-3 font-semibold text-white disabled:opacity-60"
+        >
+          {isSubmitting ? "Saving..." : isEdit ? "Update exam" : "Save exam"}
         </button>
       </div>
     </form>

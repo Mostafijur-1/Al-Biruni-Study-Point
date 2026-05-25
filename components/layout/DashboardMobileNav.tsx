@@ -33,7 +33,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
   teacher: [
     { href: "/teacher", label: "Home", icon: LayoutDashboard },
     { href: "/teacher/classes", label: "Classes", icon: BookOpen },
-    { href: "/teacher/create-exam", label: "MCQ", icon: FileQuestion },
+    { href: "/teacher/mcq", label: "MCQ", icon: FileQuestion },
     { href: "/teacher/review-cq", label: "CQ", icon: ClipboardCheck },
   ],
   admin: [
@@ -108,7 +108,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/teacher", label: "Overview", icon: LayoutDashboard },
       { href: "/teacher/profile", label: "Profile", icon: UserCircle },
       { href: "/teacher/classes", label: "Classes", icon: BookOpen },
-      { href: "/teacher/create-exam", label: "Create MCQ", icon: FileQuestion },
+      { href: "/teacher/mcq", label: "MCQ Exams", icon: FileQuestion },
       { href: "/teacher/review-cq", label: "Review CQ", icon: ClipboardCheck },
     ],
     admin: [
