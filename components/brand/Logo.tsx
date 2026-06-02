@@ -18,18 +18,18 @@ type LogoProps = {
 
 const sizeStyles = {
   sm: {
-    main: "text-lg sm:text-xl",
-    sub: "text-[10px] sm:text-[11px]",
-    gap: "mt-1",
-  },
-  md: {
     main: "text-xl sm:text-2xl",
     sub: "text-[11px] sm:text-xs",
     gap: "mt-1",
   },
+  md: {
+    main: "text-2xl sm:text-3xl lg:text-[1.7rem]",
+    sub: "text-xs sm:text-sm lg:text-[0.8rem]",
+    gap: "mt-1",
+  },
   lg: {
-    main: "text-2xl sm:text-3xl",
-    sub: "text-xs sm:text-sm",
+    main: "text-3xl sm:text-4xl",
+    sub: "text-sm sm:text-base",
     gap: "mt-1.5",
   },
   hero: {
@@ -56,12 +56,12 @@ function LogoMark({ size, tone }: { size: keyof typeof sizeStyles; tone: LogoTon
 
   return (
     <span className={cn("inline-flex flex-col leading-none", styles.gap)}>
-      <span className={cn("font-display font-bold tracking-tight", styles.main, colors.main)}>
+      <span className={cn("font-display font-bold", styles.main, colors.main)}>
         {BRAND_MAIN}
       </span>
       <span
         className={cn(
-          "font-sans font-normal leading-tight tracking-[0.12em]",
+          "font-sans font-normal leading-tight",
           styles.sub,
           colors.sub,
         )}

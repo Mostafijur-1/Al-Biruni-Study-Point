@@ -24,8 +24,8 @@ export function Navbar({ locale, navigation, auth }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b-4 border-brand-yellow bg-primary shadow-[var(--shadow-md)]">
-      <div className="mx-auto flex h-[var(--header-height)] max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 lg:px-6">
-        <Logo locale={locale} size="sm" className="min-w-0 flex-1 sm:flex-none" />
+      <div className="mx-auto flex h-[var(--header-height)] max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 lg:h-[4.75rem] lg:px-8 lg:py-2 xl:px-10">
+        <Logo locale={locale} size="md" className="min-w-0 flex-1 sm:flex-none" />
 
         <nav className="hidden items-center gap-0.5 lg:flex">
           {publicNavPaths.map(({ key, path }) => (
