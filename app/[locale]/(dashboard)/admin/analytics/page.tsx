@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { AdminOverview } from "@/components/admin/AdminOverview";
+import type { Locale } from "@/lib/i18n";
 
-export default function AdminAnalyticsPage() {
-  return <RoutePlaceholder eyebrow="Admin panel" title="Analytics" description="Enrollment, exam performance, progress, and revenue indicators." />;
+type AdminAnalyticsPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+export default async function AdminAnalyticsPage({ params }: AdminAnalyticsPageProps) {
+  const { locale } = await params;
+  return <AdminOverview locale={locale} />;
 }

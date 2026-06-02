@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
+import type { Locale } from "@/lib/i18n";
 
-export default function AdminTeachersPage() {
-  return <RoutePlaceholder eyebrow="Admin panel" title="Approve Teachers" description="Teacher approval queue, activation, and profile review." />;
+type AdminTeachersPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+export default async function AdminTeachersPage({ params }: AdminTeachersPageProps) {
+  const { locale } = await params;
+  return <AdminUsersPanel locale={locale} role="teacher" />;
 }

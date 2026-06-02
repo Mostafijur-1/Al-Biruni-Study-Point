@@ -77,7 +77,6 @@ export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
                 <tr key={row._id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
                     <p className="font-semibold text-primary">{row.student?.name || "Unknown"}</p>
-                    {row.student?.phone && <p className="text-xs text-muted">{row.student.phone}</p>}
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {row.score}

@@ -65,7 +65,7 @@ export type McqResultTeacherRow = {
   timeTaken: number;
   attemptNo: number;
   submittedAt: string;
-  student: { _id: string; name: string; phone?: string };
+  student: { _id: string; name: string };
   exam: McqExamSummary & { _id: string };
 };
 

@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
+import type { Locale } from "@/lib/i18n";
 
-export default function AdminStudentsPage() {
-  return <RoutePlaceholder eyebrow="Admin panel" title="Manage Students" description="Student search, filtering, pagination, enrollment status, and account controls." />;
+type AdminStudentsPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+export default async function AdminStudentsPage({ params }: AdminStudentsPageProps) {
+  const { locale } = await params;
+  return <AdminUsersPanel locale={locale} role="student" />;
 }

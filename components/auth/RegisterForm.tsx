@@ -256,7 +256,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">
-              {auth.register.phone} ({optionalLabel})
+              {auth.register.phone}
             </Label>
             <Input id="phone" {...register("phone")} placeholder="01XXXXXXXXX" />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}

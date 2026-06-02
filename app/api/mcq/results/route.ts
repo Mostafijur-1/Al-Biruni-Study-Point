@@ -34,11 +34,13 @@ export async function GET(request: NextRequest) {
       query.exam = examId;
     }
 
+    const studentFields = user.role === "admin" ? "name phone" : "name";
+
     const results = await Result.find(query)
       .populate("exam", "title totalMarks passMark duration")
-      .populate("student", "name phone")
+      .populate("student", studentFields)
       .sort({ submittedAt: -1 })
-      .limit(50)
+      .limit(user.role === "admin" ? 200 : 50)
       .lean();
 
     return success({ results });

@@ -41,7 +41,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
     { href: "/admin/students", label: "Students", icon: Users },
     { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/admin/courses", label: "Courses", icon: BookOpen },
-    { href: "/admin/analytics", label: "Stats", icon: BarChart3 },
+    { href: "/admin/exams", label: "Exams", icon: FileQuestion },
   ],
 };
 
@@ -117,6 +117,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/admin/students", label: "Students", icon: Users },
       { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
       { href: "/admin/courses", label: "Courses", icon: BookOpen },
+      { href: "/admin/exams", label: "Exams & results", icon: FileQuestion },
       { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
   };
