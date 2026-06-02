@@ -12,11 +12,11 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const parsed = teacherRegisterSchema.parse(await request.json());
-    const phone = parsed.phone ? normalizePhone(parsed.phone) : undefined;
+    const phone = normalizePhone(parsed.phone);
     const email = parsed.email.toLowerCase();
 
     const existingUser = await User.findOne({
-      $or: [...(phone ? [{ phone }] : []), { email }],
+      $or: [{ phone }, { email }],
     });
 
     if (existingUser) {

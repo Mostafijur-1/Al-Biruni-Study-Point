@@ -202,7 +202,7 @@ function StudentRegisterForm({
 
 function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) {
   const copy = auth.register.teacher;
-  const optionalLabel = locale === "bn" ? "ঐচ্ছিক" : "optional";
+  
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -255,15 +255,25 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">
-              {auth.register.phone}
-            </Label>
-            <Input id="phone" {...register("phone")} placeholder="01XXXXXXXXX" />
+            <Label htmlFor="phone">{auth.register.phone}</Label>
+            <Input
+              id="phone"
+              {...register("phone")}
+              placeholder="01XXXXXXXXX"
+              required
+              autoComplete="tel"
+            />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">{auth.register.email}</Label>
-            <Input id="email" type="email" {...register("email")} autoComplete="email" />
+            <Input
+              id="email"
+              type="email"
+              {...register("email")}
+              required
+              autoComplete="email"
+            />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
           <div className="space-y-2 sm:col-span-2">

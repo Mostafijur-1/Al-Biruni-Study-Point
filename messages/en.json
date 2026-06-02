@@ -127,7 +127,7 @@
       "teacher": {
         "eyebrow": "Teacher",
         "title": "Teacher registration",
-        "subtitle": "Apply as a teacher. Admin approval is required before you can log in.",
+        "subtitle": "Apply as a teacher with phone and email. Admin approval is required before you can log in.",
         "submit": "Apply as teacher",
         "submitting": "Submitting application..."
       },
