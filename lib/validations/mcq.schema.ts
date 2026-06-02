@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { targetClassesSchema } from "@/lib/validations/content.schema";
+
 const objectIdSchema = z
   .string()
   .regex(/^[0-9a-fA-F]{24}$/, "Invalid id.");
@@ -17,6 +19,7 @@ export const mcqQuestionInputSchema = z.object({
 
 export const createMcqExamSchema = z.object({
   title: z.string().trim().min(3),
+  targetClasses: targetClassesSchema,
   courseId: objectIdSchema.optional(),
   duration: z.number().int().min(1).max(300),
   passMark: z.number().min(0),

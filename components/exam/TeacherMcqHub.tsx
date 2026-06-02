@@ -6,6 +6,7 @@ import { buttonVariants, pressableClasses } from "@/components/ui/button-variant
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { cn } from "@/lib/utils";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { formatClassList } from "@/lib/content/classes";
 import { formatMcqExamMeta } from "@/lib/mcq/format";
 import type { McqExamSummaryTeacher } from "@/types/mcq";
 
@@ -65,6 +66,9 @@ export function TeacherMcqHub({ locale }: { locale: Locale }) {
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-muted">{formatMcqExamMeta(exam, "min")}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {formatClassList(exam.targetClasses, locale)}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
+import { resolvePostAuthRedirect } from "@/lib/auth/return-url";
 import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const response = success({
       user: serializeUser(user),
-      redirectTo: `/${user.role}`,
+      redirectTo: resolvePostAuthRedirect(user.role, parsed.returnUrl),
     });
 
     setAuthCookies(response, { accessToken, refreshToken }, user.role);

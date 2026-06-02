@@ -1,24 +1,25 @@
 import { NextRequest } from "next/server";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
+import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword } from "@/lib/auth/password";
+import { resolvePostAuthRedirect } from "@/lib/auth/return-url";
+import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { serializeUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
-import { normalizePhone, registerSchema } from "@/lib/validations/auth.schema";
+import { normalizePhone, studentRegisterBodySchema } from "@/lib/validations/auth.schema";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const parsed = registerSchema.parse(await request.json());
-    const phone = parsed.phone ? normalizePhone(parsed.phone) : undefined;
+    const parsed = studentRegisterBodySchema.parse(await request.json());
+    const phone = normalizePhone(parsed.phone);
     const email = parsed.email ? parsed.email.toLowerCase() : undefined;
+
     const existingUser = await User.findOne({
-      $or: [
-        ...(phone ? [{ phone }] : []),
-        ...(email ? [{ email }] : []),
-      ],
+      $or: [{ phone }, ...(email ? [{ email }] : [])],
     });
 
     if (existingUser) {
@@ -31,24 +32,35 @@ export async function POST(request: NextRequest) {
       phone,
       email,
       password,
-      role: parsed.role,
-      studentClass:
-        parsed.role === "student" && parsed.studentClass
-          ? parsed.studentClass
-          : undefined,
-      approvalStatus: parsed.role === "teacher" ? "pending" : "approved",
+      role: "student",
+      studentClass: parsed.studentClass,
+      approvalStatus: "approved",
     });
 
-    return success(
+    const tokenPayload = {
+      userId: String(user._id),
+      role: user.role,
+      phone: user.phone,
+      email: user.email,
+    };
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+
+    user.refreshTokenHash = await hashPassword(refreshToken);
+    await user.save();
+
+    const response = success(
       {
         user: serializeUser(user),
-        message:
-          parsed.role === "teacher"
-            ? "Teacher account created. Admin approval is required before login."
-            : "Student account created successfully.",
+        message: "Student account created successfully.",
+        redirectTo: resolvePostAuthRedirect(user.role, parsed.returnUrl),
       },
       { status: 201 },
     );
+
+    setAuthCookies(response, { accessToken, refreshToken }, user.role);
+
+    return response;
   } catch (error) {
     return handleApiError(error);
   }

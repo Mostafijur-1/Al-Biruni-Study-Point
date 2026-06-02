@@ -34,14 +34,19 @@ export function useSession(options?: UseSessionOptions) {
   }, []);
 
   useEffect(() => {
-    loadSession();
+    const timeout = window.setTimeout(() => {
+      loadSession();
+    }, 0);
 
     if (!options?.listenToAuthChanges) {
-      return;
+      return () => window.clearTimeout(timeout);
     }
 
     window.addEventListener("absp-auth-changed", loadSession);
-    return () => window.removeEventListener("absp-auth-changed", loadSession);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("absp-auth-changed", loadSession);
+    };
   }, [loadSession, options?.listenToAuthChanges]);
 
   return { user, checking, setUser, reload: loadSession };

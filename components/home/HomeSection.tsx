@@ -42,10 +42,16 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted sm:mt-5 sm:text-lg sm:leading-8">
               {dict.hero.subtitle}
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+              <Link
+                href={path("/explore")}
+                className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
+              >
+                {dict.hero.ctaExplore}
+              </Link>
               <Link
                 href={path("/courses")}
-                className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
+                className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaCourses}
               </Link>
@@ -61,7 +67,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
           <div className="order-1 md:order-2">
             <div className="overflow-hidden rounded-2xl border-2 border-brand-yellow bg-primary p-4 shadow-[var(--shadow-lg)] sm:p-6">
               <div className="mb-4 flex justify-center sm:justify-start">
-                <Logo locale={locale} size="hero" priority link={false} />
+                <Logo locale={locale} size="hero" link={false} />
               </div>
               <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-yellow sm:text-left">
                 {brand.tagline}

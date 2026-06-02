@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
 
+import { classFilterForStudent } from "@/lib/content/classes";
+import { applyGuestClassFilter } from "@/lib/content/guest-scope.server";
+import { mapDocWithTargetClasses } from "@/lib/content/serialize";
+import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
@@ -20,11 +24,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const courseId = searchParams.get("courseId");
     const published = searchParams.get("published");
+    const scope = searchParams.get("scope");
 
     const query: Record<string, unknown> = {};
 
     if (courseId) {
       query.course = courseId;
+    }
+
+    const guestError = applyGuestClassFilter(
+      scope,
+      searchParams.get("class"),
+      query,
+      "isPublished",
+    );
+
+    if (guestError) {
+      return guestError;
     }
 
     if (published === "false") {
@@ -33,7 +49,13 @@ export async function GET(request: NextRequest) {
       if (user.role === "teacher") {
         query.teacher = user.id;
       }
-    } else {
+    } else if (scope === "student") {
+      const user = await requireAuth(request, ["student"]);
+      const studentClass = requireStudentClass(user);
+
+      query.isPublished = true;
+      Object.assign(query, classFilterForStudent(studentClass));
+    } else if (scope !== "guest") {
       query.isPublished = true;
     }
 
@@ -42,7 +64,7 @@ export async function GET(request: NextRequest) {
       .limit(50)
       .lean();
 
-    return success({ exams });
+    return success({ exams: exams.map(mapDocWithTargetClasses) });
   } catch (error) {
     return handleApiError(error);
   }
@@ -61,9 +83,15 @@ export async function POST(request: NextRequest) {
 
     const exam = await McqExam.create(createExamPayload(parsed, user.id));
 
+    await McqExam.updateOne({ _id: exam._id }, { $set: { targetClasses: parsed.targetClasses } });
     await McqQuestion.insertMany(buildQuestionDocuments(exam._id, parsed.questions));
 
-    return success({ exam }, { status: 201 });
+    const created = await McqExam.findById(exam._id).lean();
+
+    return success(
+      { exam: created ? mapDocWithTargetClasses(created) : mapDocWithTargetClasses(exam.toObject()) },
+      { status: 201 },
+    );
   } catch (error) {
     return handleApiError(error);
   }

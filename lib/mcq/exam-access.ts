@@ -1,10 +1,19 @@
-import type { SessionUser } from "@/types";
+import { studentCanAccessClasses } from "@/lib/content/classes";
+import type { SessionUser, StudentClass } from "@/types";
 
 type ExamWithTeacher = {
   teacher: unknown;
   isPublished: boolean;
   isRandomized: boolean;
+  targetClasses?: StudentClass[];
 };
+
+export function studentCanAccessExam(
+  exam: Pick<ExamWithTeacher, "targetClasses">,
+  studentClass?: StudentClass,
+) {
+  return studentCanAccessClasses(exam.targetClasses, studentClass);
+}
 
 export function shuffleQuestions<T>(items: T[]) {
   return [...items].sort(() => Math.random() - 0.5);

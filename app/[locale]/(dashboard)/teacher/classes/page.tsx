@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { TeacherClassUploadPanel } from "@/components/content/TeacherClassUploadPanel";
+import type { Locale } from "@/lib/i18n";
 
-export default function TeacherClassesPage() {
-  return <RoutePlaceholder eyebrow="Teacher panel" title="Classes" description="Upload and manage recorded classes and notes." />;
+type TeacherClassesPageProps = {
+  params: Promise<{ locale: Locale }>;
+};
+
+export default async function TeacherClassesPage({ params }: TeacherClassesPageProps) {
+  const { locale } = await params;
+  return <TeacherClassUploadPanel locale={locale} />;
 }

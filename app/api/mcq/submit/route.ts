@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 
+import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
+import { studentCanAccessExam } from "@/lib/mcq/exam-access";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { Result } from "@/lib/db/models/Result";
@@ -17,6 +19,12 @@ export async function POST(request: NextRequest) {
 
     if (!exam || !exam.isPublished) {
       return fail("Exam is not available.", 404);
+    }
+
+    const studentClass = requireStudentClass(user);
+
+    if (!studentCanAccessExam(exam, studentClass)) {
+      return fail("This exam is not available for your class.", 403);
     }
 
     const now = new Date();

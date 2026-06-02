@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { TargetClassPicker } from "@/components/content/TargetClassPicker";
 import { Button } from "@/components/ui/button";
+import type { StudentClass } from "@/types";
 import { createMcqExamSchema, type CreateMcqExamFormInput } from "@/lib/validations/mcq.schema";
 import { cn } from "@/lib/utils";
 import type { McqExamDetailTeacher, McqQuestionTeacher } from "@/types/mcq";
@@ -52,6 +54,7 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
     formState: { errors, isSubmitting },
   } = useForm<CreateMcqExamFormInput>({
     resolver: zodResolver(createMcqExamSchema),
+    shouldUnregister: false,
     defaultValues: {
       title: "",
       duration: 30,
@@ -60,6 +63,7 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
       attempts: 1,
       isRandomized: false,
       isPublished: false,
+      targetClasses: ["class-9"] as StudentClass[],
       questions: [emptyQuestion],
     },
   });
@@ -98,6 +102,7 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
         attempts: exam.attempts,
         isRandomized: exam.isRandomized,
         isPublished: exam.isPublished,
+        targetClasses: exam.targetClasses?.length ? exam.targetClasses : ["class-9"],
         questions: mapQuestions(questions),
       });
 
@@ -133,7 +138,12 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
     const title = payload.data.exam.title ?? values.title;
     setMessage(isEdit ? `Exam updated: ${title}` : `Exam created: ${title}`);
 
-    if (!isEdit) {
+    if (isEdit) {
+      reset({
+        ...values,
+        targetClasses: values.targetClasses?.length ? values.targetClasses : ["class-9"],
+      });
+    } else {
       reset({
         title: "",
         duration: 30,
@@ -142,6 +152,7 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
         attempts: 1,
         isRandomized: false,
         isPublished: false,
+        targetClasses: ["class-9"],
         questions: [emptyQuestion],
       });
     }
@@ -181,6 +192,27 @@ export function McqExamBuilder({ locale, examId }: McqExamBuilderProps) {
             <input {...register("title")} className="mt-2 w-full rounded-lg border border-input bg-surface px-3 py-3" />
             {errors.title && <span className="mt-1 block text-sm text-destructive">{errors.title.message}</span>}
           </label>
+          <div className="md:col-span-3">
+            <Controller
+              name="targetClasses"
+              control={control}
+              defaultValue={["class-9"]}
+              render={({ field }) => (
+                <TargetClassPicker
+                  locale={locale}
+                  value={field.value ?? ["class-9"]}
+                  onChange={field.onChange}
+                  label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}
+                  hint={
+                    locale === "bn"
+                      ? "যে শ্রেণির শিক্ষার্থীরা এই পরীক্ষা দেখতে পারবে তা নির্বাচন করুন।"
+                      : "Only students in the selected class(es) will see this exam."
+                  }
+                  error={errors.targetClasses?.message}
+                />
+              )}
+            />
+          </div>
           <label className="block">
             <span className="text-sm font-semibold">Duration (minutes)</span>
             <input

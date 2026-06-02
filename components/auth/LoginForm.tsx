@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { AuthReturnNotice } from "@/components/auth/AuthReturnNotice";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import { buildRegisterUrl } from "@/lib/auth/return-url";
 import type { Locale } from "@/lib/i18n";
-import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth.schema";
 import type { SessionUser } from "@/types";
@@ -21,9 +22,11 @@ import type { SessionUser } from "@/types";
 type LoginFormProps = {
   locale: Locale;
   auth: Dictionary["auth"];
+  returnUrl?: string | null;
+  reason?: string | null;
 };
 
-export function LoginForm({ locale, auth }: LoginFormProps) {
+export function LoginForm({ locale, auth, returnUrl, reason }: LoginFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const {
@@ -32,7 +35,7 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: "", password: "" },
+    defaultValues: { identifier: "", password: "", returnUrl: returnUrl ?? "" },
   });
 
   async function onSubmit(values: LoginInput) {
@@ -40,7 +43,11 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
     const { ok, payload } = await apiFetch<{ user: SessionUser; redirectTo: string }>("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      body: JSON.stringify({
+        identifier: values.identifier,
+        password: values.password,
+        returnUrl: returnUrl || values.returnUrl || undefined,
+      }),
     });
 
     if (!ok || !isApiSuccess(payload)) {
@@ -49,7 +56,7 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
     }
 
     window.dispatchEvent(new Event("absp-auth-changed"));
-    router.push(`/${locale}/${payload.data.user.role}`);
+    router.push(payload.data.redirectTo);
     router.refresh();
   }
 
@@ -61,7 +68,9 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
         <CardDescription>{auth.login.subtitle}</CardDescription>
       </CardHeader>
       <CardContent>
+        <AuthReturnNotice reason={reason} copy={auth.guestAccess} />
         <form id="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <input type="hidden" {...register("returnUrl")} />
           <div className="space-y-2">
             <Label htmlFor="identifier">{auth.login.identifier}</Label>
             <Input
@@ -90,7 +99,10 @@ export function LoginForm({ locale, auth }: LoginFormProps) {
         </Button>
         <p className="text-center text-sm text-muted">
           {auth.login.noAccount}{" "}
-          <Link href={getLocalizedPath("/register", locale)} className="font-semibold text-primary hover:underline">
+          <Link
+            href={buildRegisterUrl(locale, returnUrl ?? undefined)}
+            className="font-semibold text-primary hover:underline"
+          >
             {auth.login.registerLink}
           </Link>
         </p>

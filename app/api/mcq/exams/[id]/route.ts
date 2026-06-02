@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
+import { mapDocWithTargetClasses } from "@/lib/content/serialize";
+import { connectDB } from "@/lib/db/connect";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import {
@@ -14,8 +16,10 @@ import {
   canReviewExam,
   sanitizeQuestionForStudent,
   shuffleQuestions,
+  studentCanAccessExam,
   teacherOwnsExam,
 } from "@/lib/mcq/exam-access";
+import { requireStudentClass } from "@/lib/content/student-access";
 import { updateMcqExamSchema } from "@/lib/validations/mcq.schema";
 
 type McqExamDetailContext = {
@@ -24,19 +28,30 @@ type McqExamDetailContext = {
 
 export async function GET(request: NextRequest, context: McqExamDetailContext) {
   try {
+    await connectDB();
     const user = await requireAuth(request, ["admin", "teacher", "student"]);
     const { id } = await context.params;
 
-    const exam = await McqExam.findById(id).lean();
+    const examDoc = await McqExam.findById(id).lean();
 
-    if (!exam) {
+    if (!examDoc) {
       return fail("Exam not found.", 404);
     }
 
-    const canReview = canReviewExam(user, exam);
+    const exam = mapDocWithTargetClasses(examDoc);
 
-    if (!exam.isPublished && !canReview) {
+    const canReview = canReviewExam(user, examDoc);
+
+    if (!examDoc.isPublished && !canReview) {
       return fail("Exam is not published.", 403);
+    }
+
+    if (user.role === "student") {
+      const studentClass = requireStudentClass(user);
+
+      if (!studentCanAccessExam(examDoc, studentClass)) {
+        return fail("This exam is not available for your class.", 403);
+      }
     }
 
     const questionsQuery = McqQuestion.find({ exam: id }).sort({ order: 1 });
@@ -47,7 +62,7 @@ export async function GET(request: NextRequest, context: McqExamDetailContext) {
 
     const questions = await questionsQuery.lean();
     const visibleQuestions =
-      exam.isRandomized && !canReview ? shuffleQuestions(questions) : questions;
+      examDoc.isRandomized && !canReview ? shuffleQuestions(questions) : questions;
 
     return success({
       exam,
@@ -62,6 +77,7 @@ export async function GET(request: NextRequest, context: McqExamDetailContext) {
 
 export async function PATCH(request: NextRequest, context: McqExamDetailContext) {
   try {
+    await connectDB();
     const user = await requireAuth(request, ["admin", "teacher"]);
     const { id } = await context.params;
     const parsed = updateMcqExamSchema.parse(await request.json());
@@ -85,8 +101,13 @@ export async function PATCH(request: NextRequest, context: McqExamDetailContext)
     applyExamInput(exam, parsed);
     await replaceExamQuestions(id, parsed.questions);
     await exam.save();
+    await McqExam.updateOne({ _id: id }, { $set: { targetClasses: parsed.targetClasses } });
 
-    return success({ exam });
+    const saved = await McqExam.findById(id).lean();
+
+    return success({
+      exam: saved ? mapDocWithTargetClasses(saved) : mapDocWithTargetClasses(exam.toObject()),
+    });
   } catch (error) {
     return handleApiError(error);
   }

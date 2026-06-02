@@ -1,57 +1,104 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const LOGO_SRC = "/absp-logo.png";
+const BRAND_MAIN = "আল-বিরুনি";
+const BRAND_SUB = "স্টাডি পয়েন্ট";
+
+type LogoTone = "onDark" | "onLight";
 
 type LogoProps = {
   locale: Locale;
   size?: "sm" | "md" | "lg" | "hero";
+  tone?: LogoTone;
   className?: string;
-  priority?: boolean;
   link?: boolean;
 };
 
-const sizeMap = {
-  sm: { width: 160, height: 48, className: "h-9 w-auto max-w-[160px] sm:h-10 sm:max-w-[180px]" },
-  md: { width: 200, height: 60, className: "h-10 w-auto max-w-[200px] sm:h-12 sm:max-w-[240px]" },
-  lg: { width: 260, height: 78, className: "h-12 w-auto max-w-[260px] sm:h-14 sm:max-w-[300px]" },
-  hero: { width: 320, height: 96, className: "h-auto w-full max-w-[320px] sm:max-w-[400px]" },
-};
+const sizeStyles = {
+  sm: {
+    main: "text-lg sm:text-xl",
+    sub: "text-[10px] sm:text-[11px]",
+    gap: "mt-1",
+  },
+  md: {
+    main: "text-xl sm:text-2xl",
+    sub: "text-[11px] sm:text-xs",
+    gap: "mt-1",
+  },
+  lg: {
+    main: "text-2xl sm:text-3xl",
+    sub: "text-xs sm:text-sm",
+    gap: "mt-1.5",
+  },
+  hero: {
+    main: "text-3xl sm:text-4xl md:text-[2.75rem]",
+    sub: "text-sm sm:text-base",
+    gap: "mt-1.5",
+  },
+} as const;
+
+const palette = {
+  onDark: {
+    main: "text-[#faf7f2]",
+    sub: "text-[#c9d4e3]",
+  },
+  onLight: {
+    main: "text-[#0b2545]",
+    sub: "text-[#5a6b7d]",
+  },
+} as const;
+
+function LogoMark({ size, tone }: { size: keyof typeof sizeStyles; tone: LogoTone }) {
+  const styles = sizeStyles[size];
+  const colors = palette[tone];
+
+  return (
+    <span className={cn("inline-flex flex-col leading-none", styles.gap)}>
+      <span className={cn("font-display font-bold tracking-tight", styles.main, colors.main)}>
+        {BRAND_MAIN}
+      </span>
+      <span
+        className={cn(
+          "font-sans font-normal leading-tight tracking-[0.12em]",
+          styles.sub,
+          colors.sub,
+        )}
+      >
+        {BRAND_SUB}
+      </span>
+    </span>
+  );
+}
 
 export function Logo({
   locale,
   size = "md",
+  tone = "onDark",
   className,
-  priority,
   link = true,
 }: LogoProps) {
-  const dims = sizeMap[size];
-
-  const image = (
-    <Image
-      src={LOGO_SRC}
-      alt="ABSP - Al Biruni Study Point Science Coaching Center"
-      width={dims.width}
-      height={dims.height}
-      priority={priority}
-      className={cn(dims.className, "rounded-md object-contain object-left")}
-    />
-  );
+  const mark = <LogoMark size={size} tone={tone} />;
 
   if (!link) {
-    return <span className={cn("inline-flex shrink-0 items-center", className)}>{image}</span>;
+    return (
+      <span className={cn("inline-flex shrink-0 items-center", className)} aria-label={BRAND_MAIN}>
+        {mark}
+      </span>
+    );
   }
 
   return (
     <Link
       href={getLocalizedPath("/", locale)}
-      className={cn("inline-flex shrink-0 items-center", className)}
-      aria-label="ABSP - Al-Biruni Study Point"
+      className={cn(
+        "inline-flex shrink-0 items-center transition-opacity hover:opacity-90",
+        className,
+      )}
+      aria-label={`${BRAND_MAIN} ${BRAND_SUB}`}
     >
-      {image}
+      {mark}
     </Link>
   );
 }

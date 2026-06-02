@@ -1,3 +1,5 @@
+import type { StudentClass } from "@/types";
+
 export type McqDifficulty = "easy" | "medium" | "hard";
 
 export type McqExamSummary = {
@@ -7,6 +9,7 @@ export type McqExamSummary = {
   totalMarks: number;
   passMark: number;
   questionCount: number;
+  targetClasses?: StudentClass[];
 };
 
 export type McqExamSummaryTeacher = McqExamSummary & {
@@ -35,6 +38,7 @@ export type McqQuestionTeacher = McqQuestionPublic & {
 
 export type McqExamDetailTeacher = {
   title: string;
+  targetClasses: StudentClass[];
   duration: number;
   passMark: number;
   negativeMarking?: number;

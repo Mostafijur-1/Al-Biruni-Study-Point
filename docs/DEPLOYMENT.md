@@ -37,8 +37,8 @@ In Vercel → **Settings** → **Environment Variables**, add (for **Production*
 | `MONGODB_URI` | Yes | Atlas connection string |
 | `JWT_ACCESS_SECRET` | Yes | Min 32 chars, random |
 | `JWT_REFRESH_SECRET` | Yes | Min 32 chars, different random |
-| `JWT_ACCESS_EXPIRES` | No | Default `15m` |
-| `JWT_REFRESH_EXPIRES` | No | Default `7d` |
+| `JWT_ACCESS_EXPIRES` | No | Default `365d` |
+| `JWT_REFRESH_EXPIRES` | No | Default `3650d` |
 | `NEXT_PUBLIC_APP_URL` | Yes | `https://your-project.vercel.app` |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | No | `bn` |
 | `CLOUDINARY_*` | No | Only if using CQ uploads |

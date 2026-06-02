@@ -11,7 +11,7 @@ import type { McqExamSummary } from "@/types/mcq";
 
 export function ExamList({ locale }: { locale: Locale }) {
   const path = createLocalizedPath(locale);
-  const { data, message } = useApiQuery<{ exams: McqExamSummary[] }>("/api/mcq/exams", {
+  const { data, message } = useApiQuery<{ exams: McqExamSummary[] }>("/api/mcq/exams?scope=student", {
     loadingMessage: "Loading exams...",
     errorMessage: "Could not load exams.",
   });
@@ -25,7 +25,7 @@ export function ExamList({ locale }: { locale: Locale }) {
   if (!exams.length) {
     return (
       <p className="rounded border border-border bg-surface p-4 text-muted">
-        No published MCQ exams are available yet.
+        No MCQ exams are available for your class yet.
       </p>
     );
   }

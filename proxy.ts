@@ -40,18 +40,26 @@ export function proxy(request: NextRequest) {
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
   const role = request.cookies.get(ROLE_COOKIE)?.value as UserRole | undefined;
 
+  const redirectToLogin = () => {
+    const loginUrl = new URL(`/${locale}/login`, request.url);
+    const returnPath = `${pathname}${request.nextUrl.search}`;
+    loginUrl.searchParams.set("next", returnPath);
+    loginUrl.searchParams.set("reason", "access");
+    return NextResponse.redirect(loginUrl);
+  };
+
   if (!accessToken || role !== matchedRole) {
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+    return redirectToLogin();
   }
 
   try {
     const payload = verifyAccessToken(accessToken);
 
     if (payload.role !== matchedRole) {
-      return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+      return redirectToLogin();
     }
   } catch {
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+    return redirectToLogin();
   }
 
   return NextResponse.next();

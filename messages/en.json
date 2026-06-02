@@ -6,6 +6,7 @@
   },
   "navigation": {
     "home": "Home",
+    "explore": "Explore",
     "about": "About",
     "courses": "Courses",
     "batches": "Batches",
@@ -19,6 +20,7 @@
       "title": "Al-Biruni Study Point",
       "subtitle": "Physics, Chemistry, Math, Higher Math & ICT for SSC and HSC. Offline and online batches, recorded classes, MCQ and CQ assessments.",
       "ctaCourses": "View courses",
+      "ctaExplore": "Browse classes",
       "ctaRegister": "Enroll now"
     },
     "about": {
@@ -103,22 +105,31 @@
       "registerLink": "Register"
     },
     "register": {
-      "title": "Register",
-      "subtitle": "Join as a student or teacher",
       "name": "Full name",
       "phone": "Phone number",
       "email": "Email",
       "password": "Password",
-      "role": "Account type",
       "studentClass": "Class",
-      "submit": "Create account",
-      "submitting": "Creating account...",
       "hasAccount": "Already have an account?",
       "loginLink": "Login",
       "continueLogin": "Continue to login",
-      "roles": {
-        "student": "Student",
-        "teacher": "Teacher"
+      "teacherPrompt": "Are you a teacher?",
+      "teacherLink": "Teacher registration",
+      "studentPrompt": "Student registration?",
+      "studentLink": "Register as student",
+      "student": {
+        "eyebrow": "Student",
+        "title": "Student registration",
+        "subtitle": "Create your student account for SSC and HSC courses.",
+        "submit": "Create student account",
+        "submitting": "Creating account..."
+      },
+      "teacher": {
+        "eyebrow": "Teacher",
+        "title": "Teacher registration",
+        "subtitle": "Apply as a teacher. Admin approval is required before you can log in.",
+        "submit": "Apply as teacher",
+        "submitting": "Submitting application..."
       },
       "classes": {
         "class-9": "Class 9",
@@ -133,7 +144,32 @@
       "admin": "Admin"
     },
     "dashboard": "Dashboard",
-    "logout": "Logout"
+    "logout": "Logout",
+    "guestAccess": {
+      "accessTitle": "Sign in required",
+      "accessBody": "Register or log in to access this content. You will return to the same page after signing in."
+    }
+  },
+  "explore": {
+    "eyebrow": "Browse",
+    "title": "Explore classes & content",
+    "subtitle": "Pick any class to see published courses, videos, MCQ exams, and CQ assignments. Register or log in when you are ready to start.",
+    "guestHint": "You are browsing as a guest. Click any action button to register or log in — you will come back here automatically.",
+    "tabs": {
+      "exams": "MCQ exams",
+      "courses": "Courses & videos",
+      "assignments": "CQ assignments"
+    },
+    "startExam": "Start exam",
+    "watchVideo": "Watch video",
+    "viewCourses": "View courses",
+    "openAssignments": "Open assignments",
+    "loginToAccess": "Log in to access",
+    "emptyExams": "No published exams for this class yet.",
+    "emptyCourses": "No courses for this class yet.",
+    "emptyVideos": "No class videos for this class yet.",
+    "emptyAssignments": "No CQ assignments for this class yet.",
+    "loading": "Loading content..."
   },
   "contact": {
     "eyebrow": "Contact",

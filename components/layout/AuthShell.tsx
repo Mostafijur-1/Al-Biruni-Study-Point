@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/brand/Logo";
@@ -44,9 +43,7 @@ export function AuthShell({ locale, brand, auth, children }: AuthShellProps) {
 
       <div className="flex flex-col">
         <div className="border-b border-border bg-secondary/40 px-4 py-4 lg:hidden">
-          <Link href={getLocalizedPath("/", locale)} className="mb-2 inline-block">
-            <Logo locale={locale} size="sm" />
-          </Link>
+          <Logo locale={locale} size="sm" tone="onLight" className="mb-2 inline-block" />
           <p className="text-sm font-medium text-muted">{brand.tagline}</p>
         </div>
 

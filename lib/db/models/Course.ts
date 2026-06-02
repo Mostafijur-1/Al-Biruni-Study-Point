@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-import type { CourseLevel, CourseSubject } from "@/types";
+import { ensureSchemaPaths } from "@/lib/db/ensure-schema-path";
+import type { CourseLevel, CourseSubject, StudentClass } from "@/types";
 
 export type CourseStatus = "draft" | "published" | "archived";
 
@@ -11,6 +12,7 @@ export interface ICourse extends Document {
   description?: string;
   level: CourseLevel;
   subject: CourseSubject;
+  targetClasses: StudentClass[];
   teacher: Types.ObjectId;
   thumbnail?: string;
   price: number;
@@ -35,6 +37,15 @@ const CourseSchema = new Schema<ICourse>(
       enum: ["Physics", "Chemistry", "Math", "Higher Math", "ICT"],
       required: true,
     },
+    targetClasses: {
+      type: [String],
+      enum: ["class-9", "class-10", "class-11", "class-12"],
+      required: true,
+      validate: {
+        validator: (value: string[]) => value.length > 0,
+        message: "At least one target class is required.",
+      },
+    },
     teacher: { type: Schema.Types.ObjectId, ref: "User", required: true },
     thumbnail: { type: String },
     price: { type: Number, default: 0, min: 0 },
@@ -53,7 +64,12 @@ const CourseSchema = new Schema<ICourse>(
 
 CourseSchema.index({ level: 1, subject: 1 });
 CourseSchema.index({ status: 1 });
+CourseSchema.index({ targetClasses: 1, status: 1 });
 CourseSchema.index({ slug: 1 }, { unique: true });
 
-export const Course: Model<ICourse> =
+const CourseModel =
   mongoose.models.Course || mongoose.model<ICourse>("Course", CourseSchema);
+
+ensureSchemaPaths(CourseModel, CourseSchema);
+
+export const Course = CourseModel;

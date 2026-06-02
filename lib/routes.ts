@@ -2,6 +2,7 @@ import type { RouteAccess, UserRole } from "@/types";
 
 export const publicNavPaths = [
   { key: "home" as const, path: "/" },
+  { key: "explore" as const, path: "/explore" },
   { key: "about" as const, path: "/about" },
   { key: "courses" as const, path: "/courses" },
   { key: "batches" as const, path: "/batches" },
@@ -24,6 +25,7 @@ export type AppRoute = {
 export const publicRoutes: AppRoute[] = [
   { path: "/", access: "public", label: "Home" },
   { path: "/about", access: "public", label: "About" },
+  { path: "/explore", access: "public", label: "Explore" },
   { path: "/courses", access: "public", label: "Courses" },
   { path: "/batches", access: "public", label: "Batches" },
   { path: "/contact", access: "public", label: "Contact" },
@@ -33,6 +35,7 @@ export const publicRoutes: AppRoute[] = [
 export const authRoutes: AppRoute[] = [
   { path: "/login", access: "guest", label: "Login" },
   { path: "/register", access: "guest", label: "Register" },
+  { path: "/register/teacher", access: "guest", label: "Teacher Register" },
 ];
 
 export const protectedRoutes: AppRoute[] = [

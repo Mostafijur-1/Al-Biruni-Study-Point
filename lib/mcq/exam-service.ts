@@ -42,6 +42,8 @@ export function applyExamInput(exam: IMcqExam, parsed: CreateMcqExamInput) {
   const totalMarks = computeTotalMarks(parsed.questions);
 
   exam.title = parsed.title;
+  exam.targetClasses = [...parsed.targetClasses];
+  exam.markModified("targetClasses");
   exam.course = parsed.courseId ? new Types.ObjectId(parsed.courseId) : undefined;
   exam.duration = parsed.duration;
   exam.totalMarks = totalMarks;
@@ -63,6 +65,7 @@ export function createExamPayload(
 
   return {
     title: parsed.title,
+    targetClasses: parsed.targetClasses,
     course: parsed.courseId,
     teacher: teacherId,
     duration: parsed.duration,
