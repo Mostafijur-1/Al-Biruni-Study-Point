@@ -3,7 +3,6 @@ import type { RouteAccess, UserRole } from "@/types";
 export const publicNavPaths = [
   { key: "home" as const, path: "/" },
   { key: "explore" as const, path: "/explore" },
-  { key: "about" as const, path: "/about" },
   { key: "courses" as const, path: "/courses" },
   { key: "batches" as const, path: "/batches" },
   { key: "contact" as const, path: "/contact" },
