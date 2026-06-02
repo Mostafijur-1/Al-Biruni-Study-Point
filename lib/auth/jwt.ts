@@ -21,7 +21,11 @@ function getSecret(name: "JWT_ACCESS_SECRET" | "JWT_REFRESH_SECRET") {
 
 export function generateAccessToken(payload: TokenPayload) {
   const options: SignOptions = {
+<<<<<<< HEAD
     expiresIn: (process.env.JWT_ACCESS_EXPIRES || "365d") as SignOptions["expiresIn"],
+=======
+    expiresIn: (process.env.JWT_ACCESS_EXPIRES || "3d") as SignOptions["expiresIn"],
+>>>>>>> 4803d6d0a047fc56c4573fbac91155bcbe78f174
     algorithm: "HS256",
   };
 
