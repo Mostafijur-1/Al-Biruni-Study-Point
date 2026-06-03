@@ -11,11 +11,11 @@ export const metadata: Metadata = {
     "Premium Bangladeshi science coaching center and LMS for SSC and HSC students.",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico?v=20260603b", sizes: "any" },
+      { url: "/icon.png?v=20260603b", type: "image/png", sizes: "512x512" },
     ],
-    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
-    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-icon.png?v=20260603b", type: "image/png", sizes: "180x180" }],
+    shortcut: "/favicon.ico?v=20260603b",
   },
 };
 
