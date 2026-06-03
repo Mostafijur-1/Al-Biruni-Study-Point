@@ -46,8 +46,10 @@ const linksByRole: Record<UserRole, NavItem[]> = {
 };
 
 function roleFromPathname(pathname: string): UserRole {
-  if (pathname.includes("/teacher")) return "teacher";
-  if (pathname.includes("/admin")) return "admin";
+  const segments = pathname.split("/").filter(Boolean);
+
+  if (segments.includes("admin")) return "admin";
+  if (segments.includes("teacher")) return "teacher";
   return "student";
 }
 
@@ -64,10 +66,10 @@ export function DashboardMobileNav({ locale }: { locale: string }) {
       <ul className="flex items-stretch justify-around gap-0.5">
         {links.map(({ href, label, icon: Icon }) => {
           const fullHref = `/${locale}${href}`;
+          const isRoleRoot = href === `/${role}`;
           const active =
             pathname === fullHref ||
-            (href !== `/${role}` && pathname.startsWith(`${fullHref}/`)) ||
-            (href === `/${role}` && pathname === fullHref);
+            (!isRoleRoot && pathname.startsWith(`${fullHref}/`));
 
           return (
             <li key={href} className="min-w-0 flex-1">
@@ -130,7 +132,10 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       <nav className="mt-1 space-y-0.5">
         {links.map(({ href, label, icon: Icon }) => {
           const fullHref = `/${locale}${href}`;
-          const active = pathname === fullHref || pathname.startsWith(`${fullHref}/`);
+          const isRoleRoot = href === `/${role}`;
+          const active =
+            pathname === fullHref ||
+            (!isRoleRoot && pathname.startsWith(`${fullHref}/`));
 
           return (
             <Link

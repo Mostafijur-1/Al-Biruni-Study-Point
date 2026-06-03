@@ -97,7 +97,13 @@ a {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--brand-yellow) 45%, transparent);
+  background: rgb(245 197 24 / 0.45);
+}
+
+@supports (background: color-mix(in srgb, white, black)) {
+  ::selection {
+    background: color-mix(in srgb, var(--brand-yellow) 45%, transparent);
+  }
 }
 
 .font-display {

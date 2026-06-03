@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/brand/Logo";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type AuthShellProps = {
@@ -13,7 +13,7 @@ type AuthShellProps = {
 
 export function AuthShell({ locale, brand, auth, children }: AuthShellProps) {
   return (
-    <div className="min-h-[calc(100dvh-var(--header-height))] lg:grid lg:grid-cols-2">
+    <div className="min-h-[calc(100vh-var(--header-height))] min-h-[calc(100dvh-var(--header-height))] lg:grid lg:grid-cols-2">
       <div
         className="relative hidden overflow-hidden px-8 py-12 text-primary-foreground xl:px-12 xl:py-14 lg:flex lg:flex-col lg:justify-between"
         style={{ background: "var(--gradient-auth)" }}

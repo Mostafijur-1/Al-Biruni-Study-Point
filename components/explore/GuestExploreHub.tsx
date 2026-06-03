@@ -170,11 +170,7 @@ export function GuestExploreHub({ locale, copy }: GuestExploreHubProps) {
           {copy.title}
         </h1>
         <p className="mt-3 max-w-3xl text-sm text-muted sm:text-lg">{copy.subtitle}</p>
-        {!user && (
-          <p className="mt-3 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-muted">
-            {copy.guestHint}
-          </p>
-        )}
+        
       </div>
 
       <div className="mt-8 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5">
