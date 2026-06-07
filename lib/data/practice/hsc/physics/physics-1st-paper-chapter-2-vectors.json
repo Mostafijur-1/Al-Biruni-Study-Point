@@ -1,0 +1,98 @@
+[
+  {
+    "id": "phy_hsc_kfts18_0",
+    "question": "একটি বস্তুর উপর 20N বল প্রয়োগ করা হলো। বলটি অনুভূমিকের সাথে 31° কোণ তৈরি করলে, উল্লম্ব উপাংশের মান কত?",
+    "options": [
+      "10.30N",
+      "12.01N",
+      "17.14N",
+      "33.28N"
+    ],
+    "correctIndex": 0,
+    "explanation": "উল্লম্ব উপাংশ F_y = F sin(θ) = 20N * sin(31°) ≈ 10.30N।"
+  },
+  {
+    "id": "phy_hsc_majy4x_0",
+    "question": "Given F = 20 N and an angle of 31°, calculate the vertical component of the force (Fy).",
+    "options": [
+      "10.30 N",
+      "17.14 N",
+      "33.28 N",
+      "120 N"
+    ],
+    "correctIndex": 0,
+    "explanation": "The vertical component of a force is calculated using Fy = F * sin(theta), where F is the magnitude of the force and theta is the angle. In this case, Fy = 20 N * sin(31°). Using a calculator, sin(31°) ≈ 0.515, so Fy ≈ 20 N * 0.515 ≈ 10.30 N."
+  },
+  {
+    "id": "phy_hsc_t4bzmf_0",
+    "question": "A = 3i - 4j, B = -3i + 4j এবং R তাদের লব্ধি। নিচের কোনটি সঠিক?",
+    "options": [
+      "R একটি একমাত্রিক ভেক্টর",
+      "R একটি দ্বি-মাত্রিক ভেক্টর",
+      "R একটি ত্রিমাত্রিক ভেক্টর",
+      "R একটি নাল ভেক্টর"
+    ],
+    "correctIndex": 3,
+    "explanation": "লব্ধি ভেক্টর হলো ভেক্টরগুলোর যোগফল। R = A + B = (3i - 4j) + (-3i + 4j) = 0i + 0j = 0। যেহেতু লব্ধির মান শূন্য, তাই এটি একটি নাল (Null) ভেক্টর।"
+  },
+  {
+    "id": "phy_hsc_musfa9_1",
+    "question": "OZ বরাবর বলের উপাংশ কত?",
+    "options": [
+      "10.30 N",
+      "12.01 N",
+      "17.14 N",
+      "33.28 N"
+    ],
+    "correctIndex": 0,
+    "explanation": "মূল বল F = 20 N এবং কোণ 31°। OZ বরাবর উপাংশ হবে: F_z = F sin(31°) = 20 * sin(31°) ≈ 10.30 N।"
+  },
+  {
+    "id": "phy_hsc_4s715x_2",
+    "question": "10 একক মানের একটি ভেক্টর দুটি লম্ব উপাংশে বিভক্ত করায় একটির মান 8 একক হলে অপরটির মান কত?",
+    "options": [
+      "2 একক",
+      "4 একক",
+      "6 একক",
+      "8 একক"
+    ],
+    "correctIndex": 2,
+    "explanation": "লম্ব উপাংশের ক্ষেত্রে পিথাগোরাসের উপপাদ্য ব্যবহার করা হয়। R^2 = x^2 + y^2। 10^2 = 8^2 + y^2 => 100 = 64 + y^2 => y^2 = 36 => y = 6। সুতরাং, অপর উপাংশটির মান 6 একক।"
+  },
+  {
+    "id": "phy_hsc_tccydu_0",
+    "question": "ভেক্টর A এবং ভেক্টর B এর ক্রস গুণফল (A x B) এর মান কোনটির সমান?",
+    "options": [
+      "ABsinθ",
+      "ABcosθ",
+      "A⋅B",
+      "AxB"
+    ],
+    "correctIndex": 0,
+    "explanation": "দুটি ভেক্টর A এবং B এর ক্রস গুণফলের মান হলো |A x B| = |A||B|sinθ, যেখানে θ হলো ভেক্টরদ্বয়ের মধ্যবর্তী কোণ।"
+  },
+  {
+    "id": "phy_hsc_qf5j5t_1",
+    "question": "দুটি ভেক্টরের ডট গুণফল (A ⋅ B) কোনটির সমান?",
+    "options": [
+      "ABsinθ",
+      "ABcosθ",
+      "A x B",
+      "AB"
+    ],
+    "correctIndex": 1,
+    "explanation": "দুটি ভেক্টর A এবং B এর ডট গুণফলের মান হলো A ⋅ B = |A||B|cosθ, যেখানে θ হলো ভেক্টরদ্বয়ের মধ্যবর্তী কোণ।"
+  },
+  {
+    "id": "phy_hsc_n4zbjy_0",
+    "question": "k̂ × (ĵ + k̂) ভেক্টরটি হবে—",
+    "options": [
+      "-î",
+      "î",
+      "k̂",
+      "ĵ"
+    ],
+    "correctIndex": 0,
+    "explanation": "k̂ × (ĵ + k̂) = k̂ × ĵ + k̂ × k̂ = -î + 0 = -î"
+  }
+]

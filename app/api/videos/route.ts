@@ -18,24 +18,33 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get("scope");
     const query: Record<string, unknown> = {};
 
-    const guestError = applyGuestClassFilter(
-      scope,
-      searchParams.get("class"),
-      query,
-      "isPublished",
-    );
-
-    if (guestError) {
-      return guestError;
-    }
-
-    if (scope === "student") {
+    if (scope === "guest") {
+      const level = searchParams.get("level");
+      const classParam = searchParams.get("class");
+      if (level === "SSC" || level === "HSC") {
+        const classes = level === "SSC" ? ["class-9", "class-10"] : ["class-11", "class-12"];
+        query.targetClasses = { $in: classes };
+        query.isPublished = true;
+      } else if (classParam) {
+        const guestError = applyGuestClassFilter(
+          scope,
+          classParam,
+          query,
+          "isPublished",
+        );
+        if (guestError) {
+          return guestError;
+        }
+      } else {
+        return fail("Class or level is required.", 400);
+      }
+    } else if (scope === "student") {
       const user = await requireAuth(request, ["student"]);
       const studentClass = requireStudentClass(user);
 
       query.isPublished = true;
       Object.assign(query, classFilterForStudent(studentClass));
-    } else if (scope !== "guest") {
+    } else {
       const user = await requireAuth(request, ["admin", "teacher"]);
 
       if (user.role === "teacher") {

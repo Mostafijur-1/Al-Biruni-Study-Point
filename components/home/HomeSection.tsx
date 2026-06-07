@@ -44,19 +44,19 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
               <Link
-                href={path("/explore")}
+                href={path("/student")}
                 className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaExplore}
               </Link>
-              <Link
+              {/* <Link
                 href={path("/courses")}
                 className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaCourses}
-              </Link>
+              </Link> */}
               <Link
-                href={path("/register")}
+                href={path("/contact")}
                 className={cn(buttonVariants({ size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaRegister}
@@ -74,17 +74,13 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
               </p>
               <div className="mt-4 grid gap-3">
                 {[
-                  { icon: GraduationCap, label: "SSC", desc: dict.courses.ssc },
-                  { icon: BookOpen, label: "HSC", desc: dict.courses.hsc },
-                  {
-                    icon: Monitor,
-                    label: "MCQ + CQ",
-                    desc: locale === "bn" ? "অটো ও শিক্ষক-মূল্যায়ন" : "Auto & teacher-graded",
-                  },
-                ].map(({ icon: Icon, label, desc }, index) => (
-                  <div
+                  { icon: GraduationCap, label: "SSC", desc: dict.courses.ssc, level: "SSC" },
+                  { icon: BookOpen, label: "HSC", desc: dict.courses.hsc, level: "HSC" },
+                ].map(({ icon: Icon, label, desc, level }, index) => (
+                  <Link
                     key={label}
-                    className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4"
+                    href={path(`/student/courses?level=${level}`)}
+                    className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:border-brand-yellow hover:bg-white/10 sm:p-4"
                   >
                     <span
                       className={cn(
@@ -98,7 +94,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                       <p className="font-bold text-white">{label}</p>
                       <p className="mt-0.5 text-sm text-white/75">{desc}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -106,35 +102,6 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
         </div>
       </section>
 
-      <section id="about" className="border-t border-border bg-card py-12 sm:py-16 lg:py-20">
-        <div className="mx-auto max-w-7xl px-4 lg:px-6">
-          <h2 className="font-display text-2xl font-bold text-primary sm:text-3xl">{dict.about.title}</h2>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
-            {dict.about.body}
-          </p>
-          <ul className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-2 lg:grid-cols-3">
-            {dict.about.points.map((point, i) => (
-              <li
-                key={point}
-                className={cn(
-                  "rounded-xl border-l-4 px-4 py-3 text-sm font-medium text-foreground",
-                  i === 0 && "border-brand-red bg-red-50/50",
-                  i === 1 && "border-brand-blue bg-secondary",
-                  i === 2 && "border-brand-yellow bg-brand-yellow/15",
-                )}
-              >
-                {point}
-              </li>
-            ))}
-          </ul>
-          <Link
-            href={path("/about")}
-            className="mt-6 inline-block font-semibold text-primary hover:underline"
-          >
-            {dict.about.link} →
-          </Link>
-        </div>
-      </section>
 
       <section id="courses" className="py-12 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">

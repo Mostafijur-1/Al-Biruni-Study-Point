@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  Brain,
   ClipboardCheck,
   FileQuestion,
   GraduationCap,
@@ -26,8 +27,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
   student: [
     { href: "/student", label: "Home", icon: LayoutDashboard },
     { href: "/student/courses", label: "Courses", icon: BookOpen },
-    { href: "/student/exams", label: "Exams", icon: FileQuestion },
-    { href: "/student/assignments", label: "CQ", icon: ClipboardCheck },
+    { href: "/student/practice", label: "MCQ test", icon: Brain },
     { href: "/student/results", label: "Results", icon: GraduationCap },
   ],
   teacher: [
@@ -42,6 +42,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
     { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/admin/courses", label: "Courses", icon: BookOpen },
     { href: "/admin/exams", label: "Exams", icon: FileQuestion },
+    { href: "/admin/practice-mcqs", label: "Practice MCQs", icon: Brain },
   ],
 };
 
@@ -102,8 +103,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/student", label: "Overview", icon: LayoutDashboard },
       { href: "/student/profile", label: "Profile", icon: UserCircle },
       { href: "/student/courses", label: "Courses", icon: BookOpen },
-      { href: "/student/exams", label: "Exams", icon: FileQuestion },
-      { href: "/student/assignments", label: "CQ", icon: ClipboardCheck },
+      { href: "/student/practice", label: "MCQ test", icon: Brain },
       { href: "/student/results", label: "Results", icon: GraduationCap },
     ],
     teacher: [
@@ -120,6 +120,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
       { href: "/admin/courses", label: "Courses", icon: BookOpen },
       { href: "/admin/exams", label: "Exams & results", icon: FileQuestion },
+      { href: "/admin/practice-mcqs", label: "Practice MCQs", icon: Brain },
       { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
   };

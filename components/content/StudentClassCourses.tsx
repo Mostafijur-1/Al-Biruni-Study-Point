@@ -1,7 +1,10 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { formatClassList } from "@/lib/content/classes";
+import { useSession } from "@/lib/hooks/use-session";
+import { AuthGateLink } from "@/components/auth/AuthGateLink";
 import type { Locale } from "@/lib/i18n";
 import type { StudentClass } from "@/types";
 
@@ -23,17 +26,36 @@ type VideoRow = {
 };
 
 export function StudentClassCourses({ locale }: { locale: Locale }) {
+  const { user, checking } = useSession({ listenToAuthChanges: true });
+  const searchParams = useSearchParams();
+  const level = searchParams.get("level") === "HSC" ? "HSC" : "SSC";
+  const isGuest = !user;
+
+  const coursesUrl = checking
+    ? ""
+    : isGuest
+      ? `/api/courses?scope=guest&level=${level}`
+      : "/api/courses?scope=student";
+
+  const videosUrl = checking
+    ? ""
+    : isGuest
+      ? `/api/videos?scope=guest&level=${level}`
+      : "/api/videos?scope=student";
+
   const { data: courseData, message: courseMessage } = useApiQuery<{ courses: CourseRow[] }>(
-    "/api/courses?scope=student",
+    coursesUrl,
     {
+      enabled: !checking,
       loadingMessage: locale === "bn" ? "কোর্স লোড হচ্ছে..." : "Loading courses...",
       errorMessage: locale === "bn" ? "কোর্স লোড করা যায়নি।" : "Could not load courses.",
     },
   );
 
   const { data: videoData, message: videoMessage } = useApiQuery<{ videos: VideoRow[] }>(
-    "/api/videos?scope=student",
+    videosUrl,
     {
+      enabled: !checking,
       loadingMessage: locale === "bn" ? "ভিডিও লোড হচ্ছে..." : "Loading videos...",
       errorMessage: locale === "bn" ? "ভিডিও লোড করা যায়নি।" : "Could not load videos.",
     },
@@ -91,14 +113,25 @@ export function StudentClassCourses({ locale }: { locale: Locale }) {
               <li key={video._id} className="rounded-xl border border-border bg-card p-4">
                 <p className="font-semibold text-primary">{video.title}</p>
                 {video.description && <p className="mt-1 text-sm text-muted">{video.description}</p>}
-                <a
-                  href={video.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
-                >
-                  {locale === "bn" ? "ভিডিও দেখুন" : "Watch video"}
-                </a>
+                {isGuest ? (
+                  <AuthGateLink
+                    locale={locale}
+                    href={video.videoUrl}
+                    returnUrl={`/student/courses?level=${level}`}
+                    className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
+                  >
+                    {locale === "bn" ? "ভিডিও দেখুন" : "Watch video"}
+                  </AuthGateLink>
+                ) : (
+                  <a
+                    href={video.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
+                  >
+                    {locale === "bn" ? "ভিডিও দেখুন" : "Watch video"}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

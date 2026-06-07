@@ -1,11 +1,14 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { redirect } from "next/navigation";
+import type { Locale } from "@/lib/i18n";
 
-export default function StudentDashboardPage() {
-  return (
-    <RoutePlaceholder
-      eyebrow="Student panel"
-      title="Student Dashboard"
-      description="Enrolled courses, upcoming exams, recent results, and course progress."
-    />
-  );
+type Props = {
+  params: Promise<{ locale: Locale }>;
+  searchParams: Promise<{ level?: string }>;
+};
+
+export default async function StudentDashboardPage({ params, searchParams }: Props) {
+  const { locale } = await params;
+  const { level } = await searchParams;
+  const query = level ? `?level=${level}` : "";
+  redirect(`/${locale}/student/courses${query}`);
 }

@@ -4,7 +4,7 @@ import { classFilterForStudent } from "@/lib/content/classes";
 import { applyGuestClassFilter } from "@/lib/content/guest-scope.server";
 import { mapDocWithTargetClasses } from "@/lib/content/serialize";
 import { requireStudentClass } from "@/lib/content/student-access";
-import { handleApiError, success } from "@/lib/api/response";
+import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { Course } from "@/lib/db/models/Course";
@@ -26,24 +26,32 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get("scope");
     const query: Record<string, unknown> = {};
 
-    const guestError = applyGuestClassFilter(
-      scope,
-      searchParams.get("class"),
-      query,
-      "status",
-    );
-
-    if (guestError) {
-      return guestError;
-    }
-
-    if (scope === "student") {
+    if (scope === "guest") {
+      const level = searchParams.get("level");
+      const classParam = searchParams.get("class");
+      if (level === "SSC" || level === "HSC") {
+        query.level = level;
+        query.status = "published";
+      } else if (classParam) {
+        const guestError = applyGuestClassFilter(
+          scope,
+          classParam,
+          query,
+          "status",
+        );
+        if (guestError) {
+          return guestError;
+        }
+      } else {
+        return fail("Class or level is required.", 400);
+      }
+    } else if (scope === "student") {
       const user = await requireAuth(request, ["student"]);
       const studentClass = requireStudentClass(user);
 
       query.status = "published";
       Object.assign(query, classFilterForStudent(studentClass));
-    } else if (scope !== "guest") {
+    } else {
       const user = await requireAuth(request, ["admin", "teacher"]);
 
       if (user.role === "teacher") {

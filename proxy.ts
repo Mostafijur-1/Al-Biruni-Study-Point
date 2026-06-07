@@ -48,6 +48,17 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   };
 
+  if (matchedRole === "student" && !accessToken) {
+    const isGuestAllowed =
+      pathWithoutLocale === "/student" ||
+      pathWithoutLocale === "/student/courses" ||
+      pathWithoutLocale === "/student/practice" ||
+      pathWithoutLocale.startsWith("/student/practice/");
+    if (isGuestAllowed) {
+      return NextResponse.next();
+    }
+  }
+
   if (!accessToken || role !== matchedRole) {
     return redirectToLogin();
   }

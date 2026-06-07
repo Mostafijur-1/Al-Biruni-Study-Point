@@ -1,0 +1,21 @@
+import { Suspense } from "react";
+import { McqPracticeRunner } from "@/components/exam/McqPracticeRunner";
+
+type StudentPracticeRunnerPageProps = {
+  params: Promise<{ subject: string; locale: string }>;
+};
+
+export default async function StudentPracticeRunnerPage({
+  params,
+}: StudentPracticeRunnerPageProps) {
+  const { subject, locale } = await params;
+
+  // Decode subject name in case it contains URL-encoded characters (like %20 for space)
+  const decodedSubject = decodeURIComponent(subject);
+
+  return (
+    <Suspense fallback={<p className="text-sm text-muted">Loading...</p>}>
+      <McqPracticeRunner subject={decodedSubject} locale={locale} />
+    </Suspense>
+  );
+}

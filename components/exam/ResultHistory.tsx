@@ -21,12 +21,22 @@ export function ResultHistory() {
 
   return (
     <div className="grid gap-3">
-      {results.map((result) => (
+      {results.map((result: any) => (
         <article key={result._id} className="rounded border border-border bg-surface p-4 shadow-sm">
-          <h2 className="font-bold text-primary">{result.exam?.title || "MCQ Exam"}</h2>
+          <h2 className="flex items-center font-bold text-primary">
+            {result.exam?.title || "MCQ Exam"}
+            {result.isPractice && (
+              <span className="ml-2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-primary">
+                MCQ Test
+              </span>
+            )}
+          </h2>
           <p className="mt-2 text-sm text-muted">
-            Score {result.score}/{result.exam?.totalMarks || "-"} · {result.percentage}% · Attempt{" "}
-            {result.attemptNo} · {result.isPassed ? "Passed" : "Not passed"}
+            Score {result.score}/{result.exam?.totalMarks || "-"} · {result.percentage}% ·{" "}
+            {result.isPractice ? "Latest Attempt" : `Attempt ${result.attemptNo}`} ·{" "}
+            <span className={result.isPassed ? "font-semibold text-success" : "font-semibold text-destructive"}>
+              {result.isPassed ? "Passed" : "Not passed"}
+            </span>
           </p>
         </article>
       ))}

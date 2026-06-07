@@ -1,0 +1,38 @@
+[
+  {
+    "id": "phy_ssc_c2_1",
+    "question": "What is the rate of change of displacement called?",
+    "options": [
+      "Speed",
+      "Acceleration",
+      "Velocity",
+      "Momentum"
+    ],
+    "correctIndex": 2,
+    "explanation": "Velocity is defined as the rate of change of displacement with time, whereas speed is the rate of change of distance."
+  },
+  {
+    "id": "phy_ssc_c2_2",
+    "question": "If a body travels with constant speed in a circular path, its velocity is:",
+    "options": [
+      "Constant",
+      "Changing",
+      "Zero",
+      "Infinite"
+    ],
+    "correctIndex": 1,
+    "explanation": "Although the speed is constant, the direction of motion changes continuously, so the velocity is changing (animated/accelerated motion)."
+  },
+  {
+    "id": "phy_ssc_c2_3",
+    "question": "A car accelerates from rest to 20 m/s in 5 seconds. What is its acceleration?",
+    "options": [
+      "2 m/s²",
+      "4 m/s²",
+      "10 m/s²",
+      "100 m/s²"
+    ],
+    "correctIndex": 1,
+    "explanation": "Acceleration (a) = (v - u) / t = (20 - 0) / 5 = 4 m/s²."
+  }
+]

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { StudentClassCourses } from "@/components/content/StudentClassCourses";
 import type { Locale } from "@/lib/i18n";
 
@@ -21,7 +22,9 @@ export default async function StudentCoursesPage({ params }: StudentCoursesPageP
             : "Only content for your registered class is shown."}
         </p>
       </div>
-      <StudentClassCourses locale={locale} />
+      <Suspense fallback={<p className="text-sm text-muted">Loading...</p>}>
+        <StudentClassCourses locale={locale} />
+      </Suspense>
     </section>
   );
 }
