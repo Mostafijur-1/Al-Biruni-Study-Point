@@ -1,3 +1,6 @@
+# Live
+https://absp.vercel.app/bn
+
 # ABSP — Al-Biruni Study Point
 
 Bangla-first coaching center website and LMS for **SSC** (grades 9–10) and **HSC** (grades 11–12) science students.
