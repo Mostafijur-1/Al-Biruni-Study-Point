@@ -44,6 +44,7 @@ const subjectThemeMap: Record<
     iconBg: string;
     badgeBg: string;
     badgeText: string;
+    paperLabel?: string;
   }
 > = {
   Physics: {
@@ -54,6 +55,24 @@ const subjectThemeMap: Record<
     badgeBg: "bg-blue-50 text-blue-800 border-blue-100",
     badgeText: "text-blue-700",
   },
+  "Physics 1st Paper": {
+    icon: Atom,
+    accentColor: "text-blue-600",
+    cardBg: "from-blue-50/60 to-sky-50/30 hover:border-blue-400/60",
+    iconBg: "bg-blue-100 text-blue-700",
+    badgeBg: "bg-blue-50 text-blue-800 border-blue-100",
+    badgeText: "text-blue-700",
+    paperLabel: "1st Paper",
+  },
+  "Physics 2nd Paper": {
+    icon: Atom,
+    accentColor: "text-indigo-600",
+    cardBg: "from-indigo-50/60 to-violet-50/30 hover:border-indigo-400/60",
+    iconBg: "bg-indigo-100 text-indigo-700",
+    badgeBg: "bg-indigo-50 text-indigo-800 border-indigo-100",
+    badgeText: "text-indigo-700",
+    paperLabel: "2nd Paper",
+  },
   Chemistry: {
     icon: Beaker,
     accentColor: "text-emerald-600",
@@ -61,6 +80,24 @@ const subjectThemeMap: Record<
     iconBg: "bg-emerald-100 text-emerald-700",
     badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-100",
     badgeText: "text-emerald-700",
+  },
+  "Chemistry 1st Paper": {
+    icon: Beaker,
+    accentColor: "text-emerald-600",
+    cardBg: "from-emerald-50/60 to-green-50/30 hover:border-emerald-400/60",
+    iconBg: "bg-emerald-100 text-emerald-700",
+    badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-100",
+    badgeText: "text-emerald-700",
+    paperLabel: "1st Paper",
+  },
+  "Chemistry 2nd Paper": {
+    icon: Beaker,
+    accentColor: "text-teal-600",
+    cardBg: "from-teal-50/60 to-cyan-50/30 hover:border-teal-400/60",
+    iconBg: "bg-teal-100 text-teal-700",
+    badgeBg: "bg-teal-50 text-teal-800 border-teal-100",
+    badgeText: "text-teal-700",
+    paperLabel: "2nd Paper",
   },
   Math: {
     icon: Calculator,
@@ -77,6 +114,24 @@ const subjectThemeMap: Record<
     iconBg: "bg-purple-100 text-purple-700",
     badgeBg: "bg-purple-50 text-purple-800 border-purple-100",
     badgeText: "text-purple-700",
+  },
+  "Higher Math 1st Paper": {
+    icon: GraduationCap,
+    accentColor: "text-purple-600",
+    cardBg: "from-purple-50/60 to-violet-50/30 hover:border-purple-400/60",
+    iconBg: "bg-purple-100 text-purple-700",
+    badgeBg: "bg-purple-50 text-purple-800 border-purple-100",
+    badgeText: "text-purple-700",
+    paperLabel: "1st Paper",
+  },
+  "Higher Math 2nd Paper": {
+    icon: GraduationCap,
+    accentColor: "text-fuchsia-600",
+    cardBg: "from-fuchsia-50/60 to-pink-50/30 hover:border-fuchsia-400/60",
+    iconBg: "bg-fuchsia-100 text-fuchsia-700",
+    badgeBg: "bg-fuchsia-50 text-fuchsia-800 border-fuchsia-100",
+    badgeText: "text-fuchsia-700",
+    paperLabel: "2nd Paper",
   },
   ICT: {
     icon: Cpu,
@@ -197,8 +252,17 @@ function StudentPracticeDashboard() {
                   </div>
 
                   <h2 className="mt-4 font-display text-xl font-bold text-primary">
-                    {item.subject}
+                    {/* Show base subject name (strip paper suffix for cleaner display) */}
+                    {item.subject.replace(/ (1st|2nd) Paper$/, "")}
                   </h2>
+                  {theme.paperLabel && (
+                    <span className={cn(
+                      "mt-1 inline-block rounded-md px-2 py-0.5 text-xs font-bold border",
+                      theme.badgeBg
+                    )}>
+                      {theme.paperLabel}
+                    </span>
+                  )}
 
                   {/* Previous Result Summary */}
                   <div className="mt-4">

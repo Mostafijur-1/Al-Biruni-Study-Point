@@ -8,7 +8,22 @@ import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { getChaptersForSubject } from "@/lib/mcq/practice-service";
 import type { CourseSubject } from "@/types";
 
-const SUBJECTS: CourseSubject[] = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"];
+/** Subjects shown for SSC students */
+const SSC_SUBJECTS: CourseSubject[] = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"];
+
+/**
+ * Subjects shown for HSC students.
+ * Physics, Chemistry and Higher Math are split into 1st and 2nd paper.
+ */
+const HSC_SUBJECTS: CourseSubject[] = [
+  "Physics 1st Paper",
+  "Physics 2nd Paper",
+  "Chemistry 1st Paper",
+  "Chemistry 2nd Paper",
+  "Higher Math 1st Paper",
+  "Higher Math 2nd Paper",
+  "ICT",
+];
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +44,10 @@ export async function GET(request: NextRequest) {
       userId = user.id;
     }
 
+    // Pick subject list based on level
+    const isHsc = studentClass === "class-11" || studentClass === "class-12";
+    const SUBJECTS = isHsc ? HSC_SUBJECTS : SSC_SUBJECTS;
+
     // Fetch student's practice results for all subjects (only if authenticated)
     const results = userId ? await PracticeResult.find({ student: userId }).lean() : [];
     const resultsMap = new Map(results.map((r) => [r.subject, r]));
@@ -37,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     for (const subject of SUBJECTS) {
       const chapters = await getChaptersForSubject(subject, studentClass);
-      
+
       // If there are no questions/chapters for this subject and class, we don't display it
       if (chapters.length === 0) continue;
 

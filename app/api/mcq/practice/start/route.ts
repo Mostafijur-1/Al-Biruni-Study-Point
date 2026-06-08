@@ -4,6 +4,7 @@ import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
+import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 import { startPracticeExam } from "@/lib/mcq/practice-service";
 
 export async function GET(request: NextRequest) {
@@ -24,9 +25,21 @@ export async function GET(request: NextRequest) {
       ? chaptersParam.split(",").map((c) => decodeURIComponent(c.trim()))
       : undefined;
 
-    const examData = await startPracticeExam(subject, studentClass, selectedChapters);
+    // Fetch admin-configurable settings
+    const settings = await getPracticeSettings();
 
-    return success(examData);
+    const examData = await startPracticeExam(
+      subject,
+      studentClass,
+      selectedChapters,
+      settings.maxQuestionsPerTest,
+      settings.secondsPerQuestion
+    );
+
+    return success({
+      ...examData,
+      passMarkPercent: settings.passMarkPercent,
+    });
   } catch (error: any) {
     return handleApiError(error);
   }

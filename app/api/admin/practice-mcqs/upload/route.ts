@@ -253,38 +253,39 @@ Crucial Rules:
       { text: `Raw Text:\n${rawText}` }
     ];
 
-    // 5. Call Gemini API
-    const apiKey = process.env.GEMINI_API_KEY;
+    // 5. Call Gemini API with fallback keys
+    const apiKeysEnv = process.env.GEMINI_API_KEYS;
+    const apiKeys = apiKeysEnv ? apiKeysEnv.split(',').map(k => k.trim()).filter(k => !!k) : [];
+    if (apiKeys.length === 0) {
+      return fail("Server Error: GEMINI_API_KEYS is not configured in .env.local", 500);
+    }
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-
-    if (!apiKey) {
-      return fail("Server Error: GEMINI_API_KEY is not configured in .env.local", 500);
+    let geminiResponse: Response | null = null;
+    for (const key of apiKeys) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const requestBody = {
+        contents: [{ parts }],
+        generationConfig: { responseMimeType: "application/json" },
+      };
+      const response = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+      if (response.ok) {
+        geminiResponse = response;
+        break;
+      }
+      // If rate‑limited (429), try next key; otherwise break
+      if (response.status !== 429) {
+        break;
+      }
+    }
+    if (!geminiResponse) {
+      return fail("All Gemini API keys exhausted or quota reached", 500);
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-    const requestBody = {
-      contents: [{ parts }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
-    };
-
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API Error Response:", errorText);
-      return fail(`Gemini API error: ${response.statusText}`, 502);
-    }
-
-    const responseData = await response.json();
+    const responseData = await geminiResponse.json();
     const candidate = responseData?.candidates?.[0];
 
     if (candidate?.finishReason && candidate.finishReason !== "STOP") {

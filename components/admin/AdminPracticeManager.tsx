@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Atom,
   Beaker,
+  BookOpen,
   Brain,
   Calculator,
   CheckCircle2,
@@ -12,6 +13,8 @@ import {
   FileImage,
   FileText,
   GraduationCap,
+  Save,
+  Settings,
   Type,
   Upload,
 } from "lucide-react";
@@ -24,12 +27,6 @@ import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { CourseSubject } from "@/types";
 
-type SubjectStatus = {
-  subject: string;
-  chapters: string[];
-  lastResult: any;
-};
-
 type ParsedQuestion = {
   id: string;
   question: string;
@@ -38,13 +35,33 @@ type ParsedQuestion = {
   explanation?: string;
 };
 
-const SUBJECTS: CourseSubject[] = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"];
+type PracticeTestSettings = {
+  maxQuestionsPerTest: number;
+  secondsPerQuestion: number;
+  passMarkPercent: number;
+};
+
+/** SSC subjects for upload */
+const SSC_SUBJECTS: CourseSubject[] = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"];
+
+/** HSC subjects — paper-split for Physics, Chemistry, Higher Math */
+const HSC_SUBJECTS: CourseSubject[] = [
+  "Physics 1st Paper",
+  "Physics 2nd Paper",
+  "Chemistry 1st Paper",
+  "Chemistry 2nd Paper",
+  "Higher Math 1st Paper",
+  "Higher Math 2nd Paper",
+  "ICT",
+];
 
 export function AdminPracticeManager({ locale }: { locale: Locale }) {
   // Config states
   const [selectedLevel, setSelectedLevel] = useState<SchoolLevel>("ssc");
   const [selectedSubject, setSelectedSubject] = useState<CourseSubject>("Physics");
-  
+
+  const SUBJECTS = selectedLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+
   // Chapter list from static syllabus
   const chapters = SYLLABUS[selectedLevel]?.[selectedSubject] || [];
   const [selectedChapter, setSelectedChapter] = useState("");
@@ -62,7 +79,27 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
     questions: ParsedQuestion[];
   } | null>(null);
 
+  // Practice test settings states
+  const [settings, setSettings] = useState<PracticeTestSettings>({
+    maxQuestionsPerTest: 25,
+    secondsPerQuestion: 45,
+    passMarkPercent: 60,
+  });
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
   // Reset selected chapter when level or subject changes
+  useEffect(() => {
+    const subjects = selectedLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+    // If the currently selected subject is not valid for this level, reset it
+    if (!subjects.includes(selectedSubject)) {
+      setSelectedSubject(subjects[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLevel]);
+
   useEffect(() => {
     const list = SYLLABUS[selectedLevel]?.[selectedSubject] || [];
     if (list.length > 0) {
@@ -72,7 +109,49 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
     }
   }, [selectedLevel, selectedSubject]);
 
-  // Handle form submission
+  // Load test settings on mount
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const { ok, payload } = await apiFetch<PracticeTestSettings>("/api/admin/practice-settings");
+        if (ok && isApiSuccess(payload)) {
+          setSettings(payload.data);
+        }
+      } catch {
+        // Use defaults silently
+      } finally {
+        setSettingsLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  // Handle settings save
+  async function handleSaveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSettingsError("");
+    setSettingsSaved(false);
+    setSettingsSaving(true);
+    try {
+      const { ok, payload } = await apiFetch("/api/admin/practice-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      if (!ok || !isApiSuccess(payload)) {
+        setSettingsError(getApiErrorMessage(payload, "Failed to save settings."));
+      } else {
+        setSettingsSaved(true);
+        setTimeout(() => setSettingsSaved(false), 3000);
+      }
+    } catch {
+      setSettingsError("Could not connect to the server.");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  // Handle upload form submission
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage("");
@@ -123,7 +202,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
       if (!response.ok || !payload.success) {
         setErrorMessage(
-          getApiErrorMessage(payload, locale === "bn" ? "কনভার্ট করা ব্যর্থ হয়েছে।" : "Conversion failed.")
+          getApiErrorMessage(payload, locale === "bn" ? "কনভার্ট করা ব্যর্থ হয়েছে।" : "Conversion failed.")
         );
         return;
       }
@@ -131,10 +210,10 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
       setSuccessData(payload.data);
       setPastedText("");
       setSelectedFile(null);
-    } catch (err) {
+    } catch {
       setErrorMessage(
         locale === "bn"
-          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
+          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
           : "Could not connect to the server."
       );
     } finally {
@@ -143,26 +222,165 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-          {locale === "bn" ? "অনুশীলন এমসিকিউ আপলোড" : "Upload Practice MCQs"}
+          {locale === "bn" ? "অনুশীলন এমসিকিউ পরিচালনা" : "Practice MCQ Management"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           {locale === "bn"
-            ? "এমসিকিউ ধারণকারী টেক্সট বা ছবি আপলোড করুন, যা জেমিনি এআই দিয়ে স্বয়ংক্রিয়ভাবে প্র্যাকটিস ফাইলে যুক্ত হবে।"
-            : "Upload text or images containing MCQs. Gemini AI will automatically parse and save them to the practice JSON store."}
+            ? "পরীক্ষার সেটিংস পরিবর্তন করুন এবং এমসিকিউ প্রশ্ন আপলোড করুন।"
+            : "Configure test settings and upload MCQ questions for students."}
         </p>
       </div>
 
+      {/* ─── Test Settings Panel ─── */}
+      <div className="rounded-xl border-2 border-primary/20 bg-card p-5 shadow-[var(--shadow-sm)] space-y-5">
+        <div className="flex items-center gap-2">
+          <div className="rounded-lg bg-primary/10 p-2">
+            <Settings className="size-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-bold text-primary">
+              {locale === "bn" ? "পরীক্ষার সেটিংস" : "Test Settings"}
+            </h2>
+            <p className="text-xs text-muted">
+              {locale === "bn"
+                ? "ডিফল্ট: ২৫টি প্রশ্ন · ৪৫ সে/প্রশ্ন · ৬০% পাস মার্ক"
+                : "Defaults: 25 questions · 45s/question · 60% pass mark"}
+            </p>
+          </div>
+        </div>
+
+        {settingsLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            {locale === "bn" ? "সেটিংস লোড হচ্ছে..." : "Loading settings..."}
+          </div>
+        ) : (
+          <form onSubmit={handleSaveSettings} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* Max Questions */}
+              <div className="space-y-1.5">
+                <Label htmlFor="max-questions">
+                  {locale === "bn" ? "সর্বোচ্চ প্রশ্ন সংখ্যা" : "Max Questions per Test"}
+                </Label>
+                <input
+                  id="max-questions"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={settings.maxQuestionsPerTest}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, maxQuestionsPerTest: Number(e.target.value) }))
+                  }
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                />
+                <p className="text-xs text-muted">{locale === "bn" ? "সীমা: ১–১০০" : "Range: 1–100"}</p>
+              </div>
+
+              {/* Seconds per Question */}
+              <div className="space-y-1.5">
+                <Label htmlFor="seconds-per-q">
+                  {locale === "bn" ? "প্রতি প্রশ্নে সময় (সেকেন্ড)" : "Seconds per Question"}
+                </Label>
+                <input
+                  id="seconds-per-q"
+                  type="number"
+                  min={10}
+                  max={300}
+                  value={settings.secondsPerQuestion}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, secondsPerQuestion: Number(e.target.value) }))
+                  }
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                />
+                <p className="text-xs text-muted">{locale === "bn" ? "সীমা: ১০–৩০০ সে" : "Range: 10–300s"}</p>
+              </div>
+
+              {/* Pass Mark */}
+              <div className="space-y-1.5">
+                <Label htmlFor="pass-mark">
+                  {locale === "bn" ? "পাস মার্ক (%)" : "Pass Mark (%)"}
+                </Label>
+                <input
+                  id="pass-mark"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={settings.passMarkPercent}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, passMarkPercent: Number(e.target.value) }))
+                  }
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                />
+                <p className="text-xs text-muted">{locale === "bn" ? "সীমা: ১–১০০%" : "Range: 1–100%"}</p>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="rounded-lg bg-secondary/60 border border-border px-4 py-3 text-xs text-muted flex flex-wrap gap-4">
+              <span>
+                <span className="font-bold text-primary">{settings.maxQuestionsPerTest}</span>{" "}
+                {locale === "bn" ? "প্রশ্ন" : "questions"}
+              </span>
+              <span>·</span>
+              <span>
+                {locale === "bn" ? "সময়:" : "Duration:"}{" "}
+                <span className="font-bold text-primary">
+                  {Math.ceil((settings.maxQuestionsPerTest * settings.secondsPerQuestion) / 60)}{" "}
+                  {locale === "bn" ? "মিনিট" : "min"}
+                </span>
+              </span>
+              <span>·</span>
+              <span>
+                {locale === "bn" ? "পাস:" : "Pass:"}{" "}
+                <span className="font-bold text-primary">{settings.passMarkPercent}%</span>
+              </span>
+            </div>
+
+            {settingsError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                <span>{settingsError}</span>
+              </div>
+            )}
+
+            {settingsSaved && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 flex items-center gap-2">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                <span>{locale === "bn" ? "সেটিংস সফলভাবে সেভ হয়েছে!" : "Settings saved successfully!"}</span>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              loading={settingsSaving}
+              disabled={settingsSaving}
+              className="rounded-xl"
+            >
+              <Save className="mr-2 size-4" />
+              {settingsSaving
+                ? locale === "bn" ? "সেভ হচ্ছে..." : "Saving..."
+                : locale === "bn" ? "সেটিংস সেভ করুন" : "Save Settings"}
+            </Button>
+          </form>
+        )}
+      </div>
+
+      {/* ─── Upload MCQs ─── */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Upload Form */}
         <form
           onSubmit={handleUpload}
           className="lg:col-span-2 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-5"
         >
+          <h2 className="font-display text-lg font-bold text-primary">
+            {locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload Questions"}
+          </h2>
+
           {/* Target Info */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -179,7 +397,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="subject-select">{locale === "bn" ? "বিষয়" : "Subject"}</Label>
+              <Label htmlFor="subject-select">{locale === "bn" ? "বিষয়" : "Subject"}</Label>
               <select
                 id="subject-select"
                 value={selectedSubject}
@@ -195,9 +413,9 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             </div>
           </div>
 
-          {/* Chapter Select (Selection Only) */}
+          {/* Chapter Select */}
           <div className="space-y-2">
-            <Label htmlFor="chapter-select">{locale === "bn" ? "অধ্যায়" : "Chapter"}</Label>
+            <Label htmlFor="chapter-select">{locale === "bn" ? "অধ্যায়" : "Chapter"}</Label>
             {chapters.length > 0 ? (
               <select
                 id="chapter-select"
@@ -213,7 +431,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
               </select>
             ) : (
               <p className="text-sm text-muted">
-                {locale === "bn" ? "অধ্যায় লোড করা যায়নি।" : "No chapters available."}
+                {locale === "bn" ? "অধ্যায় লোড করা যায়নি।" : "No chapters available."}
               </p>
             )}
           </div>
@@ -277,7 +495,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder={
                   locale === "bn"
-                    ? "১. ভৌত রাশির একক কোনটি?\nক) মিটার খ) সেকেন্ড গ) কেজি ঘ) সব কয়টি\nসঠিক উত্তর: ঘ\n\n(যেকোনো ফরম্যাটে লিখুন, এআই নিজে এটি সাজিয়ে নিবে!)"
+                    ? "১. ভৌত রাশির একক কোনটি?\nক) মিটার খ) সেকেন্ড গ) কেজি ঘ) সব কয়টি\nসঠিক উত্তর: ঘ\n\n(যেকোনো ফরম্যাটে লিখুন, এআই নিজে এটি সাজিয়ে নিবে!)"
                     : "1. What is the SI unit of force?\nA) Pascal B) Joule C) Newton D) Watt\nAnswer: C\n\n(Write/paste in any format, Gemini AI will handle the parsing!)"
                 }
                 className="w-full rounded-lg border border-border bg-surface p-3 text-sm font-medium outline-none focus:border-primary"
@@ -353,7 +571,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
           <h2 className="font-display text-lg font-bold text-primary">
             {locale === "bn" ? "আপলোড তথ্য" : "Upload Guidelines"}
           </h2>
-          
+
           {!successData ? (
             <div className="text-sm text-muted space-y-3">
               <p>
@@ -363,8 +581,8 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
               </p>
               <p>
                 {locale === "bn"
-                  ? "২. প্রতিটি এমসিকিউ এর অবশ্যই ৪টি অপশন থাকতে হবে। অপশন সংখ্যা কম হলে এআই নিজে থেকে প্রাসঙ্গিক অপশন তৈরি করে নিবে।"
-                  : "2. Each MCQ must have exactly 4 options. If options are missing, the AI will generate plausible ones to ensure it has 4 choices."}
+                  ? "২. HSC-তে Physics, Chemistry ও Higher Math এর 1st Paper ও 2nd Paper আলাদাভাবে আপলোড করুন।"
+                  : "2. For HSC, upload Physics, Chemistry and Higher Math 1st Paper and 2nd Paper separately."}
               </p>
               <p>
                 {locale === "bn"
@@ -378,7 +596,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                 <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
                 <span className="text-xs font-bold">
                   {locale === "bn"
-                    ? `সফলভাবে ${successData.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
+                    ? `সফলভাবে ${successData.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
                     : `Successfully added ${successData.addedCount} questions!`}
                 </span>
               </div>

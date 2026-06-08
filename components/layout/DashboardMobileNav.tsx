@@ -6,10 +6,10 @@ import {
   BarChart3,
   BookOpen,
   Brain,
-  ClipboardCheck,
   FileQuestion,
   GraduationCap,
   LayoutDashboard,
+  LineChart,
   UserCircle,
   Users,
 } from "lucide-react";
@@ -33,8 +33,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
   teacher: [
     { href: "/teacher", label: "Home", icon: LayoutDashboard },
     { href: "/teacher/classes", label: "Classes", icon: BookOpen },
-    { href: "/teacher/mcq", label: "MCQ", icon: FileQuestion },
-    { href: "/teacher/review-cq", label: "CQ", icon: ClipboardCheck },
+    { href: "/teacher/results", label: "Results", icon: LineChart },
   ],
   admin: [
     { href: "/admin", label: "Home", icon: LayoutDashboard },
@@ -110,8 +109,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/teacher", label: "Overview", icon: LayoutDashboard },
       { href: "/teacher/profile", label: "Profile", icon: UserCircle },
       { href: "/teacher/classes", label: "Classes", icon: BookOpen },
-      { href: "/teacher/mcq", label: "MCQ Exams", icon: FileQuestion },
-      { href: "/teacher/review-cq", label: "Review CQ", icon: ClipboardCheck },
+      { href: "/teacher/results", label: "Results", icon: LineChart },
     ],
     admin: [
       { href: "/admin", label: "Overview", icon: LayoutDashboard },

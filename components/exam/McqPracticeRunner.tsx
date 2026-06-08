@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, Brain, CheckSquare, Clock, Square } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, Brain, CheckCircle2, Circle, Clock, Square } from "lucide-react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/hooks/use-session";
@@ -10,6 +10,7 @@ import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { createLocalizedPath } from "@/lib/i18n";
+import { getTranslatedChapter } from "@/lib/content/syllabus";
 import { cn } from "@/lib/utils";
 
 type ChapterStatus = {
@@ -88,7 +89,9 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
-  const [initialDuration, setInitialDuration] = useState<number>(0);
+  const [totalDurationSeconds, setTotalDurationSeconds] = useState<number>(0);
+  const [secondsPerQuestion, setSecondsPerQuestion] = useState<number>(45);
+  const [passMarkPercent, setPassMarkPercent] = useState<number>(60);
   const [result, setResult] = useState<PracticeSubmitResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -117,14 +120,14 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           } else {
             setErrorMessage(
               locale === "bn"
-                ? "এই বিষয়ের জন্য কোনো অধ্যায় পাওয়া যায়নি।"
+                ? "এই বিষয়ের জন্য কোনো অধ্যায় পাওয়া যায়নি।"
                 : "No chapters found for this subject."
             );
           }
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Could not load practice chapters."));
         }
-      } catch (err) {
+      } catch {
         setErrorMessage("An unexpected error occurred while loading settings.");
       } finally {
         setLoadingConfig(false);
@@ -133,7 +136,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     loadConfig();
   }, [subject, locale, checking, isGuest, level]);
 
-  // Exam Timer
+  // Exam Timer — counts down in seconds
   useEffect(() => {
     if (secondsLeft === null || secondsLeft <= 0 || phase !== "running") {
       return;
@@ -190,8 +193,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       const { ok, payload } = await apiFetch<{
         questions: PracticeQuestion[];
         subject: string;
-        duration: number;
+        durationSeconds: number;
         totalQuestions: number;
+        secondsPerQuestion: number;
+        passMarkPercent: number;
       }>(`/api/mcq/practice/start?subject=${encodeURIComponent(subject)}&chapters=${chaptersQuery}`);
 
       if (!ok || !isApiSuccess(payload)) {
@@ -200,13 +205,16 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         return;
       }
 
-      setQuestions(payload.data.questions);
-      setInitialDuration(payload.data.duration);
-      setSecondsLeft(payload.data.duration * 60);
+      const data = payload.data;
+      setQuestions(data.questions);
+      setTotalDurationSeconds(data.durationSeconds);
+      setSecondsLeft(data.durationSeconds);
+      setSecondsPerQuestion(data.secondsPerQuestion);
+      setPassMarkPercent(data.passMarkPercent);
       setAnswers({});
       setResult(null);
       setPhase("running");
-    } catch (err) {
+    } catch {
       setErrorMessage("Could not connect to server to fetch practice questions.");
       setPhase("configuring");
     }
@@ -219,7 +227,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     setIsSubmitting(true);
     setErrorMessage("");
 
-    const elapsedSeconds = initialDuration * 60 - (secondsLeft || 0);
+    const elapsedSeconds = totalDurationSeconds - (secondsLeft || 0);
 
     try {
       const { ok, payload } = await apiFetch<PracticeSubmitResult>(
@@ -246,12 +254,18 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
       setResult(payload.data);
       setPhase("result");
-    } catch (err) {
+    } catch {
       setErrorMessage("An error occurred during submission.");
     } finally {
       setIsSubmitting(false);
     }
   }
+
+  // Display subject name (strip "1st Paper" / "2nd Paper" suffix for heading)
+  const displaySubject = subject.replace(/ (1st|2nd) Paper$/, "");
+  const paperLabel = subject !== displaySubject
+    ? subject.match(/(1st|2nd) Paper$/)?.[0]
+    : null;
 
   // UI Renderers
   if (loadingConfig) {
@@ -259,7 +273,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
         <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         <p className="text-sm font-medium text-muted">
-          {locale === "bn" ? "অধ্যায়গুলো লোড হচ্ছে..." : "Loading test configuration..."}
+          {locale === "bn" ? "অধ্যায়গুলো লোড হচ্ছে..." : "Loading test configuration..."}
         </p>
       </div>
     );
@@ -267,6 +281,13 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // --- PHASE: CONFIGURING ---
   if (phase === "configuring") {
+    // Estimated duration in seconds for selected chapters
+    const estTotalSeconds = selectedChapters.length > 0
+      ? Math.min(selectedChapters.length * 5, 25) * secondsPerQuestion
+      : 0;
+    const estMinutes = Math.floor(estTotalSeconds / 60);
+    const estSeconds = estTotalSeconds % 60;
+
     return (
       <section className="space-y-6">
         <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
@@ -280,14 +301,19 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-accent">Test Mode</p>
               <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
-                {locale === "bn" ? `${subject} পরীক্ষা` : `${subject} MCQ Test`}
+                {displaySubject} MCQ Test
+                {paperLabel && (
+                  <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary align-middle">
+                    {paperLabel}
+                  </span>
+                )}
               </h1>
             </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-muted">
             {locale === "bn"
-              ? "পরীক্ষা শুরু করার জন্য এক বা একাধিক অধ্যায় সিলেক্ট করুন। প্রতিটি অধ্যায় থেকে ২ টি করে প্রশ্ন র্যান্ডমলি নেওয়া হবে। পরীক্ষার সময় প্রতি প্রশ্নের জন্য ১.৫ মিনিট।"
-              : "Select one or more chapters to test. 2 random questions will be selected from each of your checked chapters. You will have 1.5 minutes per question."}
+              ? `পরীক্ষা শুরু করার জন্য এক বা একাধিক অধ্যায় সিলেক্ট করুন। সর্বোচ্চ ২৫টি প্রশ্ন র্যান্ডমলি নেওয়া হবে। পাস মার্ক ${passMarkPercent}%।`
+              : `Select one or more chapters. Up to 25 random questions will be picked. Pass mark: ${passMarkPercent}%. Time: ${secondsPerQuestion}s per question.`}
           </p>
         </div>
 
@@ -297,66 +323,117 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           </div>
         )}
 
-        <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h2 className="font-semibold text-primary">
-              {locale === "bn" ? "অধ্যায় নির্বাচন করুন" : "Select Chapters"}
-            </h2>
+        {/* Chapter selection card */}
+        <div className="rounded-xl border border-border bg-card shadow-[var(--shadow-sm)] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary/30">
+            <div className="flex items-center gap-2">
+              <BookOpen className="size-4 text-primary" />
+              <h2 className="font-semibold text-primary">
+                {locale === "bn" ? "অধ্যায় নির্বাচন করুন" : "Select Chapters"}
+              </h2>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                {selectedChapters.length}/{availableChapters.length}
+              </span>
+            </div>
             <button
               type="button"
               onClick={toggleSelectAll}
-              className="text-xs font-bold text-brand-red hover:underline"
+              className={cn(
+                "text-xs font-bold px-3 py-1.5 rounded-lg border transition",
+                selectedChapters.length === availableChapters.length
+                  ? "border-red-200 bg-red-50 text-brand-red hover:bg-red-100"
+                  : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+              )}
             >
               {selectedChapters.length === availableChapters.length
-                ? locale === "bn"
-                  ? "সব আনসিলেক্ট করুন"
-                  : "Deselect All"
-                : locale === "bn"
-                  ? "সব সিলেক্ট করুন"
-                  : "Select All"}
+                ? locale === "bn" ? "সব বাতিল করুন" : "Deselect All"
+                : locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}
             </button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {availableChapters.map((chapter) => {
-              const isChecked = selectedChapters.includes(chapter);
-              return (
-                <button
-                  key={chapter}
-                  type="button"
-                  onClick={() => toggleChapter(chapter)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition duration-200 hover:shadow-sm",
-                    isChecked
-                      ? "border-primary/45 bg-primary/5 text-primary font-semibold"
-                      : "border-border bg-surface text-muted hover:border-primary/20 hover:bg-secondary/10"
-                  )}
-                >
-                  {isChecked ? (
-                    <CheckSquare className="size-5 shrink-0 text-primary" />
-                  ) : (
-                    <Square className="size-5 shrink-0 text-muted" />
-                  )}
-                  <span className="text-sm sm:text-base">{chapter}</span>
-                </button>
-              );
-            })}
+          {/* Chapter grid */}
+          <div className="p-4">
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {availableChapters.map((chapter, idx) => {
+                const isChecked = selectedChapters.includes(chapter);
+                const displayName = getTranslatedChapter(chapter, locale);
+                // Extract chapter number for the badge
+                const chapterNum = idx + 1;
+                return (
+                  <button
+                    key={chapter}
+                    type="button"
+                    onClick={() => toggleChapter(chapter)}
+                    className={cn(
+                      "group flex items-start gap-3 rounded-xl border-2 p-3 text-left transition-all duration-200",
+                      isChecked
+                        ? "border-primary/50 bg-primary/8 shadow-sm"
+                        : "border-border bg-surface hover:border-primary/25 hover:bg-primary/3 hover:shadow-sm"
+                    )}
+                  >
+                    {/* Chapter number badge */}
+                    <span
+                      className={cn(
+                        "mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold transition-colors",
+                        isChecked
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-border text-muted group-hover:bg-primary/15 group-hover:text-primary"
+                      )}
+                    >
+                      {chapterNum}
+                    </span>
+                    {/* Chapter name */}
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "text-sm leading-snug transition-colors",
+                          isChecked ? "font-semibold text-primary" : "text-foreground"
+                        )}
+                      >
+                        {displayName}
+                      </span>
+                    </div>
+                    {/* Check icon */}
+                    <div className="shrink-0 mt-0.5">
+                      {isChecked ? (
+                        <CheckCircle2 className="size-4 text-primary" />
+                      ) : (
+                        <Circle className="size-4 text-muted/40 group-hover:text-muted" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="border-t border-border pt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
-              <div className="rounded-lg bg-secondary/80 px-3 py-1.5 border border-border/50">
-                {locale === "bn" ? "অধ্যায় নির্বাচন:" : "Chapters:"}{" "}
+          {/* Footer stats + start */}
+          <div className="border-t border-border bg-secondary/20 px-5 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <div className="flex items-center gap-1.5 rounded-lg bg-card border border-border px-3 py-1.5">
+                <BookOpen className="size-3.5 text-accent" />
+                <span className="text-muted">{locale === "bn" ? "অধ্যায়:" : "Chapters:"}</span>
                 <span className="font-bold text-primary">{selectedChapters.length}</span>
               </div>
-              <div className="rounded-lg bg-secondary/80 px-3 py-1.5 border border-border/50">
-                {locale === "bn" ? "মোট প্রশ্ন:" : "Est. Questions:"}{" "}
-                <span className="font-bold text-primary">{selectedChapters.length * 2}</span>
+              <div className="flex items-center gap-1.5 rounded-lg bg-card border border-border px-3 py-1.5">
+                <Clock className="size-3.5 text-accent" />
+                <span className="text-muted">{locale === "bn" ? "সময়/প্রশ্ন:" : "Per Q:"}</span>
+                <span className="font-bold text-primary">{secondsPerQuestion}s</span>
               </div>
-              <div className="rounded-lg bg-secondary/80 px-3 py-1.5 border border-border/50">
-                {locale === "bn" ? "সময়সীমা:" : "Est. Duration:"}{" "}
-                <span className="font-bold text-primary">{Math.max(1, Math.ceil(selectedChapters.length * 2 * 1.5))} {locale === "bn" ? "মি." : "min"}</span>
+              <div className="flex items-center gap-1.5 rounded-lg bg-card border border-border px-3 py-1.5">
+                <Brain className="size-3.5 text-accent" />
+                <span className="text-muted">{locale === "bn" ? "পাস মার্ক:" : "Pass:"}</span>
+                <span className="font-bold text-primary">{passMarkPercent}%</span>
               </div>
+              {selectedChapters.length > 0 && (
+                <div className="flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-1.5">
+                  <span className="text-emerald-700">{locale === "bn" ? "আনুমানিক সময়:" : "Est. time:"}</span>
+                  <span className="font-bold text-emerald-800">
+                    {Math.floor(Math.min(selectedChapters.length * 5, 25) * secondsPerQuestion / 60)}m
+                  </span>
+                </div>
+              )}
             </div>
 
             <Button
@@ -402,10 +479,15 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 Test Mode
               </span>
               <h1 className="mt-1.5 font-display text-2xl font-bold text-primary sm:text-3xl">
-                {subject} MCQ Test
+                {displaySubject} MCQ Test
+                {paperLabel && (
+                  <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary align-middle">
+                    {paperLabel}
+                  </span>
+                )}
               </h1>
               <p className="mt-2 text-sm text-muted">
-                {answeredCount}/{questions.length} answered · pass mark 50%
+                {answeredCount}/{questions.length} answered · pass mark {passMarkPercent}%
               </p>
             </div>
             <div
@@ -527,7 +609,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             </h3>
             <p className="text-xs leading-5 text-muted">
               {locale === "bn"
-                ? "আপনি পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবেন না (ডাটাবেসে শুধু মোট স্কোরটি সেভ করা থাকবে)। অনুগ্রহ করে এখান থেকে যাওয়ার আগে আপনার উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নিন!"
+                ? "আপনি পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবেন না (ডাটাবেসে শুধু মোট স্কোরটি সেভ করা থাকবে)। অনুগ্রহ করে এখান থেকে যাওয়ার আগে আপনার উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নিন!"
                 : "You will NOT be able to view this detailed question review later (the database only stores your final score). Please review your answers and explanations carefully before navigating away!"}
             </p>
           </div>
@@ -554,6 +636,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 >
                   {result.result.isPassed ? "Passed" : "Needs improvement"}
                 </span>
+                {" "}· Pass mark: {passMarkPercent}%
               </p>
             </div>
             <Link href={path("/student/practice")} className="shrink-0">

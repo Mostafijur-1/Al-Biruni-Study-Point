@@ -12,6 +12,11 @@ export interface IUser extends Document {
   avatar?: string;
   isActive: boolean;
   approvalStatus: ApprovalStatus;
+  teacherDomain?: {
+    isAll: boolean;
+    classes: StudentClass[];
+    subjects: string[];
+  };
   refreshTokenHash?: string;
   aiProfile?: {
     learningStyle?: string;
@@ -44,6 +49,11 @@ const UserSchema = new Schema<IUser>(
       enum: ["pending", "approved", "rejected"],
       default: "approved",
     },
+    teacherDomain: {
+      isAll: { type: Boolean, default: false },
+      classes: [{ type: String, enum: ["class-9", "class-10", "class-11", "class-12"] }],
+      subjects: [{ type: String }],
+    },
     refreshTokenHash: { type: String, select: false },
     aiProfile: { type: Schema.Types.Mixed, default: {} },
   },
@@ -62,6 +72,7 @@ if (
   process.env.NODE_ENV !== "production" &&
   ExistingUserModel &&
   (!ExistingUserModel.schema.path("studentClass") ||
+    !ExistingUserModel.schema.path("teacherDomain") ||
     ExistingUserModel.schema.path("phone")?.options.required)
 ) {
   mongoose.deleteModel("User");

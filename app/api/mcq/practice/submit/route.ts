@@ -1,12 +1,15 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { getSchoolLevel } from "@/lib/content/syllabus";
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
+import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
+import { loadFullQuestionById, scorePracticeAttempt } from "@/lib/mcq/practice-service";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
-import { scorePracticeAttempt } from "@/lib/mcq/practice-service";
+import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 
 const submitPracticeSchema = z.object({
   subject: z.string(),
@@ -27,7 +30,15 @@ export async function POST(request: NextRequest) {
 
     const parsed = submitPracticeSchema.parse(await request.json());
 
-    const scoring = await scorePracticeAttempt(parsed.subject, studentClass, parsed.answers);
+    // Fetch admin-configurable pass mark
+    const settings = await getPracticeSettings();
+
+    const scoring = await scorePracticeAttempt(
+      parsed.subject,
+      studentClass,
+      parsed.answers,
+      settings.passMarkPercent
+    );
 
     // Delete any previous practice results for this subject and student
     await PracticeResult.deleteMany({
@@ -35,7 +46,37 @@ export async function POST(request: NextRequest) {
       subject: parsed.subject,
     });
 
-    // Save only the summary result
+    // Build detailed answer records (including question text and options)
+    const level = getSchoolLevel(studentClass);
+    const detailedAnswers = await Promise.all(
+      scoring.solutions.map(async (sol) => {
+        const studentAns = parsed.answers.find((a) => a.questionId === sol.questionId)!;
+        const full = await loadFullQuestionById(level, parsed.subject, sol.questionId);
+        return {
+          questionId: sol.questionId,
+          question: full?.question ?? "",
+          options: full?.options ?? [],
+          selectedIndex: studentAns.selectedIndex,
+          isCorrect: studentAns.selectedIndex === sol.correctIndex,
+          correctIndex: sol.correctIndex,
+          explanation: sol.explanation,
+        } as any;
+      })
+    );
+
+    // Save detailed attempt (teacher view)
+    await PracticeAttempt.create({
+      student: user.id,
+      subject: parsed.subject,
+      answers: detailedAnswers,
+      totalQuestions: scoring.totalQuestions,
+      score: scoring.score,
+      percentage: scoring.percentage,
+      isPassed: scoring.isPassed,
+      timeTaken: parsed.timeTaken,
+    });
+
+    // Save only the summary result (existing behavior)
     const result = await PracticeResult.create({
       student: user.id,
       subject: parsed.subject,

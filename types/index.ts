@@ -20,7 +20,13 @@ export type CourseSubject =
   | "Chemistry"
   | "Math"
   | "Higher Math"
-  | "ICT";
+  | "ICT"
+  | "Physics 1st Paper"
+  | "Physics 2nd Paper"
+  | "Chemistry 1st Paper"
+  | "Chemistry 2nd Paper"
+  | "Higher Math 1st Paper"
+  | "Higher Math 2nd Paper";
 
 export type RouteAccess = "public" | "guest" | "protected";
 

@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { adminUpdateUserSchema } from "@/lib/validations/admin.schema";
+import type { StudentClass } from "@/types";
 
 type AdminUserRouteContext = {
   params: Promise<{ id: string }>;
@@ -47,6 +48,16 @@ export async function PATCH(request: NextRequest, context: AdminUserRouteContext
       if (parsed.approvalStatus === "rejected") {
         user.isActive = false;
       }
+    }
+
+    if (parsed.teacherDomain !== undefined && user.role === "teacher") {
+      user.teacherDomain = {
+        isAll: parsed.teacherDomain.isAll,
+        classes: parsed.teacherDomain.classes as StudentClass[],
+        subjects: parsed.teacherDomain.subjects.map((s: any) =>
+          Array.isArray(s) ? String(s[0]) : String(s)
+        ),
+      };
     }
 
     await user.save();

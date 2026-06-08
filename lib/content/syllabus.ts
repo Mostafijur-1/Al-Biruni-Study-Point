@@ -2,7 +2,7 @@ import type { CourseSubject } from "@/types";
 
 export type SchoolLevel = "ssc" | "hsc";
 
-export const SYLLABUS: Record<SchoolLevel, Record<CourseSubject, string[]>> = {
+export const SYLLABUS: Record<SchoolLevel, Partial<Record<CourseSubject, string[]>>> = {
   ssc: {
     Physics: [
       "Chapter 1: Physical Quantities and Measurement",
@@ -166,6 +166,69 @@ export const SYLLABUS: Record<SchoolLevel, Record<CourseSubject, string[]>> = {
       "Chapter 5: Programming Language",
       "Chapter 6: Database Management System",
     ],
+    "Physics 1st Paper": [
+      "Physics 1st Paper - Chapter 1: Physical World and Measurement",
+      "Physics 1st Paper - Chapter 2: Vectors",
+      "Physics 1st Paper - Chapter 3: Dynamics",
+      "Physics 1st Paper - Chapter 4: Newtonian Mechanics",
+      "Physics 1st Paper - Chapter 5: Work, Energy and Power",
+      "Physics 1st Paper - Chapter 6: Gravity and Gravitation",
+      "Physics 1st Paper - Chapter 7: Structural Properties of Matter",
+      "Physics 1st Paper - Chapter 8: Periodic Motion",
+      "Physics 1st Paper - Chapter 9: Waves",
+      "Physics 1st Paper - Chapter 10: Ideal Gas and Kinetic Theory of Gases",
+    ],
+    "Physics 2nd Paper": [
+      "Physics 2nd Paper - Chapter 1: Thermodynamics",
+      "Physics 2nd Paper - Chapter 2: Static Electricity",
+      "Physics 2nd Paper - Chapter 3: Current Electricity",
+      "Physics 2nd Paper - Chapter 4: Magnetic Effect of Electric Current",
+      "Physics 2nd Paper - Chapter 5: Electromagnetic Induction and Alternating Current",
+      "Physics 2nd Paper - Chapter 6: Geometrical Optics",
+      "Physics 2nd Paper - Chapter 7: Physical Optics",
+      "Physics 2nd Paper - Chapter 8: Introduction to Modern Physics",
+      "Physics 2nd Paper - Chapter 9: Atomic Model and Nuclear Physics",
+      "Physics 2nd Paper - Chapter 10: Semiconductor and Electronics",
+      "Physics 2nd Paper - Chapter 11: Astronomy and Astrophysics",
+    ],
+    "Chemistry 1st Paper": [
+      "Chemistry 1st Paper - Chapter 1: Safe Use of Laboratory",
+      "Chemistry 1st Paper - Chapter 2: Qualitative Chemistry",
+      "Chemistry 1st Paper - Chapter 3: Periodic Properties and Chemical Bond",
+      "Chemistry 1st Paper - Chapter 4: Chemical Changes",
+      "Chemistry 1st Paper - Chapter 5: Working Chemistry",
+    ],
+    "Chemistry 2nd Paper": [
+      "Chemistry 2nd Paper - Chapter 1: Environmental Chemistry",
+      "Chemistry 2nd Paper - Chapter 2: Organic Chemistry",
+      "Chemistry 2nd Paper - Chapter 3: Quantitative Chemistry",
+      "Chemistry 2nd Paper - Chapter 4: Electrochemistry",
+      "Chemistry 2nd Paper - Chapter 5: Economic Chemistry",
+    ],
+    "Higher Math 1st Paper": [
+      "Mathematics 1st Paper - Chapter 1: Matrices and Determinants",
+      "Mathematics 1st Paper - Chapter 2: Vectors",
+      "Mathematics 1st Paper - Chapter 3: Straight Lines",
+      "Mathematics 1st Paper - Chapter 4: Circles",
+      "Mathematics 1st Paper - Chapter 5: Permutations and Combinations",
+      "Mathematics 1st Paper - Chapter 6: Trigonometric Ratios of Associated Angles",
+      "Mathematics 1st Paper - Chapter 7: Trigonometric Ratios of Compound Angles",
+      "Mathematics 1st Paper - Chapter 8: Functions and Graphs of Functions",
+      "Mathematics 1st Paper - Chapter 9: Differentiation",
+      "Mathematics 1st Paper - Chapter 10: Integration",
+    ],
+    "Higher Math 2nd Paper": [
+      "Mathematics 2nd Paper - Chapter 1: Real Numbers and Inequalities",
+      "Mathematics 2nd Paper - Chapter 2: Linear Programming",
+      "Mathematics 2nd Paper - Chapter 3: Complex Numbers",
+      "Mathematics 2nd Paper - Chapter 4: Polynomials and Polynomial Equations",
+      "Mathematics 2nd Paper - Chapter 5: Binomial Expansion",
+      "Mathematics 2nd Paper - Chapter 6: Conics",
+      "Mathematics 2nd Paper - Chapter 7: Inverse Trigonometric Functions and Trigonometric Equations",
+      "Mathematics 2nd Paper - Chapter 8: Statics",
+      "Mathematics 2nd Paper - Chapter 9: Dynamics of Particles in a Plane",
+      "Mathematics 2nd Paper - Chapter 10: Probability",
+    ],
   },
 };
 
@@ -174,4 +237,147 @@ export function getSchoolLevel(studentClass: string): SchoolLevel {
     return "ssc";
   }
   return "hsc";
+}
+
+// ──────────────────────────────────────────────────
+// Bangla chapter name translations
+// ──────────────────────────────────────────────────
+export const CHAPTER_TRANSLATIONS: Record<string, string> = {
+  // SSC Physics
+  "Chapter 1: Physical Quantities and Measurement": "অধ্যায় ১: ভৌত রাশি ও পরিমাপ",
+  "Chapter 2: Motion": "অধ্যায় ২: গতি",
+  "Chapter 3: Force": "অধ্যায় ৩: বল",
+  "Chapter 4: Work, Power and Energy": "অধ্যায় ৪: কাজ, ক্ষমতা ও শক্তি",
+  "Chapter 5: State of Matter and Pressure": "অধ্যায় ৫: পদার্থের অবস্থা ও চাপ",
+  "Chapter 6: Effect of Heat on Matter": "অধ্যায় ৬: বস্তুর উপর তাপের প্রভাব",
+  "Chapter 7: Waves and Sound": "অধ্যায় ৭: তরঙ্গ ও শব্দ",
+  "Chapter 8: Reflection of Light": "অধ্যায় ৮: আলোর প্রতিফলন",
+  "Chapter 9: Refraction of Light": "অধ্যায় ৯: আলোর প্রতিসরণ",
+  "Chapter 10: Static Electricity": "অধ্যায় ১০: স্থির বিদ্যুৎ",
+  "Chapter 11: Current Electricity": "অধ্যায় ১১: চল বিদ্যুৎ",
+  "Chapter 12: Magnetic Effect of Current": "অধ্যায় ১২: বিদ্যুতের চৌম্বক প্রভাব",
+  "Chapter 13: Modern Physics and Electronics": "অধ্যায় ১৩: আধুনিক পদার্থবিজ্ঞান ও ইলেকট্রনিক্স",
+  "Chapter 14: Physics to Save Life": "অধ্যায় ১৪: জীবন রক্ষায় পদার্থবিজ্ঞান",
+  // SSC Chemistry
+  "Chapter 1: Concept of Chemistry": "অধ্যায় ১: রসায়নের ধারণা",
+  "Chapter 2: States of Matter": "অধ্যায় ২: পদার্থের অবস্থা",
+  "Chapter 3: Structure of Matter": "অধ্যায় ৩: পদার্থের গঠন",
+  "Chapter 4: Periodic Table": "অধ্যায় ৪: পর্যায় সারণি",
+  "Chapter 5: Chemical Bonds": "অধ্যায় ৫: রাসায়নিক বন্ধন",
+  "Chapter 6: Concept of Mole and Chemical Counting": "অধ্যায় ৬: মোলের ধারণা ও রাসায়নিক গণনা",
+  "Chapter 7: Chemical Reactions": "অধ্যায় ৭: রাসায়নিক বিক্রিয়া",
+  "Chapter 8: Chemistry and Energy": "অধ্যায় ৮: রসায়ন ও শক্তি",
+  "Chapter 9: Acid-Base Equilibrium": "অধ্যায় ৯: অ্যাসিড-ক্ষার সাম্যাবস্থা",
+  "Chapter 10: Mineral Resources: Metal-Nonmetal": "অধ্যায় ১০: খনিজ সম্পদ: ধাতু-অধাতু",
+  "Chapter 11: Mineral Resources: Fossil": "অধ্যায় ১১: খনিজ সম্পদ: জীবাশ্ম",
+  "Chapter 12: Chemistry in Our Lives": "অধ্যায় ১২: আমাদের জীবনে রসায়ন",
+  // SSC Math
+  "Chapter 1: Real Numbers": "অধ্যায় ১: বাস্তব সংখ্যা",
+  "Chapter 2: Sets and Functions": "অধ্যায় ২: সেট ও ফাংশন",
+  "Chapter 3: Algebraic Expressions": "অধ্যায় ৩: বীজগাণিতিক রাশি",
+  "Chapter 4: Exponents and Logarithms": "অধ্যায় ৪: সূচক ও লগারিদম",
+  "Chapter 5: Equations with One Variable": "অধ্যায় ৫: এক চলকবিশিষ্ট সমীকরণ",
+  "Chapter 6: Lines, Angles and Triangles": "অধ্যায় ৬: রেখা, কোণ ও ত্রিভুজ",
+  "Chapter 7: Practical Geometry": "অধ্যায় ৭: ব্যবহারিক জ্যামিতি",
+  "Chapter 8: Circle": "অধ্যায় ৮: বৃত্ত",
+  "Chapter 9: Trigonometric Ratio": "অধ্যায় ৯: ত্রিকোণমিতিক অনুপাত",
+  "Chapter 10: Distance and Elevation": "অধ্যায় ১০: দূরত্ব ও উচ্চতা",
+  "Chapter 11: Algebraic Ratio and Proportion": "অধ্যায় ১১: বীজগাণিতিক অনুপাত ও সমানুপাত",
+  "Chapter 12: Simple Simultaneous Equations in Two Variables": "অধ্যায় ১২: দুই চলকবিশিষ্ট সরল সমীকরণ",
+  "Chapter 13: Finite Series": "অধ্যায় ১৩: সীমিত ধারা",
+  "Chapter 14: Ratio, Similarity and Symmetry": "অধ্যায় ১৪: অনুপাত, সদৃশতা ও প্রতিসাম্য",
+  "Chapter 15: Area Related Theorems and Constructions": "অধ্যায় ১৫: ক্ষেত্রফল সংক্রান্ত উপপাদ্য ও অঙ্কন",
+  "Chapter 16: Mensuration": "অধ্যায় ১৬: পরিমিতি",
+  "Chapter 17: Statistics": "অধ্যায় ১৭: পরিসংখ্যান",
+  // SSC Higher Math
+  "Chapter 1: Sets and Functions": "অধ্যায় ১: সেট ও ফাংশন",
+  "Chapter 6: Inequality": "অধ্যায় ৬: অসমতা",
+  "Chapter 7: Infinite Series": "অধ্যায় ৭: অসীম ধারা",
+  "Chapter 8: Trigonometry": "অধ্যায় ৮: ত্রিকোণমিতি",
+  "Chapter 9: Exponential and Logarithmic Functions": "অধ্যায় ৯: সূচকীয় ও লগারিদমীয় ফাংশন",
+  "Chapter 10: Binomial Expansion": "অধ্যায় ১০: দ্বিপদী বিস্তৃতি",
+  "Chapter 11: Coordinate Geometry": "অধ্যায় ১১: স্থানাঙ্ক জ্যামিতি",
+  "Chapter 12: Planar Vector": "অধ্যায় ১২: সমতলীয় ভেক্টর",
+  "Chapter 13: Solid Geometry": "অধ্যায় ১৩: ত্রিমাত্রিক জ্যামিতি",
+  "Chapter 14: Probability": "অধ্যায় ১৪: সম্ভাবনা",
+  // SSC ICT
+  "Chapter 1: Information and Communication Technology and Our World": "অধ্যায় ১: তথ্য ও যোগাযোগ প্রযুক্তি এবং আমাদের বিশ্ব",
+  "Chapter 2: Computer and Computer Security": "অধ্যায় ২: কম্পিউটার ও কম্পিউটার নিরাপত্তা",
+  "Chapter 3: Internet in My Education": "অধ্যায় ৩: আমার শিক্ষায় ইন্টারনেট",
+  "Chapter 4: My Writing and Calculation": "অধ্যায় ৪: আমার লেখা ও হিসাব",
+  "Chapter 5: Multimedia and Graphics": "অধ্যায় ৫: মাল্টিমিডিয়া ও গ্রাফিক্স",
+  "Chapter 6: Database": "অধ্যায় ৬: ডেটাবেস",
+  // HSC Physics 1st Paper
+  "Physics 1st Paper - Chapter 1: Physical World and Measurement": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ১: ভৌত জগৎ ও পরিমাপ",
+  "Physics 1st Paper - Chapter 2: Vectors": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ২: ভেক্টর",
+  "Physics 1st Paper - Chapter 3: Dynamics": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৩: গতিবিদ্যা",
+  "Physics 1st Paper - Chapter 4: Newtonian Mechanics": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৪: নিউটনীয় বলবিদ্যা",
+  "Physics 1st Paper - Chapter 5: Work, Energy and Power": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৫: কাজ, শক্তি ও ক্ষমতা",
+  "Physics 1st Paper - Chapter 6: Gravity and Gravitation": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৬: মহাকর্ষ ও অভিকর্ষ",
+  "Physics 1st Paper - Chapter 7: Structural Properties of Matter": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৭: পদার্থের গাঠনিক ধর্ম",
+  "Physics 1st Paper - Chapter 8: Periodic Motion": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৮: পর্যায়বৃত্ত গতি",
+  "Physics 1st Paper - Chapter 9: Waves": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ৯: তরঙ্গ",
+  "Physics 1st Paper - Chapter 10: Ideal Gas and Kinetic Theory of Gases": "পদার্থবিজ্ঞান ১ম পত্র - অধ্যায় ১০: আদর্শ গ্যাস ও গ্যাসের গতীয় তত্ত্ব",
+  // HSC Physics 2nd Paper
+  "Physics 2nd Paper - Chapter 1: Thermodynamics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ১: তাপগতিবিদ্যা",
+  "Physics 2nd Paper - Chapter 2: Static Electricity": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ২: স্থির বিদ্যুৎ",
+  "Physics 2nd Paper - Chapter 3: Current Electricity": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৩: চল বিদ্যুৎ",
+  "Physics 2nd Paper - Chapter 4: Magnetic Effect of Electric Current": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৪: তড়িৎ প্রবাহের চৌম্বক প্রভাব",
+  "Physics 2nd Paper - Chapter 5: Electromagnetic Induction and Alternating Current": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৫: তড়িৎচুম্বকীয় আবেশ ও পরিবর্তী প্রবাহ",
+  "Physics 2nd Paper - Chapter 6: Geometrical Optics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৬: জ্যামিতিক আলোকবিজ্ঞান",
+  "Physics 2nd Paper - Chapter 7: Physical Optics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৭: ভৌত আলোকবিজ্ঞান",
+  "Physics 2nd Paper - Chapter 8: Introduction to Modern Physics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৮: আধুনিক পদার্থবিজ্ঞানের সূচনা",
+  "Physics 2nd Paper - Chapter 9: Atomic Model and Nuclear Physics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ৯: পরমাণু মডেল ও নিউক্লিয়ার পদার্থবিজ্ঞান",
+  "Physics 2nd Paper - Chapter 10: Semiconductor and Electronics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ১০: অর্ধপরিবাহী ও ইলেকট্রনিক্স",
+  "Physics 2nd Paper - Chapter 11: Astronomy and Astrophysics": "পদার্থবিজ্ঞান ২য় পত্র - অধ্যায় ১১: জ্যোতির্বিজ্ঞান ও জ্যোতিঃপদার্থবিজ্ঞান",
+  // HSC Chemistry 1st Paper
+  "Chemistry 1st Paper - Chapter 1: Safe Use of Laboratory": "রসায়ন ১ম পত্র - অধ্যায় ১: গবেষণাগারের নিরাপদ ব্যবহার",
+  "Chemistry 1st Paper - Chapter 2: Qualitative Chemistry": "রসায়ন ১ম পত্র - অধ্যায় ২: গুণগত রসায়ন",
+  "Chemistry 1st Paper - Chapter 3: Periodic Properties and Chemical Bond": "রসায়ন ১ম পত্র - অধ্যায় ৩: পর্যায়বৃত্ত ধর্ম ও রাসায়নিক বন্ধন",
+  "Chemistry 1st Paper - Chapter 4: Chemical Changes": "রসায়ন ১ম পত্র - অধ্যায় ৪: রাসায়নিক পরিবর্তন",
+  "Chemistry 1st Paper - Chapter 5: Working Chemistry": "রসায়ন ১ম পত্র - অধ্যায় ৫: কর্মক্ষেত্রে রসায়ন",
+  // HSC Chemistry 2nd Paper
+  "Chemistry 2nd Paper - Chapter 1: Environmental Chemistry": "রসায়ন ২য় পত্র - অধ্যায় ১: পরিবেশ রসায়ন",
+  "Chemistry 2nd Paper - Chapter 2: Organic Chemistry": "রসায়ন ২য় পত্র - অধ্যায় ২: জৈব রসায়ন",
+  "Chemistry 2nd Paper - Chapter 3: Quantitative Chemistry": "রসায়ন ২য় পত্র - অধ্যায় ৩: পরিমাণগত রসায়ন",
+  "Chemistry 2nd Paper - Chapter 4: Electrochemistry": "রসায়ন ২য় পত্র - অধ্যায় ৪: তড়িৎ রসায়ন",
+  "Chemistry 2nd Paper - Chapter 5: Economic Chemistry": "রসায়ন ২য় পত্র - অধ্যায় ৫: শিল্প রসায়ন",
+  // HSC Math 1st Paper
+  "Mathematics 1st Paper - Chapter 1: Matrices and Determinants": "গণিত ১ম পত্র - অধ্যায় ১: ম্যাট্রিক্স ও নির্ণায়ক",
+  "Mathematics 1st Paper - Chapter 2: Vectors": "গণিত ১ম পত্র - অধ্যায় ২: ভেক্টর",
+  "Mathematics 1st Paper - Chapter 3: Straight Lines": "গণিত ১ম পত্র - অধ্যায় ৩: সরলরেখা",
+  "Mathematics 1st Paper - Chapter 4: Circles": "গণিত ১ম পত্র - অধ্যায় ৪: বৃত্ত",
+  "Mathematics 1st Paper - Chapter 5: Permutations and Combinations": "গণিত ১ম পত্র - অধ্যায় ৫: বিন্যাস ও সমাবেশ",
+  "Mathematics 1st Paper - Chapter 6: Trigonometric Ratios of Associated Angles": "গণিত ১ম পত্র - অধ্যায় ৬: সম্পর্কিত কোণের ত্রিকোণমিতিক অনুপাত",
+  "Mathematics 1st Paper - Chapter 7: Trigonometric Ratios of Compound Angles": "গণিত ১ম পত্র - অধ্যায় ৭: যৌগিক কোণের ত্রিকোণমিতিক অনুপাত",
+  "Mathematics 1st Paper - Chapter 8: Functions and Graphs of Functions": "গণিত ১ম পত্র - অধ্যায় ৮: ফাংশন ও ফাংশনের লেখচিত্র",
+  "Mathematics 1st Paper - Chapter 9: Differentiation": "গণিত ১ম পত্র - অধ্যায় ৯: অবকলন",
+  "Mathematics 1st Paper - Chapter 10: Integration": "গণিত ১ম পত্র - অধ্যায় ১০: যোগজীকরণ",
+  // HSC Math 2nd Paper
+  "Mathematics 2nd Paper - Chapter 1: Real Numbers and Inequalities": "গণিত ২য় পত্র - অধ্যায় ১: বাস্তব সংখ্যা ও অসমতা",
+  "Mathematics 2nd Paper - Chapter 2: Linear Programming": "গণিত ২য় পত্র - অধ্যায় ২: রৈখিক প্রোগ্রামিং",
+  "Mathematics 2nd Paper - Chapter 3: Complex Numbers": "গণিত ২য় পত্র - অধ্যায় ৩: জটিল সংখ্যা",
+  "Mathematics 2nd Paper - Chapter 4: Polynomials and Polynomial Equations": "গণিত ২য় পত্র - অধ্যায় ৪: বহুপদী ও বহুপদী সমীকরণ",
+  "Mathematics 2nd Paper - Chapter 5: Binomial Expansion": "গণিত ২য় পত্র - অধ্যায় ৫: দ্বিপদী বিস্তৃতি",
+  "Mathematics 2nd Paper - Chapter 6: Conics": "গণিত ২য় পত্র - অধ্যায় ৬: শঙ্কুচ্ছেদ",
+  "Mathematics 2nd Paper - Chapter 7: Inverse Trigonometric Functions and Trigonometric Equations": "গণিত ২য় পত্র - অধ্যায় ৭: বিপরীত ত্রিকোণমিতিক ফাংশন ও ত্রিকোণমিতিক সমীকরণ",
+  "Mathematics 2nd Paper - Chapter 8: Statics": "গণিত ২য় পত্র - অধ্যায় ৮: স্থিতিবিদ্যা",
+  "Mathematics 2nd Paper - Chapter 9: Dynamics of Particles in a Plane": "গণিত ২য় পত্র - অধ্যায় ৯: সমতলে কণার গতিবিদ্যা",
+  "Mathematics 2nd Paper - Chapter 10: Probability": "গণিত ২য় পত্র - অধ্যায় ১০: সম্ভাবনা",
+  // HSC ICT
+  "Chapter 1: Information and Communication Technology: World and Bangladesh Perspective": "অধ্যায় ১: তথ্য ও যোগাযোগ প্রযুক্তি: বিশ্ব ও বাংলাদেশ প্রেক্ষিত",
+  "Chapter 2: Communication Systems and Networking": "অধ্যায় ২: যোগাযোগ ব্যবস্থা ও নেটওয়ার্কিং",
+  "Chapter 3: Number Systems and Digital Devices": "অধ্যায় ৩: সংখ্যা পদ্ধতি ও ডিজিটাল ডিভাইস",
+  "Chapter 4: Introduction to Web Design and HTML": "অধ্যায় ৪: ওয়েব ডিজাইন পরিচিতি ও HTML",
+  "Chapter 5: Programming Language": "অধ্যায় ৫: প্রোগ্রামিং ভাষা",
+  "Chapter 6: Database Management System": "অধ্যায় ৬: ডেটাবেস ম্যানেজমেন্ট সিস্টেম",
+};
+
+/**
+ * Returns the Bangla translation of a chapter name,
+ * falling back to the original English string if not found.
+ */
+export function getTranslatedChapter(chapter: string, locale: string): string {
+  if (locale !== "bn") return chapter;
+  return CHAPTER_TRANSLATIONS[chapter] ?? chapter;
 }

@@ -12,7 +12,18 @@ export interface JSONPracticeQuestion {
   explanation?: string;
 }
 
-const QUESTIONS_PER_CHAPTER = 2; // Fixed number of questions per chapter
+/**
+ * Maps paper-split HSC subject names to their actual directory on disk.
+ * e.g. "Physics 1st Paper" → "physics" folder.
+ */
+const SUBJECT_DIR_MAP: Partial<Record<CourseSubject, string>> = {
+  "Physics 1st Paper": "physics",
+  "Physics 2nd Paper": "physics",
+  "Chemistry 1st Paper": "chemistry",
+  "Chemistry 2nd Paper": "chemistry",
+  "Higher Math 1st Paper": "higher-math",
+  "Higher Math 2nd Paper": "higher-math",
+};
 
 export function shuffleArray<T>(array: T[]): T[] {
   const arr = [...array];
@@ -24,7 +35,9 @@ export function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function getChapterFilePath(level: "ssc" | "hsc", subject: string, chapter: string): string {
-  const subjectDir = subject.toLowerCase().replace(/\s+/g, "-");
+  // Use the directory map if available (paper-split subjects share parent dir)
+  const mappedDir = SUBJECT_DIR_MAP[subject as CourseSubject];
+  const subjectDir = mappedDir ?? subject.toLowerCase().replace(/\s+/g, "-");
   const chapterSlug = chapter
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -44,7 +57,7 @@ export async function loadPracticeQuestionsData(
     try {
       const content = await fs.readFile(filePath, "utf-8");
       result[chapter] = JSON.parse(content) as JSONPracticeQuestion[];
-    } catch (error) {
+    } catch {
       // Ignore if chapter file does not exist (no questions uploaded yet)
     }
   }
@@ -64,14 +77,15 @@ export async function getChaptersForSubject(
 export async function startPracticeExam(
   subject: string,
   studentClass: string,
-  selectedChapters?: string[]
+  selectedChapters?: string[],
+  maxQuestions = 25,
+  secondsPerQuestion = 45
 ) {
   const level = getSchoolLevel(studentClass);
   const classData = await loadPracticeQuestionsData(level, subject);
 
   let chaptersToUse = Object.keys(classData);
   if (selectedChapters && selectedChapters.length > 0) {
-    // Filter to valid selected chapters
     chaptersToUse = chaptersToUse.filter((c) => selectedChapters.includes(c));
   }
 
@@ -79,27 +93,23 @@ export async function startPracticeExam(
     throw new Error("No valid chapters selected for practice.");
   }
 
-  const selectedQuestions: JSONPracticeQuestion[] = [];
-
+  // Collect all questions from selected chapters
+  const allQuestions: JSONPracticeQuestion[] = [];
   for (const chapter of chaptersToUse) {
     const chapterQuestions = classData[chapter] || [];
-    if (chapterQuestions.length === 0) continue;
-
-    // Shuffle and pick QUESTIONS_PER_CHAPTER
-    const shuffledChapterQs = shuffleArray(chapterQuestions);
-    const countToPick = Math.min(shuffledChapterQs.length, QUESTIONS_PER_CHAPTER);
-    selectedQuestions.push(...shuffledChapterQs.slice(0, countToPick));
+    allQuestions.push(...chapterQuestions);
   }
 
-  // Shuffle the final merged list of questions
-  const finalShuffledQuestions = shuffleArray(selectedQuestions);
+  // Shuffle and cap to maxQuestions
+  const shuffled = shuffleArray(allQuestions);
+  const finalQuestions = shuffled.slice(0, maxQuestions);
 
-  const totalQuestions = finalShuffledQuestions.length;
-  // Calculate duration in minutes: 1.5 minutes per question
-  const duration = Math.max(1, Math.ceil(totalQuestions * 1.5));
+  const totalQuestions = finalQuestions.length;
+  // Total duration in seconds
+  const durationSeconds = totalQuestions * secondsPerQuestion;
 
   // Sanitize questions for the student (strip correctIndex and explanation)
-  const sanitizedQuestions = finalShuffledQuestions.map((q) => ({
+  const sanitizedQuestions = finalQuestions.map((q) => ({
     id: q.id,
     question: q.question,
     options: q.options,
@@ -108,18 +118,44 @@ export async function startPracticeExam(
   return {
     questions: sanitizedQuestions,
     subject,
-    duration,
+    durationSeconds,
     totalQuestions,
+    secondsPerQuestion,
   };
+}
+
+export async function loadFullQuestionById(
+  level: "ssc" | "hsc",
+  subject: string,
+  questionId: string
+): Promise<{ question: string; options: string[] } | null> {
+  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  for (const chapter of chapters) {
+    const filePath = getChapterFilePath(level, subject, chapter);
+    try {
+      const content = await fs.readFile(filePath, "utf-8");
+      const questions: JSONPracticeQuestion[] = JSON.parse(content);
+      const found = questions.find((q) => q.id === questionId);
+      if (found) return { question: found.question, options: found.options };
+    } catch {}
+  }
+  return null;
+}
+
+export interface PracticeAnswer {
+  questionId: string;
+  selectedIndex: number;
 }
 
 export async function scorePracticeAttempt(
   subject: string,
   studentClass: string,
-  answers: { questionId: string; selectedIndex: number }[]
+  answers: PracticeAnswer[],
+  passMarkPercent: number = 60
 ) {
   const level = getSchoolLevel(studentClass);
   const classData = await loadPracticeQuestionsData(level, subject);
+
 
   // Flatten all questions for this subject/class to easily search by ID
   const allQuestionsMap = new Map<string, JSONPracticeQuestion>();
@@ -151,13 +187,14 @@ export async function scorePracticeAttempt(
   const totalQuestions = answers.length;
   const score = correctCount;
   const percentage = totalQuestions > 0 ? Number(((score / totalQuestions) * 100).toFixed(2)) : 0;
-  const isPassed = percentage >= 50.0; // 50% pass mark for practice
+  const isPassed = percentage >= passMarkPercent;
 
   return {
     score,
     totalQuestions,
     percentage,
     isPassed,
+    passMarkPercent,
     solutions,
   };
 }

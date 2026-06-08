@@ -11,7 +11,7 @@ type CoursesCatalogProps = {
 };
 
 function subjectLabel(home: Dictionary["home"], subject: CourseSubject) {
-  return home.subjects[subject];
+  return home.subjects[subject as keyof typeof home.subjects] ?? subject;
 }
 
 export function CoursesCatalog({ locale, home }: CoursesCatalogProps) {

@@ -16,7 +16,7 @@ type HomeSectionProps = {
 };
 
 function subjectLabel(dict: Dictionary["home"], subject: CourseSubject) {
-  return dict.subjects[subject];
+  return dict.subjects[subject as keyof typeof dict.subjects] ?? subject;
 }
 
 const featureColors = [
