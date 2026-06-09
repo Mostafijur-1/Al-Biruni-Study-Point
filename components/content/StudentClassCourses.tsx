@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { formatClassList } from "@/lib/content/classes";
 import { useSession } from "@/lib/hooks/use-session";
@@ -25,10 +24,13 @@ type VideoRow = {
   targetClasses: StudentClass[];
 };
 
-export function StudentClassCourses({ locale }: { locale: Locale }) {
+type Props = {
+  locale: Locale;
+  level: "SSC" | "HSC";
+};
+
+export function StudentClassCourses({ locale, level }: Props) {
   const { user, checking } = useSession({ listenToAuthChanges: true });
-  const searchParams = useSearchParams();
-  const level = searchParams.get("level") === "HSC" ? "HSC" : "SSC";
   const isGuest = !user;
 
   const coursesUrl = checking

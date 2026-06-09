@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import {
   BarChart3,
   BookOpen,
@@ -21,13 +23,15 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** If true, append ?level=<current> when navigating */
+  levelAware?: boolean;
 };
 
 const linksByRole: Record<UserRole, NavItem[]> = {
   student: [
-    { href: "/student", label: "Home", icon: LayoutDashboard },
-    { href: "/student/courses", label: "Courses", icon: BookOpen },
-    { href: "/student/practice", label: "MCQ test", icon: Brain },
+    { href: "/student/courses", label: "Home", icon: LayoutDashboard, levelAware: true },
+    { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
+    { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
     { href: "/student/results", label: "Results", icon: GraduationCap },
   ],
   teacher: [
@@ -53,8 +57,14 @@ function roleFromPathname(pathname: string): UserRole {
   return "student";
 }
 
+function buildHref(href: string, locale: string, level: "SSC" | "HSC", levelAware?: boolean) {
+  const levelSuffix = levelAware ? `?level=${level}` : "";
+  return `/${locale}${href}${levelSuffix}`;
+}
+
 export function DashboardMobileNav({ locale }: { locale: string }) {
   const pathname = usePathname();
+  const level = useGuestLevel();
   const role = roleFromPathname(pathname);
   const links = linksByRole[role];
 
@@ -64,22 +74,23 @@ export function DashboardMobileNav({ locale }: { locale: string }) {
       aria-label="Dashboard navigation"
     >
       <ul className="flex items-stretch justify-around gap-0.5">
-        {links.map(({ href, label, icon: Icon }) => {
-          const fullHref = `/${locale}${href}`;
+        {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
+          const fullHref = buildHref(href, locale, level, levelAware);
+          const fullHrefBase = `/${locale}${href}`;
           const isRoleRoot = href === `/${role}`;
           const active =
-            pathname === fullHref ||
-            (!isRoleRoot && pathname.startsWith(`${fullHref}/`));
+            pathname === fullHrefBase ||
+            (!isRoleRoot && pathname.startsWith(`${fullHrefBase}/`));
 
           return (
-            <li key={href} className="min-w-0 flex-1">
+            <li key={`${href}-${idx}`} className="min-w-0 flex-1">
               <Link
                 href={fullHref}
                 className={cn(
                   "flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px] font-semibold transition",
                   active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted hover:bg-secondary hover:text-primary",
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted hover:bg-secondary hover:text-primary",
                 )}
               >
                 <Icon className="size-4 shrink-0" />
@@ -95,14 +106,15 @@ export function DashboardMobileNav({ locale }: { locale: string }) {
 
 export function DashboardSidebar({ locale }: { locale: string }) {
   const pathname = usePathname();
+  const level = useGuestLevel();
   const role = roleFromPathname(pathname);
 
   const allLinks: Record<UserRole, NavItem[]> = {
     student: [
-      { href: "/student", label: "Overview", icon: LayoutDashboard },
+      { href: "/student/courses", label: "Overview", icon: LayoutDashboard, levelAware: true },
       { href: "/student/profile", label: "Profile", icon: UserCircle },
-      { href: "/student/courses", label: "Courses", icon: BookOpen },
-      { href: "/student/practice", label: "MCQ test", icon: Brain },
+      { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
+      { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
       { href: "/student/results", label: "Results", icon: GraduationCap },
     ],
     teacher: [
@@ -129,16 +141,17 @@ export function DashboardSidebar({ locale }: { locale: string }) {
     <aside className="hidden rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-sm)] md:block">
       <p className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-accent">Menu</p>
       <nav className="mt-1 space-y-0.5">
-        {links.map(({ href, label, icon: Icon }) => {
-          const fullHref = `/${locale}${href}`;
+        {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
+          const fullHref = buildHref(href, locale, level, levelAware);
+          const fullHrefBase = `/${locale}${href}`;
           const isRoleRoot = href === `/${role}`;
           const active =
-            pathname === fullHref ||
-            (!isRoleRoot && pathname.startsWith(`${fullHref}/`));
+            pathname === fullHrefBase ||
+            (!isRoleRoot && pathname.startsWith(`${fullHrefBase}/`));
 
           return (
             <Link
-              key={href}
+              key={`${href}-${idx}`}
               href={fullHref}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition",

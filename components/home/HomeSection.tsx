@@ -44,7 +44,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
               <Link
-                href={path("/student")}
+                href={path("/student/courses?level=SSC")}
                 className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaExplore}

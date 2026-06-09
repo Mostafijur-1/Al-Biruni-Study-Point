@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   Atom,
   Award,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { createLocalizedPath } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/hooks/use-session";
@@ -147,10 +148,9 @@ function StudentPracticeDashboard() {
   const params = useParams();
   const locale = (params?.locale as string) || "en";
   const path = createLocalizedPath(locale as any);
-  const searchParams = useSearchParams();
   const { user, checking } = useSession({ listenToAuthChanges: true });
   const isGuest = !user;
-  const level = searchParams.get("level") === "HSC" ? "HSC" : "SSC";
+  const level = useGuestLevel();
 
   const [statusList, setStatusList] = useState<SubjectStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,7 +321,12 @@ function StudentPracticeDashboard() {
                 </div>
 
                 <div className="mt-5">
-                  <Link href={path(`/student/practice/${item.subject}${isGuest ? `?level=${level}` : ""}`)} className="block">
+                  <Link
+                    href={path(
+                      `/student/practice/${encodeURIComponent(item.subject)}${isGuest ? guestLevelQuery(level) : ""}`,
+                    )}
+                    className="block"
+                  >
                     <button
                       type="button"
                       className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover shadow-sm"

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, BookOpen, Brain, CheckCircle2, Circle, Clock, Square } from "lucide-react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
 import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
 import { Button } from "@/components/ui/button";
@@ -77,10 +78,10 @@ function getOptionResultMode(
 export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const path = createLocalizedPath(locale as any);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, checking } = useSession({ listenToAuthChanges: true });
   const isGuest = !user;
-  const level = searchParams.get("level") === "HSC" ? "HSC" : "SSC";
+  const level = useGuestLevel();
+  const practiceListHref = path(`/student/practice${isGuest ? guestLevelQuery(level) : ""}`);
 
   // States
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
@@ -293,7 +294,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-3">
             <Link
-              href={path("/student/practice")}
+              href={practiceListHref}
               className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted transition hover:bg-secondary hover:text-primary"
             >
               <ArrowLeft className="size-5" />
@@ -639,7 +640,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 {" "}· Pass mark: {passMarkPercent}%
               </p>
             </div>
-            <Link href={path("/student/practice")} className="shrink-0">
+            <Link href={practiceListHref} className="shrink-0">
               <Button type="button" variant="outline" className="rounded-xl bg-surface hover:bg-secondary">
                 {locale === "bn" ? "ড্যাশবোর্ডে ফিরে যান" : "Go to Dashboard"}
               </Button>
@@ -703,7 +704,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           })}
         </div>
 
-        <Link href={path("/student/practice")} className="block">
+        <Link href={practiceListHref} className="block">
           <Button type="button" size="lg" className="w-full rounded-xl">
             {locale === "bn" ? "সমাপ্ত করুন এবং ফিরে যান" : "Finish and Go Back"}
           </Button>
