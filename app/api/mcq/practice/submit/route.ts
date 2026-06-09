@@ -16,8 +16,8 @@ const submitPracticeSchema = z.object({
   answers: z.array(
     z.object({
       questionId: z.string(),
-      selectedIndex: z.number().min(0).max(3),
-    })
+      selectedIndex: z.number().int().min(0).max(3).nullable(),
+    }),
   ),
   timeTaken: z.number().min(0),
 });
@@ -50,14 +50,15 @@ export async function POST(request: NextRequest) {
     const level = getSchoolLevel(studentClass);
     const detailedAnswers = await Promise.all(
       scoring.solutions.map(async (sol) => {
-        const studentAns = parsed.answers.find((a) => a.questionId === sol.questionId)!;
+        const studentAns = parsed.answers.find((a) => a.questionId === sol.questionId);
         const full = await loadFullQuestionById(level, parsed.subject, sol.questionId);
+        const selectedIndex = studentAns?.selectedIndex ?? null;
         return {
           questionId: sol.questionId,
           question: full?.question ?? "",
           options: full?.options ?? [],
-          selectedIndex: studentAns.selectedIndex,
-          isCorrect: studentAns.selectedIndex === sol.correctIndex,
+          selectedIndex,
+          isCorrect: selectedIndex !== null && selectedIndex === sol.correctIndex,
           correctIndex: sol.correctIndex,
           explanation: sol.explanation,
         } as any;

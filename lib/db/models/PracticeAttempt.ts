@@ -4,7 +4,7 @@ export interface IPracticeAnswer {
   questionId: Types.ObjectId; // reference to the MCQ question ID (stored as string in DB)
   question: string;
   options: string[];
-  selectedIndex: number; // 0-3
+  selectedIndex: number | null; // 0-3, null when unanswered
   isCorrect: boolean;
   correctIndex: number;
   explanation?: string;

@@ -144,7 +144,7 @@ export async function loadFullQuestionById(
 
 export interface PracticeAnswer {
   questionId: string;
-  selectedIndex: number;
+  selectedIndex: number | null;
 }
 
 export async function scorePracticeAttempt(
@@ -155,7 +155,6 @@ export async function scorePracticeAttempt(
 ) {
   const level = getSchoolLevel(studentClass);
   const classData = await loadPracticeQuestionsData(level, subject);
-
 
   // Flatten all questions for this subject/class to easily search by ID
   const allQuestionsMap = new Map<string, JSONPracticeQuestion>();
@@ -172,7 +171,8 @@ export async function scorePracticeAttempt(
     const question = allQuestionsMap.get(ans.questionId);
     if (!question) continue;
 
-    const isCorrect = ans.selectedIndex === question.correctIndex;
+    const isCorrect =
+      ans.selectedIndex !== null && ans.selectedIndex === question.correctIndex;
     if (isCorrect) {
       correctCount++;
     }
@@ -186,7 +186,8 @@ export async function scorePracticeAttempt(
 
   const totalQuestions = answers.length;
   const score = correctCount;
-  const percentage = totalQuestions > 0 ? Number(((score / totalQuestions) * 100).toFixed(2)) : 0;
+  const percentage =
+    totalQuestions > 0 ? Number(((score / totalQuestions) * 100).toFixed(2)) : 0;
   const isPassed = percentage >= passMarkPercent;
 
   return {
