@@ -29,22 +29,22 @@ type NavItem = {
 
 const linksByRole: Record<UserRole, NavItem[]> = {
   student: [
-    { href: "/student/courses", label: "Home", icon: LayoutDashboard, levelAware: true },
-    { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
+    //{ href: "/student/courses", label: "Home", icon: LayoutDashboard, levelAware: true },
+    //{ href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
     { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
     { href: "/student/results", label: "Results", icon: GraduationCap },
   ],
   teacher: [
-    { href: "/teacher", label: "Home", icon: LayoutDashboard },
-    { href: "/teacher/classes", label: "Classes", icon: BookOpen },
+    //{ href: "/teacher", label: "Home", icon: LayoutDashboard },
+    //{ href: "/teacher/classes", label: "Classes", icon: BookOpen },
     { href: "/teacher/results", label: "Results", icon: LineChart },
   ],
   admin: [
     { href: "/admin", label: "Home", icon: LayoutDashboard },
     { href: "/admin/students", label: "Students", icon: Users },
     { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
-    { href: "/admin/courses", label: "Courses", icon: BookOpen },
-    { href: "/admin/exams", label: "Exams", icon: FileQuestion },
+    //{ href: "/admin/courses", label: "Courses", icon: BookOpen },
+    //{ href: "/admin/exams", label: "Exams", icon: FileQuestion },
     { href: "/admin/practice-mcqs", label: "Practice MCQs", icon: Brain },
   ],
 };
