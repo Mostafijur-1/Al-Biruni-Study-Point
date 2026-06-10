@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, GraduationCap, Monitor, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent, Users } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -42,6 +42,26 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted sm:mt-5 sm:text-lg sm:leading-8">
               {dict.hero.subtitle}
             </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 max-w-2xl">
+              <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-white/60 p-3 shadow-xs transition duration-200 hover:border-brand-blue/30 hover:bg-white/90">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-red/10 text-brand-red">
+                  <Calendar className="size-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-bold text-muted/80">{dict.hero.classStartLabel}</p>
+                  <p className="text-sm font-bold text-primary">{dict.hero.classStartVal}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-white/60 p-3 shadow-xs transition duration-200 hover:border-brand-yellow/40 hover:bg-white/90">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-yellow/15 text-accent-foreground">
+                  <Percent className="size-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-bold text-muted/80">{dict.hero.specialOfferLabel}</p>
+                  <p className="text-sm font-bold text-primary">{dict.hero.specialOfferVal}</p>
+                </div>
+              </div>
+            </div>
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
               <Link
                 href={path("/student/courses?level=SSC")}
@@ -105,42 +125,130 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
 
       <section id="courses" className="py-12 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-            <div>
-              <h2 className="font-display text-2xl font-bold text-primary sm:text-3xl">
-                {dict.courses.title}
-              </h2>
-              <p className="mt-2 text-sm text-muted sm:text-base">{dict.courses.subtitle}</p>
-            </div>
-            <Link href={path("/courses")} className="font-semibold text-primary hover:underline">
-              {dict.courses.link} →
-            </Link>
+          <div className="text-center md:text-left">
+            <h2 className="font-display text-2xl font-bold text-primary sm:text-3xl lg:text-4xl">
+              {dict.hsc2028.title}
+            </h2>
+            <p className="mt-2 text-sm text-muted sm:text-base max-w-2xl">{dict.hsc2028.subtitle}</p>
           </div>
 
-          <div className="mt-8 grid gap-6 sm:mt-10 sm:gap-8 lg:grid-cols-2">
-            {(["SSC", "HSC"] as const).map((level) => (
-              <div
-                key={level}
-                className="rounded-2xl border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-6"
-              >
-                <h3 className="font-display text-lg font-bold text-primary sm:text-xl">
-                  {level === "SSC" ? dict.courses.ssc : dict.courses.hsc}
-                </h3>
-                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {subjectsForLevel(level).map(({ subject, slug }) => (
-                    <li key={slug}>
-                      <Link
-                        href={path(`/courses/${slug}`)}
-                        className="block rounded-lg border border-border bg-secondary/40 px-3 py-3 text-sm font-semibold text-foreground transition hover:border-primary hover:bg-secondary hover:text-primary sm:px-4"
-                      >
-                        {subjectLabel(dict, subject)}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          {/* Cards for each subject */}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                title: dict.hsc2028.physics.title,
+                schedule: dict.hsc2028.physics.schedule,
+                fee: dict.hsc2028.physics.fee,
+                icon: BookOpen,
+                color: "border-brand-blue/30 bg-brand-blue/5 hover:border-brand-blue hover:bg-brand-blue/[0.08] text-brand-blue",
+                badgeBg: "bg-brand-blue/15 text-brand-blue",
+              },
+              {
+                title: dict.hsc2028.chemistry.title,
+                schedule: dict.hsc2028.chemistry.schedule,
+                fee: dict.hsc2028.chemistry.fee,
+                icon: FlaskConical,
+                color: "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500 hover:bg-emerald-500/[0.08] text-emerald-600",
+                badgeBg: "bg-emerald-500/15 text-emerald-600",
+              },
+              {
+                title: dict.hsc2028.math.title,
+                schedule: dict.hsc2028.math.schedule,
+                fee: dict.hsc2028.math.fee,
+                icon: Calculator,
+                color: "border-violet-500/30 bg-violet-500/5 hover:border-violet-500 hover:bg-violet-500/[0.08] text-violet-600",
+                badgeBg: "bg-violet-500/15 text-violet-600",
+              },
+              {
+                title: dict.hsc2028.ict.title,
+                schedule: dict.hsc2028.ict.schedule,
+                fee: dict.hsc2028.ict.fee,
+                icon: Monitor,
+                color: "border-brand-yellow/30 bg-brand-yellow/5 hover:border-brand-yellow hover:bg-brand-yellow/[0.08] text-accent-foreground",
+                badgeBg: "bg-brand-yellow/20 text-accent-foreground",
+              },
+            ].map((subject) => {
+              const Icon = subject.icon;
+              return (
+                <div
+                  key={subject.title}
+                  className={cn(
+                    "flex flex-col justify-between rounded-2xl border-2 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
+                    subject.color,
+                  )}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className={cn("grid size-11 place-items-center rounded-xl", subject.badgeBg)}>
+                        <Icon className="size-5.5" />
+                      </span>
+                      <span className="rounded-full bg-white/50 border border-white/80 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs uppercase tracking-wider text-muted-foreground">
+                        HSC 2028
+                      </span>
+                    </div>
+                    <h3 className="font-display mt-4 text-lg font-bold text-primary">
+                      {subject.title}
+                    </h3>
+                    <p className="mt-2 text-xs font-semibold text-muted">
+                      {subject.schedule}
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-dashed border-muted/20">
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-wider">মাসিক ফি</p>
+                    <p className="text-lg font-black text-primary mt-0.5">
+                      {subject.fee} <span className="text-[10px] font-bold text-muted">/ মাস</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          {/* Special Combo Package Card */}
+          <div className="mt-8 overflow-hidden rounded-3xl border-2 border-brand-yellow bg-linear-to-br from-brand-yellow/[0.08] via-transparent to-brand-blue/[0.08] shadow-md transition duration-300 hover:shadow-lg">
+            <div className="grid md:grid-cols-[1.4fr_1fr]">
+              <div className="p-6 sm:p-8 md:p-10 flex flex-col justify-center">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-brand-yellow px-3 py-1 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
+                    {dict.hsc2028.combo.badge}
+                  </span>
+                  <span className="rounded-full bg-brand-red text-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+                    ICT সম্পূর্ণ ফ্রি!
+                  </span>
+                </div>
+                <h3 className="font-display mt-4 text-2xl font-bold text-primary sm:text-3xl">
+                  {dict.hsc2028.combo.title}
+                </h3>
+                <p className="mt-3 text-sm text-muted leading-relaxed">
+                  {dict.hsc2028.combo.description}
+                </p>
+                <div className="mt-5 flex items-center gap-2 text-sm text-emerald-600 font-bold">
+                  <CheckCircle2 className="size-5 shrink-0" />
+                  <span>পদার্থবিজ্ঞান + রসায়ন + উচ্চতর গণিত + ICT (ফ্রি)</span>
+                </div>
+              </div>
+
+              <div className="bg-primary/[0.02] border-t-2 border-brand-yellow/20 md:border-t-0 md:border-l-2 md:border-brand-yellow/20 p-6 sm:p-8 md:p-10 flex flex-col justify-center items-center text-center">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted uppercase tracking-wider">{dict.hsc2028.combo.regularFeeLabel}</p>
+                  <p className="text-lg font-bold text-muted/50 line-through">{dict.hsc2028.combo.regularFee} / মাস</p>
+                </div>
+                <div className="mt-5 space-y-1">
+                  <p className="text-xs font-extrabold text-brand-red uppercase tracking-wider">{dict.hsc2028.combo.offerFeeLabel}</p>
+                  <p className="text-3xl sm:text-4xl font-black text-primary tracking-tight mt-0.5">
+                    {dict.hsc2028.combo.offerFee} <span className="text-xs font-bold text-muted">/ মাস</span>
+                  </p>
+                </div>
+                <Link
+                  href={path("/contact")}
+                  className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-6 w-full justify-center shadow-md hover:shadow-lg transition-all")}
+                >
+                  {dict.hsc2028.combo.cta} <ArrowRight className="size-5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 

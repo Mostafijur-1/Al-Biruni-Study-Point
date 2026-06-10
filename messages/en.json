@@ -18,9 +18,13 @@
     "hero": {
       "eyebrow": "On the path to success, Al-Biruni is with you",
       "title": "Al-Biruni Study Point",
-      "subtitle": "Physics, Chemistry, Math, Higher Math & ICT for SSC and HSC. Offline and online batches, recorded classes, MCQ and CQ assessments.",
+      "subtitle": "Welcome HSC 2028 batch students to Al-Biruni Study Point. HSC 2028 offline batch admission is ongoing.",
+      "classStartLabel": "Class Starts",
+      "classStartVal": "From the first month of college.",
+      "specialOfferLabel": "Special Offer",
+      "specialOfferVal": "Register within the first month of college for a special monthly discount.",
       "ctaCourses": "View courses",
-      "ctaExplore": "Browse classes",
+      "ctaExplore": "mcq test",
       "ctaRegister": "Enroll now"
     },
     "about": {
@@ -39,6 +43,40 @@
       "ssc": "SSC (Class 9–10)",
       "hsc": "HSC (Class 11–12)",
       "link": "All courses"
+    },
+    "hsc2028": {
+      "title": "What's included in the HSC 2028 Offline Batch",
+      "subtitle": "Special features and subject-wise fee structure",
+      "physics": {
+        "title": "Physics",
+        "schedule": "2 classes per week",
+        "fee": "1300 Tk"
+      },
+      "chemistry": {
+        "title": "Chemistry",
+        "schedule": "2 classes per week",
+        "fee": "1300 Tk"
+      },
+      "math": {
+        "title": "Higher Mathematics",
+        "schedule": "2/3 classes per week",
+        "fee": "1500 Tk"
+      },
+      "ict": {
+        "title": "ICT",
+        "schedule": "2 classes per week",
+        "fee": "1000 Tk"
+      },
+      "combo": {
+        "title": "All Subjects Package",
+        "badge": "Combo Offer",
+        "description": "Enroll in all subjects and get ICT completely free!",
+        "regularFeeLabel": "Monthly Fee (Regular)",
+        "regularFee": "4000 Tk",
+        "offerFeeLabel": "Monthly Fee (Offer)",
+        "offerFee": "3500 Tk",
+        "cta": "Contact for Admission"
+      }
     },
     "subjects": {
       "Physics": "Physics",
@@ -62,14 +100,9 @@
           "schedule": "Sat–Fri, 3:20 PM",
           "seats": "3/9"
         },
+      
         {
-          "name": "HSC 2028 (Offline)",
-          "mode": "offline",
-          "schedule": "Fri-Wed, 5:30 PM",
-          "seats": "limited"
-        },
-        {
-          "name": "HSC 2028 (Online)",
+          "name": "HSC 2027 (Online)",
           "mode": "online",
           "schedule": "Tue–Thu, 9:00 PM",
           "seats": "limited"
