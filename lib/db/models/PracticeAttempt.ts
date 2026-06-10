@@ -19,6 +19,9 @@ export interface IPracticeAttempt extends Document {
   percentage: number;
   isPassed: boolean;
   timeTaken: number; // seconds
+  teacherComment?: string;
+  commentedBy?: Types.ObjectId;
+  deletedByTeacher?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,11 +36,18 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
     percentage: { type: Number, required: true },
     isPassed: { type: Boolean, required: true },
     timeTaken: { type: Number, required: true, min: 0 },
+    teacherComment: { type: String, default: "" },
+    commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    deletedByTeacher: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 PracticeAttemptSchema.index({ student: 1, subject: 1, createdAt: -1 });
+
+if (process.env.NODE_ENV !== "production" && mongoose.models.PracticeAttempt) {
+  mongoose.deleteModel("PracticeAttempt");
+}
 
 export const PracticeAttempt: Model<IPracticeAttempt> =
   mongoose.models.PracticeAttempt ||

@@ -8,6 +8,8 @@ export interface IPracticeResult extends Document {
   percentage: number;
   isPassed: boolean;
   timeTaken: number; // in seconds
+  teacherComment?: string;
+  commentedBy?: Types.ObjectId;
   submittedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +24,8 @@ const PracticeResultSchema = new Schema<IPracticeResult>(
     percentage: { type: Number, required: true },
     isPassed: { type: Boolean, required: true },
     timeTaken: { type: Number, required: true, min: 0 },
+    teacherComment: { type: String, default: "" },
+    commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
     submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
@@ -29,6 +33,10 @@ const PracticeResultSchema = new Schema<IPracticeResult>(
 
 // Index for quick queries of student practice history
 PracticeResultSchema.index({ student: 1, subject: 1 });
+
+if (process.env.NODE_ENV !== "production" && mongoose.models.PracticeResult) {
+  mongoose.deleteModel("PracticeResult");
+}
 
 export const PracticeResult: Model<IPracticeResult> =
   mongoose.models.PracticeResult ||

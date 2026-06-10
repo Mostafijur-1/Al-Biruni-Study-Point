@@ -17,6 +17,9 @@ export interface IResult extends Document {
   timeTaken: number;
   attemptNo: number;
   submittedAt: Date;
+  teacherComment?: string;
+  commentedBy?: Types.ObjectId;
+  deletedByTeacher?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +45,9 @@ const ResultSchema = new Schema<IResult>(
     timeTaken: { type: Number, required: true, min: 0 },
     attemptNo: { type: Number, required: true, min: 1 },
     submittedAt: { type: Date, default: Date.now },
+    teacherComment: { type: String, default: "" },
+    commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    deletedByTeacher: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -49,6 +55,10 @@ const ResultSchema = new Schema<IResult>(
 ResultSchema.index({ student: 1, exam: 1, attemptNo: 1 }, { unique: true });
 ResultSchema.index({ exam: 1, score: -1 });
 ResultSchema.index({ student: 1, submittedAt: -1 });
+
+if (process.env.NODE_ENV !== "production" && mongoose.models.Result) {
+  mongoose.deleteModel("Result");
+}
 
 export const Result: Model<IResult> =
   mongoose.models.Result || mongoose.model<IResult>("Result", ResultSchema);

@@ -38,6 +38,12 @@ export function ResultHistory() {
               {result.isPassed ? "Passed" : "Not passed"}
             </span>
           </p>
+          {result.teacherComment && (
+            <div className="mt-3 rounded-lg border border-brand-yellow/30 bg-brand-yellow/5 p-3 text-xs sm:text-sm">
+              <span className="font-bold text-brand-red">মন্তব্য ({result.commentedBy?.name || "শিক্ষক"}):</span>
+              <p className="mt-1 text-primary font-medium italic leading-relaxed">{result.teacherComment}</p>
+            </div>
+          )}
         </article>
       ))}
     </div>

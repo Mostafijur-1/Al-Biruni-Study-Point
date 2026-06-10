@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
     // Build attempt query
     const attemptQuery: Record<string, unknown> = {
       student: { $in: studentIds },
+      deletedByTeacher: { $ne: true }, // Filter out soft-deleted attempts
     };
 
     // Subject filter
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
         isPassed: attempt.isPassed,
         timeTaken: attempt.timeTaken,
         submittedAt: attempt.createdAt,
+        teacherComment: attempt.teacherComment ?? "",
         wrongAnswers: wrongAnswers.map((a) => ({
           question: a.question,
           options: a.options,

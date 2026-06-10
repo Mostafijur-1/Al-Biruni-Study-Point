@@ -55,6 +55,10 @@ export type McqResultStudent = {
   attemptNo: number;
   submittedAt: string;
   exam?: { title?: string; totalMarks?: number };
+  teacherComment?: string;
+  commentedBy?: { _id: string; name: string };
+  isPractice?: boolean;
+  subject?: string;
 };
 
 export type McqResultTeacherRow = {
@@ -67,6 +71,8 @@ export type McqResultTeacherRow = {
   submittedAt: string;
   student: { _id: string; name: string };
   exam: McqExamSummary & { _id: string };
+  teacherComment?: string;
+  deletedByTeacher?: boolean;
 };
 
 export type McqSubmitResultData = {

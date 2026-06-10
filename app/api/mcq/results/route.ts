@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
       const ownedExams = await McqExam.find({ teacher: user.id }).select("_id").lean();
       const ownedExamIds = ownedExams.map((exam) => exam._id);
 
+      query.deletedByTeacher = { $ne: true }; // Hide soft-deleted results from teacher
+
       if (examId) {
         const ownsExam = ownedExamIds.some((id) => String(id) === examId);
         if (!ownsExam) {
@@ -39,6 +41,7 @@ export async function GET(request: NextRequest) {
     const results = await Result.find(query)
       .populate("exam", "title totalMarks passMark duration")
       .populate("student", studentFields)
+      .populate("commentedBy", "name")
       .sort({ submittedAt: -1 })
       .limit(user.role === "admin" ? 200 : 50)
       .lean();
@@ -47,6 +50,7 @@ export async function GET(request: NextRequest) {
       const { PracticeResult } = await import("@/lib/db/models/PracticeResult");
       const practiceResults = await PracticeResult.find({ student: user.id })
         .populate("student", studentFields)
+        .populate("commentedBy", "name")
         .sort({ submittedAt: -1 })
         .lean();
 
@@ -63,6 +67,8 @@ export async function GET(request: NextRequest) {
         updatedAt: pr.updatedAt,
         isPractice: true,
         subject: pr.subject,
+        teacherComment: pr.teacherComment ?? "",
+        commentedBy: pr.commentedBy,
         exam: {
           _id: `practice-${pr.subject}`,
           title: `${pr.subject} MCQ Test`,
