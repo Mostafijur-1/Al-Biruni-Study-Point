@@ -191,8 +191,8 @@ function StudentPracticeDashboard() {
         </h1>
         <p className="mt-2 text-sm text-muted">
           {locale === "bn"
-            ? "আপনার ক্লাসের যেকোনো বিষয় সিলেক্ট করে অধ্যায় অনুযায়ী র্যান্ডমলি জেনারেটেড এমসিকিউ পরীক্ষা দিয়ে প্রস্তুতি যাচাই করুন।"
-            : "Select a subject to take a randomized MCQ test from your selected chapters."}
+            ? "সাবজেক্ট ও চ্যাপ্টার সিলেক্ট করে MCQ test শুরু করো।"
+            : "Select a subject and chapter to start your MCQ test."}
         </p>
       </div>
 
@@ -200,7 +200,7 @@ function StudentPracticeDashboard() {
         <div className="flex flex-col items-center justify-center py-20 space-y-3">
           <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-sm font-medium text-muted">
-            {locale === "bn" ? "বিষয়গুলো লোড হচ্ছে..." : "Loading subjects..."}
+            {locale === "bn" ? "সাবজেক্ট লোড হচ্ছে..." : "Loading subjects..."}
           </p>
         </div>
       ) : error ? (
@@ -208,7 +208,7 @@ function StudentPracticeDashboard() {
       ) : statusList.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-6 text-center text-muted">
           {locale === "bn"
-            ? "আপনার ক্লাসের জন্য কোনো পরীক্ষা সামগ্রী প্রস্তুত নেই।"
+            ? "আপনার ক্লাসের জন্য কোনো mcq test প্রস্তুত নেই।"
             : "No test content is prepared for your class yet."}
         </div>
       ) : (
@@ -246,23 +246,16 @@ function StudentPracticeDashboard() {
                     >
                       {item.chapters.length}{" "}
                       {locale === "bn"
-                        ? `টি অধ্যায়`
+                        ? `টি চ্যাপ্টার`
                         : `${item.chapters.length === 1 ? "chapter" : "chapters"}`}
                     </span>
                   </div>
 
                   <h2 className="mt-4 font-display text-xl font-bold text-primary">
                     {/* Show base subject name (strip paper suffix for cleaner display) */}
-                    {item.subject.replace(/ (1st|2nd) Paper$/, "")}
+                    {item.subject.replace(/ (1st|2nd) Paper$/, "")} {theme.paperLabel }
                   </h2>
-                  {theme.paperLabel && (
-                    <span className={cn(
-                      "mt-1 inline-block rounded-md px-2 py-0.5 text-xs font-bold border",
-                      theme.badgeBg
-                    )}>
-                      {theme.paperLabel}
-                    </span>
-                  )}
+                
 
                   {/* Previous Result Summary */}
                   <div className="mt-4">
@@ -331,13 +324,10 @@ function StudentPracticeDashboard() {
                       type="button"
                       className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover shadow-sm"
                     >
-                      {hasAttempt
-                        ? locale === "bn"
-                          ? "আবার পরীক্ষা দিন"
-                          : "Take Test Again"
-                        : locale === "bn"
-                          ? "পরীক্ষা শুরু করুন"
-                          : "Start Test"}
+                      {locale === "bn"
+                          ? "চ্যাপ্টার সিলেক্ট করো"
+                          : "Select chapters"
+                        }
                     </button>
                   </Link>
                 </div>

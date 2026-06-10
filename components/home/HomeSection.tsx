@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -99,7 +100,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                 ].map(({ icon: Icon, label, desc, level }, index) => (
                   <Link
                     key={label}
-                    href={path(`/student/courses?level=${level}`)}
+                    href={path(`/student/practice?level=${level}`)}
                     className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:border-brand-yellow hover:bg-white/10 sm:p-4"
                   >
                     <span
@@ -297,21 +298,59 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
         </div>
       </section>
 
-      <section id="tutor" className="py-12 sm:py-16 lg:py-20">
+      <section id="tutor" className="py-12 sm:py-16 lg:py-20 relative overflow-hidden">
+        {/* Subtle decorative background blur gradients */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 size-72 rounded-full bg-brand-yellow/10 blur-3xl -z-10" />
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 translate-x-1/2 size-72 rounded-full bg-brand-blue/10 blur-3xl -z-10" />
+
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
-          <h2 className="font-display text-2xl font-bold text-primary sm:text-3xl">{dict.tutor.title}</h2>
-          <div className="mt-6 flex flex-col gap-6 rounded-2xl border-2 border-brand-yellow bg-card p-4 shadow-[var(--shadow-md)] sm:mt-8 sm:p-6 md:flex-row md:items-center md:p-8">
-            <div
-              className="mx-auto grid size-24 shrink-0 place-items-center rounded-2xl bg-primary text-brand-yellow sm:mx-0 md:size-32"
-              aria-hidden
-            >
-              <Users className="size-12 md:size-14" />
+          <div className="text-center md:text-left">
+            <h2 className="font-display text-2xl font-bold text-primary sm:text-3xl lg:text-4xl">
+              {dict.tutor.title}
+            </h2>
+          </div>
+
+          <div className="group relative mt-6 flex flex-col gap-6 sm:gap-8 rounded-3xl border-2 border-brand-yellow bg-card p-6 shadow-[var(--shadow-md)] transition-all duration-300 hover:shadow-[var(--shadow-lg)] hover:border-brand-blue/40 sm:mt-8 sm:p-8 md:flex-row md:items-center">
+            
+            {/* Styled Image Frame Container */}
+            <div className="relative mx-auto shrink-0 sm:mx-0 group/tutor-img">
+              {/* Animated/glowing gradient border underframe */}
+              <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-br from-brand-yellow via-brand-red to-brand-blue opacity-35 blur-xs transition duration-300 group-hover/tutor-img:opacity-60 group-hover/tutor-img:blur-md" />
+              
+              {/* Main image container */}
+              <div className="relative size-28 overflow-hidden rounded-2xl border-4 border-white bg-card shadow-md transition-all duration-300 sm:size-32 md:size-36 group-hover/tutor-img:scale-[1.02] group-hover/tutor-img:shadow-lg">
+                <Image
+                  src="/lead-tutor.png"
+                  alt={dict.tutor.name}
+                  fill
+                  sizes="(max-width: 768px) 112px, 144px"
+                  className="object-cover object-top transition duration-500 group-hover/tutor-img:scale-105"
+                  priority
+                />
+              </div>
             </div>
-            <div className="text-center md:text-left">
-              <h3 className="font-display text-xl font-bold text-primary sm:text-2xl">{dict.tutor.name}</h3>
-              <p className="mt-1 font-semibold text-brand-red">{dict.tutor.role}</p>
-              <p className="mt-2 text-sm font-medium text-primary sm:text-base">{dict.tutor.education}</p>
-              <p className="mt-4 text-sm leading-7 text-muted sm:text-base">{dict.tutor.bio}</p>
+
+            {/* Tutor Information */}
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex flex-col items-center md:items-start">
+                <h3 className="font-display text-xl font-bold text-primary sm:text-2xl lg:text-3xl">
+                  {dict.tutor.name}
+                </h3>
+                
+                <p className="mt-1 text-sm font-bold uppercase tracking-wider text-brand-red">
+                  {dict.tutor.role}
+                </p>
+                
+                {/* Highlighted Education Section */}
+                <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-blue/10 border border-brand-blue/20 px-3.5 py-2 text-sm font-bold text-primary shadow-xs transition duration-200 hover:bg-brand-blue/15">
+                  <GraduationCap className="size-5 text-brand-blue shrink-0 animate-bounce" style={{ animationDuration: '3s' }} />
+                  <span className="tracking-wide">{dict.tutor.education}</span>
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm leading-7 text-muted sm:text-base sm:leading-8 max-w-3xl">
+                {dict.tutor.bio}
+              </p>
             </div>
           </div>
         </div>

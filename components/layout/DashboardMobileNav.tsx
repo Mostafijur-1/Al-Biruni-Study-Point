@@ -111,16 +111,16 @@ export function DashboardSidebar({ locale }: { locale: string }) {
 
   const allLinks: Record<UserRole, NavItem[]> = {
     student: [
-      { href: "/student/courses", label: "Overview", icon: LayoutDashboard, levelAware: true },
+      // { href: "/student/courses", label: "Overview", icon: LayoutDashboard, levelAware: true },
       { href: "/student/profile", label: "Profile", icon: UserCircle },
-      { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
+     // { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
       { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
       { href: "/student/results", label: "Results", icon: GraduationCap },
     ],
     teacher: [
-      { href: "/teacher", label: "Overview", icon: LayoutDashboard },
+      //{ href: "/teacher", label: "Overview", icon: LayoutDashboard },
       { href: "/teacher/profile", label: "Profile", icon: UserCircle },
-      { href: "/teacher/classes", label: "Classes", icon: BookOpen },
+     // { href: "/teacher/classes", label: "Classes", icon: BookOpen },
       { href: "/teacher/results", label: "Results", icon: LineChart },
     ],
     admin: [
@@ -128,10 +128,10 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/admin/profile", label: "Profile", icon: UserCircle },
       { href: "/admin/students", label: "Students", icon: Users },
       { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
-      { href: "/admin/courses", label: "Courses", icon: BookOpen },
-      { href: "/admin/exams", label: "Exams & results", icon: FileQuestion },
+      //{ href: "/admin/courses", label: "Courses", icon: BookOpen },
+      //{ href: "/admin/exams", label: "Exams & results", icon: FileQuestion },
       { href: "/admin/practice-mcqs", label: "Practice MCQs", icon: Brain },
-      { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      //{ href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
   };
 

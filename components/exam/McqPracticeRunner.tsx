@@ -278,7 +278,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
         <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         <p className="text-sm font-medium text-muted">
-          {locale === "bn" ? "অধ্যায়গুলো লোড হচ্ছে..." : "Loading test configuration..."}
+          {locale === "bn" ? "চ্যাপ্টার লোড হচ্ছে..." : "Loading chapters..." }
         </p>
       </div>
     );
@@ -306,20 +306,12 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-widest text-accent">Test Mode</p>
               <h1 className="font-display text-xl font-bold text-primary sm:text-2xl">
-                {displaySubject} MCQ Test
-                {paperLabel && (
-                  <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary align-middle">
-                    {paperLabel}
-                  </span>
-                )}
+                {displaySubject} {paperLabel} MCQ Test
+                
               </h1>
             </div>
           </div>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            {locale === "bn"
-              ? `অধ্যায় সিলেক্ট করুন। সর্বোচ্চ ২৫টি প্রশ্ন র্যান্ডমলি নেওয়া হবে। উত্তর না দিলে ভুল ধরা হবে। পাস মার্ক ${passMarkPercent}%।`
-              : `Select chapters. Up to 25 random questions will be picked. Unanswered questions count as wrong. Pass mark: ${passMarkPercent}%.`}
-          </p>
+         
         </div>
 
         {errorMessage && (
@@ -333,7 +325,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             <div className="flex min-w-0 items-center gap-2">
               <BookOpen className="size-4 shrink-0 text-primary" />
               <h2 className="truncate font-semibold text-primary">
-                {locale === "bn" ? "অধ্যায় নির্বাচন" : "Select chapters"}
+                {locale === "bn" ? "চ্যাপ্টার সিলেক্ট করো" : "Select chapters"}
               </h2>
               <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
                 {selectedChapters.length}/{availableChapters.length}
@@ -346,10 +338,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             >
               {allSelected
                 ? locale === "bn"
-                  ? "সব বাতিল"
+                  ? "সব আনসিলেক্ট করো"
                   : "Clear all"
                 : locale === "bn"
-                  ? "সব নির্বাচন"
+                  ? "সব সিলেক্ট করো"
                   : "Select all"}
             </button>
           </div>
@@ -411,9 +403,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               <span className="rounded-md border border-border bg-card px-2.5 py-1">
                 {locale === "bn" ? "আনুমানিক সময়" : "Est. time"}:{" "}
                 <strong className="text-primary">
-                  {estQuestionCount > 0
-                    ? `${estMinutes}m ${estSecondsRemainder > 0 ? `${estSecondsRemainder}s` : ""}`.trim()
-                    : "—"}
+                  19m
                 </strong>
               </span>
             </div>
@@ -428,7 +418,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           disabled={selectedChapters.length === 0}
         >
           <Brain className="mr-2 size-5" />
-          {locale === "bn" ? "পরীক্ষা শুরু করুন" : "Start Test"}
+           Start Test
         </Button>
       </section>
     );
@@ -440,7 +430,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
         <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         <p className="text-sm font-medium text-muted">
-          {locale === "bn" ? "প্রশ্ন জেনারেট হচ্ছে..." : "Generating test questions..."}
+          Generating test questions...
         </p>
       </div>
     );
@@ -461,18 +451,14 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 Test Mode
               </span>
               <h1 className="mt-1.5 font-display text-2xl font-bold text-primary sm:text-3xl">
-                {displaySubject} MCQ Test
-                {paperLabel && (
-                  <span className="ml-2 rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary align-middle">
-                    {paperLabel}
-                  </span>
-                )}
+                {displaySubject} {paperLabel} MCQ Test
+                
               </h1>
               <p className="mt-2 text-sm text-muted">
                 {answeredCount}/{questions.length}{" "}
-                {locale === "bn" ? "উত্তর দেওয়া হয়েছে" : "answered"} ·{" "}
-                {locale === "bn" ? "পাস মার্ক" : "pass mark"} {passMarkPercent}% ·{" "}
-                {locale === "bn" ? "খালি = ভুল" : "blank = wrong"}
+                {"answered"} ·{" "}
+                {"pass mark"} {passMarkPercent}% ·{" "}
+                {"blank == wrong"}
               </p>
             </div>
             <div
@@ -569,12 +555,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           loading={isSubmitting}
         >
           {isSubmitting
-            ? locale === "bn"
-              ? "সাবমিট হচ্ছে..."
-              : "Submitting..."
-            : locale === "bn"
-              ? `পরীক্ষা শেষ করুন (${answeredCount}/${questions.length} উত্তর)`
-              : `Submit test (${answeredCount}/${questions.length} answered)`}
+            ?  "Submitting..."
+            :  `Submit test (${answeredCount}/${questions.length} answered)`}
         </Button>
       </section>
     );
@@ -593,7 +575,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             </h3>
             <p className="text-xs leading-5 text-muted">
               {locale === "bn"
-                ? "আপনি পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবেন না (ডাটাবেসে শুধু মোট স্কোরটি সেভ করা থাকবে)। অনুগ্রহ করে এখান থেকে যাওয়ার আগে আপনার উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নিন!"
+                ? "পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবে না। অনুগ্রহ করে এখান থেকে যাওয়ার আগে উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নাও!"
                 : "You will NOT be able to view this detailed question review later (the database only stores your final score). Please review your answers and explanations carefully before navigating away!"}
             </p>
           </div>
@@ -625,7 +607,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             </div>
             <Link href={practiceListHref} className="shrink-0">
               <Button type="button" variant="outline" className="rounded-xl bg-surface hover:bg-secondary">
-                {locale === "bn" ? "ড্যাশবোর্ডে ফিরে যান" : "Go to Dashboard"}
+                {locale === "bn" ? "ড্যাশবোর্ডে ফিরে যাও" : "Go to Dashboard"}
               </Button>
             </Link>
           </div>
@@ -711,7 +693,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
         <Link href={practiceListHref} className="block">
           <Button type="button" size="lg" className="w-full rounded-xl">
-            {locale === "bn" ? "সমাপ্ত করুন এবং ফিরে যান" : "Finish and Go Back"}
+            {"Finish and Go Back"}
           </Button>
         </Link>
       </section>

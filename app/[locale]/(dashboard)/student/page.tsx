@@ -10,5 +10,5 @@ export default async function StudentDashboardPage({ params, searchParams }: Pro
   const { locale } = await params;
   const { level } = await searchParams;
   const query = level ? `?level=${level}` : "";
-  redirect(`/${locale}/student/courses${query}`);
+  redirect(`/${locale}/student/practice${query}`);
 }

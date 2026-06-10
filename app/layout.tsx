@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: "%s | ABSP",
   },
   description:
-    "Premium Bangladeshi science coaching center and LMS for SSC and HSC students.",
+    "Science coaching center(offline/online) and LMS for SSC and HSC students.",
   icons: {
     icon: [
       { url: "/favicon.ico?v=20260603b", sizes: "any" },

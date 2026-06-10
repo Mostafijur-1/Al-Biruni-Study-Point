@@ -113,7 +113,7 @@
       "title": "Lead instructor",
       "name": "Mostafijur Rahman",
       "role": "Founder & lead teacher",
-      "education": "Student, Computer Science and Engineering (CSE), Islamic University of Technology (IUT)",
+      "education": "CSE'21, IUT",
       "bio": "5+ years of teaching experience. Brings an engineering mindset to —clear concepts, plenty of practice, and regular MCQ and CQ assessment."
     }
   },
@@ -148,13 +148,13 @@
       "continueLogin": "Continue to login",
       "teacherPrompt": "Are you a teacher?",
       "teacherLink": "Teacher registration",
-      "studentPrompt": "Student registration?",
-      "studentLink": "Register as student",
+      "studentPrompt": "Registration?",
+      "studentLink": "Register",
       "student": {
         "eyebrow": "Student",
         "title": "Student registration",
-        "subtitle": "Create your student account for SSC and HSC courses.",
-        "submit": "Create student account",
+        "subtitle": "Create your student account.",
+        "submit": "Create account",
         "submitting": "Creating account..."
       },
       "teacher": {

@@ -96,9 +96,20 @@ export function Footer({ locale, brand, footer, navigation, contact }: FooterPro
           </div>
         </div>
 
-        <p className="mt-8 border-t border-white/15 pt-6 text-center text-xs text-white/65 sm:text-left">
-          {footer.rights}
-        </p>
+        <div className="mt-8 border-t border-white/15 pt-6 flex flex-col gap-2 text-center text-xs text-white/65 sm:flex-row sm:justify-between sm:text-left">
+          <p>{footer.rights}</p>
+          <p className="text-white/50">
+            Developed by{" "}
+            <a
+              href="https://github.com/Mostafijur-1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand-yellow hover:underline"
+            >
+              Mostafij CSE'21 IUT
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
