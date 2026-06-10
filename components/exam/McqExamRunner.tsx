@@ -113,6 +113,7 @@ export function McqExamRunner({ examId }: { examId: string }) {
 
     setResult(payload.data);
     setIsSubmitting(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   useEffect(() => {

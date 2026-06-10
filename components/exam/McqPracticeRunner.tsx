@@ -259,6 +259,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
       setResult(payload.data);
       setPhase("result");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setErrorMessage("An error occurred during submission.");
     } finally {
