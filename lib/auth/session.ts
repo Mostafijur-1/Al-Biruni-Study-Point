@@ -24,6 +24,7 @@ export function serializeUser(user: {
   studentClass?: string;
   avatar?: string;
   approvalStatus?: string;
+  schoolCollege?: string;
 }) {
   return {
     id: String(user._id),
@@ -34,6 +35,7 @@ export function serializeUser(user: {
     studentClass: user.studentClass,
     avatar: user.avatar,
     approvalStatus: user.approvalStatus,
+    schoolCollege: user.schoolCollege,
   };
 }
 
@@ -77,5 +79,6 @@ export async function requireAuth(
     email: user.email,
     role: user.role,
     studentClass: user.studentClass,
+    schoolCollege: user.schoolCollege,
   } satisfies SessionUser;
 }

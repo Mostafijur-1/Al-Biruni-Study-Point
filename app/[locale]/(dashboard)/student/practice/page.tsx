@@ -182,18 +182,47 @@ function StudentPracticeDashboard() {
   return (
     <section className="space-y-6">
       {/* Dashboard Header */}
-      <div>
-        <p className="text-sm font-bold uppercase tracking-wide text-accent">
-          {locale === "bn" ? "শিক্ষার্থী প্যানেল" : "Student panel"}
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-primary sm:text-4xl">
-          {locale === "bn" ? "অধ্যায়-ভিত্তিক এমসিকিউ পরীক্ষা" : "Subject-wise MCQ Test"}
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          {locale === "bn"
-            ? "সাবজেক্ট ও চ্যাপ্টার সিলেক্ট করে MCQ test শুরু করো।"
-            : "Select a subject and chapter to start your MCQ test."}
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-wide text-accent">
+            {locale === "bn" ? "শিক্ষার্থী প্যানেল" : "Student panel"}
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-bold text-primary sm:text-4xl">
+            {locale === "bn" ? "অধ্যায়-ভিত্তিক এমসিকিউ পরীক্ষা" : "Subject-wise MCQ Test"}
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            {locale === "bn"
+              ? "সাবজেক্ট ও চ্যাপ্টার সিলেক্ট করে MCQ test শুরু করো।"
+              : "Select a subject and chapter to start your MCQ test."}
+          </p>
+        </div>
+
+        {!checking && isGuest && (
+          <div className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-white/60 p-1 shadow-xs transition duration-200 hover:border-brand-blue/30 max-w-fit">
+            <Link
+              href={path(`/student/practice?level=SSC`)}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-bold transition duration-200",
+                level === "SSC"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted hover:bg-secondary/40 hover:text-primary"
+              )}
+            >
+              {locale === "bn" ? "এসএসসি (SSC)" : "SSC"}
+            </Link>
+            <Link
+              href={path(`/student/practice?level=HSC`)}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-bold transition duration-200",
+                level === "HSC"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted hover:bg-secondary/40 hover:text-primary"
+              )}
+            >
+              {locale === "bn" ? "এইচএসসি (HSC)" : "HSC"}
+            </Link>
+          </div>
+        )}
       </div>
 
       {loading ? (

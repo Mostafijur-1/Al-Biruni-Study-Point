@@ -50,7 +50,7 @@ function RegisterFooter({
   auth: Dictionary["auth"];
   kind: "student" | "teacher";
   isSubmitting: boolean;
-  copy: Dictionary["auth"]["register"]["student"];
+  copy: any;
   returnUrl?: string | null;
 }) {
   return (
@@ -58,24 +58,28 @@ function RegisterFooter({
       <Button type="submit" form={`register-form-${kind}`} className="w-full" loading={isSubmitting}>
         {isSubmitting ? copy.submitting : copy.submit}
       </Button>
-      <p className="text-center text-sm text-muted">
-        {auth.register.hasAccount}{" "}
-        <Link
-          href={buildLoginUrl(locale, returnUrl ?? undefined)}
-          className="font-semibold text-primary hover:underline"
-        >
-          {auth.register.loginLink}
-        </Link>
-      </p>
-      <p className="text-center text-sm text-muted">
-        {kind === "student" ? auth.register.teacherPrompt : auth.register.studentPrompt}{" "}
-        <Link
-          href={getLocalizedPath(kind === "student" ? "/register/teacher" : "/register", locale)}
-          className="font-semibold text-primary hover:underline"
-        >
-          {kind === "student" ? auth.register.teacherLink : auth.register.studentLink}
-        </Link>
-      </p>
+      {kind !== "student" && (
+        <>
+          <p className="text-center text-sm text-muted">
+            {auth.register.hasAccount}{" "}
+            <Link
+              href={buildLoginUrl(locale, returnUrl ?? undefined)}
+              className="font-semibold text-primary hover:underline"
+            >
+              {auth.register.loginLink}
+            </Link>
+          </p>
+          <p className="text-center text-sm text-muted">
+            {auth.register.studentPrompt}{" "}
+            <Link
+              href={getLocalizedPath("/register", locale)}
+              className="font-semibold text-primary hover:underline"
+            >
+              {auth.register.studentLink}
+            </Link>
+          </p>
+        </>
+      )}
     </CardFooter>
   );
 }
@@ -88,7 +92,7 @@ function StudentRegisterForm({
   initialClass,
 }: Omit<RegisterFormProps, "kind">) {
   const copy = auth.register.student;
-  const optionalLabel = locale === "bn" ? "ঐচ্ছিক" : "optional";
+  const optionalLabel = "optional";
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
 
@@ -97,6 +101,7 @@ function StudentRegisterForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<StudentRegisterFormInput & { returnUrl?: string }>({
     resolver: zodResolver(studentRegisterBodySchema),
@@ -106,9 +111,19 @@ function StudentRegisterForm({
       email: "",
       password: "",
       studentClass: defaultClass,
+      schoolCollege: "",
       returnUrl: returnUrl ?? "",
     },
   });
+
+  const selectedClass = watch("studentClass", defaultClass);
+  const isSchool = selectedClass === "class-9" || selectedClass === "class-10";
+  const schoolCollegeLabel = isSchool
+    ? (locale === "bn" ? "স্কুল" : "School")
+    : (locale === "bn" ? "কলেজ" : "College");
+  const schoolCollegePlaceholder = isSchool
+    ? ("ABC School and College")
+    : ("ABC School and College");
 
   async function onSubmit(values: StudentRegisterFormInput & { returnUrl?: string }) {
     setMessage(null);
@@ -145,31 +160,38 @@ function StudentRegisterForm({
       </CardHeader>
       <CardContent>
         <AuthReturnNotice reason={reason} copy={auth.guestAccess} />
+        
+        <div className="mb-4 rounded-xl bg-secondary/30 border border-border/40 p-3 text-center text-sm text-muted">
+          {auth.register.hasAccount}{" "}
+          <Link
+            href={buildLoginUrl(locale, returnUrl ?? undefined)}
+            className="font-semibold text-primary hover:underline"
+          >
+            {auth.register.loginLink}
+          </Link>
+        </div>
+
         <form id="register-form-student" onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" {...register("returnUrl")} />
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="name">{auth.register.name}</Label>
-            <Input id="name" {...register("name")} />
+            <Input
+              id="name"
+              {...register("name")}
+              placeholder="Abdur Rahman"
+            />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">{auth.register.phone}</Label>
-            <Input id="phone" {...register("phone")} placeholder="01XXXXXXXXX" />
+            <Input
+              id="phone"
+              {...register("phone")}
+              placeholder="015816#####"
+            />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">
-              {auth.register.email} ({optionalLabel})
-            </Label>
-            <Input id="email" type="email" {...register("email")} />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="password">{auth.register.password}</Label>
-            <Input id="password" type="password" {...register("password")} autoComplete="new-password" />
-            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-          </div>
-          <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="studentClass">{auth.register.studentClass}</Label>
             <select id="studentClass" {...register("studentClass")} className={selectClassName}>
               <option value="class-9">{auth.register.classes["class-9"]}</option>
@@ -180,6 +202,40 @@ function StudentRegisterForm({
             {errors.studentClass && (
               <p className="text-sm text-destructive">{errors.studentClass.message}</p>
             )}
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="password">{auth.register.password}</Label>
+            <Input
+              id="password"
+              type="password"
+              {...register("password")}
+              autoComplete="new-password"
+              placeholder={locale === "bn" ? "কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড" : "At least 8 characters"}
+            />
+            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="schoolCollege">{schoolCollegeLabel}</Label>
+            <Input
+              id="schoolCollege"
+              {...register("schoolCollege")}
+              placeholder={schoolCollegePlaceholder}
+            />
+            {errors.schoolCollege && (
+              <p className="text-sm text-destructive">{errors.schoolCollege.message}</p>
+            )}
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="email">
+              {auth.register.email} ({optionalLabel})
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              {...register("email")}
+              placeholder={locale === "bn" ? "যেমন: student@example.com" : "e.g. student@example.com"}
+            />
+            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
           {message && (
             <div className="sm:col-span-2">
@@ -251,7 +307,11 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
         <form id="register-form-teacher" onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="name">{auth.register.name}</Label>
-            <Input id="name" {...register("name")} />
+            <Input
+              id="name"
+              {...register("name")}
+              placeholder={locale === "bn" ? "যেমন: মোস্তাফিজুর রহমান" : "e.g. Mostafijur Rahman"}
+            />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
@@ -259,7 +319,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
             <Input
               id="phone"
               {...register("phone")}
-              placeholder="01XXXXXXXXX"
+              placeholder={locale === "bn" ? "যেমন: ০১XXXXXXXXX" : "e.g. 01XXXXXXXXX"}
               required
               autoComplete="tel"
             />
@@ -271,6 +331,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
               id="email"
               type="email"
               {...register("email")}
+              placeholder={locale === "bn" ? "যেমন: teacher@example.com" : "e.g. teacher@example.com"}
               required
               autoComplete="email"
             />
@@ -278,7 +339,13 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="password">{auth.register.password}</Label>
-            <Input id="password" type="password" {...register("password")} autoComplete="new-password" />
+            <Input
+              id="password"
+              type="password"
+              {...register("password")}
+              autoComplete="new-password"
+              placeholder={locale === "bn" ? "কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন" : "At least 8 characters"}
+            />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
           {message && (

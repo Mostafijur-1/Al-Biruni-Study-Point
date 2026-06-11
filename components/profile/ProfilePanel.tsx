@@ -1,6 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { Edit, Lock, Save, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import type { MeResponseData } from "@/types/api";
 
 const classLabels: Record<string, string> = {
@@ -17,12 +24,29 @@ const roleLabels: Record<string, string> = {
 };
 
 export function ProfilePanel() {
-  const { data, message } = useApiQuery<MeResponseData>("/api/auth/me", {
+  const { data, message, setData } = useApiQuery<MeResponseData>("/api/auth/me", {
     loadingMessage: "Loading profile...",
     errorMessage: "Could not load profile.",
   });
 
   const user = data?.user;
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [studentClass, setStudentClass] = useState("");
+  const [schoolCollege, setSchoolCollege] = useState("");
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setStudentClass(user.studentClass || "class-9");
+      setSchoolCollege(user.schoolCollege || "");
+    }
+  }, [user]);
 
   if (message) {
     return <p className="rounded-xl border border-border bg-card p-5 text-muted">{message}</p>;
@@ -32,11 +56,183 @@ export function ProfilePanel() {
     return null;
   }
 
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setUpdating(true);
+    setError("");
+
+    try {
+      const payloadBody: any = {
+        name,
+        email: email || "",
+      };
+
+      if (user.role === "student") {
+        payloadBody.studentClass = studentClass;
+        payloadBody.schoolCollege = schoolCollege || "";
+      }
+
+      const { ok, payload } = await apiFetch<{ user: any }>("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payloadBody),
+      });
+
+      if (ok && isApiSuccess(payload)) {
+        setData({ user: payload.data.user });
+        window.dispatchEvent(new Event("absp-auth-changed"));
+        setIsEditing(false);
+      } else {
+        setError(getApiErrorMessage(payload, "Failed to update profile."));
+      }
+    } catch (err) {
+      setError("An error occurred while connecting to the server.");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  const isSchool = studentClass === "class-9" || studentClass === "class-10";
+  const schoolCollegeLabel = isSchool ? "School" : "College";
+  const schoolCollegePlaceholder = isSchool ? "Enter your school name" : "Enter your college name";
+
+  const userIsSchool = user.studentClass === "class-9" || user.studentClass === "class-10";
+  const userSchoolCollegeLabel = userIsSchool ? "School" : "College";
+
+  if (isEditing) {
+    return (
+      <section className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)]">
+        <div className="flex items-center justify-between pb-4 border-b border-border/60">
+          <p className="text-xs font-bold uppercase tracking-widest text-accent">Edit Profile</p>
+        </div>
+
+        <form onSubmit={handleSave} className="mt-6 space-y-4">
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-name">Full Name</Label>
+            <Input
+              id="edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="Enter your full name"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone" className="flex items-center gap-1.5">
+                Phone Number
+                <Lock className="size-3.5 text-muted-foreground" />
+              </Label>
+              <Input
+                id="edit-phone"
+                value={user.phone || ""}
+                disabled
+                className="bg-muted cursor-not-allowed text-muted-foreground"
+              />
+              <p className="text-2xs text-muted-foreground">Phone number cannot be changed.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email (Optional)</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. student@example.com"
+              />
+            </div>
+          </div>
+
+          {user.role === "student" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-class">Class</Label>
+                <select
+                  id="edit-class"
+                  value={studentClass}
+                  onChange={(e) => setStudentClass(e.target.value)}
+                  className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                >
+                  <option value="class-9">Class 9</option>
+                  <option value="class-10">Class 10</option>
+                  <option value="class-11">Class 11</option>
+                  <option value="class-12">Class 12</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-schoolCollege">{schoolCollegeLabel}</Label>
+                <Input
+                  id="edit-schoolCollege"
+                  value={schoolCollege}
+                  onChange={(e) => setSchoolCollege(e.target.value)}
+                  placeholder={schoolCollegePlaceholder}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/60">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setName(user.name || "");
+                setEmail(user.email || "");
+                setStudentClass(user.studentClass || "class-9");
+                setSchoolCollege(user.schoolCollege || "");
+                setError("");
+                setIsEditing(false);
+              }}
+              disabled={updating}
+              className="flex items-center gap-1.5"
+            >
+              <X className="size-4" />
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              loading={updating}
+              className="flex items-center gap-1.5"
+            >
+              <Save className="size-4" />
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)]">
-      <p className="text-xs font-bold uppercase tracking-widest text-accent">Profile</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-widest text-accent">Profile</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError("");
+            setIsEditing(true);
+          }}
+          className="flex items-center gap-1.5"
+        >
+          <Edit className="size-4" />
+          Edit Profile
+        </Button>
+      </div>
+
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="grid size-16 place-items-center rounded-xl bg-primary text-xl font-bold text-primary-foreground">
+        <div className="grid size-16 shrink-0 place-items-center rounded-xl bg-primary text-xl font-bold text-primary-foreground">
           {user.name
             .split(" ")
             .map((part) => part[0])
@@ -60,12 +256,18 @@ export function ProfilePanel() {
           <dd className="mt-1 font-semibold text-foreground">{user.email || "Not provided"}</dd>
         </div>
         {user.role === "student" && (
-          <div className="rounded-lg border border-border bg-background p-4">
-            <dt className="text-xs font-bold uppercase tracking-wide text-muted">Class</dt>
-            <dd className="mt-1 font-semibold text-foreground">
-              {user.studentClass ? classLabels[user.studentClass] : "Not provided"}
-            </dd>
-          </div>
+          <>
+            <div className="rounded-lg border border-border bg-background p-4">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Class</dt>
+              <dd className="mt-1 font-semibold text-foreground">
+                {user.studentClass ? classLabels[user.studentClass] : "Not provided"}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background p-4">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">{userSchoolCollegeLabel}</dt>
+              <dd className="mt-1 font-semibold text-foreground">{user.schoolCollege || "Not provided"}</dd>
+            </div>
+          </>
         )}
       </dl>
     </section>

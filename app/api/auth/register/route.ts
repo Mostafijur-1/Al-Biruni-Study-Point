@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       password,
       role: "student",
       studentClass: parsed.studentClass,
+      schoolCollege: parsed.schoolCollege || undefined,
       approvalStatus: "approved",
     });
 

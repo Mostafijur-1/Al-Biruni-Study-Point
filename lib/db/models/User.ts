@@ -9,6 +9,7 @@ export interface IUser extends Document {
   password: string;
   role: UserRole;
   studentClass?: StudentClass;
+  schoolCollege?: string;
   avatar?: string;
   isActive: boolean;
   approvalStatus: ApprovalStatus;
@@ -42,6 +43,7 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ["class-9", "class-10", "class-11", "class-12"],
     },
+    schoolCollege: { type: String, trim: true },
     avatar: { type: String },
     isActive: { type: Boolean, default: true },
     approvalStatus: {
@@ -73,6 +75,7 @@ if (
   ExistingUserModel &&
   (!ExistingUserModel.schema.path("studentClass") ||
     !ExistingUserModel.schema.path("teacherDomain") ||
+    !ExistingUserModel.schema.path("schoolCollege") ||
     ExistingUserModel.schema.path("phone")?.options.required)
 ) {
   mongoose.deleteModel("User");

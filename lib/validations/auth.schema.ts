@@ -23,6 +23,7 @@ export const studentRegisterSchema = z.object({
   email: z.string().trim().email().optional().or(z.literal("")),
   password: z.string().min(8, "Password must be at least 8 characters."),
   studentClass: studentClassSchema,
+  schoolCollege: z.string().trim().optional().or(z.literal("")),
 });
 
 export const teacherRegisterSchema = z.object({

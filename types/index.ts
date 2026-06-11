@@ -11,6 +11,7 @@ export type SessionUser = {
   email?: string;
   role: UserRole;
   studentClass?: StudentClass;
+  schoolCollege?: string;
 };
 
 export type CourseLevel = "SSC" | "HSC";
