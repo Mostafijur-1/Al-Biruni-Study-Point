@@ -409,15 +409,14 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
                 return (
                   <li key={chapter}>
-                    <label
-                      htmlFor={isDisabled ? undefined : inputId}
+                    <div
                       className={cn(
                         "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full",
                         isDisabled
                           ? "border-transparent opacity-60 cursor-not-allowed bg-secondary/10"
                           : isChecked
-                            ? "border-primary/30 bg-primary/5 cursor-pointer"
-                            : "border-transparent hover:bg-secondary/50 cursor-pointer",
+                            ? "border-primary/30 bg-primary/5"
+                            : "border-transparent hover:bg-secondary/50",
                       )}
                     >
                       <input
@@ -426,9 +425,15 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                         checked={isChecked}
                         disabled={isDisabled}
                         onChange={() => toggleChapter(chapter)}
-                        className="mt-1 size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+                        className="mt-1 size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer"
                       />
-                      <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <label
+                        htmlFor={isDisabled ? undefined : inputId}
+                        className={cn(
+                          "min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 select-none",
+                          isDisabled ? "cursor-not-allowed" : "cursor-pointer"
+                        )}
+                      >
                         <span
                           className={cn(
                             "text-sm leading-snug",
@@ -442,8 +447,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                             {locale === "bn" ? "এমসিকিউ শীঘ্রই যুক্ত করা হবে" : "MCQ will be added soon"}
                           </span>
                         )}
-                      </div>
-                    </label>
+                      </label>
+                    </div>
                   </li>
                 );
               })}

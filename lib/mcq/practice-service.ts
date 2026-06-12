@@ -139,24 +139,25 @@ export async function startPracticeExam(
     throw new Error("No valid chapters selected for practice.");
   }
 
-  // Optimize: Query only questions matching the selected chapters in MongoDB
-  const dbQuestions = await PracticeQuestion.find({
-    level,
-    subject,
-    chapter: { $in: chaptersToUse },
-  }).lean();
+  // Optimize: Query only a random sample of maxQuestions matching the selected chapters in MongoDB
+  const dbQuestions = await PracticeQuestion.aggregate([
+    {
+      $match: {
+        level,
+        subject,
+        chapter: { $in: chaptersToUse },
+      },
+    },
+    { $sample: { size: maxQuestions } },
+  ]);
 
-  const allQuestions = dbQuestions.map((q) => ({
-    id: (q as any)._id.toString(),
+  const finalQuestions = dbQuestions.map((q) => ({
+    id: q._id.toString(),
     question: q.question,
     options: q.options,
     correctIndex: q.correctIndex,
     explanation: q.explanation,
   }));
-
-  // Shuffle and cap to maxQuestions
-  const shuffled = shuffleArray(allQuestions);
-  const finalQuestions = shuffled.slice(0, maxQuestions);
 
   const totalQuestions = finalQuestions.length;
   // Total duration in seconds
