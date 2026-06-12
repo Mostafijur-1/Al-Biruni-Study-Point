@@ -45,20 +45,26 @@ export async function GET(request: NextRequest) {
       userId = user.id;
     }
 
+    const subjectParam = searchParams.get("subject");
+
     // Pick subject list based on level
     const isHsc = studentClass === "class-11" || studentClass === "class-12";
     const SUBJECTS = isHsc ? HSC_SUBJECTS : SSC_SUBJECTS;
 
     const levelKey = getSchoolLevel(studentClass);
 
-    // Fetch student's practice results for all subjects (only if authenticated)
-    const results = userId ? await PracticeResult.find({ student: userId }).lean() : [];
+    const targetSubjects = (subjectParam
+      ? [subjectParam]
+      : SUBJECTS) as CourseSubject[];
+
+    // Fetch student's practice results for target subjects (only if authenticated)
+    const results = userId ? await PracticeResult.find({ student: userId, subject: { $in: targetSubjects } }).lean() : [];
     const resultsMap = new Map(results.map((r) => [r.subject, r]));
 
-    // Batch query active questions for this level and subjects (only select subject and chapter to minimize memory/payload)
+    // Batch query active questions for this level and target subjects (only select subject and chapter to minimize memory/payload)
     const activeQuestions = await PracticeQuestion.find({
       level: levelKey,
-      subject: { $in: SUBJECTS },
+      subject: { $in: targetSubjects },
     })
       .select("subject chapter")
       .lean();
@@ -69,9 +75,9 @@ export async function GET(request: NextRequest) {
 
     const statusList = [];
 
-    for (const subject of SUBJECTS) {
+    for (const subject of targetSubjects) {
       const syllabusChapters = SYLLABUS[levelKey]?.[subject] || [];
-      const chapters = syllabusChapters.map((ch) => ({
+      const chapters = syllabusChapters.map((ch: string) => ({
         name: ch,
         hasMcqs: populatedSet.has(`${subject}_${ch}`),
       }));

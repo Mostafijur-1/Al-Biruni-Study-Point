@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, BookOpen, Brain, Clock } from "lucide-react";
+import type { CourseSubject } from "@/types";
 
 import { useRouter } from "next/navigation";
 import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
@@ -11,7 +12,7 @@ import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { createLocalizedPath } from "@/lib/i18n";
-import { getTranslatedChapter } from "@/lib/content/syllabus";
+import { getTranslatedChapter, SYLLABUS, getSchoolLevel } from "@/lib/content/syllabus";
 import { cn } from "@/lib/utils";
 
 type ChapterStatus = {
@@ -85,8 +86,15 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // States
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
-  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>([]);
-  const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
+  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>(() => {
+    const initialLevel = level.toLowerCase() === "hsc" ? "hsc" : "ssc";
+    const syllabusChapters = SYLLABUS[initialLevel]?.[subject as CourseSubject] || [];
+    return syllabusChapters.map((name: string) => ({ name, hasMcqs: true }));
+  });
+  const [selectedChapters, setSelectedChapters] = useState<string[]>(() => {
+    const initialLevel = level.toLowerCase() === "hsc" ? "hsc" : "ssc";
+    return SYLLABUS[initialLevel]?.[subject as CourseSubject] || [];
+  });
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
@@ -96,12 +104,23 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [result, setResult] = useState<PracticeSubmitResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [loadingConfig, setLoadingConfig] = useState(true);
+  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
   const progressPercent = questions.length
     ? Math.round((answeredCount / questions.length) * 100)
     : 0;
+
+  // Update static chapters when user class or subject is resolved, before the API load completes
+  useEffect(() => {
+    if (checking || configLoaded) return;
+    const resolvedLevel = user?.studentClass ? getSchoolLevel(user.studentClass) : (level.toLowerCase() === "hsc" ? "hsc" : "ssc");
+    const syllabusChapters = SYLLABUS[resolvedLevel]?.[subject as CourseSubject] || [];
+    
+    setAvailableChapters(syllabusChapters.map((name: string) => ({ name, hasMcqs: true })));
+    setSelectedChapters(syllabusChapters);
+  }, [subject, user?.studentClass, checking, level, configLoaded]);
 
   // Load subject status and chapters
   useEffect(() => {
@@ -110,8 +129,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     async function loadConfig() {
       try {
         const url = isGuest
-          ? `/api/mcq/practice/status?scope=guest&level=${level}`
-          : "/api/mcq/practice/status";
+          ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`
+          : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}`;
         const { ok, payload } = await apiFetch<{ status: ChapterStatus[] }>(url);
         if (ok && isApiSuccess(payload)) {
           const matchingSubject = payload.data.status.find((s) => s.subject === subject);
@@ -122,6 +141,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               .filter((c) => c.hasMcqs)
               .map((c) => c.name);
             setSelectedChapters(enabledChapters);
+            setConfigLoaded(true);
           } else {
             setErrorMessage(
               locale === "bn"
@@ -382,6 +402,9 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
                 {selectedChapters.length}/{availableChapters.length}
               </span>
+              {!configLoaded && (
+                <div className="size-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent shrink-0" />
+              )}
             </div>
             <button
               type="button"
