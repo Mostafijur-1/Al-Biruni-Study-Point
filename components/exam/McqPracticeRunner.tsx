@@ -413,10 +413,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                       className={cn(
                         "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full",
                         isDisabled
-                          ? "border-transparent opacity-60 cursor-not-allowed bg-secondary/10"
+                          ? "border-border/40 opacity-60 cursor-not-allowed bg-secondary/10"
                           : isChecked
                             ? "border-primary/30 bg-primary/5"
-                            : "border-transparent hover:bg-secondary/50",
+                            : "border-border bg-card hover:border-primary/20 hover:bg-secondary/40",
                       )}
                     >
                       <input
