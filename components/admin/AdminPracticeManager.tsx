@@ -10,10 +10,14 @@ import {
   Calculator,
   CheckCircle2,
   Cpu,
+  Database,
   FileImage,
+  FileJson,
   FileText,
   GraduationCap,
+  RefreshCw,
   Save,
+  Server,
   Settings,
   Type,
   Upload,
@@ -218,6 +222,169 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // DB Sync states
+  const [serverFiles, setServerFiles] = useState<Array<{
+    level: "ssc" | "hsc";
+    subject: string;
+    chapter: string;
+    questionCount: number;
+  }>>([]);
+  const [selectedServerFiles, setSelectedServerFiles] = useState<Array<{
+    level: "ssc" | "hsc";
+    subject: string;
+    chapter: string;
+  }>>([]);
+  const [serverFilesLoading, setServerFilesLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState("");
+  const [syncSuccess, setSyncSuccess] = useState("");
+
+  // DB Direct Upload states
+  const [localUploadLevel, setLocalUploadLevel] = useState<SchoolLevel>("ssc");
+  const [localUploadSubject, setLocalUploadSubject] = useState<CourseSubject>("Physics");
+  const [localFiles, setLocalFiles] = useState<File[]>([]);
+  const [localUploading, setLocalUploading] = useState(false);
+  const [localError, setLocalError] = useState("");
+  const [localSuccess, setLocalSuccess] = useState("");
+
+  const localSubjects = localUploadLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+
+  // Sync direct local level with local subjects list
+  useEffect(() => {
+    const subjects = localUploadLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+    if (!subjects.includes(localUploadSubject)) {
+      setLocalUploadSubject(subjects[0]);
+    }
+  }, [localUploadLevel]);
+
+  // Fetch server files list on mount
+  async function fetchServerFiles() {
+    setServerFilesLoading(true);
+    setSyncError("");
+    try {
+      const response = await fetch("/api/admin/practice-mcqs/list-files");
+      const payload = await response.json();
+      if (response.ok && payload.success) {
+        setServerFiles(payload.data);
+      } else {
+        setSyncError(payload.error?.message || "Failed to load files from server.");
+      }
+    } catch {
+      setSyncError("Could not connect to the server.");
+    } finally {
+      setServerFilesLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchServerFiles();
+  }, []);
+
+  // Sync selected server files to MongoDB
+  async function handleServerSync(e: React.FormEvent) {
+    e.preventDefault();
+    if (selectedServerFiles.length === 0) {
+      setSyncError("Please select at least one file to sync.");
+      return;
+    }
+
+    setSyncing(true);
+    setSyncError("");
+    setSyncSuccess("");
+
+    try {
+      const response = await fetch("/api/admin/practice-mcqs/db-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: selectedServerFiles }),
+      });
+      const payload = await response.json();
+      if (response.ok && payload.success) {
+        setSyncSuccess(
+          locale === "bn"
+            ? `সফলভাবে ডেটাবেজে ${payload.data.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
+            : `Successfully synced ${payload.data.addedCount} questions to the database!`
+        );
+        setSelectedServerFiles([]);
+      } else {
+        setSyncError(payload.error?.message || "Sync failed.");
+      }
+    } catch {
+      setSyncError("Could not connect to the server.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  // Upload local computer JSON files direct to MongoDB
+  async function handleLocalJsonUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (localFiles.length === 0) {
+      setLocalError("Please select at least one JSON file.");
+      return;
+    }
+
+    setLocalUploading(true);
+    setLocalError("");
+    setLocalSuccess("");
+
+    try {
+      const formData = new FormData();
+      formData.append("level", localUploadLevel);
+      formData.append("subject", localUploadSubject);
+      for (const file of localFiles) {
+        formData.append("files", file);
+      }
+
+      const response = await fetch("/api/admin/practice-mcqs/db-upload", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json();
+      if (response.ok && payload.success) {
+        let msg = locale === "bn"
+          ? `সফলভাবে ${payload.data.addedCount}টি প্রশ্ন আপলোড করা হয়েছে!`
+          : `Successfully uploaded ${payload.data.addedCount} questions!`;
+        if (payload.data.skippedCount > 0) {
+          msg += locale === "bn"
+            ? ` বাদ দেওয়া ফাইলসমূহ: ${payload.data.skippedFiles.join(", ")}`
+            : ` Skipped ${payload.data.skippedCount} files: ${payload.data.skippedFiles.join(", ")}`;
+        }
+        setLocalSuccess(msg);
+        setLocalFiles([]);
+      } else {
+        setLocalError(payload.error?.message || "Upload failed.");
+      }
+    } catch {
+      setLocalError("Could not connect to the server.");
+    } finally {
+      setLocalUploading(false);
+    }
+  }
+
+  // Toggle server files selection
+  function toggleServerFile(level: "ssc" | "hsc", subject: string, chapter: string) {
+    const exists = selectedServerFiles.some(
+      (f) => f.level === level && f.subject === subject && f.chapter === chapter
+    );
+    if (exists) {
+      setSelectedServerFiles((prev) =>
+        prev.filter((f) => !(f.level === level && f.subject === subject && f.chapter === chapter))
+      );
+    } else {
+      setSelectedServerFiles((prev) => [...prev, { level, subject, chapter }]);
+    }
+  }
+
+  // Toggle select all server files
+  function toggleSelectAllServerFiles() {
+    if (selectedServerFiles.length === serverFiles.length) {
+      setSelectedServerFiles([]);
+    } else {
+      setSelectedServerFiles(serverFiles.map((f) => ({ level: f.level, subject: f.subject, chapter: f.chapter })));
     }
   }
 
@@ -633,6 +800,233 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ─── Database Sync & Upload ─── */}
+      <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="rounded-lg bg-primary/10 p-2">
+            <Database className="size-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-bold text-primary">
+              {locale === "bn" ? "ডেটাবেজ সিঙ্ক ও আপলোড" : "Database Sync & Upload"}
+            </h2>
+            <p className="text-xs text-muted">
+              {locale === "bn"
+                ? "লোকাল ফাইল ডেটাবেজে যুক্ত করুন বা সরাসরি নতুন জেএসওএন আপলোড করুন।"
+                : "Sync local files to MongoDB or upload JSON files directly."}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Server Sync */}
+          <div className="border border-border rounded-xl p-4 bg-surface/50 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-sm font-bold text-primary flex items-center gap-2">
+                <Server className="size-4 text-accent" />
+                {locale === "bn" ? "সার্ভার ফাইল সিঙ্ক" : "Server Files Sync"}
+              </h3>
+              <button
+                type="button"
+                onClick={fetchServerFiles}
+                className="text-xs text-muted hover:text-primary flex items-center gap-1 transition"
+              >
+                <RefreshCw className="size-3" />
+                {locale === "bn" ? "রিফ্রেশ" : "Refresh"}
+              </button>
+            </div>
+
+            {serverFilesLoading ? (
+              <div className="flex items-center justify-center py-8 gap-2 text-sm text-muted">
+                <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                {locale === "bn" ? "ফাইল খোঁজা হচ্ছে..." : "Loading server files..."}
+              </div>
+            ) : serverFiles.length === 0 ? (
+              <p className="text-xs text-muted py-8 text-center">
+                {locale === "bn" ? "সার্ভারে কোনো অনুশীলন ফাইল পাওয়া যায়নি।" : "No practice files found on the server."}
+              </p>
+            ) : (
+              <form onSubmit={handleServerSync} className="space-y-4">
+                <div className="flex items-center justify-between text-xs font-semibold text-muted border-b border-border pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedServerFiles.length === serverFiles.length}
+                      onChange={toggleSelectAllServerFiles}
+                      className="rounded border-border text-primary focus:ring-primary size-3.5"
+                    />
+                    <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
+                  </label>
+                  <span>
+                    {selectedServerFiles.length} / {serverFiles.length} {locale === "bn" ? "ফাইল নির্বাচিত" : "files selected"}
+                  </span>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                  {serverFiles.map((file, idx) => {
+                    const isSelected = selectedServerFiles.some(
+                      (f) => f.level === file.level && f.subject === file.subject && f.chapter === file.chapter
+                    );
+                    return (
+                      <label
+                        key={idx}
+                        className="flex items-start gap-3 rounded-lg border border-border bg-card p-2 text-xs font-medium cursor-pointer hover:border-primary/30 transition block"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleServerFile(file.level, file.subject, file.chapter)}
+                          className="mt-0.5 rounded border-border text-primary focus:ring-primary size-3.5"
+                        />
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-primary">{file.chapter}</div>
+                          <div className="text-2xs text-muted flex gap-2">
+                            <span className="uppercase font-bold text-accent">{file.level}</span>
+                            <span>•</span>
+                            <span>{file.subject}</span>
+                            <span>•</span>
+                            <span className="font-semibold text-emerald-600">{file.questionCount} {locale === "bn" ? "টি প্রশ্ন" : "questions"}</span>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {syncError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 flex items-center gap-2">
+                    <AlertTriangle className="size-3.5 shrink-0" />
+                    <span>{syncError}</span>
+                  </div>
+                )}
+
+                {syncSuccess && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700 flex items-center gap-2">
+                    <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
+                    <span>{syncSuccess}</span>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  loading={syncing}
+                  disabled={syncing || selectedServerFiles.length === 0}
+                  className="w-full rounded-xl py-2 text-xs font-bold"
+                >
+                  <Server className="mr-1.5 size-3.5" />
+                  {locale === "bn" ? "ডেটাবেজে সিঙ্ক করুন" : "Sync to Database"}
+                </Button>
+              </form>
+            )}
+          </div>
+
+          {/* Local JSON Upload */}
+          <div className="border border-border rounded-xl p-4 bg-surface/50 space-y-4">
+            <h3 className="font-display text-sm font-bold text-primary flex items-center gap-2">
+              <FileJson className="size-4 text-accent" />
+              {locale === "bn" ? "সরাসরি JSON ফাইল আপলোড" : "Direct JSON Files Upload"}
+            </h3>
+
+            <form onSubmit={handleLocalJsonUpload} className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="db-level-select" className="text-2xs">
+                    {locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}
+                  </Label>
+                  <select
+                    id="db-level-select"
+                    value={localUploadLevel}
+                    onChange={(e) => setLocalUploadLevel(e.target.value as SchoolLevel)}
+                    className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
+                  >
+                    <option value="ssc">SSC (Class 9-10)</option>
+                    <option value="hsc">HSC (Class 11-12)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="db-subject-select" className="text-2xs">
+                    {locale === "bn" ? "বিষয়" : "Subject"}
+                  </Label>
+                  <select
+                    id="db-subject-select"
+                    value={localUploadSubject}
+                    onChange={(e) => setLocalUploadSubject(e.target.value as CourseSubject)}
+                    className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
+                  >
+                    {localSubjects.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="db-json-input" className="text-2xs">
+                  {locale === "bn" ? "JSON ফাইলসমূহ (.json)" : "Select MCQ JSON Files (.json)"}
+                </Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="db-json-input"
+                    type="file"
+                    multiple
+                    accept=".json,application/json"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setLocalFiles(files);
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("db-json-input")?.click()}
+                    className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-card px-3 py-2 text-xs font-semibold text-muted hover:border-primary/30 hover:bg-secondary/40 transition"
+                  >
+                    <Upload className="size-3.5" />
+                    {localFiles.length > 0
+                      ? `${localFiles.length} ${locale === "bn" ? "টি ফাইল নির্বাচন করা হয়েছে" : "files selected"}`
+                      : locale === "bn" ? "ফাইলসমূহ নির্বাচন করুন" : "Choose Files"}
+                  </button>
+                </div>
+                {localFiles.length > 0 && (
+                  <div className="text-2xs text-muted max-h-20 overflow-y-auto border border-border bg-card/50 rounded-lg p-2 font-mono">
+                    {localFiles.map((f, i) => (
+                      <div key={i}>{f.name} ({Math.round(f.size / 1024)} KB)</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {localError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 flex items-center gap-2">
+                  <AlertTriangle className="size-3.5 shrink-0" />
+                  <span>{localError}</span>
+                </div>
+              )}
+
+              {localSuccess && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700 flex items-center gap-2">
+                  <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
+                  <span>{localSuccess}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                loading={localUploading}
+                disabled={localUploading || localFiles.length === 0}
+                className="w-full rounded-xl py-2 text-xs font-bold"
+              >
+                <Upload className="mr-1.5 size-3.5" />
+                {locale === "bn" ? "ডেটাবেজে আপলোড করুন" : "Upload to Database"}
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

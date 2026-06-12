@@ -1,6 +1,8 @@
 import fs from "fs/promises";
 import path from "path";
 
+import { connectDB } from "@/lib/db/connect";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { getSchoolLevel, SYLLABUS } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 
@@ -45,21 +47,52 @@ export function getChapterFilePath(level: "ssc" | "hsc", subject: string, chapte
   return path.join(process.cwd(), "lib", "data", "practice", level, subjectDir, `${chapterSlug}.json`);
 }
 
+export function getChapterFromSlug(
+  level: "ssc" | "hsc",
+  subject: string,
+  slug: string
+): string | null {
+  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  for (const chapter of chapters) {
+    const chapterSlug = chapter
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    if (chapterSlug === slug) {
+      return chapter;
+    }
+  }
+  return null;
+}
+
 export async function loadPracticeQuestionsData(
   level: "ssc" | "hsc",
   subject: string
 ): Promise<Record<string, JSONPracticeQuestion[]>> {
+  await connectDB();
+  const dbQuestions = await PracticeQuestion.find({ level, subject }).lean();
+
   const result: Record<string, JSONPracticeQuestion[]> = {};
   const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
 
+  // Initialize all syllabus chapters to empty arrays
   for (const chapter of chapters) {
-    const filePath = getChapterFilePath(level, subject, chapter);
-    try {
-      const content = await fs.readFile(filePath, "utf-8");
-      result[chapter] = JSON.parse(content) as JSONPracticeQuestion[];
-    } catch {
-      // Ignore if chapter file does not exist (no questions uploaded yet)
+    result[chapter] = [];
+  }
+
+  // Populate list
+  for (const q of dbQuestions) {
+    const chapterName = q.chapter;
+    if (!result[chapterName]) {
+      result[chapterName] = [];
     }
+    result[chapterName].push({
+      id: (q as any)._id.toString(),
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      explanation: q.explanation,
+    });
   }
 
   return result;
@@ -129,15 +162,18 @@ export async function loadFullQuestionById(
   subject: string,
   questionId: string
 ): Promise<{ question: string; options: string[] } | null> {
-  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
-  for (const chapter of chapters) {
-    const filePath = getChapterFilePath(level, subject, chapter);
-    try {
-      const content = await fs.readFile(filePath, "utf-8");
-      const questions: JSONPracticeQuestion[] = JSON.parse(content);
-      const found = questions.find((q) => q.id === questionId);
-      if (found) return { question: found.question, options: found.options };
-    } catch {}
+  await connectDB();
+  try {
+    const found = await PracticeQuestion.findOne({
+      _id: questionId,
+      level,
+      subject,
+    }).lean();
+    if (found) {
+      return { question: found.question, options: found.options };
+    }
+  } catch (err) {
+    // Ignore casting errors if questionId is not a valid ObjectId
   }
   return null;
 }
