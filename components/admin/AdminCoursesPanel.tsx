@@ -27,7 +27,7 @@ type AdminCourseRow = {
 };
 
 export function AdminCoursesPanel({ locale }: { locale: Locale }) {
-  const { data, message } = useApiQuery<{ courses: AdminCourseRow[] }>("/api/admin/courses", {
+  const { data, message, isLoading } = useApiQuery<{ courses: AdminCourseRow[] }>("/api/admin/courses", {
     loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
     errorMessage: locale === "bn" ? "কোর্স লোড করা যায়নি।" : "Could not load courses.",
   });
@@ -48,7 +48,36 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
         </p>
       </div>
 
-      {message ? (
+      {isLoading ? (
+        <ul className="space-y-3 animate-pulse">
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="rounded-xl border border-border bg-card/45 p-4 space-y-4 shadow-[var(--shadow-sm)]">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-48 rounded bg-secondary animate-pulse" />
+                    <div className="h-5 w-16 rounded-full bg-secondary animate-pulse" />
+                  </div>
+                  <div className="h-4 w-32 rounded bg-secondary animate-pulse" />
+                  <div className="h-3.5 w-24 rounded bg-secondary animate-pulse" />
+                  <div className="h-4 w-40 rounded bg-secondary animate-pulse mt-2" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="space-y-1">
+                    <div className="h-3 w-16 rounded bg-secondary animate-pulse" />
+                    <div className="h-6 w-8 rounded bg-secondary animate-pulse" />
+                    <div className="h-3 w-20 rounded bg-secondary animate-pulse" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-3 w-12 rounded bg-secondary animate-pulse" />
+                    <div className="h-6 w-8 rounded bg-secondary animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : message ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">{message}</p>
       ) : courses.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">

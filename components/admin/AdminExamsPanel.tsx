@@ -35,7 +35,7 @@ export function AdminExamsPanel({ locale }: { locale: Locale }) {
   const query =
     selectedClass === "all" ? "/api/admin/exams" : `/api/admin/exams?class=${selectedClass}`;
 
-  const { data, message } = useApiQuery<{ exams: AdminExamRow[] }>(query, {
+  const { data, message, isLoading } = useApiQuery<{ exams: AdminExamRow[] }>(query, {
     loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
     errorMessage: locale === "bn" ? "পরীক্ষা লোড করা যায়নি।" : "Could not load exams.",
   });
@@ -113,7 +113,35 @@ export function AdminExamsPanel({ locale }: { locale: Locale }) {
         ))}
       </div>
 
-      {message ? (
+      {isLoading ? (
+        <div className="grid gap-6 lg:grid-cols-2 animate-pulse">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl border border-border bg-card/45 p-4 space-y-3 shadow-[var(--shadow-sm)]">
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-32 rounded bg-secondary animate-pulse" />
+                  <div className="h-5 w-16 rounded-full bg-secondary animate-pulse" />
+                </div>
+                <div className="h-4 w-2/3 rounded bg-secondary animate-pulse" />
+                <div className="h-3.5 w-1/2 rounded bg-secondary animate-pulse" />
+                <div className="h-4 w-12 rounded bg-secondary animate-pulse mt-1" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-border bg-card/40 p-4 space-y-4 shadow-[var(--shadow-sm)]">
+            <div className="h-6 w-20 rounded bg-secondary animate-pulse" />
+            <div className="space-y-3 mt-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-lg border border-border/40 bg-surface/30 p-3 space-y-2">
+                  <div className="h-4 w-24 rounded bg-secondary animate-pulse" />
+                  <div className="h-3.5 w-1/3 rounded bg-secondary animate-pulse" />
+                  <div className="h-3.5 w-1/4 rounded bg-secondary animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : message ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">{message}</p>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">

@@ -31,45 +31,50 @@ export async function GET(request: NextRequest) {
       .limit(100)
       .lean();
 
-    const enriched = await Promise.all(
-      exams.map(async (exam) => {
-        const attemptCount = await Result.countDocuments({ exam: exam._id });
+    const examIds = exams.map((exam) => exam._id);
+    const attemptCounts = await Result.aggregate([
+      { $match: { exam: { $in: examIds } } },
+      { $group: { _id: "$exam", count: { $sum: 1 } } },
+    ]);
+    const attemptCountMap = new Map(attemptCounts.map((c) => [c._id.toString(), c.count]));
 
-        const teacher = exam.teacher as {
-          _id: unknown;
-          name?: string;
-          email?: string;
-          phone?: string;
-        } | null;
+    const enriched = exams.map((exam) => {
+      const attemptCount = attemptCountMap.get(exam._id.toString()) || 0;
 
-        const course = exam.course as {
-          _id: unknown;
-          title?: string;
-          slug?: string;
-        } | null;
+      const teacher = exam.teacher as {
+        _id: unknown;
+        name?: string;
+        email?: string;
+        phone?: string;
+      } | null;
 
-        return {
-          ...mapDocWithTargetClasses(exam),
-          _id: String(exam._id),
-          teacher: teacher
-            ? {
-                id: String(teacher._id),
-                name: teacher.name,
-                email: teacher.email,
-                phone: teacher.phone,
-              }
-            : null,
-          course: course
-            ? {
-                id: String(course._id),
-                title: course.title,
-                slug: course.slug,
-              }
-            : null,
-          attemptCount,
-        };
-      }),
-    );
+      const course = exam.course as {
+        _id: unknown;
+        title?: string;
+        slug?: string;
+      } | null;
+
+      return {
+        ...mapDocWithTargetClasses(exam),
+        _id: String(exam._id),
+        teacher: teacher
+          ? {
+              id: String(teacher._id),
+              name: teacher.name,
+              email: teacher.email,
+              phone: teacher.phone,
+            }
+          : null,
+        course: course
+          ? {
+              id: String(course._id),
+              title: course.title,
+              slug: course.slug,
+            }
+          : null,
+        attemptCount,
+      };
+    });
 
     return success({ exams: enriched });
   } catch (error) {

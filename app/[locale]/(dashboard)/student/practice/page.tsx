@@ -226,11 +226,27 @@ function StudentPracticeDashboard() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 space-y-3">
-          <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm font-medium text-muted">
-            {locale === "bn" ? "সাবজেক্ট লোড হচ্ছে..." : "Loading subjects..."}
-          </p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-2xl border border-border bg-card/40 p-5 space-y-4 shadow-[var(--shadow-sm)]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="size-12 rounded-xl bg-secondary animate-pulse" />
+                <div className="h-5 w-20 rounded-full bg-secondary animate-pulse" />
+              </div>
+              <div className="h-6 w-2/3 rounded bg-secondary animate-pulse mt-4" />
+              <div className="rounded-xl border border-border/40 bg-surface/30 p-3.5 space-y-2 mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-16 rounded bg-secondary animate-pulse" />
+                  <div className="h-4 w-12 rounded-full bg-secondary animate-pulse" />
+                </div>
+                <div className="h-5 w-1/4 rounded bg-secondary animate-pulse mt-1" />
+              </div>
+              <div className="h-10 w-full rounded-xl bg-secondary animate-pulse mt-5" />
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">{error}</div>

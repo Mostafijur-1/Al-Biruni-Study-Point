@@ -118,23 +118,32 @@ export async function startPracticeExam(
   secondsPerQuestion = 45
 ) {
   const level = getSchoolLevel(studentClass);
-  const classData = await loadPracticeQuestionsData(level, subject);
+  await connectDB();
 
-  let chaptersToUse = Object.keys(classData);
+  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  let chaptersToUse = chapters;
   if (selectedChapters && selectedChapters.length > 0) {
-    chaptersToUse = chaptersToUse.filter((c) => selectedChapters.includes(c));
+    chaptersToUse = chapters.filter((c) => selectedChapters.includes(c));
   }
 
   if (chaptersToUse.length === 0) {
     throw new Error("No valid chapters selected for practice.");
   }
 
-  // Collect all questions from selected chapters
-  const allQuestions: JSONPracticeQuestion[] = [];
-  for (const chapter of chaptersToUse) {
-    const chapterQuestions = classData[chapter] || [];
-    allQuestions.push(...chapterQuestions);
-  }
+  // Optimize: Query only questions matching the selected chapters in MongoDB
+  const dbQuestions = await PracticeQuestion.find({
+    level,
+    subject,
+    chapter: { $in: chaptersToUse },
+  }).lean();
+
+  const allQuestions = dbQuestions.map((q) => ({
+    id: (q as any)._id.toString(),
+    question: q.question,
+    options: q.options,
+    correctIndex: q.correctIndex,
+    explanation: q.explanation,
+  }));
 
   // Shuffle and cap to maxQuestions
   const shuffled = shuffleArray(allQuestions);
@@ -192,15 +201,19 @@ export async function scorePracticeAttempt(
   answers: PracticeAnswer[],
   passMarkPercent: number = 60
 ) {
-  const level = getSchoolLevel(studentClass);
-  const classData = await loadPracticeQuestionsData(level, subject);
+  await connectDB();
 
-  // Flatten all questions for this subject/class to easily search by ID
-  const allQuestionsMap = new Map<string, JSONPracticeQuestion>();
-  for (const chapter of Object.keys(classData)) {
-    for (const q of classData[chapter]) {
-      allQuestionsMap.set(q.id, q);
-    }
+  // Extract only the IDs of questions answered by the student
+  const questionIds = answers.map((ans) => ans.questionId);
+
+  // Optimize: query only the specific answered questions from MongoDB
+  const dbQuestions = await PracticeQuestion.find({
+    _id: { $in: questionIds },
+  }).lean();
+
+  const allQuestionsMap = new Map<string, any>();
+  for (const q of dbQuestions) {
+    allQuestionsMap.set(q._id.toString(), q);
   }
 
   let correctCount = 0;
@@ -217,7 +230,7 @@ export async function scorePracticeAttempt(
     }
 
     solutions.push({
-      questionId: question.id,
+      questionId: ans.questionId,
       correctIndex: question.correctIndex,
       explanation: question.explanation,
     });

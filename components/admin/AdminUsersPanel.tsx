@@ -45,7 +45,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
   const [allowedClasses, setAllowedClasses] = useState<StudentClass[]>([]);
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
 
-  const { data, message, setData } = useApiQuery<{ users: AdminUserRow[] }>(
+  const { data, message, isLoading, setData } = useApiQuery<{ users: AdminUserRow[] }>(
     `/api/admin/users?role=${role}`,
     {
       loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
@@ -165,7 +165,33 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
         <Alert variant={actionError ? "destructive" : "success"}>{actionMessage}</Alert>
       )}
 
-      {message ? (
+      {isLoading ? (
+        <ul className="space-y-3 animate-pulse">
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="rounded-xl border border-border bg-card/45 p-4 space-y-4 shadow-[var(--shadow-sm)]">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-36 rounded bg-secondary animate-pulse" />
+                    <div className="h-5 w-16 rounded-full bg-secondary animate-pulse" />
+                    {role === "teacher" && (
+                      <div className="h-5 w-16 rounded-full bg-secondary animate-pulse" />
+                    )}
+                  </div>
+                  <div className="h-4 w-48 rounded bg-secondary animate-pulse" />
+                  <div className="h-3.5 w-32 rounded bg-secondary animate-pulse" />
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-9 w-20 rounded-lg bg-secondary animate-pulse" />
+                  {role === "teacher" && (
+                    <div className="h-9 w-28 rounded-lg bg-secondary animate-pulse" />
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : message ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">{message}</p>
       ) : users.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">

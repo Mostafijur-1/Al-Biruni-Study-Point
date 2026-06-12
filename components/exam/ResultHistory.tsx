@@ -4,12 +4,25 @@ import { useApiQuery } from "@/lib/hooks/use-api-query";
 import type { McqResultStudent } from "@/types/mcq";
 
 export function ResultHistory() {
-  const { data, message } = useApiQuery<{ results: McqResultStudent[] }>("/api/mcq/results", {
+  const { data, message, isLoading } = useApiQuery<{ results: McqResultStudent[] }>("/api/mcq/results", {
     loadingMessage: "Loading results...",
     errorMessage: "Could not load results.",
   });
 
   const results = data?.results ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="animate-pulse rounded-xl border border-border bg-card/45 p-4 space-y-3 shadow-sm">
+            <div className="h-6 w-1/3 rounded bg-secondary animate-pulse" />
+            <div className="h-4 w-2/3 rounded bg-secondary animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (message) {
     return <p className="rounded border border-border bg-surface p-4 text-muted">{message}</p>;

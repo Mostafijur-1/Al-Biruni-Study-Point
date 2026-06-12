@@ -19,42 +19,55 @@ export async function GET(request: NextRequest) {
       .limit(100)
       .lean();
 
-    const enriched = await Promise.all(
-      courses.map(async (course) => {
-        const [studentCount, examCount] = await Promise.all([
-          User.countDocuments({
-            role: "student",
-            studentClass: { $in: course.targetClasses },
-          }),
-          McqExam.countDocuments({ course: course._id }),
-        ]);
+    const courseIds = courses.map((c) => c._id);
 
-        const teacher = course.teacher as {
-          _id: unknown;
-          name?: string;
-          email?: string;
-          phone?: string;
-          isActive?: boolean;
-          approvalStatus?: string;
-        } | null;
+    // 1. Fetch exam counts per course in a single aggregation query
+    const examCounts = await McqExam.aggregate([
+      { $match: { course: { $in: courseIds } } },
+      { $group: { _id: "$course", count: { $sum: 1 } } },
+    ]);
+    const examCountMap = new Map(examCounts.map((c) => [c._id.toString(), c.count]));
 
-        return {
-          ...mapDocWithTargetClasses(course),
-          teacher: teacher
-            ? {
-                id: String(teacher._id),
-                name: teacher.name,
-                email: teacher.email,
-                phone: teacher.phone,
-                isActive: teacher.isActive,
-                approvalStatus: teacher.approvalStatus,
-              }
-            : null,
-          studentCount,
-          examCount,
-        };
-      }),
-    );
+    // 2. Fetch student counts per class in a single aggregation query
+    const studentClassCounts = await User.aggregate([
+      { $match: { role: "student" } },
+      { $group: { _id: "$studentClass", count: { $sum: 1 } } },
+    ]);
+    const classCountMap = new Map(studentClassCounts.map((c) => [c._id, c.count]));
+
+    const enriched = courses.map((course) => {
+      const examCount = examCountMap.get(course._id.toString()) || 0;
+      
+      const studentCount = (course.targetClasses || []).reduce(
+        (sum: number, cls: string) => sum + (classCountMap.get(cls) || 0),
+        0
+      );
+
+      const teacher = course.teacher as {
+        _id: unknown;
+        name?: string;
+        email?: string;
+        phone?: string;
+        isActive?: boolean;
+        approvalStatus?: string;
+      } | null;
+
+      return {
+        ...mapDocWithTargetClasses(course),
+        teacher: teacher
+          ? {
+              id: String(teacher._id),
+              name: teacher.name,
+              email: teacher.email,
+              phone: teacher.phone,
+              isActive: teacher.isActive,
+              approvalStatus: teacher.approvalStatus,
+            }
+          : null,
+        studentCount,
+        examCount,
+      };
+    });
 
     return success({ courses: enriched });
   } catch (error) {

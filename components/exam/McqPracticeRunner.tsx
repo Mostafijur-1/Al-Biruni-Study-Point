@@ -281,12 +281,55 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   // UI Renderers
   if (loadingConfig) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-3">
-        <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm font-medium text-muted">
-          {locale === "bn" ? "চ্যাপ্টার লোড হচ্ছে..." : "Loading chapters..." }
-        </p>
-      </div>
+      <section className="space-y-4 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-lg bg-secondary" />
+            <div className="space-y-2 flex-1">
+              <div className="h-3 w-16 rounded bg-secondary" />
+              <div className="h-6 w-1/3 rounded bg-secondary" />
+            </div>
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="overflow-hidden rounded-xl border border-border bg-card/40 shadow-[var(--shadow-sm)]">
+          {/* List Header */}
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-secondary/20 px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="size-4 rounded bg-secondary" />
+              <div className="h-5 w-24 rounded bg-secondary" />
+              <div className="h-5 w-10 rounded-full bg-secondary" />
+            </div>
+            <div className="h-4 w-16 rounded bg-secondary" />
+          </div>
+
+          {/* Chapters Grid Skeleton */}
+          <div className="px-3 py-3 sm:px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg border border-border/40 p-3 bg-secondary/10">
+                  <div className="size-4 rounded bg-secondary shrink-0" />
+                  <div className="h-4 w-2/3 rounded bg-secondary" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer Bar */}
+          <div className="border-t border-border bg-secondary/10 px-4 py-3 sm:px-5">
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-6 w-20 rounded bg-secondary" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Start Button Skeleton */}
+        <div className="h-11 w-full rounded-xl bg-secondary sm:w-48" />
+      </section>
     );
   }
 
@@ -355,8 +398,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             </button>
           </div>
 
-          <div className="max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain px-3 py-3 sm:px-4">
-            <ul className="space-y-1">
+          <div className="px-3 py-3 sm:px-4">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {availableChapters.map((chapInfo) => {
                 const chapter = chapInfo.name;
                 const isChecked = selectedChapters.includes(chapter);
@@ -369,7 +412,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                     <label
                       htmlFor={isDisabled ? undefined : inputId}
                       className={cn(
-                        "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors",
+                        "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full",
                         isDisabled
                           ? "border-transparent opacity-60 cursor-not-allowed bg-secondary/10"
                           : isChecked
@@ -448,12 +491,33 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   // --- PHASE: LOADING QUESTIONS ---
   if (phase === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-3">
-        <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm font-medium text-muted">
-          Generating test questions...
-        </p>
-      </div>
+      <section className="space-y-5 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">
+          <div className="space-y-3">
+            <div className="h-5 w-20 rounded-full bg-secondary" />
+            <div className="h-7 w-1/3 rounded bg-secondary" />
+            <div className="h-4 w-1/2 rounded bg-secondary" />
+          </div>
+        </div>
+
+        {/* Question Cards Skeleton */}
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl border border-border bg-card/40 p-4 space-y-4 shadow-[var(--shadow-sm)] sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="size-8 rounded-lg bg-secondary shrink-0" />
+                <div className="h-5 w-2/3 rounded bg-secondary" />
+              </div>
+              <div className="grid gap-2.5 sm:gap-3 pl-11">
+                {[1, 2, 3, 4].map((j) => (
+                  <div key={j} className="h-10 rounded-lg border border-border/40 bg-secondary/10" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     );
   }
 

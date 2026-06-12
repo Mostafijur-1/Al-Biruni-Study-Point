@@ -194,7 +194,7 @@ function McqResultRow({
 
 export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
   const path = createLocalizedPath(locale);
-  const { data, message, setData } = useApiQuery<{ results: McqResultTeacherRow[] }>(
+  const { data, message, isLoading, setData } = useApiQuery<{ results: McqResultTeacherRow[] }>(
     `/api/mcq/results?examId=${examId}`,
     {
       loadingMessage: "Loading results...",
@@ -254,7 +254,38 @@ export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
         </p>
       </div>
 
-      {message ? (
+      {isLoading ? (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-[var(--shadow-sm)] animate-pulse">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Student</th>
+                <th className="px-4 py-3 font-semibold">Score</th>
+                <th className="px-4 py-3 font-semibold">%</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Time</th>
+                <th className="px-4 py-3 font-semibold">Attempt</th>
+                <th className="px-4 py-3 font-semibold">Submitted</th>
+                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4].map((i) => (
+                <tr key={i} className="border-b border-border">
+                  <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-12 rounded bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-10 rounded bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-5 w-16 rounded-full bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-8 rounded bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-28 rounded bg-secondary animate-pulse" /></td>
+                  <td className="px-4 py-4 text-right"><div className="h-7 w-16 rounded-lg bg-secondary inline-block animate-pulse" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : message ? (
         <p className="rounded-xl border border-border bg-card p-4 text-muted">{message}</p>
       ) : results.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-muted">No student submissions yet.</p>

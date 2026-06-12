@@ -56,26 +56,8 @@ export async function GET(request: NextRequest) {
       return fail("You are not authorised to view results for this subject.", 403);
     }
 
-    // Find students who belong to the allowed classes
-    const studentQuery: Record<string, unknown> = {
-      role: "student",
-      studentClass: { $in: allowedClasses },
-    };
-    if (filterStudent) {
-      studentQuery._id = filterStudent;
-    }
-
-    const students = await User.find(studentQuery, { _id: 1, name: 1, phone: 1, studentClass: 1 }).lean();
-    const studentIds = students.map((s) => s._id);
-    const studentMap = new Map(students.map((s) => [s._id.toString(), s]));
-
-    if (studentIds.length === 0) {
-      return success({ results: [], total: 0, page, limit });
-    }
-
     // Build attempt query
     const attemptQuery: Record<string, unknown> = {
-      student: { $in: studentIds },
       deletedByTeacher: { $ne: true }, // Filter out soft-deleted attempts
     };
 
@@ -86,23 +68,43 @@ export async function GET(request: NextRequest) {
       attemptQuery.subject = { $in: allowedSubjects };
     }
 
+    // Check if student filtering is required
+    const needsStudentFiltering = !domain?.isAll || filterClass || filterStudent;
+
+    if (needsStudentFiltering) {
+      const studentQuery: Record<string, unknown> = {
+        role: "student",
+        studentClass: { $in: allowedClasses },
+      };
+      if (filterStudent) {
+        studentQuery._id = filterStudent;
+      }
+      const students = await User.find(studentQuery, { _id: 1 }).lean();
+      const studentIds = students.map((s) => s._id);
+      if (studentIds.length === 0) {
+        return success({ results: [], total: 0, page, limit });
+      }
+      attemptQuery.student = { $in: studentIds };
+    }
+
     const total = await PracticeAttempt.countDocuments(attemptQuery);
 
     const attempts = await PracticeAttempt.find(attemptQuery)
+      .populate("student", "name phone studentClass")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
 
     // Shape data for teacher view — include wrong answers only
-    const results = attempts.map((attempt) => {
-      const student = studentMap.get(attempt.student.toString());
-      const wrongAnswers = attempt.answers.filter((a) => !a.isCorrect);
+    const results = attempts.map((attempt: any) => {
+      const student = attempt.student;
+      const wrongAnswers = attempt.answers.filter((a: any) => !a.isCorrect);
 
       return {
         id: attempt._id.toString(),
         student: {
-          id: attempt.student.toString(),
+          id: student?._id?.toString() ?? attempt.student?.toString() ?? "",
           name: student?.name ?? "Unknown",
           phone: student?.phone ?? null,
           class: student?.studentClass ?? null,
@@ -116,7 +118,7 @@ export async function GET(request: NextRequest) {
         timeTaken: attempt.timeTaken,
         submittedAt: attempt.createdAt,
         teacherComment: attempt.teacherComment ?? "",
-        wrongAnswers: wrongAnswers.map((a) => ({
+        wrongAnswers: wrongAnswers.map((a: any) => ({
           question: a.question,
           options: a.options,
           selectedIndex: a.selectedIndex,

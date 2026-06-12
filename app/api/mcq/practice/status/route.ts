@@ -5,7 +5,8 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
-import { getChaptersForSubject } from "@/lib/mcq/practice-service";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { getSchoolLevel, SYLLABUS } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 
 /** Subjects shown for SSC students */
@@ -48,16 +49,34 @@ export async function GET(request: NextRequest) {
     const isHsc = studentClass === "class-11" || studentClass === "class-12";
     const SUBJECTS = isHsc ? HSC_SUBJECTS : SSC_SUBJECTS;
 
+    const levelKey = getSchoolLevel(studentClass);
+
     // Fetch student's practice results for all subjects (only if authenticated)
     const results = userId ? await PracticeResult.find({ student: userId }).lean() : [];
     const resultsMap = new Map(results.map((r) => [r.subject, r]));
 
+    // Batch query active questions for this level and subjects (only select subject and chapter to minimize memory/payload)
+    const activeQuestions = await PracticeQuestion.find({
+      level: levelKey,
+      subject: { $in: SUBJECTS },
+    })
+      .select("subject chapter")
+      .lean();
+
+    const populatedSet = new Set(
+      activeQuestions.map((q) => `${q.subject}_${q.chapter}`)
+    );
+
     const statusList = [];
 
     for (const subject of SUBJECTS) {
-      const chapters = await getChaptersForSubject(subject, studentClass);
+      const syllabusChapters = SYLLABUS[levelKey]?.[subject] || [];
+      const chapters = syllabusChapters.map((ch) => ({
+        name: ch,
+        hasMcqs: populatedSet.has(`${subject}_${ch}`),
+      }));
 
-      // If there are no questions/chapters for this subject and class, we don't display it
+      // If there are no chapters at all in syllabus, continue
       if (chapters.length === 0) continue;
 
       const lastResult = resultsMap.get(subject) || null;

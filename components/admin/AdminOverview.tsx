@@ -45,7 +45,7 @@ function StatCard({
 
 export function AdminOverview({ locale }: AdminOverviewProps) {
   const path = createLocalizedPath(locale);
-  const { data, message } = useApiQuery<{ stats: OverviewStats }>("/api/admin/overview", {
+  const { data, message, isLoading } = useApiQuery<{ stats: OverviewStats }>("/api/admin/overview", {
     loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
     errorMessage: locale === "bn" ? "ড্যাশবোর্ড লোড করা যায়নি।" : "Could not load dashboard.",
   });
@@ -73,7 +73,24 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
         </p>
       </div>
 
-      {message ? (
+      {isLoading ? (
+        <div className="space-y-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="animate-pulse rounded-xl border border-border bg-card/45 p-4 shadow-[var(--shadow-sm)] space-y-3">
+                <div className="h-4 w-1/3 rounded bg-secondary animate-pulse" />
+                <div className="h-8 w-2/3 rounded bg-secondary animate-pulse" />
+                <div className="h-3.5 w-1/2 rounded bg-secondary animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 animate-pulse">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-9 w-24 rounded-lg bg-secondary animate-pulse" />
+            ))}
+          </div>
+        </div>
+      ) : message ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">{message}</p>
       ) : stats ? (
         <>
