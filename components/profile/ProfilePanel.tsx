@@ -24,7 +24,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export function ProfilePanel() {
-  const { data, message, setData } = useApiQuery<MeResponseData>("/api/auth/me", {
+  const { data, message, isLoading, setData } = useApiQuery<MeResponseData>("/api/auth/me", {
     loadingMessage: "Loading profile...",
     errorMessage: "Could not load profile.",
   });
@@ -47,6 +47,34 @@ export function ProfilePanel() {
       setSchoolCollege(user.schoolCollege || "");
     }
   }, [user]);
+
+  if (isLoading) {
+    return (
+      <section className="animate-pulse rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-16 rounded bg-secondary animate-pulse" />
+          <div className="h-8 w-24 rounded-lg bg-secondary animate-pulse" />
+        </div>
+
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="size-16 rounded-xl bg-secondary animate-pulse shrink-0" />
+          <div className="space-y-2 flex-1">
+            <div className="h-7 w-48 rounded bg-secondary animate-pulse" />
+            <div className="h-4 w-20 rounded bg-secondary animate-pulse" />
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-lg border border-border bg-background/50 p-4 space-y-2">
+              <div className="h-3.5 w-12 rounded bg-secondary animate-pulse" />
+              <div className="h-5 w-32 rounded bg-secondary animate-pulse mt-1" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (message) {
     return <p className="rounded-xl border border-border bg-card p-5 text-muted">{message}</p>;

@@ -44,7 +44,14 @@ export function getChapterFilePath(level: "ssc" | "hsc", subject: string, chapte
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
-  return path.join(process.cwd(), "lib", "data", "practice", level, subjectDir, `${chapterSlug}.json`);
+
+  let fileName = chapterSlug;
+  if (mappedDir) {
+    const prefix = subject.toLowerCase().replace(/\s+/g, "-");
+    fileName = `${prefix}-${chapterSlug}`;
+  }
+
+  return path.join(process.cwd(), "lib", "data", "practice", level, subjectDir, `${fileName}.json`);
 }
 
 export function getChapterFromSlug(
@@ -53,12 +60,14 @@ export function getChapterFromSlug(
   slug: string
 ): string | null {
   const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  const subjectPrefix = subject.toLowerCase().replace(/\s+/g, "-");
+
   for (const chapter of chapters) {
     const chapterSlug = chapter
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    if (chapterSlug === slug) {
+    if (chapterSlug === slug || `${subjectPrefix}-${chapterSlug}` === slug) {
       return chapter;
     }
   }

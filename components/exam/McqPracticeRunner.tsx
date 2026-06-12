@@ -467,7 +467,15 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               <span className="rounded-md border border-border bg-card px-2.5 py-1">
                 {locale === "bn" ? "আনুমানিক সময়" : "Est. time"}:{" "}
                 <strong className="text-primary">
-                  19m
+                  {locale === "bn" ? (
+                    <>
+                      {estMinutes > 0 ? `${estMinutes} মিনিট` : ""} {estSecondsRemainder > 0 ? `${estSecondsRemainder} সেকেন্ড` : ""}{estMinutes === 0 && estSecondsRemainder === 0 ? "০ সেকেন্ড" : ""}
+                    </>
+                  ) : (
+                    <>
+                      {estMinutes > 0 ? `${estMinutes}m` : ""} {estSecondsRemainder > 0 ? `${estSecondsRemainder}s` : ""}{estMinutes === 0 && estSecondsRemainder === 0 ? "0s" : ""}
+                    </>
+                  )}
                 </strong>
               </span>
             </div>
