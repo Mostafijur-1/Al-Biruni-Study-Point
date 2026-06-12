@@ -101,10 +101,13 @@ export async function loadPracticeQuestionsData(
 export async function getChaptersForSubject(
   subject: string,
   studentClass: string
-): Promise<string[]> {
+): Promise<Array<{ name: string; hasMcqs: boolean }>> {
   const level = getSchoolLevel(studentClass);
   const classData = await loadPracticeQuestionsData(level, subject);
-  return Object.keys(classData);
+  return Object.keys(classData).map((chapter) => ({
+    name: chapter,
+    hasMcqs: classData[chapter] && classData[chapter].length > 0,
+  }));
 }
 
 export async function startPracticeExam(

@@ -3,6 +3,7 @@ import fs from "fs/promises";
 
 import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { SyncedChapter } from "@/lib/db/models/SyncedChapter";
 import { getChapterFilePath, getChapterFromSlug } from "@/lib/mcq/practice-service";
 import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
@@ -47,11 +48,22 @@ export async function POST(request: NextRequest) {
             if (docs.length > 0) {
               await PracticeQuestion.insertMany(docs);
               totalAdded += docs.length;
+
+              // Automatically mark as synced/added
+              await SyncedChapter.findOneAndUpdate(
+                { level, subject, chapter },
+                { level, subject, chapter },
+                { upsert: true }
+              );
             }
           }
         } catch (err) {
           console.error(`Error syncing chapter ${chapter}:`, err);
         }
+      }
+
+      if (totalAdded === 0) {
+        return fail("No questions were added. The selected files might be empty or invalid.", 400);
       }
 
       return success({ addedCount: totalAdded });
@@ -99,12 +111,23 @@ export async function POST(request: NextRequest) {
             if (docs.length > 0) {
               await PracticeQuestion.insertMany(docs);
               totalAdded += docs.length;
+
+              // Automatically mark as synced/added
+              await SyncedChapter.findOneAndUpdate(
+                { level, subject, chapter },
+                { level, subject, chapter },
+                { upsert: true }
+              );
             }
           }
         } catch (err) {
           console.error(`Error uploading local JSON file ${filename}:`, err);
           skippedFiles.push(filename);
         }
+      }
+
+      if (totalAdded === 0) {
+        return fail("No questions were added. The uploaded files might be empty, invalid, or did not match any chapter.", 400, { skippedFiles });
       }
 
       return success({

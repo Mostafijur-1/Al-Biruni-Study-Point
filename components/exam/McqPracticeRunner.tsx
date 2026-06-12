@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 type ChapterStatus = {
   subject: string;
-  chapters: string[];
+  chapters: Array<{ name: string; hasMcqs: boolean }>;
   lastResult: {
     score: number;
     totalQuestions: number;
@@ -85,7 +85,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // States
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
-  const [availableChapters, setAvailableChapters] = useState<string[]>([]);
+  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>([]);
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -117,7 +117,11 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           const matchingSubject = payload.data.status.find((s) => s.subject === subject);
           if (matchingSubject) {
             setAvailableChapters(matchingSubject.chapters);
-            setSelectedChapters(matchingSubject.chapters); // Check all by default
+            // Check only chapters that have MCQs by default!
+            const enabledChapters = matchingSubject.chapters
+              .filter((c) => c.hasMcqs)
+              .map((c) => c.name);
+            setSelectedChapters(enabledChapters);
           } else {
             setErrorMessage(
               locale === "bn"
@@ -169,10 +173,11 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // Toggle all chapters
   function toggleSelectAll() {
-    if (selectedChapters.length === availableChapters.length) {
+    const enabledChapters = availableChapters.filter((c) => c.hasMcqs).map((c) => c.name);
+    if (selectedChapters.length === enabledChapters.length) {
       setSelectedChapters([]);
     } else {
-      setSelectedChapters([...availableChapters]);
+      setSelectedChapters(enabledChapters);
     }
   }
 
@@ -292,7 +297,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     const estTotalSeconds = estQuestionCount * secondsPerQuestion;
     const estMinutes = Math.floor(estTotalSeconds / 60);
     const estSecondsRemainder = estTotalSeconds % 60;
-    const allSelected = selectedChapters.length === availableChapters.length;
+    const enabledChapters = availableChapters.filter((c) => c.hasMcqs);
+    const allSelected =
+      enabledChapters.length > 0 &&
+      selectedChapters.length === enabledChapters.length;
 
     return (
       <section className="space-y-4">
@@ -349,37 +357,49 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
           <div className="max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain px-3 py-3 sm:px-4">
             <ul className="space-y-1">
-              {availableChapters.map((chapter) => {
+              {availableChapters.map((chapInfo) => {
+                const chapter = chapInfo.name;
                 const isChecked = selectedChapters.includes(chapter);
                 const displayName = getTranslatedChapter(chapter, locale);
                 const inputId = `chapter-${chapter.replace(/[^a-z0-9]+/gi, "-")}`;
+                const isDisabled = !chapInfo.hasMcqs;
 
                 return (
                   <li key={chapter}>
                     <label
-                      htmlFor={inputId}
+                      htmlFor={isDisabled ? undefined : inputId}
                       className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors",
-                        isChecked
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-transparent hover:bg-secondary/50",
+                        "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors",
+                        isDisabled
+                          ? "border-transparent opacity-60 cursor-not-allowed bg-secondary/10"
+                          : isChecked
+                            ? "border-primary/30 bg-primary/5 cursor-pointer"
+                            : "border-transparent hover:bg-secondary/50 cursor-pointer",
                       )}
                     >
                       <input
                         id={inputId}
                         type="checkbox"
                         checked={isChecked}
+                        disabled={isDisabled}
                         onChange={() => toggleChapter(chapter)}
-                        className="mt-1 size-4 shrink-0 rounded border-border text-primary focus:ring-primary"
+                        className="mt-1 size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
                       />
-                      <span
-                        className={cn(
-                          "min-w-0 flex-1 text-sm leading-snug",
-                          isChecked ? "font-medium text-primary" : "text-foreground",
+                      <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span
+                          className={cn(
+                            "text-sm leading-snug",
+                            isChecked ? "font-medium text-primary" : "text-foreground",
+                          )}
+                        >
+                          {displayName}
+                        </span>
+                        {isDisabled && (
+                          <span className="shrink-0 text-2xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100/50">
+                            {locale === "bn" ? "এমসিকিউ শীঘ্রই যুক্ত করা হবে" : "MCQ will be added soon"}
+                          </span>
                         )}
-                      >
-                        {displayName}
-                      </span>
+                      </div>
                     </label>
                   </li>
                 );

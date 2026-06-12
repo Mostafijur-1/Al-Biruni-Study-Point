@@ -231,6 +231,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
     subject: string;
     chapter: string;
     questionCount: number;
+    isSynced: boolean;
   }>>([]);
   const [selectedServerFiles, setSelectedServerFiles] = useState<Array<{
     level: "ssc" | "hsc";
@@ -308,6 +309,15 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             ? `সফলভাবে ডেটাবেজে ${payload.data.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
             : `Successfully synced ${payload.data.addedCount} questions to the database!`
         );
+        // Automatically mark as synced in state
+        setServerFiles((prev) =>
+          prev.map((f) => {
+            const wasSelected = selectedServerFiles.some(
+              (sf) => sf.level === f.level && sf.subject === f.subject && sf.chapter === f.chapter
+            );
+            return wasSelected ? { ...f, isSynced: true } : f;
+          })
+        );
         setSelectedServerFiles([]);
       } else {
         setSyncError(payload.error?.message || "Sync failed.");
@@ -355,6 +365,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
         }
         setLocalSuccess(msg);
         setLocalFiles([]);
+        fetchServerFiles(); // Refresh synced indicators
       } else {
         setLocalError(payload.error?.message || "Upload failed.");
       }
@@ -381,10 +392,50 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
   // Toggle select all server files
   function toggleSelectAllServerFiles() {
-    if (selectedServerFiles.length === serverFiles.length) {
+    const unsyncedFiles = serverFiles.filter((f) => !f.isSynced);
+    if (selectedServerFiles.length === unsyncedFiles.length) {
       setSelectedServerFiles([]);
     } else {
-      setSelectedServerFiles(serverFiles.map((f) => ({ level: f.level, subject: f.subject, chapter: f.chapter })));
+      setSelectedServerFiles(
+        unsyncedFiles.map((f) => ({ level: f.level, subject: f.subject, chapter: f.chapter }))
+      );
+    }
+  }
+
+  // Toggle SyncedChapter mark manually
+  async function toggleMarkSync(
+    level: "ssc" | "hsc",
+    subject: string,
+    chapter: string,
+    currentMark: boolean
+  ) {
+    const newMark = !currentMark;
+    try {
+      const response = await fetch("/api/admin/practice-mcqs/mark-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ level, subject, chapter, mark: newMark }),
+      });
+      const payload = await response.json();
+      if (response.ok && payload.success) {
+        setServerFiles((prev) =>
+          prev.map((f) =>
+            f.level === level && f.subject === subject && f.chapter === chapter
+              ? { ...f, isSynced: newMark }
+              : f
+          )
+        );
+        // If marked, deselect it from server sync list
+        if (newMark) {
+          setSelectedServerFiles((prev) =>
+            prev.filter((f) => !(f.level === level && f.subject === subject && f.chapter === chapter))
+          );
+        }
+      } else {
+        setSyncError(payload.error?.message || "Failed to update synced mark.");
+      }
+    } catch {
+      setSyncError("Could not connect to the server.");
     }
   }
 
@@ -854,9 +905,13 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedServerFiles.length === serverFiles.length}
+                      checked={
+                        selectedServerFiles.length === serverFiles.filter((f) => !f.isSynced).length &&
+                        serverFiles.filter((f) => !f.isSynced).length > 0
+                      }
                       onChange={toggleSelectAllServerFiles}
-                      className="rounded border-border text-primary focus:ring-primary size-3.5"
+                      disabled={serverFiles.filter((f) => !f.isSynced).length === 0}
+                      className="rounded border-border text-primary focus:ring-primary size-3.5 disabled:opacity-50"
                     />
                     <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
                   </label>
@@ -871,27 +926,67 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                       (f) => f.level === file.level && f.subject === file.subject && f.chapter === file.chapter
                     );
                     return (
-                      <label
+                      <div
                         key={idx}
-                        className="flex items-start gap-3 rounded-lg border border-border bg-card p-2 text-xs font-medium cursor-pointer hover:border-primary/30 transition block"
+                        className={cn(
+                          "flex items-center justify-between rounded-lg border border-border bg-card p-2 text-xs transition",
+                          file.isSynced ? "bg-secondary/20 opacity-80" : "hover:border-primary/30"
+                        )}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleServerFile(file.level, file.subject, file.chapter)}
-                          className="mt-0.5 rounded border-border text-primary focus:ring-primary size-3.5"
-                        />
-                        <div className="space-y-0.5">
-                          <div className="font-bold text-primary">{file.chapter}</div>
-                          <div className="text-2xs text-muted flex gap-2">
-                            <span className="uppercase font-bold text-accent">{file.level}</span>
-                            <span>•</span>
-                            <span>{file.subject}</span>
-                            <span>•</span>
-                            <span className="font-semibold text-emerald-600">{file.questionCount} {locale === "bn" ? "টি প্রশ্ন" : "questions"}</span>
+                        <label
+                          className={cn(
+                            "flex items-start gap-3 font-medium flex-1 min-w-0",
+                            file.isSynced ? "cursor-not-allowed text-muted" : "cursor-pointer"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={file.isSynced}
+                            onChange={() => toggleServerFile(file.level, file.subject, file.chapter)}
+                            className="mt-0.5 rounded border-border text-primary focus:ring-primary size-3.5 disabled:opacity-50"
+                          />
+                          <div className="space-y-0.5 truncate">
+                            <div className={cn("font-bold text-primary truncate", file.isSynced && "text-muted")}>
+                              {file.chapter}
+                            </div>
+                            <div className="text-2xs text-muted flex items-center gap-2 flex-wrap">
+                              <span className="uppercase font-bold text-accent">{file.level}</span>
+                              <span>•</span>
+                              <span>{file.subject}</span>
+                              <span>•</span>
+                              <span className="font-semibold text-emerald-600">
+                                {file.questionCount} {locale === "bn" ? "টি প্রশ্ন" : "questions"}
+                              </span>
+                              {file.isSynced && (
+                                <span className="font-bold text-emerald-700 bg-emerald-100/50 border border-emerald-200/50 px-1 rounded">
+                                  {locale === "bn" ? "চিহ্নিত" : "Marked"}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </label>
+                        </label>
+
+                        {/* Mark/Unmark toggle */}
+                        <button
+                          type="button"
+                          onClick={() => toggleMarkSync(file.level, file.subject, file.chapter, file.isSynced)}
+                          className={cn(
+                            "ml-3 rounded px-2 py-1 text-2xs font-bold transition shrink-0",
+                            file.isSynced
+                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                              : "bg-primary/10 text-primary hover:bg-primary/20"
+                          )}
+                        >
+                          {file.isSynced
+                            ? locale === "bn"
+                              ? "আনমার্ক"
+                              : "Unmark"
+                            : locale === "bn"
+                              ? "মার্ক করুন"
+                              : "Mark Synced"}
+                        </button>
+                      </div>
                     );
                   })}
                 </div>

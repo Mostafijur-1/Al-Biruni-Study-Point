@@ -335,6 +335,10 @@ Crucial Rules:
       };
     });
 
+    if (formattedQuestions.length === 0) {
+      return fail("No questions could be extracted/added.", 422);
+    }
+
     // 7. Update JSON Store file
     const dataFilePath = getChapterFilePath(targetLevel, targetSubject, targetChapter);
     
