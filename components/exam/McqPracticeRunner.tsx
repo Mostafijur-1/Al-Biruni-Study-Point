@@ -304,7 +304,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     : null;
 
   // UI Renderers
-  if (loadingConfig) {
+  if (!isMounted || loadingConfig) {
     return (
       <section className="space-y-4 animate-pulse">
         {/* Header Skeleton */}
@@ -428,7 +428,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
           <div className="px-3 py-3 sm:px-4">
             <ul className="flex flex-col md:grid md:grid-cols-2 gap-2 w-full">
-              {isMounted && availableChapters.map((chapInfo, index) => {
+              {availableChapters.map((chapInfo, index) => {
                 const chapter = chapInfo.name;
                 const isChecked = selectedChapters.includes(chapter);
                 const displayName = getTranslatedChapter(chapter, locale);
