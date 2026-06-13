@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { PwaInstallPrompt } from "@/components/shared/PwaInstallPrompt";
 
 import "./globals.css";
 
@@ -17,6 +18,18 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon.png?v=20260603b", type: "image/png", sizes: "180x180" }],
     shortcut: "/favicon.ico?v=20260603b",
   },
+  appleWebApp: {
+    capable: true,
+    title: "ABSP",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b2545",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -26,7 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" className="h-full antialiased">
-      <body className="min-h-full bg-background text-foreground">{children}</body>
+      <body className="min-h-full bg-background text-foreground">
+        {children}
+        <PwaInstallPrompt />
+      </body>
     </html>
   );
 }
