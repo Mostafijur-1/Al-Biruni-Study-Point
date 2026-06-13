@@ -761,7 +761,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         >
           {isSubmitting
             ?  "Submitting..."
-            :  `Submit test (${answeredCount}/{questions.length} answered)`}
+            :  `Submit test (${answeredCount}/${questions.length} answered)`}
         </Button>
       </section>
     );
