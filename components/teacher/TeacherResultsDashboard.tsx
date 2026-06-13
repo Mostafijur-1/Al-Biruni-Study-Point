@@ -142,7 +142,15 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
 // ---------------------------------------------------------------------------
 // Result row
 // ---------------------------------------------------------------------------
-function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: () => void }) {
+function ResultRow({
+  result,
+  onCommentSaved,
+  onDeleted,
+}: {
+  result: StudentResult;
+  onCommentSaved: (id: string, comment: string) => void;
+  onDeleted: (id: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(result.teacherComment || "");
@@ -165,7 +173,7 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
         body: JSON.stringify({ teacherComment: commentText }),
       });
       if (ok && isApiSuccess(payload)) {
-        onRefresh();
+        onCommentSaved(result.id, commentText);
       } else {
         alert("Could not save comment");
       }
@@ -183,7 +191,7 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
         method: "DELETE",
       });
       if (ok && isApiSuccess(payload)) {
-        onRefresh();
+        onDeleted(result.id);
       } else {
         alert("Could not delete result");
       }
@@ -204,10 +212,10 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
     >
       {/* Summary row */}
       <div
-        className="w-full flex items-center justify-between gap-3 p-4 cursor-pointer"
+        className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 cursor-pointer"
         onClick={() => setExpanded((p) => !p)}
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1 w-full">
           {/* Avatar */}
           <div className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
             <User className="size-4" />
@@ -215,27 +223,56 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
 
           {/* Main info */}
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-semibold text-primary truncate">{result.student.name}</p>
-              {result.student.class && (
-                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-accent uppercase">
-                  {CLASS_LABELS[result.student.class] ?? result.student.class}
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                <p className="font-semibold text-primary truncate max-w-[150px] sm:max-w-none">
+                  {result.student.name}
+                </p>
+                {result.student.class && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-accent uppercase shrink-0">
+                    {CLASS_LABELS[result.student.class] ?? result.student.class}
+                  </span>
+                )}
+              </div>
+
+              {/* Mobile-only score display */}
+              <div className="flex items-center gap-2 sm:hidden shrink-0">
+                <span
+                  className={cn(
+                    "text-base font-extrabold",
+                    result.isPassed ? "text-emerald-600" : "text-brand-red"
+                  )}
+                >
+                  {result.score}/{result.totalQuestions}
                 </span>
-              )}
+                {result.isPassed ? (
+                  <TrendingUp className="size-4 text-emerald-500" />
+                ) : (
+                  <TrendingDown className="size-4 text-brand-red" />
+                )}
+              </div>
             </div>
-            <p className="text-xs text-muted mt-0.5 truncate">
-              {result.subject} · {formatDate(result.submittedAt)} · {formatTime(result.timeTaken)}
+            
+            {/* Wrapping flex details for perfect mobile display without truncation */}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted mt-1.5 sm:mt-1">
+              <span className="font-semibold text-primary/80 bg-primary/5 rounded px-1.5 py-0.5 sm:bg-transparent sm:p-0">
+                {result.subject}
+              </span>
+              <span className="hidden sm:inline text-muted/40">•</span>
+              <span>{formatDate(result.submittedAt)}</span>
+              <span className="text-muted/40">•</span>
+              <span>{formatTime(result.timeTaken)}</span>
               {result.teacherComment && (
-                <span className="ml-2 inline-flex items-center rounded bg-brand-yellow/20 px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">
+                <span className="ml-1 inline-flex items-center rounded bg-brand-yellow/20 px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">
                   Commented
                 </span>
               )}
-            </p>
+            </div>
           </div>
         </div>
 
-        {/* Right actions and stats */}
-        <div className="shrink-0 flex items-center gap-3">
+        {/* Right actions and stats (Desktop only) */}
+        <div className="hidden sm:flex shrink-0 items-center gap-3">
           <div className="text-right">
             <p
               className={cn(
@@ -271,35 +308,15 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
               <MessageSquare className="size-4" />
             </button>
 
-            {confirmDelete ? (
-              <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5">
-                <span className="text-[10px] text-brand-red font-bold px-1">Delete?</span>
-                <button
-                  type="button"
-                  onClick={handleDeleteAttempt}
-                  disabled={isDeleting}
-                  className="rounded bg-brand-red px-2 py-1 text-[10px] font-bold text-white hover:bg-brand-red-hover cursor-pointer"
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="rounded border border-border bg-white px-2 py-1 text-[10px] font-bold text-muted hover:bg-secondary cursor-pointer"
-                >
-                  No
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
-                title="Delete Attempt"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            )}
+            {/* No inline layout-shift confirmation */}
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
+              title="Delete Attempt"
+            >
+              <Trash2 className="size-4" />
+            </button>
           </div>
 
           <ChevronDown
@@ -308,6 +325,56 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
               expanded && "rotate-180"
             )}
           />
+        </div>
+
+        {/* Mobile Actions and Chevron Bar (Mobile only) */}
+        <div
+          className="flex sm:hidden items-center justify-between border-t border-dashed border-border/60 pt-3 mt-1 w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCommentOpen((o) => !o);
+                if (expanded) setExpanded(false);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer",
+                (commentOpen || result.teacherComment)
+                  ? "border-brand-yellow bg-brand-yellow/10 text-accent-foreground"
+                  : "border-border bg-white text-muted hover:text-primary hover:bg-secondary"
+              )}
+            >
+              <MessageSquare className="size-3.5" />
+              <span>Comment</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red text-xs font-semibold hover:bg-red-100 transition cursor-pointer"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+
+          {/* Chevron toggler */}
+          <button
+            type="button"
+            onClick={() => setExpanded((p) => !p)}
+            className="flex items-center gap-1 text-xs text-muted font-bold hover:text-primary py-1.5 px-2 rounded-md transition cursor-pointer"
+          >
+            <span>{expanded ? "Collapse" : "Expand"}</span>
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform duration-200",
+                expanded && "rotate-180"
+              )}
+            />
+          </button>
         </div>
       </div>
 
@@ -356,6 +423,47 @@ function ResultRow({ result, onRefresh }: { result: StudentResult; onRefresh: ()
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal Overlay to prevent inline shifting */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirmDelete(false);
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl border border-border p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+              <Trash2 className="size-5 text-brand-red" />
+              Confirm Deletion
+            </h3>
+            <p className="text-sm text-muted leading-relaxed">
+              Are you sure you want to delete the result attempt for <strong>{result.student.name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-muted hover:bg-secondary cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAttempt}
+                disabled={isDeleting}
+                className="rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:bg-brand-red-hover disabled:opacity-50 cursor-pointer"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -383,6 +491,17 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
   } | null>(null);
 
   const limit = 20;
+
+  const handleCommentSaved = useCallback((id: string, comment: string) => {
+    setResults((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, teacherComment: comment } : r))
+    );
+  }, []);
+
+  const handleDeleted = useCallback((id: string) => {
+    setResults((prev) => prev.filter((r) => r.id !== id));
+    setTotal((prev) => Math.max(0, prev - 1));
+  }, []);
 
   const fetchResults = useCallback(async () => {
     setLoading(true);
@@ -675,7 +794,12 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((result) => (
-            <ResultRow key={result.id} result={result} onRefresh={fetchResults} />
+            <ResultRow
+              key={result.id}
+              result={result}
+              onCommentSaved={handleCommentSaved}
+              onDeleted={handleDeleted}
+            />
           ))}
         </div>
       )}
