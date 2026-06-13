@@ -86,15 +86,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // States
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
-  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>(() => { 
-    const initialLevel = level.toLowerCase() === "hsc" ? "hsc" : "ssc";
-    const syllabusChapters = SYLLABUS[initialLevel]?.[subject as CourseSubject] || [];
-    return syllabusChapters.map((name: string) => ({ name, hasMcqs: true }));
-  });
-  const [selectedChapters, setSelectedChapters] = useState<string[]>(() => {
-    const initialLevel = level.toLowerCase() === "hsc" ? "hsc" : "ssc";
-    return SYLLABUS[initialLevel]?.[subject as CourseSubject] || [];
-  });
+  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>([]);
+  const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
@@ -116,16 +109,6 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const progressPercent = questions.length
     ? Math.round((answeredCount / questions.length) * 100)
     : 0;
-
-  // Update static chapters when user class or subject is resolved, before the API load completes
-  useEffect(() => {
-    if (checking || configLoaded) return;
-    const resolvedLevel = user?.studentClass ? getSchoolLevel(user.studentClass) : (level.toLowerCase() === "hsc" ? "hsc" : "ssc");
-    const syllabusChapters = SYLLABUS[resolvedLevel]?.[subject as CourseSubject] || [];
-
-    setAvailableChapters(syllabusChapters.map((name: string) => ({ name, hasMcqs: true })));
-    setSelectedChapters(syllabusChapters);
-  }, [subject, user?.studentClass, checking, level, configLoaded]);
 
   // Load subject status and chapters
   useEffect(() => {
