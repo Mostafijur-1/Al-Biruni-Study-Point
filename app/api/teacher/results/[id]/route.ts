@@ -67,10 +67,22 @@ export async function DELETE(request: NextRequest, context: Context) {
       }
     }
 
-    attempt.deletedByTeacher = true;
-    await attempt.save();
+    // Hard delete the specific attempt from the database
+    await PracticeAttempt.findByIdAndDelete(id);
 
-    return success({ message: "Result deleted from teacher view successfully." });
+    // Hard delete the overall practice result for this student and subject
+    await PracticeResult.deleteMany({
+      student: attempt.student,
+      subject: attempt.subject,
+    });
+
+    // Hard delete all other attempts of this student for this subject to wipe the history completely
+    await PracticeAttempt.deleteMany({
+      student: attempt.student,
+      subject: attempt.subject,
+    });
+
+    return success({ message: "Result and all related database records deleted successfully from the system." });
   } catch (error) {
     return handleApiError(error);
   }
