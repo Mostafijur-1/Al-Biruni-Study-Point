@@ -104,7 +104,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [result, setResult] = useState<PracticeSubmitResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [loadingConfig, setLoadingConfig] = useState(true);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -133,6 +133,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
     async function loadConfig() {
       try {
+        setLoadingConfig(true);
         const url = isGuest
           ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`        
           : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}`;
@@ -427,17 +428,16 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           </div>
 
           <div className="px-3 py-3 sm:px-4">
-            <ul className="flex flex-col md:grid md:grid-cols-2 gap-2 w-full">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full">
               {availableChapters.map((chapInfo, index) => {
                 const chapter = chapInfo.name;
                 const isChecked = selectedChapters.includes(chapter);
                 const displayName = getTranslatedChapter(chapter, locale);
-                const stableKey = `chap-${chapter}-${index}`;
                 const inputId = `chapter-${chapter.replace(/[^a-z0-9]+/gi, "-")}-${index}`;
                 const isDisabled = !chapInfo.hasMcqs;
 
                 return (
-                  <li key={stableKey} className="w-full">
+                  <li key={chapter} className="w-full">
                     <div
                       className={cn(
                         "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full w-full",        
