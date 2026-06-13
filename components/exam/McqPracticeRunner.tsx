@@ -86,7 +86,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // States
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
-  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>(() => {
+  const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>(() => { 
     const initialLevel = level.toLowerCase() === "hsc" ? "hsc" : "ssc";
     const syllabusChapters = SYLLABUS[initialLevel]?.[subject as CourseSubject] || [];
     return syllabusChapters.map((name: string) => ({ name, hasMcqs: true }));
@@ -106,6 +106,11 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
   const progressPercent = questions.length
@@ -117,7 +122,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     if (checking || configLoaded) return;
     const resolvedLevel = user?.studentClass ? getSchoolLevel(user.studentClass) : (level.toLowerCase() === "hsc" ? "hsc" : "ssc");
     const syllabusChapters = SYLLABUS[resolvedLevel]?.[subject as CourseSubject] || [];
-    
+
     setAvailableChapters(syllabusChapters.map((name: string) => ({ name, hasMcqs: true })));
     setSelectedChapters(syllabusChapters);
   }, [subject, user?.studentClass, checking, level, configLoaded]);
@@ -129,7 +134,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     async function loadConfig() {
       try {
         const url = isGuest
-          ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`
+          ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`        
           : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}`;
         const { ok, payload } = await apiFetch<{ status: ChapterStatus[] }>(url);
         if (ok && isApiSuccess(payload)) {
@@ -145,7 +150,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           } else {
             setErrorMessage(
               locale === "bn"
-                ? "এই বিষয়ের জন্য কোনো অধ্যায় পাওয়া যায়নি।"
+                ? "এই বিষয়ে কোন অধ্যায় পাওয়া যায়নি।"
                 : "No chapters found for this subject."
             );
           }
@@ -303,7 +308,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     return (
       <section className="space-y-4 animate-pulse">
         {/* Header Skeleton */}
-        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">
+        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">       
           <div className="flex items-center gap-3">
             <div className="size-9 rounded-lg bg-secondary" />
             <div className="space-y-2 flex-1">
@@ -314,7 +319,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         </div>
 
         {/* Content Skeleton */}
-        <div className="overflow-hidden rounded-xl border border-border bg-card/40 shadow-[var(--shadow-sm)]">
+        <div className="overflow-hidden rounded-xl border border-border bg-card/40 shadow-[var(--shadow-sm)]">  
           {/* List Header */}
           <div className="flex items-center justify-between gap-3 border-b border-border bg-secondary/20 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2 flex-1">
@@ -379,11 +384,11 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               <p className="text-xs font-bold uppercase tracking-widest text-accent">Test Mode</p>
               <h1 className="font-display text-xl font-bold text-primary sm:text-2xl">
                 {displaySubject} {paperLabel} MCQ Test
-                
+
               </h1>
             </div>
           </div>
-         
+
         </div>
 
         {errorMessage && (
@@ -392,14 +397,14 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-sm)]">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-sm)]">     
           <div className="flex items-center justify-between gap-3 border-b border-border bg-secondary/30 px-4 py-3 sm:px-5">
             <div className="flex min-w-0 items-center gap-2">
               <BookOpen className="size-4 shrink-0 text-primary" />
               <h2 className="truncate font-semibold text-primary">
-                {locale === "bn" ? "চ্যাপ্টার সিলেক্ট করো" : "Select chapters"}
+                {locale === "bn" ? "অধ্যায় সিলেক্ট করো" : "Select chapters"}
               </h2>
-              <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+              <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"> 
                 {selectedChapters.length}/{availableChapters.length}
               </span>
               {!configLoaded && (
@@ -409,7 +414,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             <button
               type="button"
               onClick={toggleSelectAll}
-              className="shrink-0 text-xs font-bold text-primary underline underline-offset-2 hover:opacity-80"
+              className="shrink-0 text-xs font-bold text-primary underline underline-offset-2 hover:opacity-80" 
             >
               {allSelected
                 ? locale === "bn"
@@ -422,19 +427,20 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           </div>
 
           <div className="px-3 py-3 sm:px-4">
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {availableChapters.map((chapInfo) => {
+            <ul className="flex flex-col md:grid md:grid-cols-2 gap-2 w-full">
+              {isMounted && availableChapters.map((chapInfo, index) => {
                 const chapter = chapInfo.name;
                 const isChecked = selectedChapters.includes(chapter);
                 const displayName = getTranslatedChapter(chapter, locale);
-                const inputId = `chapter-${chapter.replace(/[^a-z0-9]+/gi, "-")}`;
+                const stableKey = `chap-${chapter}-${index}`;
+                const inputId = `chapter-${chapter.replace(/[^a-z0-9]+/gi, "-")}-${index}`;
                 const isDisabled = !chapInfo.hasMcqs;
 
                 return (
-                  <li key={chapter}>
+                  <li key={stableKey} className="w-full">
                     <div
                       className={cn(
-                        "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full",
+                        "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full w-full",        
                         isDisabled
                           ? "border-border/40 opacity-60 cursor-not-allowed bg-secondary/10"
                           : isChecked
@@ -442,32 +448,34 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                             : "border-border bg-card hover:border-primary/20 hover:bg-secondary/40",
                       )}
                     >
-                      <input
-                        id={inputId}
-                        type="checkbox"
-                        checked={isChecked}
-                        disabled={isDisabled}
-                        onChange={() => toggleChapter(chapter)}
-                        className="mt-1 size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer"
-                      />
+                      <div className="flex items-center h-5">
+                        <input
+                          id={inputId}
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={isDisabled}
+                          onChange={() => toggleChapter(chapter)}
+                          className="size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer"
+                        />
+                      </div>
                       <label
                         htmlFor={isDisabled ? undefined : inputId}
                         className={cn(
-                          "min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 select-none",
+                          "min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 select-none",
                           isDisabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
                       >
                         <span
                           className={cn(
-                            "text-sm leading-snug",
-                            isChecked ? "font-medium text-primary" : "text-foreground",
+                            "text-sm leading-tight",
+                            isChecked ? "font-semibold text-primary" : "text-foreground",
                           )}
                         >
                           {displayName}
                         </span>
                         {isDisabled && (
-                          <span className="shrink-0 text-2xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100/50">
-                            {locale === "bn" ? "এমসিকিউ শীঘ্রই যুক্ত করা হবে" : "MCQ will be added soon"}
+                          <span className="shrink-0 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100/50 uppercase tracking-tight">
+                            {locale === "bn" ? "শীঘ্রই আসছে" : "Coming soon"}
                           </span>
                         )}
                       </label>
@@ -481,11 +489,11 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           <div className="border-t border-border bg-secondary/20 px-4 py-3 sm:px-5">
             <div className="flex flex-wrap gap-2 text-xs text-muted">
               <span className="rounded-md border border-border bg-card px-2.5 py-1">
-                {locale === "bn" ? "অধ্যায়" : "Chapters"}:{" "}
+                {locale === "bn" ? "অধ্যায়" : "Chapters"}:{" "}
                 <strong className="text-primary">{selectedChapters.length}</strong>
               </span>
               <span className="rounded-md border border-border bg-card px-2.5 py-1">
-                {locale === "bn" ? "সময়/প্রশ্ন" : "Per question"}:{" "}
+                {locale === "bn" ? "সময়/প্রশ্ন" : "Per question"}:{" "}
                 <strong className="text-primary">{secondsPerQuestion}s</strong>
               </span>
               <span className="rounded-md border border-border bg-card px-2.5 py-1">
@@ -493,7 +501,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 <strong className="text-primary">{passMarkPercent}%</strong>
               </span>
               <span className="rounded-md border border-border bg-card px-2.5 py-1">
-                {locale === "bn" ? "আনুমানিক সময়" : "Est. time"}:{" "}
+                {locale === "bn" ? "আনুমানিক সময়" : "Est. time"}:{" "}
                 <strong className="text-primary">
                   {locale === "bn" ? (
                     <>
@@ -529,7 +537,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     return (
       <section className="space-y-5 animate-pulse">
         {/* Header Skeleton */}
-        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">
+        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">       
           <div className="space-y-3">
             <div className="h-5 w-20 rounded-full bg-secondary" />
             <div className="h-7 w-1/3 rounded bg-secondary" />
@@ -573,7 +581,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               </span>
               <h1 className="mt-1.5 font-display text-2xl font-bold text-primary sm:text-3xl">
                 {displaySubject} {paperLabel} MCQ Test
-                
+
               </h1>
               <p className="mt-2 text-sm text-muted">
                 {answeredCount}/{questions.length}{" "}
@@ -692,11 +700,11 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-primary">
-              {locale === "bn" ? "গুরুত্বপূর্ণ সতর্কতা" : "Important Warning"}
+              {locale === "bn" ? "গুরুত্বপূর্ণ সতর্কতা" : "Important Warning"} 
             </h3>
             <p className="text-xs leading-5 text-muted">
               {locale === "bn"
-                ? "পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবে না। অনুগ্রহ করে এখান থেকে যাওয়ার আগে উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নাও!"
+                ? "পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবে না। অনুগ্রহ করে এখান থেকে যাওয়ার আগে উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নাও!"
                 : "You will NOT be able to view this detailed question review later (the database only stores your final score). Please review your answers and explanations carefully before navigating away!"}
             </p>
           </div>
@@ -705,7 +713,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         <div
           className={cn(
             "rounded-xl border-2 p-5 shadow-[var(--shadow-md)] sm:p-6",
-            result.result.isPassed ? "border-emerald-400 bg-emerald-50" : "border-brand-yellow/30 bg-secondary"
+            result.result.isPassed ? "border-emerald-400 bg-emerald-50" : "border-brand-yellow/30 bg-secondary" 
           )}
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -718,7 +726,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 {result.result.percentage}% ·{" "}
                 <span
                   className={
-                    result.result.isPassed ? "font-semibold text-emerald-700" : "font-semibold text-brand-red"
+                    result.result.isPassed ? "font-semibold text-emerald-700" : "font-semibold text-brand-red"  
                   }
                 >
                   {result.result.isPassed ? "Passed" : "Needs improvement"}
@@ -727,7 +735,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               </p>
             </div>
             <Link href={practiceListHref} className="shrink-0">
-              <Button type="button" variant="outline" className="rounded-xl bg-surface hover:bg-secondary">
+              <Button type="button" variant="outline" className="rounded-xl bg-surface hover:bg-secondary">     
                 {locale === "bn" ? "ড্যাশবোর্ডে ফিরে যাও" : "Go to Dashboard"}
               </Button>
             </Link>
@@ -745,7 +753,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             return (
               <article
                 key={question.id}
-                className="rounded-xl border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5"
+                className="rounded-xl border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5"      
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
@@ -768,7 +776,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                   >
                     {isUnanswered
                       ? locale === "bn"
-                        ? "উত্তর দেওয়া হয়নি"
+                        ? "উত্তর দেওয়া হয়নি"
                         : "Unanswered"
                       : isCorrect
                         ? locale === "bn"
@@ -800,7 +808,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 </div>
 
                 {solution?.explanation && (
-                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 sm:p-4">
+                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 sm:p-4">       
                     <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">
                       {locale === "bn" ? "সমাধানের ব্যাখ্যা" : "Solution Explanation"}
                     </p>
