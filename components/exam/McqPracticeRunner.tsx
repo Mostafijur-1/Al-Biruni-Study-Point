@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, BookOpen, Brain, Clock } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, Brain } from "lucide-react";
 import type { CourseSubject } from "@/types";
 
 import { useRouter } from "next/navigation";
@@ -76,6 +76,191 @@ function getOptionResultMode(
   return "unchanged";
 }
 
+type PracticeTimerProps = {
+  durationSeconds: number;
+  onTimeUp: () => void;
+};
+
+/**
+ * Isolated timer component that handles its own 1-second ticks.
+ * Prevents re-rendering the parent MCQ Runner list every second.
+ */
+const PracticeTimer = React.memo(
+  function PracticeTimer({ durationSeconds, onTimeUp }: PracticeTimerProps) {
+    const [secondsLeft, setSecondsLeft] = useState(durationSeconds);
+    const onTimeUpRef = useRef(onTimeUp);
+
+    useEffect(() => {
+      onTimeUpRef.current = onTimeUp;
+    }, [onTimeUp]);
+
+    useEffect(() => {
+      if (secondsLeft <= 0) {
+        onTimeUpRef.current();
+        return;
+      }
+
+      const interval = window.setInterval(() => {
+        setSecondsLeft((current) => Math.max(0, current - 1));
+      }, 1000);
+
+      return () => window.clearInterval(interval);
+    }, [secondsLeft]);
+
+    const minutes = Math.floor(secondsLeft / 60);
+    const seconds = String(secondsLeft % 60).padStart(2, "0");
+    const isLowTime = secondsLeft <= 60;
+
+    return (
+      <div
+        className={cn(
+          "shrink-0 rounded-xl border-2 px-4 py-3 text-center",
+          isLowTime ? "border-brand-red bg-red-50" : "border-primary/20 bg-secondary"
+        )}
+      >
+        <p className="text-xs font-semibold uppercase text-muted">Time left</p>
+        <p
+          className={cn(
+            "font-display text-2xl font-bold tabular-nums",
+            isLowTime ? "text-brand-red" : "text-primary"
+          )}
+        >
+          {minutes}:{seconds}
+        </p>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => prevProps.durationSeconds === nextProps.durationSeconds
+);
+
+type PracticeQuestionCardProps = {
+  question: PracticeQuestion;
+  index: number;
+  selectedIndex: number | undefined;
+  onSelectOption: (questionId: string, optionIndex: number) => void;
+};
+
+/**
+ * Memoized question card rendering options.
+ * Only re-renders when the selectedIndex updates, preventing complete list refreshes.
+ */
+const PracticeQuestionCard = React.memo(function PracticeQuestionCard({
+  question,
+  index,
+  selectedIndex,
+  onSelectOption,
+}: PracticeQuestionCardProps) {
+  const isAnswered = selectedIndex !== undefined;
+
+  return (
+    <article
+      className={cn(
+        "rounded-xl border-2 bg-card p-4 shadow-[var(--shadow-sm)] transition-colors sm:p-5",
+        isAnswered ? "border-primary/25" : "border-border"
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            {index + 1}
+          </span>
+          <h2 className="pt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">
+            {question.question}
+          </h2>
+        </div>
+        <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-primary">
+          1 mark
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-2.5 sm:gap-3">
+        {question.options.map((option, optionIndex) => (
+          <McqOption
+            key={`${question.id}-${optionIndex}`}
+            label={getOptionLabel(optionIndex)}
+            optionText={option}
+            isSelected={selectedIndex === optionIndex}
+            onSelect={() => onSelectOption(question.id, optionIndex)}
+          />
+        ))}
+      </div>
+    </article>
+  );
+});
+
+type ChapterListItemProps = {
+  chapter: string;
+  index: number;
+  isChecked: boolean;
+  isDisabled: boolean;
+  displayName: string;
+  locale: string;
+  onToggle: (chapterName: string) => void;
+};
+
+/**
+ * Memoized list item for chapter selection.
+ * Prevents full chapter list redraws and font flickering on checkbox toggle.
+ */
+const ChapterListItem = React.memo(function ChapterListItem({
+  chapter,
+  index,
+  isChecked,
+  isDisabled,
+  displayName,
+  locale,
+  onToggle,
+}: ChapterListItemProps) {
+  const inputId = `chapter-${chapter.replace(/[^a-z0-9]+/gi, "-")}-${index}`;
+
+  return (
+    <li className="w-full">
+      <div
+        className={cn(
+          "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full w-full",
+          isDisabled
+            ? "border-border/40 opacity-60 cursor-not-allowed bg-secondary/10"
+            : isChecked
+              ? "border-primary/30 bg-primary/5"
+              : "border-border bg-card hover:border-primary/20 hover:bg-secondary/40",
+        )}
+      >
+        <div className="flex items-center h-5">
+          <input
+            id={inputId}
+            type="checkbox"
+            checked={isChecked}
+            disabled={isDisabled}
+            onChange={() => onToggle(chapter)}
+            className="size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer"
+          />
+        </div>
+        <label
+          htmlFor={isDisabled ? undefined : inputId}
+          className={cn(
+            "min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 select-none",
+            isDisabled ? "cursor-not-allowed" : "cursor-pointer"
+          )}
+        >
+          <span
+            className={cn(
+              "text-sm leading-tight transition-colors",
+              isChecked ? "font-semibold text-primary" : "text-foreground",
+            )}
+          >
+            {displayName}
+          </span>
+          {isDisabled && (
+            <span className="shrink-0 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100/50 uppercase tracking-tight">
+              {locale === "bn" ? "শীঘ্রই আসছে" : "Coming soon"}
+            </span>
+          )}
+        </label>
+      </div>
+    </li>
+  );
+});
+
 export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const path = createLocalizedPath(locale as any);
   const router = useRouter();
@@ -90,7 +275,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
   const [totalDurationSeconds, setTotalDurationSeconds] = useState<number>(0);
   const [secondsPerQuestion, setSecondsPerQuestion] = useState<number>(45);
   const [passMarkPercent, setPassMarkPercent] = useState<number>(60);
@@ -150,48 +335,27 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     loadConfig();
   }, [subject, locale, checking, isGuest, level]);
 
-  // Exam Timer — counts down in seconds
-  useEffect(() => {
-    if (secondsLeft === null || secondsLeft <= 0 || phase !== "running") {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setSecondsLeft((current) => (current === null ? current : Math.max(0, current - 1)));
-    }, 1000);
-
-    return () => window.clearInterval(interval);
-  }, [secondsLeft, phase]);
-
-  // Handle auto-submit on time expiry
-  useEffect(() => {
-    if (secondsLeft === 0 && phase === "running" && !result) {
-      submitPractice();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secondsLeft, phase]);
-
   // Toggle chapter selection
-  function toggleChapter(chapterName: string) {
+  const toggleChapter = useCallback((chapterName: string) => {
     setSelectedChapters((prev) =>
       prev.includes(chapterName)
         ? prev.filter((c) => c !== chapterName)
         : [...prev, chapterName]
     );
-  }
+  }, []);
 
   // Toggle all chapters
-  function toggleSelectAll() {
+  const toggleSelectAll = useCallback(() => {
     const enabledChapters = availableChapters.filter((c) => c.hasMcqs).map((c) => c.name);
     if (selectedChapters.length === enabledChapters.length) {
       setSelectedChapters([]);
     } else {
       setSelectedChapters(enabledChapters);
     }
-  }
+  }, [availableChapters, selectedChapters]);
 
   // Start practice session
-  async function startPractice() {
+  const startPractice = useCallback(async () => {
     if (selectedChapters.length === 0) return;
 
     if (isGuest) {
@@ -223,7 +387,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       const data = payload.data;
       setQuestions(data.questions);
       setTotalDurationSeconds(data.durationSeconds);
-      setSecondsLeft(data.durationSeconds);
+      setStartTime(Date.now());
       setSecondsPerQuestion(data.secondsPerQuestion);
       setPassMarkPercent(data.passMarkPercent);
       setAnswers({});
@@ -233,23 +397,32 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setErrorMessage("Could not connect to server to fetch practice questions.");
       setPhase("configuring");
     }
-  }
+  }, [selectedChapters, isGuest, locale, router, subject]);
 
-  function buildSubmitAnswers() {
+  const handleSelectOption = useCallback((questionId: string, optionIndex: number) => {
+    setAnswers((current) => ({
+      ...current,
+      [questionId]: optionIndex,
+    }));
+  }, []);
+
+  const buildSubmitAnswers = useCallback(() => {
     return questions.map((question) => ({
       questionId: question.id,
       selectedIndex: answers[question.id] ?? null,
     }));
-  }
+  }, [questions, answers]);
 
   // Submit practice attempt
-  async function submitPractice() {
-    if (phase !== "running" || isSubmitting || questions.length === 0) return;
+  const submitPractice = useCallback(async () => {
+    if (isSubmitting || questions.length === 0) return;
 
     setIsSubmitting(true);
     setErrorMessage("");
 
-    const elapsedSeconds = totalDurationSeconds - (secondsLeft || 0);
+    const elapsedSeconds = startTime
+      ? Math.min(totalDurationSeconds, Math.round((Date.now() - startTime) / 1000))
+      : totalDurationSeconds;
 
     try {
       const { ok, payload } = await apiFetch<PracticeSubmitResult>(
@@ -279,7 +452,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject]);
 
   // Display subject name (strip "1st Paper" / "2nd Paper" suffix for heading)
   const displaySubject = subject.replace(/ (1st|2nd) Paper$/, "");
@@ -355,7 +528,19 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       selectedChapters.length === enabledChapters.length;
 
     return (
-      <section className="space-y-4">
+      <section 
+        className="space-y-4"
+        style={{
+          animation: "fadeIn 0.35s ease-in-out forwards",
+        }}
+      >
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}} />
+
         <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5">
           <div className="flex items-center gap-3">
             <Link
@@ -368,11 +553,9 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               <p className="text-xs font-bold uppercase tracking-widest text-accent">Test Mode</p>
               <h1 className="font-display text-xl font-bold text-primary sm:text-2xl">
                 {displaySubject} {paperLabel} MCQ Test
-
               </h1>
             </div>
           </div>
-
         </div>
 
         {errorMessage && (
@@ -388,7 +571,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               <h2 className="truncate font-semibold text-primary">
                 {locale === "bn" ? "অধ্যায় সিলেক্ট করো" : "Select chapters"}
               </h2>
-              <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"> 
+              <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary"> 
                 {selectedChapters.length}/{availableChapters.length}
               </span>
               {!configLoaded && (
@@ -416,54 +599,19 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 const chapter = chapInfo.name;
                 const isChecked = selectedChapters.includes(chapter);
                 const displayName = getTranslatedChapter(chapter, locale);
-                const inputId = `chapter-${chapter.replace(/[^a-z0-9]+/gi, "-")}-${index}`;
                 const isDisabled = !chapInfo.hasMcqs;
 
                 return (
-                  <li key={chapter} className="w-full">
-                    <div
-                      className={cn(
-                        "flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors h-full w-full",        
-                        isDisabled
-                          ? "border-border/40 opacity-60 cursor-not-allowed bg-secondary/10"
-                          : isChecked
-                            ? "border-primary/30 bg-primary/5"
-                            : "border-border bg-card hover:border-primary/20 hover:bg-secondary/40",
-                      )}
-                    >
-                      <div className="flex items-center h-5">
-                        <input
-                          id={inputId}
-                          type="checkbox"
-                          checked={isChecked}
-                          disabled={isDisabled}
-                          onChange={() => toggleChapter(chapter)}
-                          className="size-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:opacity-50 cursor-pointer"
-                        />
-                      </div>
-                      <label
-                        htmlFor={isDisabled ? undefined : inputId}
-                        className={cn(
-                          "min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 select-none",
-                          isDisabled ? "cursor-not-allowed" : "cursor-pointer"
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "text-sm leading-tight",
-                            isChecked ? "font-semibold text-primary" : "text-foreground",
-                          )}
-                        >
-                          {displayName}
-                        </span>
-                        {isDisabled && (
-                          <span className="shrink-0 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100/50 uppercase tracking-tight">
-                            {locale === "bn" ? "শীঘ্রই আসছে" : "Coming soon"}
-                          </span>
-                        )}
-                      </label>
-                    </div>
-                  </li>
+                  <ChapterListItem
+                    key={chapter}
+                    chapter={chapter}
+                    index={index}
+                    isChecked={isChecked}
+                    isDisabled={isDisabled}
+                    displayName={displayName}
+                    locale={locale}
+                    onToggle={toggleChapter}
+                  />
                 );
               })}
             </ul>
@@ -549,10 +697,6 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   }
 
   // --- PHASE: RUNNING EXAM ---
-  const minutes = Math.floor((secondsLeft || 0) / 60);
-  const seconds = String((secondsLeft || 0) % 60).padStart(2, "0");
-  const isLowTime = (secondsLeft ?? 0) <= 60;
-
   if (phase === "running") {
     return (
       <section className="space-y-5">
@@ -564,31 +708,12 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               </span>
               <h1 className="mt-1.5 font-display text-2xl font-bold text-primary sm:text-3xl">
                 {displaySubject} {paperLabel} MCQ Test
-
               </h1>
               <p className="mt-2 text-sm text-muted">
-                {answeredCount}/{questions.length}{" "}
-                {"answered"} ·{" "}
-                {"pass mark"} {passMarkPercent}% ·{" "}
-                {"blank == wrong"}
+                {answeredCount}/{questions.length} answered · pass mark {passMarkPercent}% · blank == wrong
               </p>
             </div>
-            <div
-              className={cn(
-                "shrink-0 rounded-xl border-2 px-4 py-3 text-center",
-                isLowTime ? "border-brand-red bg-red-50" : "border-primary/20 bg-secondary"
-              )}
-            >
-              <p className="text-xs font-semibold uppercase text-muted">Time left</p>
-              <p
-                className={cn(
-                  "font-display text-2xl font-bold tabular-nums",
-                  isLowTime ? "text-brand-red" : "text-primary"
-                )}
-              >
-                {minutes}:{seconds}
-              </p>
-            </div>
+            <PracticeTimer durationSeconds={totalDurationSeconds} onTimeUp={submitPractice} />
           </div>
 
           <div className="mt-4">
@@ -614,47 +739,15 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         <div className="space-y-4">
           {questions.map((question, index) => {
             const selectedIndex = answers[question.id];
-            const isAnswered = selectedIndex !== undefined;
 
             return (
-              <article
+              <PracticeQuestionCard
                 key={question.id}
-                className={cn(
-                  "rounded-xl border-2 bg-card p-4 shadow-[var(--shadow-sm)] transition-colors sm:p-5",
-                  isAnswered ? "border-primary/25" : "border-border"
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-                      {index + 1}
-                    </span>
-                    <h2 className="pt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">
-                      {question.question}
-                    </h2>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-primary">
-                    1 mark
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-2.5 sm:gap-3">
-                  {question.options.map((option, optionIndex) => (
-                    <McqOption
-                      key={`${question.id}-${optionIndex}`}
-                      label={getOptionLabel(optionIndex)}
-                      optionText={option}
-                      isSelected={selectedIndex === optionIndex}
-                      onSelect={() =>
-                        setAnswers((current) => ({
-                          ...current,
-                          [question.id]: optionIndex,
-                        }))
-                      }
-                    />
-                  ))}
-                </div>
-              </article>
+                question={question}
+                index={index}
+                selectedIndex={selectedIndex}
+                onSelectOption={handleSelectOption}
+              />
             );
           })}
         </div>
@@ -668,7 +761,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         >
           {isSubmitting
             ?  "Submitting..."
-            :  `Submit test (${answeredCount}/${questions.length} answered)`}
+            :  `Submit test (${answeredCount}/{questions.length} answered)`}
         </Button>
       </section>
     );
