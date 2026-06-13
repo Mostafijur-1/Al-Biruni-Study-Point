@@ -445,11 +445,11 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-          {locale === "bn" ? "অনুশীলন এমসিকিউ পরিচালনা" : "Practice MCQ Management"}
+          {"Practice MCQ Management"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           {locale === "bn"
-            ? "পরীক্ষার সেটিংস পরিবর্তন করুন এবং এমসিকিউ প্রশ্ন আপলোড করুন।"
+            ? "পরীক্ষার সেটিংস পরিবর্তন করুন এবং MCQ আপলোড করুন।"
             : "Configure test settings and upload MCQ questions for students."}
         </p>
       </div>
@@ -466,8 +466,8 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             </h2>
             <p className="text-xs text-muted">
               {locale === "bn"
-                ? "ডিফল্ট: ২৫টি প্রশ্ন · ৪৫ সে/প্রশ্ন · ৬০% পাস মার্ক"
-                : "Defaults: 25 questions · 45s/question · 60% pass mark"}
+                ? "ডিফল্ট: ২৫টি প্রশ্ন · ৫০ সে/প্রশ্ন · ৬০% পাস মার্ক"
+                : "Defaults: 25 questions · 50s/question · 60% pass mark"}
             </p>
           </div>
         </div>
@@ -475,7 +475,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
         {settingsLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted">
             <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            {locale === "bn" ? "সেটিংস লোড হচ্ছে..." : "Loading settings..."}
+            {"Loading settings..."}
           </div>
         ) : (
           <form onSubmit={handleSaveSettings} className="space-y-4">
@@ -483,7 +483,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
               {/* Max Questions */}
               <div className="space-y-1.5">
                 <Label htmlFor="max-questions">
-                  {locale === "bn" ? "সর্বোচ্চ প্রশ্ন সংখ্যা" : "Max Questions per Test"}
+                  {"Max Questions per Test"}
                 </Label>
                 <input
                   id="max-questions"
@@ -496,7 +496,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                   }
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 />
-                <p className="text-xs text-muted">{locale === "bn" ? "সীমা: ১–১০০" : "Range: 1–100"}</p>
+                <p className="text-xs text-muted">{"Range: 1–100"}</p>
               </div>
 
               {/* Seconds per Question */}
@@ -515,7 +515,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                   }
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 />
-                <p className="text-xs text-muted">{locale === "bn" ? "সীমা: ১০–৩০০ সে" : "Range: 10–300s"}</p>
+                <p className="text-xs text-muted">{"Range: 10–300s"}</p>
               </div>
 
               {/* Pass Mark */}
@@ -534,7 +534,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                   }
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 />
-                <p className="text-xs text-muted">{locale === "bn" ? "সীমা: ১–১০০%" : "Range: 1–100%"}</p>
+                <p className="text-xs text-muted">{"Range: 1–100%"}</p>
               </div>
             </div>
 
@@ -569,7 +569,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             {settingsSaved && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 flex items-center gap-2">
                 <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                <span>{locale === "bn" ? "সেটিংস সফলভাবে সেভ হয়েছে!" : "Settings saved successfully!"}</span>
+                <span>{"Settings saved successfully!"}</span>
               </div>
             )}
 
@@ -581,8 +581,8 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             >
               <Save className="mr-2 size-4" />
               {settingsSaving
-                ? locale === "bn" ? "সেভ হচ্ছে..." : "Saving..."
-                : locale === "bn" ? "সেটিংস সেভ করুন" : "Save Settings"}
+                ? "Saving..."
+                :  "Save Settings"}
             </Button>
           </form>
         )}

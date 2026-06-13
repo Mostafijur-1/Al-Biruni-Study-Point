@@ -37,16 +37,14 @@ export function ResultHistory() {
       {results.map((result: any) => (
         <article key={result._id} className="rounded border border-border bg-surface p-4 shadow-sm">
           <h2 className="flex items-center font-bold text-primary">
-            {result.exam?.title || "MCQ Exam"}
-            {result.isPractice && (
-              <span className="ml-2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-primary">
-                MCQ Test
-              </span>
-            )}
+            {result.exam?.title || "MCQ Practice"}
+            <span className="ml-2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-bold text-primary">
+              MCQ Practice
+            </span>
           </h2>
           <p className="mt-2 text-sm text-muted">
             Score {result.score}/{result.exam?.totalMarks || "-"} · {result.percentage}% ·{" "}
-            {result.isPractice ? "Latest Attempt" : `Attempt ${result.attemptNo}`} ·{" "}
+            Latest Attempt ·{" "}
             <span className={result.isPassed ? "font-semibold text-success" : "font-semibold text-destructive"}>
               {result.isPassed ? "Passed" : "Not passed"}
             </span>

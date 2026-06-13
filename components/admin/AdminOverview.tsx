@@ -18,9 +18,11 @@ type OverviewStats = {
   teachersPending: number;
   coursesTotal: number;
   coursesPublished: number;
-  examsTotal: number;
-  examsPublished: number;
-  resultsTotal: number;
+  practiceQuestionsTotal: number;
+  practiceQuestionsSSC: number;
+  practiceQuestionsHSC: number;
+  practiceAttemptsTotal: number;
+  practiceAttemptsPassed: number;
 };
 
 function StatCard({
@@ -53,10 +55,10 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
   const stats = data?.stats;
 
   const quickLinks = [
-    { href: path("/admin/students"), label: locale === "bn" ? "শিক্ষার্থী" : "Students" },
-    { href: path("/admin/teachers"), label: locale === "bn" ? "শিক্ষক" : "Teachers" },
-    { href: path("/admin/courses"), label: locale === "bn" ? "কোর্স" : "Courses" },
-    { href: path("/admin/exams"), label: locale === "bn" ? "পরীক্ষা ও ফলাফল" : "Exams & results" },
+    { href: path("/admin/students"), label:"Students" },
+    { href: path("/admin/teachers"), label:"Teachers" },
+    // { href: path("/admin/courses"), label: locale === "bn" ? "কোর্স" : "Courses" },
+    { href: path("/admin/practice-mcqs"), label:"MCQ Management" },
   ];
 
   return (
@@ -98,26 +100,27 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
             <StatCard
               label={locale === "bn" ? "শিক্ষার্থী" : "Students"}
               value={stats.studentsTotal}
-              hint={`${stats.studentsActive} ${locale === "bn" ? "সক্রিয়" : "active"}`}
+              hint={`${stats.studentsActive} ${"active"}`}
             />
             <StatCard
               label={locale === "bn" ? "শিক্ষক" : "Teachers"}
               value={stats.teachersTotal}
-              hint={`${stats.teachersPending} ${locale === "bn" ? "অপেক্ষমান" : "pending"}`}
+              hint={`${stats.teachersPending} ${"pending"}`}
             />
-            <StatCard
+            {/* <StatCard
               label={locale === "bn" ? "কোর্স" : "Courses"}
               value={stats.coursesTotal}
               hint={`${stats.coursesPublished} ${locale === "bn" ? "প্রকাশিত" : "published"}`}
+            /> */}
+            <StatCard
+              label={"Practice questions"}
+              value={stats.practiceQuestionsTotal}
+              hint={`SSC: ${stats.practiceQuestionsSSC} · HSC: ${stats.practiceQuestionsHSC}`}
             />
             <StatCard
-              label={locale === "bn" ? "MCQ পরীক্ষা" : "MCQ exams"}
-              value={stats.examsTotal}
-              hint={`${stats.examsPublished} ${locale === "bn" ? "প্রকাশিত" : "published"}`}
-            />
-            <StatCard
-              label={locale === "bn" ? "জমা ফলাফল" : "Exam attempts"}
-              value={stats.resultsTotal}
+              label={"Practice attempts"}
+              value={stats.practiceAttemptsTotal}
+              hint={`${stats.practiceAttemptsPassed} ${"passed"}`}
             />
           </div>
 

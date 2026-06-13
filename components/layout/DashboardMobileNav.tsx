@@ -127,7 +127,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
       //{ href: "/admin/courses", label: "Courses", icon: BookOpen },
       //{ href: "/admin/exams", label: "Exams & results", icon: FileQuestion },
-      { href: "/admin/practice-mcqs", label: "Practice MCQs", icon: Brain },
+      { href: "/admin/practice-mcqs", label: "Settings", icon: Brain },
       //{ href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
   };

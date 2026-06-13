@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { mapDocWithTargetClasses } from "@/lib/content/serialize";
 import { connectDB } from "@/lib/db/connect";
 import { Course } from "@/lib/db/models/Course";
-import { McqExam } from "@/lib/db/models/McqExam";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
 
 export async function GET(request: NextRequest) {
@@ -21,12 +21,16 @@ export async function GET(request: NextRequest) {
 
     const courseIds = courses.map((c) => c._id);
 
-    // 1. Fetch exam counts per course in a single aggregation query
-    const examCounts = await McqExam.aggregate([
-      { $match: { course: { $in: courseIds } } },
-      { $group: { _id: "$course", count: { $sum: 1 } } },
+    // 1. Fetch practice question counts per (level, subject) in a single aggregation query
+    const practiceCounts = await PracticeQuestion.aggregate([
+      { $group: { _id: { level: "$level", subject: "$subject" }, count: { $sum: 1 } } },
     ]);
-    const examCountMap = new Map(examCounts.map((c) => [c._id.toString(), c.count]));
+    const practiceCountMap = new Map(
+      practiceCounts.map((item) => [
+        `${item._id.level.toLowerCase()}:${item._id.subject.toLowerCase()}`,
+        item.count,
+      ])
+    );
 
     // 2. Fetch student counts per class in a single aggregation query
     const studentClassCounts = await User.aggregate([
@@ -36,7 +40,7 @@ export async function GET(request: NextRequest) {
     const classCountMap = new Map(studentClassCounts.map((c) => [c._id, c.count]));
 
     const enriched = courses.map((course) => {
-      const examCount = examCountMap.get(course._id.toString()) || 0;
+      const examCount = practiceCountMap.get(`${course.level.toLowerCase()}:${course.subject.toLowerCase()}`) || 0;
       
       const studentCount = (course.targetClasses || []).reduce(
         (sum: number, cls: string) => sum + (classCountMap.get(cls) || 0),

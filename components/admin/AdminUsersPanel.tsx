@@ -138,12 +138,8 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
   // ── Page title ─────────────────────────────────────────────────────────
   const title =
     role === "student"
-      ? locale === "bn"
-        ? "শিক্ষার্থী পরিচালনা"
-        : "Manage students"
-      : locale === "bn"
-        ? "শিক্ষক পরিচালনা"
-        : "Manage teachers";
+      ? "Manage students"
+      :  "Manage teachers";
 
   return (
     <div className="space-y-5">
@@ -152,12 +148,8 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">{title}</h1>
         <p className="mt-2 text-sm text-muted">
           {role === "student"
-            ? locale === "bn"
-              ? "শিক্ষার্থী অ্যাকাউন্ট সক্রিয় বা নিষ্ক্রিয় করুন।"
-              : "Activate or deactivate student accounts."
-            : locale === "bn"
-              ? "শিক্ষক অনুমোদন, সক্রিয় বা নিষ্ক্রিয় করুন।"
-              : "Approve teachers and control account access."}
+            ?"Activate or deactivate student accounts."
+            : "Approve teachers and control account access."}
         </p>
       </div>
 
@@ -217,12 +209,8 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       )}
                     >
                       {user.isActive
-                        ? locale === "bn"
-                          ? "সক্রিয়"
-                          : "Active"
-                        : locale === "bn"
-                          ? "নিষ্ক্রিয়"
-                          : "Inactive"}
+                        ?"Active"
+                        :"Inactive"}
                     </span>
                     {role === "teacher" && (
                       <span
@@ -245,7 +233,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       ` · ${getClassLabel(user.studentClass, locale)}`}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    {locale === "bn" ? "যোগদান" : "Joined"}:{" "}
+                    {"Joined"}:{" "}
                     {new Date(user.createdAt).toLocaleDateString(
                       locale === "bn" ? "bn-BD" : "en-US",
                     )}
@@ -260,7 +248,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                         loading={pendingId === user.id}
                         onClick={() => updateUser(user.id, { approvalStatus: "approved" })}
                       >
-                        {locale === "bn" ? "অনুমোদন" : "Approve"}
+                        {"Approve"}
                       </Button>
                       <Button
                         size="sm"
@@ -268,7 +256,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                         loading={pendingId === user.id}
                         onClick={() => updateUser(user.id, { approvalStatus: "rejected" })}
                       >
-                        {locale === "bn" ? "প্রত্যাখ্যান" : "Reject"}
+                        {"Reject"}
                       </Button>
                     </>
                   )}
@@ -279,12 +267,8 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                     onClick={() => updateUser(user.id, { isActive: !user.isActive })}
                   >
                     {user.isActive
-                      ? locale === "bn"
-                        ? "নিষ্ক্রিয় করুন"
-                        : "Deactivate"
-                      : locale === "bn"
-                        ? "সক্রিয় করুন"
-                        : "Activate"}
+                      ? "Deactivate"
+                      : "Activate"}
                   </Button>
                   {role === "teacher" && (
                     <Button
@@ -292,7 +276,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       variant="outline"
                       onClick={() => openDomainModal(user)}
                     >
-                      {locale === "bn" ? "ডোমেইন পরিচালনা" : "Manage Domain"}
+                      {"Manage Domain"}
                     </Button>
                   )}
                 </div>
@@ -311,9 +295,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                 <span className="rounded-lg bg-primary/10 p-1.5 text-primary">
                   <GraduationCap className="size-5" />
                 </span>
-                {locale === "bn"
-                  ? `${selectedTeacher.name} - এর ডোমেইন পরিচালনা`
-                  : `Manage Domain - ${selectedTeacher.name}`}
+                {`Manage Domain - ${selectedTeacher.name}`}
               </h3>
               <p className="text-xs text-muted mt-1.5">
                 {locale === "bn"
@@ -346,7 +328,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                     </p>
                     <p className="text-2xs text-muted mt-0.5 leading-relaxed">
                       {locale === "bn"
-                        ? "এটি সক্রিয় থাকলে এই শিক্ষক সকল ছাত্র-ছাত্রীর সকল বিষয়ের পরীক্ষার রেজাল্ট দেখতে পারবেন।"
+                        ? "এটি Active থাকলে এই শিক্ষক সকল ছাত্র-ছাত্রীর সকল বিষয়ের পরীক্ষার রেজাল্ট দেখতে পারবেন।"
                         : "If enabled, this teacher can view all exam results for all subjects and classes."}
                     </p>
                   </div>

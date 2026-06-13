@@ -135,7 +135,7 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase text-accent">
-                      {locale === "bn" ? "পরীক্ষা" : "Exams"}
+                      {locale === "bn" ? "অনুশীলন প্রশ্ন" : "Practice Qs"}
                     </p>
                     <p className="mt-1 text-lg font-bold text-primary">{course.examCount}</p>
                   </div>

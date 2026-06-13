@@ -4,8 +4,8 @@ import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { Course } from "@/lib/db/models/Course";
-import { McqExam } from "@/lib/db/models/McqExam";
-import { Result } from "@/lib/db/models/Result";
+import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
 
 export async function GET(request: NextRequest) {
@@ -21,9 +21,11 @@ export async function GET(request: NextRequest) {
       teachersPending,
       coursesTotal,
       coursesPublished,
-      examsTotal,
-      examsPublished,
-      resultsTotal,
+      practiceQuestionsTotal,
+      practiceQuestionsSSC,
+      practiceQuestionsHSC,
+      practiceAttemptsTotal,
+      practiceAttemptsPassed,
     ] = await Promise.all([
       User.countDocuments({ role: "student" }),
       User.countDocuments({ role: "student", isActive: true }),
@@ -32,9 +34,11 @@ export async function GET(request: NextRequest) {
       User.countDocuments({ role: "teacher", approvalStatus: "pending" }),
       Course.countDocuments(),
       Course.countDocuments({ status: "published" }),
-      McqExam.countDocuments(),
-      McqExam.countDocuments({ isPublished: true }),
-      Result.countDocuments(),
+      PracticeQuestion.countDocuments(),
+      PracticeQuestion.countDocuments({ level: "ssc" }),
+      PracticeQuestion.countDocuments({ level: "hsc" }),
+      PracticeAttempt.countDocuments(),
+      PracticeAttempt.countDocuments({ isPassed: true }),
     ]);
 
     return success({
@@ -46,12 +50,15 @@ export async function GET(request: NextRequest) {
         teachersPending,
         coursesTotal,
         coursesPublished,
-        examsTotal,
-        examsPublished,
-        resultsTotal,
+        practiceQuestionsTotal,
+        practiceQuestionsSSC,
+        practiceQuestionsHSC,
+        practiceAttemptsTotal,
+        practiceAttemptsPassed,
       },
     });
   } catch (error) {
     return handleApiError(error);
   }
 }
+
