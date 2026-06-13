@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Al-Biruni Study Point",
     short_name: "ABSP",
     description: "Science coaching center (offline/online) and LMS for SSC and HSC students.",
-    start_url: "/",
+    start_url: "/bn",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#0b2545",

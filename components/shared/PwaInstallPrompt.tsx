@@ -27,11 +27,11 @@ export function PwaInstallPrompt() {
 
   // Localized texts
   const t = {
-    title: isBengali ? "মোবাইলে ABSP অ্যাপ ইনস্টল করুন" : "Install ABSP App",
+    title: isBengali ? "ABSP অ্যাপ ইনস্টল করুন" : "Install ABSP App",
     desc: isBengali
       ? "দ্রুত MCQ পরীক্ষা ও ক্লাসের আপডেট পেতে আমাদের অফিশিয়াল অ্যাপটি ইনস্টল করুন।"
       : "Install Al-Biruni Study Point on your device for instant access, classes, and study alerts.",
-    installBtn: isBengali ? "অ্যাপটি নামান" : "Install App",
+    installBtn: isBengali ? "ইনস্টল করুন" : "Install App",
     dismissBtn: isBengali ? "পরে" : "Later",
     notifTitle: isBengali ? "নোটিফিকেশন চালু করুন" : "Enable Alerts",
     notifDesc: isBengali
@@ -116,7 +116,7 @@ export function PwaInstallPrompt() {
 
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
-      alert(isBengali ? "আপনার ব্রাউজার পুশ নোটিফিকেশন সাপোর্ট করে না।" : "Notifications not supported on your browser.");
+      alert("Notifications not supported on your browser.");
       return;
     }
 
