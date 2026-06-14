@@ -71,11 +71,7 @@ export function PwaInstallPrompt() {
     setIsIos(iosDevice);
 
     if (isFb) {
-      const lastDismissedFb = localStorage.getItem("in-app-prompt-dismissed-at");
-      const oneDay = 24 * 60 * 60 * 1000;
-      if (!lastDismissedFb || Date.now() - parseInt(lastDismissedFb, 10) > oneDay) {
-        setIsFbPromptVisible(true);
-      }
+      setIsFbPromptVisible(true);
     }
 
     // 1. Check if app is already running in standalone mode (already installed/PWA)
@@ -108,13 +104,7 @@ export function PwaInstallPrompt() {
       e.preventDefault();
       // Stash the event so it can be triggered later.
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-
-      // Check if user dismissed it recently (cooldown check: 2 days)
-      const lastDismissed = localStorage.getItem("pwa-prompt-dismissed-at");
-      const twoDays = 2 * 24 * 60 * 60 * 1000;
-      if (!lastDismissed || Date.now() - parseInt(lastDismissed, 10) > twoDays) {
-        setIsVisible(true);
-      }
+      setIsVisible(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -141,13 +131,10 @@ export function PwaInstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    // Set timestamp of dismissal to prevent annoying the user
-    localStorage.setItem("pwa-prompt-dismissed-at", Date.now().toString());
   };
 
   const handleDismissFb = () => {
     setIsFbPromptVisible(false);
-    localStorage.setItem("in-app-prompt-dismissed-at", Date.now().toString());
   };
 
   const requestNotificationPermission = async () => {
