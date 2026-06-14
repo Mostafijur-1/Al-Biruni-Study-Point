@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { Bell, Download, X, Smartphone } from "lucide-react";
+import { Bell, Download, X, Smartphone, Compass, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -24,6 +24,11 @@ export function PwaInstallPrompt() {
   const [isStandalone, setIsStandalone] = React.useState(false);
   const [notificationPermission, setNotificationPermission] = React.useState<string>("default");
   const [isMobile, setIsMobile] = React.useState(false);
+  
+  // In-app browser detection state
+  const [isInAppBrowser, setIsInAppBrowser] = React.useState(false);
+  const [isFbPromptVisible, setIsFbPromptVisible] = React.useState(false);
+  const [isIos, setIsIos] = React.useState(false);
 
   // Localized texts
   const t = {
@@ -38,6 +43,14 @@ export function PwaInstallPrompt() {
       ? "ক্লাস এবং পরীক্ষার নোটিফিকেশন সরাসরি ফোনে পেতে চান?"
       : "Get real-time updates and class reminders directly on your phone.",
     allowNotif: isBengali ? "চালু করুন" : "Enable Notifications",
+    inAppTitle: isBengali ? "ব্রাউজারে ওপেন করুন" : "Open in Default Browser",
+    inAppDescAndroid: isBengali
+      ? "সম্পূর্ণ ফিচার, ইনস্টলেশন ও নোটিফিকেশন পেতে অ্যাপটি ক্রোম ব্রাউজারে ওপেন করুন।"
+      : "Open this page in Google Chrome to install the app and enable alerts.",
+    inAppDescIos: isBengali
+      ? "অ্যাপটি ইনস্টল করতে নিচের শেয়ার বা ৩-ডট আইকন চেপে 'Open in Safari' সিলেক্ট করুন।"
+      : "To install the app, tap the share or '...' button and select 'Open in Safari'.",
+    openChromeBtn: isBengali ? "ক্রোমে ওপেন করুন" : "Open in Chrome",
   };
 
   React.useEffect(() => {
@@ -46,6 +59,24 @@ export function PwaInstallPrompt() {
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
       window.matchMedia("(max-width: 768px)").matches;
     setIsMobile(mobileDevice);
+
+    const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+    
+    // Detect In-App browser (Facebook, Messenger, Instagram)
+    const isFb = /FBAN|FBAV|Messenger|Instagram|FB_IAB/i.test(ua);
+    setIsInAppBrowser(isFb);
+
+    // Detect iOS device
+    const iosDevice = /iPhone|iPad|iPod/i.test(ua);
+    setIsIos(iosDevice);
+
+    if (isFb) {
+      const lastDismissedFb = localStorage.getItem("in-app-prompt-dismissed-at");
+      const oneDay = 24 * 60 * 60 * 1000;
+      if (!lastDismissedFb || Date.now() - parseInt(lastDismissedFb, 10) > oneDay) {
+        setIsFbPromptVisible(true);
+      }
+    }
 
     // 1. Check if app is already running in standalone mode (already installed/PWA)
     const isPwa =
@@ -114,6 +145,11 @@ export function PwaInstallPrompt() {
     localStorage.setItem("pwa-prompt-dismissed-at", Date.now().toString());
   };
 
+  const handleDismissFb = () => {
+    setIsFbPromptVisible(false);
+    localStorage.setItem("in-app-prompt-dismissed-at", Date.now().toString());
+  };
+
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
       alert("Notifications not supported on your browser.");
@@ -139,6 +175,60 @@ export function PwaInstallPrompt() {
   // If not a mobile device, do not render any prompts
   if (!isMobile) {
     return null;
+  }
+
+  // If inside Facebook/Messenger/Instagram in-app browser, show open in default browser guide
+  if (isInAppBrowser) {
+    if (!isFbPromptVisible) {
+      return null;
+    }
+
+    // Generate Chrome intent link for Android
+    let chromeIntentUrl = "";
+    if (!isIos && typeof window !== "undefined") {
+      const urlWithoutProtocol = window.location.host + window.location.pathname + window.location.search;
+      chromeIntentUrl = `intent://${urlWithoutProtocol}#Intent;scheme=https;package=com.android.chrome;end`;
+    }
+
+    return (
+      <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-fade-in rounded-xl border border-border bg-card/90 p-4 text-card-foreground shadow-lg backdrop-blur-md transition-all duration-300 md:bottom-6 md:right-6 md:left-auto md:mx-0">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue-light text-brand-blue dark:bg-brand-blue dark:text-white">
+                <Compass className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-primary">{t.inAppTitle}</h3>
+                <p className="mt-1 text-xs text-muted leading-relaxed">
+                  {isIos ? t.inAppDescIos : t.inAppDescAndroid}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleDismissFb}
+              className="rounded-full p-1 text-muted hover:bg-secondary hover:text-primary transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+          {!isIos && (
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={handleDismissFb}>
+                {t.dismissBtn}
+              </Button>
+              <a href={chromeIntentUrl}>
+                <Button variant="accent" size="sm" className="gap-1.5">
+                  <ExternalLink className="size-4" />
+                  {t.openChromeBtn}
+                </Button>
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // If already standalone (installed) and notification is granted (or denied, so we shouldn't ask), do not show anything
