@@ -479,26 +479,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
           </div>
         ) : (
           <form onSubmit={handleSaveSettings} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
-              {/* Max Questions */}
-              <div className="space-y-1.5">
-                <Label htmlFor="max-questions">
-                  {"Max Questions per Test"}
-                </Label>
-                <input
-                  id="max-questions"
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={settings.maxQuestionsPerTest}
-                  onChange={(e) =>
-                    setSettings((s) => ({ ...s, maxQuestionsPerTest: Number(e.target.value) }))
-                  }
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
-                />
-                <p className="text-xs text-muted">{"Range: 1–100"}</p>
-              </div>
-
+            <div className="grid gap-4 sm:grid-cols-2">
               {/* Seconds per Question */}
               <div className="space-y-1.5">
                 <Label htmlFor="seconds-per-q">
@@ -541,20 +522,12 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             {/* Preview */}
             <div className="rounded-lg bg-secondary/60 border border-border px-4 py-3 text-xs text-muted flex flex-wrap gap-4">
               <span>
-                <span className="font-bold text-primary">{settings.maxQuestionsPerTest}</span>{" "}
-                {locale === "bn" ? "প্রশ্ন" : "questions"}
+                {locale === "bn" ? "সময় প্রতি প্রশ্ন:" : "Seconds per question:"}{" "}
+                <span className="font-bold text-primary">{settings.secondsPerQuestion}s</span>
               </span>
               <span>·</span>
               <span>
-                {locale === "bn" ? "সময়:" : "Duration:"}{" "}
-                <span className="font-bold text-primary">
-                  {Math.ceil((settings.maxQuestionsPerTest * settings.secondsPerQuestion) / 60)}{" "}
-                  {locale === "bn" ? "মিনিট" : "min"}
-                </span>
-              </span>
-              <span>·</span>
-              <span>
-                {locale === "bn" ? "পাস:" : "Pass:"}{" "}
+                {locale === "bn" ? "পাস মার্ক:" : "Pass Mark:"}{" "}
                 <span className="font-bold text-primary">{settings.passMarkPercent}%</span>
               </span>
             </div>

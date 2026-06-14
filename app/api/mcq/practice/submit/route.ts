@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
           isCorrect: selectedIndex !== null && selectedIndex === sol.correctIndex,
           correctIndex: sol.correctIndex,
           explanation: sol.explanation,
+          imageUrl: full?.imageUrl,
         } as any;
       })
     );

@@ -35,6 +35,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { href: "/teacher/profile", label: "Profile", icon: UserCircle },
+    { href: "/teacher/mcq-review", label: "MCQ Review", icon: Brain },
     { href: "/teacher/results", label: "Results", icon: LineChart },
   ],
   admin: [
@@ -115,9 +116,8 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/student/results", label: "Results", icon: GraduationCap },
     ],
     teacher: [
-      //{ href: "/teacher", label: "Overview", icon: LayoutDashboard },
       { href: "/teacher/profile", label: "Profile", icon: UserCircle },
-     // { href: "/teacher/classes", label: "Classes", icon: BookOpen },
+      { href: "/teacher/mcq-review", label: "MCQ Review", icon: Brain },
       { href: "/teacher/results", label: "Results", icon: LineChart },
     ],
     admin: [

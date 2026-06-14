@@ -31,6 +31,7 @@ type PracticeQuestion = {
   id: string;
   question: string;
   options: string[];
+  imageUrl?: string;
 };
 
 type PracticeSubmitResult = {
@@ -160,13 +161,22 @@ const PracticeQuestionCard = React.memo(function PracticeQuestionCard({
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 items-start gap-3 flex-1">
           <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             {index + 1}
           </span>
-          <h2 className="pt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">
-            {question.question}
-          </h2>
+          <div className="flex-1 min-w-0">
+            <h2 className="pt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">
+              {question.question}
+            </h2>
+            {question.imageUrl && (
+              <img
+                src={question.imageUrl}
+                alt="Question illustration"
+                className="mt-3 max-w-full max-h-64 w-auto rounded-lg object-contain border border-border/60 bg-muted/20"
+              />
+            )}
+          </div>
         </div>
         <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-primary">
           1 mark
@@ -286,6 +296,13 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [configLoaded, setConfigLoaded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
+  const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(25);
+  const [reportingQuestionId, setReportingQuestionId] = useState<string | null>(null);
+  const [reportComment, setReportComment] = useState("");
+  const [reportError, setReportError] = useState("");
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -305,7 +322,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         const url = isGuest
           ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`        
           : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}`;
-        const { ok, payload } = await apiFetch<{ status: ChapterStatus[] }>(url);
+        const { ok, payload } = await apiFetch<{
+          status: ChapterStatus[];
+          settings?: { secondsPerQuestion: number; passMarkPercent: number };
+        }>(url);
         if (ok && isApiSuccess(payload)) {
           const matchingSubject = payload.data.status.find((s) => s.subject === subject);
           if (matchingSubject) {
@@ -315,6 +335,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
               .filter((c) => c.hasMcqs)
               .map((c) => c.name);
             setSelectedChapters(enabledChapters);
+            if (payload.data.settings) {
+              setSecondsPerQuestion(payload.data.settings.secondsPerQuestion);
+              setPassMarkPercent(payload.data.settings.passMarkPercent);
+            }
             setConfigLoaded(true);
           } else {
             setErrorMessage(
@@ -376,7 +400,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         totalQuestions: number;
         secondsPerQuestion: number;
         passMarkPercent: number;
-      }>(`/api/mcq/practice/start?subject=${encodeURIComponent(subject)}&chapters=${chaptersQuery}`);
+      }>(`/api/mcq/practice/start?subject=${encodeURIComponent(subject)}&chapters=${chaptersQuery}&limit=${selectedQuestionCount}`);
 
       if (!ok || !isApiSuccess(payload)) {
         setErrorMessage(getApiErrorMessage(payload, "Could not start practice exam."));
@@ -397,7 +421,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setErrorMessage("Could not connect to server to fetch practice questions.");
       setPhase("configuring");
     }
-  }, [selectedChapters, isGuest, locale, router, subject]);
+  }, [selectedChapters, isGuest, locale, router, subject, selectedQuestionCount]);
 
   const handleSelectOption = useCallback((questionId: string, optionIndex: number) => {
     setAnswers((current) => ({
@@ -453,6 +477,37 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setIsSubmitting(false);
     }
   }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject]);
+
+  const handleSendReport = useCallback(async () => {
+    if (!reportingQuestionId || !reportComment.trim() || isSubmittingReport) return;
+    setIsSubmittingReport(true);
+    setReportError("");
+    setReportSuccess(false);
+    try {
+      const { ok, payload } = await apiFetch("/api/mcq/practice/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: reportingQuestionId,
+          comment: reportComment.trim(),
+        }),
+      });
+      if (ok && isApiSuccess(payload)) {
+        setReportSuccess(true);
+        setTimeout(() => {
+          setReportingQuestionId(null);
+          setReportComment("");
+          setReportSuccess(false);
+        }, 1500);
+      } else {
+        setReportError(getApiErrorMessage(payload, "Failed to submit report."));
+      }
+    } catch {
+      setReportError("An error occurred while submitting report.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  }, [reportingQuestionId, reportComment, isSubmittingReport]);
 
   // Display subject name (strip "1st Paper" / "2nd Paper" suffix for heading)
   const displaySubject = subject.replace(/ (1st|2nd) Paper$/, "");
@@ -517,8 +572,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
   // --- PHASE: CONFIGURING ---
   if (phase === "configuring") {
-    const estQuestionCount =
-      selectedChapters.length > 0 ? Math.min(selectedChapters.length * 5, 25) : 0;
+    const estQuestionCount = selectedQuestionCount;
     const estTotalSeconds = estQuestionCount * secondsPerQuestion;
     const estMinutes = Math.floor(estTotalSeconds / 60);
     const estSecondsRemainder = estTotalSeconds % 60;
@@ -646,6 +700,29 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 </strong>
               </span>
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5">
+          <p className="text-sm font-bold text-primary mb-3">
+            {locale === "bn" ? "প্রশ্নের সংখ্যা নির্বাচন করো" : "Select number of questions"}
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            {[10, 15, 20, 25].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => setSelectedQuestionCount(count)}
+                className={cn(
+                  "px-5 py-2.5 text-sm font-bold rounded-xl border transition-all duration-200",
+                  selectedQuestionCount === count
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm scale-105"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/45 hover:text-primary hover:bg-secondary/20"
+                )}
+              >
+                {count} {locale === "bn" ? "টি প্রশ্ন" : "Questions"}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -832,36 +909,60 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 className="rounded-xl border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5"      
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex min-w-0 items-start gap-3 flex-1">
                     <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
                       {index + 1}
                     </span>
-                    <h2 className="pt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">
-                      {question.question}
-                    </h2>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="pt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">
+                        {question.question}
+                      </h2>
+                      {question.imageUrl && (
+                        <img
+                          src={question.imageUrl}
+                          alt="Question illustration"
+                          className="mt-3 max-w-full max-h-64 w-auto rounded-lg object-contain border border-border/60 bg-muted/20"
+                        />
+                      )}
+                    </div>
                   </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
-                      isUnanswered
-                        ? "bg-red-50 text-brand-red"
-                        : isCorrect
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-red-50 text-brand-red",
-                    )}
-                  >
-                    {isUnanswered
-                      ? locale === "bn"
-                        ? "উত্তর দেওয়া হয়নি"
-                        : "Unanswered"
-                      : isCorrect
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-xs font-semibold text-center whitespace-nowrap",
+                        isUnanswered
+                          ? "bg-red-50 text-brand-red"
+                          : isCorrect
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-red-50 text-brand-red",
+                      )}
+                    >
+                      {isUnanswered
                         ? locale === "bn"
-                          ? "সঠিক"
-                          : "Correct"
-                        : locale === "bn"
-                          ? "ভুল"
-                          : "Wrong"}
-                  </span>
+                          ? "উত্তর দেওয়া হয়নি"
+                          : "Unanswered"
+                        : isCorrect
+                          ? locale === "bn"
+                            ? "সঠিক"
+                            : "Correct"
+                          : locale === "bn"
+                            ? "ভুল"
+                            : "Wrong"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReportingQuestionId(question.id);
+                        setReportComment("");
+                        setReportError("");
+                        setReportSuccess(false);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-bold text-muted-foreground hover:bg-red-50 hover:text-brand-red hover:border-brand-red/30 transition-all duration-200"
+                    >
+                      <AlertTriangle className="size-3.5" />
+                      {locale === "bn" ? "রিপোর্ট" : "Report"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid gap-2.5 sm:gap-3">
@@ -901,6 +1002,67 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             {"Finish and Go Back"}
           </Button>
         </Link>
+
+        {/* --- QUESTION REPORT MODAL --- */}
+        {reportingQuestionId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+              <h3 className="font-display text-lg font-bold text-primary flex items-center gap-2">
+                <AlertTriangle className="size-5 text-amber-500 animate-bounce" />
+                {locale === "bn" ? "প্রশ্ন রিপোর্ট করুন" : "Report Question"}
+              </h3>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {locale === "bn"
+                  ? "এই প্রশ্নটির কোনো ভুল বা সমস্যা থাকলে অনুগ্রহ করে নিচে মন্তব্য লিখুন।"
+                  : "Please describe the issue with this question (e.g., wrong correct index, typo, bad options)."}
+              </p>
+
+              <textarea
+                value={reportComment}
+                onChange={(e) => setReportComment(e.target.value)}
+                rows={4}
+                placeholder={locale === "bn" ? "আপনার মন্তব্য লিখুন..." : "Enter your comment..."}
+                className="mt-4 w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              />
+
+              {reportError && (
+                <p className="mt-3 text-xs text-brand-red font-semibold">{reportError}</p>
+              )}
+
+              {reportSuccess && (
+                <p className="mt-3 text-xs text-emerald-600 font-semibold">
+                  {locale === "bn" ? "রিপোর্ট সফলভাবে জমা দেওয়া হয়েছে!" : "Report submitted successfully!"}
+                </p>
+              )}
+
+              <div className="mt-5 flex items-center justify-end gap-2.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setReportingQuestionId(null);
+                    setReportComment("");
+                    setReportError("");
+                    setReportSuccess(false);
+                  }}
+                  disabled={isSubmittingReport}
+                  className="rounded-xl"
+                >
+                  {locale === "bn" ? "বাতিল" : "Cancel"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSendReport}
+                  loading={isSubmittingReport}
+                  disabled={isSubmittingReport || !reportComment.trim()}
+                  className="rounded-xl"
+                >
+                  {locale === "bn" ? "জমা দিন" : "Submit"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     );
   }

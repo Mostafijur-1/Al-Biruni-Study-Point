@@ -28,11 +28,20 @@ export async function GET(request: NextRequest) {
     // Fetch admin-configurable settings
     const settings = await getPracticeSettings();
 
+    const limitParam = searchParams.get("limit");
+    let limit = settings.maxQuestionsPerTest;
+    if (limitParam) {
+      const parsedLimit = parseInt(limitParam, 10);
+      if ([10, 15, 20, 25].includes(parsedLimit)) {
+        limit = parsedLimit;
+      }
+    }
+
     const examData = await startPracticeExam(
       subject,
       studentClass,
       selectedChapters,
-      settings.maxQuestionsPerTest,
+      limit,
       settings.secondsPerQuestion
     );
 

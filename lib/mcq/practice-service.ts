@@ -157,6 +157,7 @@ export async function startPracticeExam(
     options: q.options,
     correctIndex: q.correctIndex,
     explanation: q.explanation,
+    imageUrl: q.imageUrl,
   }));
 
   const totalQuestions = finalQuestions.length;
@@ -168,6 +169,7 @@ export async function startPracticeExam(
     id: q.id,
     question: q.question,
     options: q.options,
+    imageUrl: q.imageUrl,
   }));
 
   return {
@@ -183,7 +185,7 @@ export async function loadFullQuestionById(
   level: "ssc" | "hsc",
   subject: string,
   questionId: string
-): Promise<{ question: string; options: string[] } | null> {
+): Promise<{ question: string; options: string[]; imageUrl?: string } | null> {
   await connectDB();
   try {
     const found = await PracticeQuestion.findOne({
@@ -192,7 +194,7 @@ export async function loadFullQuestionById(
       subject,
     }).lean();
     if (found) {
-      return { question: found.question, options: found.options };
+      return { question: found.question, options: found.options, imageUrl: found.imageUrl };
     }
   } catch (err) {
     // Ignore casting errors if questionId is not a valid ObjectId

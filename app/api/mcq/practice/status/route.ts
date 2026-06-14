@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
+import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
@@ -93,8 +94,14 @@ export async function GET(request: NextRequest) {
         lastResult,
       });
     }
-
-    return success({ status: statusList });
+    const settings = await getPracticeSettings();
+    return success({
+      status: statusList,
+      settings: {
+        secondsPerQuestion: settings.secondsPerQuestion,
+        passMarkPercent: settings.passMarkPercent,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

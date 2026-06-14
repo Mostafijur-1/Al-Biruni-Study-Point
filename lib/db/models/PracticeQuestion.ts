@@ -8,6 +8,7 @@ export interface IPracticeQuestion extends Document {
   options: string[];
   correctIndex: number;
   explanation?: string;
+  imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +29,7 @@ const PracticeQuestionSchema = new Schema<IPracticeQuestion>(
     },
     correctIndex: { type: Number, required: true, min: 0, max: 3 },
     explanation: { type: String, trim: true },
+    imageUrl: { type: String, trim: true },
   },
   { timestamps: true }
 );

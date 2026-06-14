@@ -235,11 +235,6 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   </p>
                   {role === "student" && user.schoolCollege && (
                     <p className="mt-0.5 text-sm text-muted-foreground/90">
-                      <span className="text-xs text-muted font-normal mr-1">
-                        {locale === "bn"
-                          ? (user.studentClass === "class-11" || user.studentClass === "class-12" ? "কলেজ: " : "স্কুল: ")
-                          : (user.studentClass === "class-11" || user.studentClass === "class-12" ? "College: " : "School: ")}
-                      </span>
                       <span className="font-semibold text-foreground/80">{user.schoolCollege}</span>
                     </p>
                   )}
