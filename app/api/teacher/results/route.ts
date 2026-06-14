@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const total = await PracticeAttempt.countDocuments(attemptQuery);
 
     const attempts = await PracticeAttempt.find(attemptQuery)
-      .populate("student", "name phone studentClass")
+      .populate("student", "name phone studentClass schoolCollege")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
           phone: student?.phone ?? null,
           class: student?.studentClass ?? null,
           level: student?.studentClass ? getSchoolLevel(student.studentClass) : null,
+          schoolCollege: student?.schoolCollege ?? null,
         },
         subject: attempt.subject,
         score: attempt.score,

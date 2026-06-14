@@ -39,6 +39,7 @@ type StudentResult = {
     phone: string | null;
     class: string | null;
     level: "ssc" | "hsc" | null;
+    schoolCollege: string | null;
   };
   subject: string;
   score: number;
@@ -144,10 +145,12 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
 // ---------------------------------------------------------------------------
 function ResultRow({
   result,
+  locale,
   onCommentSaved,
   onDeleted,
 }: {
   result: StudentResult;
+  locale: string;
   onCommentSaved: (id: string, comment: string) => void;
   onDeleted: (id: string) => void;
 }) {
@@ -252,6 +255,12 @@ function ResultRow({
                 )}
               </div>
             </div>
+
+            {result.student.schoolCollege && (
+              <p className="mt-0.5 text-[11px] text-muted-foreground/95">
+                <span className="font-semibold text-foreground/80">{result.student.schoolCollege}</span>
+              </p>
+            )}
             
             {/* Wrapping flex details for perfect mobile display without truncation */}
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted mt-1.5 sm:mt-1">
@@ -515,6 +524,7 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
         `/api/teacher/results?${params}`
       );
       if (ok && isApiSuccess(payload)) {
+        console.log("DEBUG results from API:", payload.data.results);
         setResults(payload.data.results);
         setTotal(payload.data.total);
         if (payload.data.domain) {
@@ -797,6 +807,7 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
             <ResultRow
               key={result.id}
               result={result}
+              locale={locale}
               onCommentSaved={handleCommentSaved}
               onDeleted={handleDeleted}
             />

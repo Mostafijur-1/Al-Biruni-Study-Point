@@ -10,6 +10,7 @@ export function serializeAdminUser(user: IUser | Record<string, unknown>) {
     email: doc.email,
     role: doc.role,
     studentClass: doc.studentClass,
+    schoolCollege: doc.schoolCollege,
     isActive: doc.isActive,
     approvalStatus: doc.approvalStatus,
     teacherDomain: doc.teacherDomain
