@@ -107,7 +107,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Failed to load subjects."));
         }
-      } catch {
+      } catch (error: any) {
+        console.error("[Teacher Review Fetch Subjects Catch Error]:", error);
         setErrorMessage("An error occurred fetching subjects.");
       } finally {
         setLoadingSubjects(false);
@@ -129,7 +130,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to load questions."));
       }
-    } catch {
+    } catch (error: any) {
+      console.error("[Teacher Review Fetch MCQ Catch Error]:", error);
       setErrorMessage("An error occurred loading questions.");
     } finally {
       setLoadingMcqs(false);
@@ -146,7 +148,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to load reported questions."));
       }
-    } catch {
+    } catch (error: any) {
+      console.error("[Teacher Review Fetch Reports Catch Error]:", error);
       setErrorMessage("An error occurred fetching reports.");
     } finally {
       setLoadingReports(false);
@@ -177,7 +180,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to delete question."));
       }
-    } catch {
+    } catch (error: any) {
+      console.error("[Teacher Review Delete MCQ Catch Error]:", error);
       setErrorMessage("An error occurred deleting the question.");
     }
   };
@@ -216,10 +220,12 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       if (response.ok && result.success) {
         setEditForm((prev) => ({ ...prev, imageUrl: result.data.url }));
       } else {
-        setImageError(result.message || "Failed to upload image.");
+        console.error("[Image Upload Failure Technical Details]:", result);
+        setImageError("Failed to upload image. Please ensure the file is a valid image.");
       }
-    } catch {
-      setImageError("Error uploading image.");
+    } catch (error: any) {
+      console.error("[Image Upload Catch Technical Details]:", error);
+      setImageError("Connection issue while uploading image. Please check your network and try again.");
     } finally {
       setIsUploadingImage(false);
     }
@@ -265,7 +271,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       } else {
         setEditError(getApiErrorMessage(payload, "Failed to update question."));
       }
-    } catch {
+    } catch (error: any) {
+      console.error("[Teacher Review Save MCQ Catch Error]:", error);
       setEditError("An error occurred updating the question.");
     } finally {
       setIsSavingEdit(false);
@@ -288,7 +295,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to resolve report."));
       }
-    } catch {
+    } catch (error: any) {
+      console.error("[Teacher Review Resolve Report Catch Error]:", error);
       setErrorMessage("An error occurred resolving the report.");
     }
   };

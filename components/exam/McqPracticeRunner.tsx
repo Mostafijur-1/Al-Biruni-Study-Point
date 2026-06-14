@@ -138,17 +138,19 @@ type PracticeQuestionCardProps = {
   question: PracticeQuestion;
   index: number;
   selectedIndex: number | undefined;
+  disabled?: boolean;
   onSelectOption: (questionId: string, optionIndex: number) => void;
 };
 
 /**
  * Memoized question card rendering options.
- * Only re-renders when the selectedIndex updates, preventing complete list refreshes.
+ * Only re-renders when the selectedIndex or disabled state updates.
  */
 const PracticeQuestionCard = React.memo(function PracticeQuestionCard({
   question,
   index,
   selectedIndex,
+  disabled,
   onSelectOption,
 }: PracticeQuestionCardProps) {
   const isAnswered = selectedIndex !== undefined;
@@ -190,7 +192,8 @@ const PracticeQuestionCard = React.memo(function PracticeQuestionCard({
             label={getOptionLabel(optionIndex)}
             optionText={option}
             isSelected={selectedIndex === optionIndex}
-            onSelect={() => onSelectOption(question.id, optionIndex)}
+            disabled={disabled}
+            onSelect={() => !disabled && onSelectOption(question.id, optionIndex)}
           />
         ))}
       </div>
@@ -306,10 +309,42 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
   const [wasAutoSubmittedDueToTabLeave, setWasAutoSubmittedDueToTabLeave] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [isTimeUp, setIsTimeUp] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    if (typeof window !== "undefined") {
+      setIsOffline(!window.navigator.onLine);
+    }
   }, []);
+
+  // Monitor network connection status
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Auto-save answers progress to localStorage during active practice
+  useEffect(() => {
+    if (phase !== "running" || !isMounted) return;
+    const storageKey = user ? `absp_practice_${user.id}_${subject}` : `absp_practice_guest_${subject}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(answers));
+    } catch (e) {
+      console.error("Failed to auto-save practice answers:", e);
+    }
+  }, [answers, phase, user, subject, isMounted]);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
   const progressPercent = questions.length
@@ -354,7 +389,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Could not load practice chapters."));
         }
-      } catch {
+      } catch (error: any) {
+        console.error("[Practice Load Config Catch Technical Details]:", error);
         setErrorMessage("An unexpected error occurred while loading settings.");
       } finally {
         setLoadingConfig(false);
@@ -418,14 +454,34 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setStartTime(Date.now());
       setSecondsPerQuestion(data.secondsPerQuestion);
       setPassMarkPercent(data.passMarkPercent);
-      setAnswers({});
+      // Try to restore saved answers from localStorage if any exist
+      let loadedAnswers: Record<string, number> = {};
+      const storageKey = user ? `absp_practice_${user.id}_${subject}` : `absp_practice_guest_${subject}`;
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const validQuestionIds = new Set(data.questions.map((q) => q.id));
+          Object.keys(parsed).forEach((key) => {
+            if (validQuestionIds.has(key)) {
+              loadedAnswers[key] = parsed[key];
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Failed to restore practice progress:", e);
+      }
+
+      setAnswers(loadedAnswers);
       setResult(null);
+      setIsTimeUp(false);
       setPhase("running");
-    } catch {
+    } catch (error: any) {
+      console.error("[Start Practice Catch Technical Details]:", error);
       setErrorMessage("Could not connect to server to fetch practice questions.");
       setPhase("configuring");
     }
-  }, [selectedChapters, isGuest, locale, router, subject, selectedQuestionCount]);
+  }, [selectedChapters, isGuest, locale, router, subject, selectedQuestionCount, user]);
 
   const handleSelectOption = useCallback((questionId: string, optionIndex: number) => {
     setAnswers((current) => ({
@@ -472,15 +528,33 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         return;
       }
 
+      // Clear saved progress from localStorage on success
+      const storageKey = user ? `absp_practice_${user.id}_${subject}` : `absp_practice_guest_${subject}`;
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (e) {
+        console.error("Failed to clear practice progress:", e);
+      }
+
       setResult(payload.data);
       setPhase("result");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      setErrorMessage("An error occurred during submission.");
+    } catch (error: any) {
+      console.error("[Submit Practice Catch Technical Details]:", error);
+      setErrorMessage(
+        locale === "bn"
+          ? "সাবমিট করা যায়নি। আপনার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।"
+          : "Submission failed. Please check your internet connection and try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
-  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject]);
+  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject, user, locale]);
+
+  const handleTimeUp = useCallback(() => {
+    setIsTimeUp(true);
+    submitPractice();
+  }, [submitPractice]);
 
   // Scroll to top when phase changes to running or result
   useEffect(() => {
@@ -583,7 +657,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       } else {
         setReportError(getApiErrorMessage(payload, "Failed to submit report."));
       }
-    } catch {
+    } catch (error: any) {
+      console.error("[Submit Question Report Catch Technical Details]:", error);
       setReportError("An error occurred while submitting report.");
     } finally {
       setIsSubmittingReport(false);
@@ -854,10 +929,26 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     );
   }
 
-  // --- PHASE: RUNNING EXAM ---
   if (phase === "running") {
     return (
       <section className="space-y-5">
+        {/* Offline Banner */}
+        {isOffline && (
+          <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300">
+            <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-bounce" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-red-800">
+                {locale === "bn" ? "আপনি এখন অফলাইন আছেন" : "You are Offline"}
+              </h3>
+              <p className="text-xs leading-5 text-red-700">
+                {locale === "bn"
+                  ? "আপনার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"
+                  : "Your internet connection is currently disconnected. Please do not close or refresh this page. Your selected answers are saved locally, and you can submit them once your connection is restored."}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
@@ -871,8 +962,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 {answeredCount}/{questions.length} answered · pass mark {passMarkPercent}% · blank == wrong
               </p>
             </div>
-            <PracticeTimer durationSeconds={totalDurationSeconds} onTimeUp={submitPractice} />
-          </div>
+             <PracticeTimer durationSeconds={totalDurationSeconds} onTimeUp={handleTimeUp} />
+           </div>
 
           <div className="mt-4">
             <div className="mb-1.5 flex justify-between text-xs font-semibold text-muted">
@@ -904,6 +995,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
                 question={question}
                 index={index}
                 selectedIndex={selectedIndex}
+                disabled={isTimeUp}
                 onSelectOption={handleSelectOption}
               />
             );

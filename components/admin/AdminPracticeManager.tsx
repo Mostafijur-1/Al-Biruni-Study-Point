@@ -271,10 +271,20 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
       if (response.ok && payload.success) {
         setServerFiles(payload.data);
       } else {
-        setSyncError(payload.error?.message || "Failed to load files from server.");
+        console.error("[List Files Failure Technical Details]:", payload);
+        setSyncError(
+          locale === "bn"
+            ? "সার্ভার ফাইল তালিকা লোড করতে ব্যর্থ হয়েছে।"
+            : "Failed to load files from server. Please try again later."
+        );
       }
-    } catch {
-      setSyncError("Could not connect to the server.");
+    } catch (error: any) {
+      console.error("[List Files Catch Technical Details]:", error);
+      setSyncError(
+        locale === "bn"
+          ? "সার্ভারের সাথে সংযোগ করা যায়নি। আপনার নেটওয়ার্ক চেক করুন।"
+          : "Could not connect to the server. Please check your connection."
+      );
     } finally {
       setServerFilesLoading(false);
     }
@@ -320,10 +330,20 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
         );
         setSelectedServerFiles([]);
       } else {
-        setSyncError(payload.error?.message || "Sync failed.");
+        console.error("[Sync Server Files Failure Technical Details]:", payload);
+        setSyncError(
+          locale === "bn"
+            ? "ডেটাবেজ সিঙ্ক করা ব্যর্থ হয়েছে।"
+            : "Database sync failed. Please try again."
+        );
       }
-    } catch {
-      setSyncError("Could not connect to the server.");
+    } catch (error: any) {
+      console.error("[Sync Server Files Catch Technical Details]:", error);
+      setSyncError(
+        locale === "bn"
+          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
+          : "Could not connect to the server."
+      );
     } finally {
       setSyncing(false);
     }
@@ -367,10 +387,20 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
         setLocalFiles([]);
         fetchServerFiles(); // Refresh synced indicators
       } else {
-        setLocalError(payload.error?.message || "Upload failed.");
+        console.error("[Local File DB Upload Failure Technical Details]:", payload);
+        setLocalError(
+          locale === "bn"
+            ? "ফাইল আপলোড ব্যর্থ হয়েছে।"
+            : "Failed to upload files. Please try again."
+        );
       }
-    } catch {
-      setLocalError("Could not connect to the server.");
+    } catch (error: any) {
+      console.error("[Local File DB Upload Catch Technical Details]:", error);
+      setLocalError(
+        locale === "bn"
+          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
+          : "Could not connect to the server."
+      );
     } finally {
       setLocalUploading(false);
     }
@@ -432,10 +462,20 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
           );
         }
       } else {
-        setSyncError(payload.error?.message || "Failed to update synced mark.");
+        console.error("[Mark Sync Failure Technical Details]:", payload);
+        setSyncError(
+          locale === "bn"
+            ? "সিঙ্ক চিহ্ন পরিবর্তন করতে ব্যর্থ হয়েছে।"
+            : "Failed to update synced status. Please try again."
+        );
       }
-    } catch {
-      setSyncError("Could not connect to the server.");
+    } catch (error: any) {
+      console.error("[Mark Sync Catch Technical Details]:", error);
+      setSyncError(
+        locale === "bn"
+          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
+          : "Could not connect to the server."
+      );
     }
   }
 
