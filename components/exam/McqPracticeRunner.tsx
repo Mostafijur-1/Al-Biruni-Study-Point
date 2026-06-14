@@ -303,6 +303,10 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [reportSuccess, setReportSuccess] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
+  const [wasAutoSubmittedDueToTabLeave, setWasAutoSubmittedDueToTabLeave] = useState(false);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -477,6 +481,83 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setIsSubmitting(false);
     }
   }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject]);
+
+  // Scroll to top when phase changes to running or result
+  useEffect(() => {
+    if (phase === "running" || phase === "result") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [phase]);
+
+  // Handle prevention of page navigation, window/tab switching, and reload/close in test mode
+  useEffect(() => {
+    if (phase !== "running") return;
+
+    // 1. Alert user on browser close/reload (this uses standard browser UI and is required to prevent accidental closes)
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+
+    // 2. Auto-submit on window blur or tab change (visibility loss)
+    const handleTabLeave = () => {
+      setWasAutoSubmittedDueToTabLeave(true);
+      submitPractice();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handleTabLeave();
+      }
+    };
+
+    // 3. Intercept Next.js / HTML link clicks
+    const handleAnchorClick = (e: MouseEvent) => {
+      let target = e.target as HTMLElement | null;
+      while (target && target.tagName !== "A") {
+        target = target.parentElement;
+      }
+
+      if (target && target.tagName === "A") {
+        const href = (target as HTMLAnchorElement).getAttribute("href");
+        // Only intercept real page transitions (not anchor links or javascript voids)
+        if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          setPendingNavigationUrl((target as HTMLAnchorElement).href);
+          setShowLeaveWarning(true);
+        }
+      }
+    };
+
+    // 4. Intercept browser back/forward buttons
+    // Push an initial state to the history stack so we can intercept popstate
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = () => {
+      // Keep them on the current URL by pushing another state
+      window.history.pushState(null, "", window.location.href);
+
+      setPendingNavigationUrl(practiceListHref);
+      setShowLeaveWarning(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("blur", handleTabLeave);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("click", handleAnchorClick, true);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("blur", handleTabLeave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("click", handleAnchorClick, true);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [phase, locale, submitPractice, practiceListHref]);
 
   const handleSendReport = useCallback(async () => {
     if (!reportingQuestionId || !reportComment.trim() || isSubmittingReport) return;
@@ -840,6 +921,57 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             ?  "Submitting..."
             :  `Submit test (${answeredCount}/${questions.length} answered)`}
         </Button>
+
+        {/* --- CUSTOM WARNING MODAL --- */}
+        {showLeaveWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="size-12 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shrink-0">
+                  <AlertTriangle className="size-6 text-brand-red animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-display text-lg font-bold text-primary">
+                    {locale === "bn" ? "পরীক্ষা চলমান আছে!" : "Exam in Progress!"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {locale === "bn"
+                      ? "পরীক্ষা চলাকালীন আপনি অন্য পৃষ্ঠায় যেতে পারবেন না। অনুগ্রহ করে প্রথমে আপনার পরীক্ষাটি সাবমিট করুন।"
+                      : "You cannot navigate to other pages during the test. Please submit your exam first."}
+                  </p>
+                </div>
+                <div className="mt-2 flex flex-col sm:flex-row items-center gap-3 w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-xl py-2.5 font-bold"
+                    onClick={() => {
+                      setShowLeaveWarning(false);
+                      setPendingNavigationUrl(null);
+                    }}
+                  >
+                    {locale === "bn" ? "পরীক্ষায় ফিরে যান" : "Back to Test"}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="w-full rounded-xl py-2.5 font-bold bg-brand-red text-white hover:bg-brand-red/90"
+                    onClick={async () => {
+                      setShowLeaveWarning(false);
+                      await submitPractice();
+                      if (pendingNavigationUrl) {
+                        window.location.href = pendingNavigationUrl;
+                      } else {
+                        window.location.href = practiceListHref;
+                      }
+                    }}
+                  >
+                    {locale === "bn" ? "সাবমিট করে চলে যান" : "Submit & Leave"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     );
   }
@@ -848,6 +980,22 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   if (phase === "result" && result) {
     return (
       <section className="space-y-6">
+        {wasAutoSubmittedDueToTabLeave && (
+          <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300">
+            <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-red-800">
+                {locale === "bn" ? "স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে" : "Automatically Submitted"}
+              </h3>
+              <p className="text-xs leading-5 text-red-700">
+                {locale === "bn"
+                  ? "পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করার কারণে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"
+                  : "Your exam was automatically submitted because you changed windows or switched tabs during the test."}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Banner with warning details */}
         <div className="rounded-xl border border-brand-yellow/30 bg-yellow-50/80 p-4 shadow-sm flex items-start gap-3">
           <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
