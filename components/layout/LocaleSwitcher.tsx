@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { locales, type Locale } from "@/lib/i18n";
+import { locales, type Locale, getLocalizedPath, parseLocalizedPath } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function LocaleSwitcher({
@@ -15,8 +15,8 @@ export function LocaleSwitcher({
 }) {
   const pathname = usePathname();
   const otherLocale = locales.find((item) => item !== locale) ?? "en";
-  const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
-  const href = `/${otherLocale}${pathWithoutLocale === "/" ? "" : pathWithoutLocale}`;
+  const { pathWithoutLocale } = parseLocalizedPath(pathname);
+  const href = getLocalizedPath(pathWithoutLocale, otherLocale);
 
   return (
     <Link

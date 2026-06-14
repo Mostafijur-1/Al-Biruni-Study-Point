@@ -11,7 +11,7 @@ import { useSession } from "@/lib/hooks/use-session";
 import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath } from "@/lib/i18n";
+import { createLocalizedPath, getLocalizedPath, type Locale } from "@/lib/i18n";
 import { getTranslatedChapter, SYLLABUS, getSchoolLevel } from "@/lib/content/syllabus";
 import { cn } from "@/lib/utils";
 
@@ -360,7 +360,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
     if (isGuest) {
       const nextPath = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
-      router.push(`/${locale}/login?next=${nextPath}&reason=access`);
+      router.push(getLocalizedPath(`/login?next=${nextPath}&reason=access`, locale as Locale));
       return;
     }
 

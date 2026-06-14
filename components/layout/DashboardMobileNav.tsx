@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
+import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import {
   BarChart3,
@@ -54,9 +54,9 @@ function roleFromPathname(pathname: string): UserRole {
   return "student";
 }
 
-function buildHref(href: string, locale: string, level: "SSC" | "HSC", levelAware?: boolean) {
+function buildHref(href: string, locale: Locale, level: "SSC" | "HSC", levelAware?: boolean) {
   const levelSuffix = levelAware ? `?level=${level}` : "";
-  return `/${locale}${href}${levelSuffix}`;
+  return getLocalizedPath(`${href}${levelSuffix}`, locale);
 }
 
 export function DashboardMobileNav({ locale }: { locale: string }) {
@@ -72,8 +72,8 @@ export function DashboardMobileNav({ locale }: { locale: string }) {
     >
       <ul className="flex items-stretch justify-around gap-0.5">
         {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
-          const fullHref = buildHref(href, locale, level, levelAware);
-          const fullHrefBase = `/${locale}${href}`;
+          const fullHref = buildHref(href, locale as Locale, level, levelAware);
+          const fullHrefBase = getLocalizedPath(href, locale as Locale);
           const isRoleRoot = href === `/${role}`;
           const active =
             pathname === fullHrefBase ||
@@ -139,8 +139,8 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       <p className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-accent">Menu</p>
       <nav className="mt-1 space-y-0.5">
         {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
-          const fullHref = buildHref(href, locale, level, levelAware);
-          const fullHrefBase = `/${locale}${href}`;
+          const fullHref = buildHref(href, locale as Locale, level, levelAware);
+          const fullHrefBase = getLocalizedPath(href, locale as Locale);
           const isRoleRoot = href === `/${role}`;
           const active =
             pathname === fullHrefBase ||

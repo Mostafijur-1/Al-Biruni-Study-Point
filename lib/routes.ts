@@ -1,3 +1,4 @@
+import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { RouteAccess, UserRole } from "@/types";
 
 export const publicNavPaths = [
@@ -9,8 +10,8 @@ export const publicNavPaths = [
 
 export type PublicNavKey = (typeof publicNavPaths)[number]["key"];
 
-export function dashboardPath(role: UserRole, locale: string) {
-  return `/${locale}/${role}`;
+export function dashboardPath(role: UserRole, locale: Locale) {
+  return getLocalizedPath(`/${role}`, locale);
 }
 
 export type AppRoute = {

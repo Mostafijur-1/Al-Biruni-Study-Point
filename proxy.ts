@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { ACCESS_COOKIE, ROLE_COOKIE } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
-import { defaultLocale, locales, type Locale } from "@/lib/i18n";
+import { locales, type Locale, parseLocalizedPath, getLocalizedPath } from "@/lib/i18n";
 import type { UserRole } from "@/types";
 
 const protectedPrefixes: Record<UserRole, string> = {
@@ -11,11 +11,6 @@ const protectedPrefixes: Record<UserRole, string> = {
   admin: "/admin",
 };
 
-function getLocale(pathname: string): Locale | null {
-  const segment = pathname.split("/")[1];
-  return locales.includes(segment as Locale) ? (segment as Locale) : null;
-}
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -23,25 +18,41 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const locale = getLocale(pathname);
-  if (!locale) {
-    return NextResponse.redirect(new URL(`/${defaultLocale}${pathname}`, request.url));
+  // 1. Parse the locale and path without locale from the request path.
+  const { locale, pathWithoutLocale } = parseLocalizedPath(pathname);
+
+  // 2. If the user explicitly typed "/bn", "/bn/", "/bn/about", etc.
+  // We want to redirect them to the clean path (no "/bn" prefix)
+  const isExplicitBn = pathname.startsWith("/bn") && (pathname.length === 3 || pathname[3] === "/");
+  if (isExplicitBn) {
+    const cleanPath = pathname.substring(3) || "/";
+    const url = new URL(`${cleanPath}${request.nextUrl.search}`, request.url);
+    return NextResponse.redirect(url, 301); // 301 Permanent Redirect
   }
 
-  const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
+  // 3. For role protection check, we match the prefix on pathWithoutLocale.
   const matchedRole = Object.entries(protectedPrefixes).find(([, prefix]) =>
     pathWithoutLocale.startsWith(prefix),
   )?.[0] as UserRole | undefined;
 
   if (!matchedRole) {
+    // If not protected, and not explicit bn (handled above),
+    // and it is English, we don't rewrite because Next.js handles it natively at /en/...
+    // But if it is Bangla (locale = 'bn'), we must rewrite internally to /bn/...
+    // because all pages are structured inside app/[locale].
+    if (locale === "bn") {
+      const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
+      return NextResponse.rewrite(url);
+    }
     return NextResponse.next();
   }
 
+  // Auth/Role protection logic:
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
   const role = request.cookies.get(ROLE_COOKIE)?.value as UserRole | undefined;
 
   const redirectToLogin = () => {
-    const loginUrl = new URL(`/${locale}/login`, request.url);
+    const loginUrl = new URL(getLocalizedPath("/login", locale), request.url);
     const returnPath = `${pathname}${request.nextUrl.search}`;
     loginUrl.searchParams.set("next", returnPath);
     loginUrl.searchParams.set("reason", "access");
@@ -55,6 +66,10 @@ export function proxy(request: NextRequest) {
       pathWithoutLocale === "/student/practice" ||
       pathWithoutLocale.startsWith("/student/practice/");
     if (isGuestAllowed) {
+      if (locale === "bn") {
+        const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
+        return NextResponse.rewrite(url);
+      }
       return NextResponse.next();
     }
   }
@@ -71,6 +86,12 @@ export function proxy(request: NextRequest) {
     }
   } catch {
     return redirectToLogin();
+  }
+
+  // If role is authorized:
+  if (locale === "bn") {
+    const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();

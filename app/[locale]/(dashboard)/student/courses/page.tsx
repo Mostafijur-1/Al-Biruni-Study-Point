@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { StudentClassCourses } from "@/components/content/StudentClassCourses";
-import type { Locale } from "@/lib/i18n";
+import { getLocalizedPath, type Locale } from "@/lib/i18n";
 
 type StudentCoursesPageProps = {
   params: Promise<{ locale: Locale }>;
@@ -13,7 +13,7 @@ export default async function StudentCoursesPage({ params, searchParams }: Stude
   const { level: rawLevel } = await searchParams;
   const level = rawLevel === "HSC" ? "HSC" : "SSC";
   const otherLevel = level === "SSC" ? "HSC" : "SSC";
-  const otherLevelHref = `/${locale}/student/courses?level=${otherLevel}`;
+  const otherLevelHref = getLocalizedPath(`/student/courses?level=${otherLevel}`, locale);
 
   return (
     <section className="space-y-5">
