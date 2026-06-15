@@ -74,12 +74,35 @@ export function PwaInstallPrompt() {
       setIsFbPromptVisible(true);
     }
 
+    // Generate or retrieve unique deviceId
+    let deviceId = localStorage.getItem("absp_pwa_device_id");
+    if (!deviceId) {
+      deviceId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("absp_pwa_device_id", deviceId);
+    }
+
     // 1. Check if app is already running in standalone mode (already installed/PWA)
     const isPwa =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone ||
       document.referrer.includes("android-app://");
     setIsStandalone(isPwa);
+
+    // Track standalone launch
+    if (isPwa) {
+      const launchLogged = sessionStorage.getItem("absp_pwa_launch_logged");
+      if (!launchLogged) {
+        fetch("/api/pwa/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceId, type: "launch" }),
+        })
+          .then(() => {
+            sessionStorage.setItem("absp_pwa_launch_logged", "true");
+          })
+          .catch((err) => console.error("Error tracking PWA launch:", err));
+      }
+    }
 
     // 2. Check current Notification permission
     if ("Notification" in window) {
@@ -107,10 +130,21 @@ export function PwaInstallPrompt() {
       setIsVisible(true);
     };
 
+    // 5. Listen for appinstalled event
+    const handleAppInstalled = () => {
+      fetch("/api/pwa/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId, type: "install" }),
+      }).catch((err) => console.error("Error tracking PWA install:", err));
+    };
+
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 

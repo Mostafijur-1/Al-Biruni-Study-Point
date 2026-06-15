@@ -5,6 +5,36 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/connect";
 import { getSchoolLevel } from "@/lib/content/syllabus";
+const getDayRange = (rangeType: string) => {
+  const now = new Date();
+  // Bangladesh timezone is UTC+6
+  const bdNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  
+  const startOfTodayBD = new Date(Date.UTC(
+    bdNow.getUTCFullYear(),
+    bdNow.getUTCMonth(),
+    bdNow.getUTCDate(),
+    0, 0, 0, 0
+  ));
+  
+  const startOfTodayUTC = new Date(startOfTodayBD.getTime() - 6 * 60 * 60 * 1000);
+  const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
+  
+  if (rangeType === "today") {
+    return { start: startOfTodayUTC, end: endOfTodayUTC };
+  } else if (rangeType === "yesterday") {
+    const startOfYesterdayUTC = new Date(startOfTodayUTC.getTime() - 24 * 60 * 60 * 1000);
+    const endOfYesterdayUTC = new Date(endOfTodayUTC.getTime() - 24 * 60 * 60 * 1000);
+    return { start: startOfYesterdayUTC, end: endOfYesterdayUTC };
+  } else if (rangeType === "last-7-days") {
+    const startOf7DaysAgoUTC = new Date(startOfTodayUTC.getTime() - 6 * 24 * 60 * 60 * 1000);
+    return { start: startOf7DaysAgoUTC, end: endOfTodayUTC };
+  } else if (rangeType === "last-30-days") {
+    const startOf30DaysAgoUTC = new Date(startOfTodayUTC.getTime() - 29 * 24 * 60 * 60 * 1000);
+    return { start: startOf30DaysAgoUTC, end: endOfTodayUTC };
+  }
+  return null;
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +54,7 @@ export async function GET(request: NextRequest) {
     const filterClass = searchParams.get("class") ?? undefined;
     const filterSubject = searchParams.get("subject") ?? undefined;
     const filterStudent = searchParams.get("studentId") ?? undefined;
+    const filterDate = searchParams.get("date") ?? "today";
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)));
 
@@ -60,6 +91,17 @@ export async function GET(request: NextRequest) {
     const attemptQuery: Record<string, unknown> = {
       deletedByTeacher: { $ne: true }, // Filter out soft-deleted attempts
     };
+
+    // Date range filter
+    if (filterDate && filterDate !== "all") {
+      const bounds = getDayRange(filterDate);
+      if (bounds) {
+        attemptQuery.createdAt = {
+          $gte: bounds.start,
+          $lte: bounds.end,
+        };
+      }
+    }
 
     // Subject filter
     if (filterSubject) {

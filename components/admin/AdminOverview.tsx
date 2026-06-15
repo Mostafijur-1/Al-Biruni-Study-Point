@@ -23,6 +23,7 @@ type OverviewStats = {
   practiceQuestionsHSC: number;
   practiceAttemptsTotal: number;
   practiceAttemptsPassed: number;
+  appInstallsTotal?: number;
 };
 
 function StatCard({
@@ -121,6 +122,11 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
               label={"Practice attempts"}
               value={stats.practiceAttemptsTotal}
               hint={`${stats.practiceAttemptsPassed} ${"passed"}`}
+            />
+            <StatCard
+              label={locale === "bn" ? "অ্যাপ ইনস্টল" : "App Installs"}
+              value={stats.appInstallsTotal || 0}
+              hint={locale === "bn" ? "ইউনিক ডিভাইস সংখ্যা" : "Unique devices"}
             />
           </div>
 

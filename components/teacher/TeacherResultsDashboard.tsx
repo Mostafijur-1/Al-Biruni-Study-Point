@@ -490,6 +490,7 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
   // Filters
   const [filterClass, setFilterClass] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
+  const [filterDate, setFilterDate] = useState("today");
   const [searchName, setSearchName] = useState("");
 
   // Teacher domain configuration
@@ -519,6 +520,7 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (filterClass) params.set("class", filterClass);
       if (filterSubject) params.set("subject", filterSubject);
+      if (filterDate) params.set("date", filterDate);
 
       const { ok, payload } = await apiFetch<ResultsResponse & { domain?: any }>(
         `/api/teacher/results?${params}`
@@ -538,7 +540,7 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
     } finally {
       setLoading(false);
     }
-  }, [page, filterClass, filterSubject]);
+  }, [page, filterClass, filterSubject, filterDate]);
 
   useEffect(() => {
     fetchResults();
@@ -689,6 +691,22 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
                 {sub}
               </option>
             ))}
+          </select>
+
+          {/* Date filter */}
+          <select
+            value={filterDate}
+            onChange={(e) => {
+              setFilterDate(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+          >
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="last-7-days">Last 7 Days</option>
+            <option value="last-30-days">Last 30 Days</option>
+            <option value="all">All Time</option>
           </select>
 
           <button
