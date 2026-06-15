@@ -1,4 +1,5 @@
 import { AdminOverview } from "@/components/admin/AdminOverview";
+import { BroadcastPanel } from "@/components/admin/BroadcastPanel";
 import type { Locale } from "@/lib/i18n";
 
 type AdminDashboardPageProps = {
@@ -7,5 +8,10 @@ type AdminDashboardPageProps = {
 
 export default async function AdminDashboardPage({ params }: AdminDashboardPageProps) {
   const { locale } = await params;
-  return <AdminOverview locale={locale} />;
+  return (
+    <div className="space-y-6">
+      <AdminOverview locale={locale} />
+      <BroadcastPanel />
+    </div>
+  );
 }

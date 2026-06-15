@@ -107,6 +107,9 @@ export function PwaInstallPrompt() {
     // 2. Check current Notification permission
     if ("Notification" in window) {
       setNotificationPermission(Notification.permission);
+      if (Notification.permission === "granted") {
+        subscribeToPushNotifications();
+      }
     }
 
     // 3. Register service worker
@@ -171,6 +174,53 @@ export function PwaInstallPrompt() {
     setIsFbPromptVisible(false);
   };
 
+  const subscribeToPushNotifications = async () => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        return;
+      }
+
+      if (!subscription) {
+        const padding = "=".repeat((4 - (vapidPublicKey.length % 4)) % 4);
+        const base64 = (vapidPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: outputArray,
+        });
+      }
+
+      const deviceId = localStorage.getItem("absp_pwa_device_id");
+      const isInstalled = window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone;
+
+      await fetch("/api/pwa/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deviceId,
+          subscription,
+          isInstalledApp: isInstalled,
+        }),
+      });
+    } catch (err) {
+      console.error("Error subscribing to push notifications:", err);
+    }
+  };
+
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
       alert("Notifications not supported on your browser.");
@@ -181,6 +231,7 @@ export function PwaInstallPrompt() {
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
       if (permission === "granted") {
+        await subscribeToPushNotifications();
         new Notification(isBengali ? "অভিনন্দন!" : "Awesome!", {
           body: isBengali
             ? "ABSP থেকে এখন আপনি সকল প্রয়োজনীয় নোটিফিকেশন সরাসরি পাবেন।"
