@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, BookOpen, Brain } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, Brain, CheckCircle2 } from "lucide-react";
 import type { CourseSubject } from "@/types";
 
 import { useRouter } from "next/navigation";
@@ -54,6 +54,7 @@ type PracticeSubmitResult = {
 type McqPracticeRunnerProps = {
   subject: string;
   locale: string;
+  mode?: string;
 };
 
 function getOptionResultMode(
@@ -274,7 +275,7 @@ const ChapterListItem = React.memo(function ChapterListItem({
   );
 });
 
-export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
+export function McqPracticeRunner({ subject, locale, mode = "general" }: McqPracticeRunnerProps) {
   const path = createLocalizedPath(locale as any);
   const router = useRouter();
   const { user, checking } = useSession({ listenToAuthChanges: true });
@@ -311,6 +312,8 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   const [wasAutoSubmittedDueToTabLeave, setWasAutoSubmittedDueToTabLeave] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [isTimeUp, setIsTimeUp] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -338,13 +341,13 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
   // Auto-save answers progress to localStorage during active practice
   useEffect(() => {
     if (phase !== "running" || !isMounted) return;
-    const storageKey = user ? `absp_practice_${user.id}_${subject}` : `absp_practice_guest_${subject}`;
+    const storageKey = user ? `absp_practice_${user.id}_${subject}_${mode}` : `absp_practice_guest_${subject}_${mode}`;
     try {
       localStorage.setItem(storageKey, JSON.stringify(answers));
     } catch (e) {
       console.error("Failed to auto-save practice answers:", e);
     }
-  }, [answers, phase, user, subject, isMounted]);
+  }, [answers, phase, user, subject, isMounted, mode]);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
   const progressPercent = questions.length
@@ -360,7 +363,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         setLoadingConfig(true);
         const url = isGuest
           ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`        
-          : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}`;
+          : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}&mode=${mode}`;
         const { ok, payload } = await apiFetch<{
           status: ChapterStatus[];
           settings?: { secondsPerQuestion: number; passMarkPercent: number };
@@ -397,7 +400,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       }
     }
     loadConfig();
-  }, [subject, locale, checking, isGuest, level]);
+  }, [subject, locale, checking, isGuest, level, mode]);
 
   // Toggle chapter selection
   const toggleChapter = useCallback((chapterName: string) => {
@@ -440,7 +443,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
         totalQuestions: number;
         secondsPerQuestion: number;
         passMarkPercent: number;
-      }>(`/api/mcq/practice/start?subject=${encodeURIComponent(subject)}&chapters=${chaptersQuery}&limit=${selectedQuestionCount}`);
+      }>(`/api/mcq/practice/start?subject=${encodeURIComponent(subject)}&chapters=${chaptersQuery}&limit=${selectedQuestionCount}&mode=${mode}`);
 
       if (!ok || !isApiSuccess(payload)) {
         setErrorMessage(getApiErrorMessage(payload, "Could not start practice exam."));
@@ -456,7 +459,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setPassMarkPercent(data.passMarkPercent);
       // Try to restore saved answers from localStorage if any exist
       let loadedAnswers: Record<string, number> = {};
-      const storageKey = user ? `absp_practice_${user.id}_${subject}` : `absp_practice_guest_${subject}`;
+      const storageKey = user ? `absp_practice_${user.id}_${subject}_${mode}` : `absp_practice_guest_${subject}_${mode}`;
       try {
         const saved = localStorage.getItem(storageKey);
         if (saved) {
@@ -481,7 +484,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       setErrorMessage("Could not connect to server to fetch practice questions.");
       setPhase("configuring");
     }
-  }, [selectedChapters, isGuest, locale, router, subject, selectedQuestionCount, user]);
+  }, [selectedChapters, isGuest, locale, router, subject, selectedQuestionCount, user, mode]);
 
   const handleSelectOption = useCallback((questionId: string, optionIndex: number) => {
     setAnswers((current) => ({
@@ -503,6 +506,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
 
     setIsSubmitting(true);
     setErrorMessage("");
+    setSubmitError(null);
 
     const elapsedSeconds = startTime
       ? Math.min(totalDurationSeconds, Math.round((Date.now() - startTime) / 1000))
@@ -518,18 +522,19 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
             subject,
             timeTaken: elapsedSeconds,
             answers: buildSubmitAnswers(),
+            mode,
           }),
         }
       );
 
       if (!ok || !isApiSuccess(payload)) {
-        setErrorMessage(getApiErrorMessage(payload, "Submission failed. Please try again."));
+        setSubmitError(getApiErrorMessage(payload, "Submission failed. Please try again."));
         setIsSubmitting(false);
         return;
       }
 
       // Clear saved progress from localStorage on success
-      const storageKey = user ? `absp_practice_${user.id}_${subject}` : `absp_practice_guest_${subject}`;
+      const storageKey = user ? `absp_practice_${user.id}_${subject}_${mode}` : `absp_practice_guest_${subject}_${mode}`;
       try {
         localStorage.removeItem(storageKey);
       } catch (e) {
@@ -541,7 +546,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error: any) {
       console.error("[Submit Practice Catch Technical Details]:", error);
-      setErrorMessage(
+      setSubmitError(
         locale === "bn"
           ? "সাবমিট করা যায়নি। আপনার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।"
           : "Submission failed. Please check your internet connection and try again."
@@ -549,7 +554,7 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject, user, locale]);
+  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject, user, locale, mode]);
 
   const handleTimeUp = useCallback(() => {
     setIsTimeUp(true);
@@ -1006,13 +1011,133 @@ export function McqPracticeRunner({ subject, locale }: McqPracticeRunnerProps) {
           type="button"
           size="lg"
           className="w-full rounded-xl"
-          onClick={submitPractice}
+          onClick={() => setShowSubmitConfirm(true)}
           loading={isSubmitting}
         >
           {isSubmitting
             ?  "Submitting..."
             :  `Submit test (${answeredCount}/${questions.length} answered)`}
         </Button>
+
+        {/* --- CUSTOM SUBMIT CONFIRMATION MODAL --- */}
+        {showSubmitConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+                  <CheckCircle2 className="size-6 text-primary" />
+                </div>
+                <div className="space-y-4 w-full">
+                  <div className="space-y-1">
+                    <h3 className="font-display text-lg font-bold text-primary">
+                      {locale === "bn" ? "পরীক্ষা জমা দিতে চান?" : "Submit Test?"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {locale === "bn"
+                        ? "জমা দেওয়ার পূর্বে আপনার উত্তরগুলো মিলিয়ে নিন।"
+                        : "Please review your answers before submitting."}
+                    </p>
+                  </div>
+
+                  {/* Visual Stats Grid */}
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-center">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                        {locale === "bn" ? "উত্তর দেওয়া হয়েছে" : "Answered"}
+                      </span>
+                      <span className="text-xl font-extrabold text-emerald-700">{answeredCount}</span>
+                    </div>
+                    <div
+                      className={cn(
+                        "rounded-xl border p-3 text-center",
+                        questions.length - answeredCount > 0
+                          ? "border-red-100 bg-red-50/50"
+                          : "border-emerald-100 bg-emerald-50/50"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "block text-[10px] font-bold uppercase tracking-wider",
+                          questions.length - answeredCount > 0 ? "text-brand-red" : "text-emerald-800"
+                        )}
+                      >
+                        {locale === "bn" ? "বাকি আছে" : "Unanswered"}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xl font-extrabold",
+                          questions.length - answeredCount > 0 ? "text-brand-red" : "text-emerald-700"
+                        )}
+                      >
+                        {questions.length - answeredCount}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Alert for unanswered questions */}
+                  {questions.length - answeredCount > 0 && (
+                    <div className="rounded-xl border border-red-200/50 bg-red-50/80 p-3 text-left flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
+                      <AlertTriangle className="size-4 text-brand-red shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-red-800 leading-normal font-semibold">
+                        {locale === "bn"
+                          ? "সতর্কতা: বাকি থাকা প্রশ্নগুলোর জন্য কোনো নম্বর পাওয়া যাবে না।"
+                          : "Warning: Unanswered questions will receive no marks."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 flex flex-col sm:flex-row items-center gap-3 w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-xl py-2.5 font-bold"
+                    onClick={() => setShowSubmitConfirm(false)}
+                  >
+                    {locale === "bn" ? "ফিরে যান" : "Cancel"}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="w-full rounded-xl py-2.5 font-bold"
+                    onClick={() => {
+                      setShowSubmitConfirm(false);
+                      submitPractice();
+                    }}
+                  >
+                    {locale === "bn" ? "জমা দিন" : "Submit Now"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- CUSTOM SUBMIT ERROR MODAL --- */}
+        {submitError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="size-12 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shrink-0">
+                  <AlertTriangle className="size-6 text-brand-red animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-display text-lg font-bold text-primary">
+                    {locale === "bn" ? "সাবমিশন ব্যর্থ হয়েছে" : "Submission Failed"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {submitError}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full rounded-xl py-2.5 font-bold"
+                  onClick={() => setSubmitError(null)}
+                >
+                  {locale === "bn" ? "ঠিক আছে" : "Close"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* --- CUSTOM WARNING MODAL --- */}
         {showLeaveWarning && (

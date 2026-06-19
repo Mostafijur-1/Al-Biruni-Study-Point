@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import mongoose from "mongoose";
 
 import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
@@ -124,7 +125,8 @@ export async function startPracticeExam(
   studentClass: string,
   selectedChapters?: string[],
   maxQuestions = 25,
-  secondsPerQuestion = 45
+  secondsPerQuestion = 45,
+  teacherId?: string
 ) {
   const level = getSchoolLevel(studentClass);
   await connectDB();
@@ -140,13 +142,22 @@ export async function startPracticeExam(
   }
 
   // Optimize: Query only a random sample of maxQuestions matching the selected chapters in MongoDB
+  const matchQuery: any = {
+    level,
+    subject,
+    chapter: { $in: chaptersToUse },
+  };
+
+  if (teacherId) {
+    matchQuery.isTeacherSet = true;
+    matchQuery.createdBy = new mongoose.Types.ObjectId(teacherId);
+  } else {
+    matchQuery.isTeacherSet = { $ne: true };
+  }
+
   const dbQuestions = await PracticeQuestion.aggregate([
     {
-      $match: {
-        level,
-        subject,
-        chapter: { $in: chaptersToUse },
-      },
+      $match: matchQuery,
     },
     { $sample: { size: maxQuestions } },
   ]);

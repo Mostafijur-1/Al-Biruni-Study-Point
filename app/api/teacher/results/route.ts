@@ -110,24 +110,38 @@ export async function GET(request: NextRequest) {
       attemptQuery.subject = { $in: allowedSubjects };
     }
 
-    // Check if student filtering is required
-    const needsStudentFiltering = !domain?.isAll || filterClass || filterStudent;
-
-    if (needsStudentFiltering) {
-      const studentQuery: Record<string, unknown> = {
-        role: "student",
-        studentClass: { $in: allowedClasses },
-      };
-      if (filterStudent) {
-        studentQuery._id = filterStudent;
-      }
-      const students = await User.find(studentQuery, { _id: 1 }).lean();
-      const studentIds = students.map((s) => s._id);
-      if (studentIds.length === 0) {
+    // Determine student IDs we are allowed to see
+    let allowedStudentIds: any[] | null = null;
+    if (!domain?.isAll) {
+      allowedStudentIds = domain?.students || [];
+      if (allowedStudentIds.length === 0) {
         return success({ results: [], total: 0, page, limit });
       }
-      attemptQuery.student = { $in: studentIds };
     }
+
+    const studentQuery: Record<string, unknown> = {
+      role: "student",
+      studentClass: { $in: allowedClasses },
+    };
+
+    if (allowedStudentIds) {
+      studentQuery._id = { $in: allowedStudentIds };
+    }
+
+    if (filterStudent) {
+      // If filtering by a specific student, ensure they are allowed
+      if (allowedStudentIds && !allowedStudentIds.map(String).includes(String(filterStudent))) {
+        return fail("You are not authorised to view results for this student.", 403);
+      }
+      studentQuery._id = filterStudent;
+    }
+
+    const students = await User.find(studentQuery, { _id: 1 }).lean();
+    const studentIds = students.map((s) => s._id);
+    if (studentIds.length === 0) {
+      return success({ results: [], total: 0, page, limit });
+    }
+    attemptQuery.student = { $in: studentIds };
 
     const total = await PracticeAttempt.countDocuments(attemptQuery);
 
@@ -178,8 +192,9 @@ export async function GET(request: NextRequest) {
           subjects: (domain.subjects || []).map((s: any) =>
             Array.isArray(s) ? String(s[0]) : String(s)
           ),
+          students: (domain.students || []).map((s: any) => String(s)),
         }
-      : { isAll: false, classes: [], subjects: [] };
+      : { isAll: false, classes: [], subjects: [], students: [] };
 
     return success({ results, total, page, limit, domain: serializedDomain });
   } catch (error) {

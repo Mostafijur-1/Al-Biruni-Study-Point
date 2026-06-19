@@ -14,12 +14,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const role = searchParams.get("role") as UserRole | null;
+    const reference = searchParams.get("reference");
 
     if (role !== "student" && role !== "teacher") {
       return fail("role must be student or teacher.", 400);
     }
 
-    const users = await User.find({ role })
+    const query: any = { role };
+    if (role === "student" && reference) {
+      query.reference = { $regex: reference, $options: "i" };
+    }
+
+    const users = await User.find(query)
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();

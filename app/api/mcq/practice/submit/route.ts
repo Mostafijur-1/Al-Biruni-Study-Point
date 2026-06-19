@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
+import mongoose from "mongoose";
+
 import { getSchoolLevel } from "@/lib/content/syllabus";
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
@@ -9,6 +11,7 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { loadFullQuestionById, scorePracticeAttempt } from "@/lib/mcq/practice-service";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
+import { User } from "@/lib/db/models/User";
 import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 
 const submitPracticeSchema = z.object({
@@ -20,6 +23,7 @@ const submitPracticeSchema = z.object({
     }),
   ),
   timeTaken: z.number().min(0),
+  mode: z.enum(["general", "teacher"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -40,10 +44,32 @@ export async function POST(request: NextRequest) {
       settings.passMarkPercent
     );
 
-    // Delete any previous practice results for this subject and student
+    const isTeacher = parsed.mode === "teacher";
+    
+    // Resolve the student's teacher for this subject if in teacher mode
+    let teacherId: string | undefined = undefined;
+    if (isTeacher) {
+      const studentIdObj = new mongoose.Types.ObjectId(user.id);
+      const teacher = await User.findOne({
+        role: "teacher",
+        $or: [
+          { "teacherDomain.isAll": true },
+          {
+            "teacherDomain.students": studentIdObj,
+            "teacherDomain.subjects": parsed.subject
+          }
+        ]
+      }).lean();
+      if (teacher) {
+        teacherId = String(teacher._id);
+      }
+    }
+
+    // Delete any previous practice results for this subject, student and mode
     await PracticeResult.deleteMany({
       student: user.id,
       subject: parsed.subject,
+      isTeacherSet: isTeacher ? true : { $ne: true },
     });
 
     // Build detailed answer records (including question text and options)
@@ -76,6 +102,8 @@ export async function POST(request: NextRequest) {
       percentage: scoring.percentage,
       isPassed: scoring.isPassed,
       timeTaken: parsed.timeTaken,
+      isTeacherSet: isTeacher,
+      teacherId: teacherId || undefined,
     });
 
     // Save only the summary result (existing behavior)
@@ -88,6 +116,8 @@ export async function POST(request: NextRequest) {
       isPassed: scoring.isPassed,
       timeTaken: parsed.timeTaken,
       submittedAt: new Date(),
+      isTeacherSet: isTeacher,
+      teacherId: teacherId || undefined,
     });
 
     return success({

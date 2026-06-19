@@ -36,6 +36,7 @@ export function ProfilePanel() {
   const [email, setEmail] = useState("");
   const [studentClass, setStudentClass] = useState("");
   const [schoolCollege, setSchoolCollege] = useState("");
+  const [reference, setReference] = useState("");
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,6 +46,7 @@ export function ProfilePanel() {
       setEmail(user.email || "");
       setStudentClass(user.studentClass || "class-9");
       setSchoolCollege(user.schoolCollege || "");
+      setReference(user.reference || "");
     }
   }, [user]);
 
@@ -99,6 +101,7 @@ export function ProfilePanel() {
       if (user.role === "student") {
         payloadBody.studentClass = studentClass;
         payloadBody.schoolCollege = schoolCollege || "";
+        payloadBody.reference = reference || "";
       }
 
       const { ok, payload } = await apiFetch<{ user: any }>("/api/auth/me", {
@@ -181,32 +184,43 @@ export function ProfilePanel() {
           </div>
 
           {user.role === "student" && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="edit-class">Class</Label>
-                <select
-                  id="edit-class"
-                  value={studentClass}
-                  onChange={(e) => setStudentClass(e.target.value)}
-                  className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                >
-                  <option value="class-9">Class 9</option>
-                  <option value="class-10">Class 10</option>
-                  <option value="class-11">Class 11</option>
-                  <option value="class-12">Class 12</option>
-                </select>
-              </div>
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-class">Class</Label>
+                  <select
+                    id="edit-class"
+                    value={studentClass}
+                    onChange={(e) => setStudentClass(e.target.value)}
+                    className="flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                  >
+                    <option value="class-9">Class 9</option>
+                    <option value="class-10">Class 10</option>
+                    <option value="class-11">Class 11</option>
+                    <option value="class-12">Class 12</option>
+                  </select>
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="edit-schoolCollege">{schoolCollegeLabel}</Label>
+                  <Input
+                    id="edit-schoolCollege"
+                    value={schoolCollege}
+                    onChange={(e) => setSchoolCollege(e.target.value)}
+                    placeholder={schoolCollegePlaceholder}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-schoolCollege">{schoolCollegeLabel}</Label>
+                <Label htmlFor="edit-reference">Reference (Teacher's name)</Label>
                 <Input
-                  id="edit-schoolCollege"
-                  value={schoolCollege}
-                  onChange={(e) => setSchoolCollege(e.target.value)}
-                  placeholder={schoolCollegePlaceholder}
+                  id="edit-reference"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="e.g. Mohammad Ali"
                 />
               </div>
-            </div>
+            </>
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-border/60">
@@ -218,6 +232,7 @@ export function ProfilePanel() {
                 setEmail(user.email || "");
                 setStudentClass(user.studentClass || "class-9");
                 setSchoolCollege(user.schoolCollege || "");
+                setReference(user.reference || "");
                 setError("");
                 setIsEditing(false);
               }}
@@ -245,18 +260,20 @@ export function ProfilePanel() {
     <section className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold uppercase tracking-widest text-accent">Profile</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setError("");
-            setIsEditing(true);
-          }}
-          className="flex items-center gap-1.5"
-        >
-          <Edit className="size-4" />
-          Edit Profile
-        </Button>
+        {user.role !== "teacher" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setError("");
+              setIsEditing(true);
+            }}
+            className="flex items-center gap-1.5"
+          >
+            <Edit className="size-4" />
+            Edit Profile
+          </Button>
+        )}
       </div>
 
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -294,6 +311,10 @@ export function ProfilePanel() {
             <div className="rounded-lg border border-border bg-background p-4">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted">{userSchoolCollegeLabel}</dt>
               <dd className="mt-1 font-semibold text-foreground">{user.schoolCollege || "Not provided"}</dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background p-4 sm:col-span-2">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Reference (Teacher)</dt>
+              <dd className="mt-1 font-semibold text-foreground">{user.reference || "None"}</dd>
             </div>
           </>
         )}

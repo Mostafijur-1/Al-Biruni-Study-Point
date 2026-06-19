@@ -51,8 +51,16 @@ export async function GET(request: NextRequest) {
       return fail("Access denied to this subject/level", 403);
     }
 
-    // Fetch questions
-    const questions = await PracticeQuestion.find({ level, subject, chapter })
+    // Fetch questions: general questions + teacher's own uploaded questions
+    const questions = await PracticeQuestion.find({
+      level,
+      subject,
+      chapter,
+      $or: [
+        { isTeacherSet: { $ne: true } },
+        { isTeacherSet: true, createdBy: user._id }
+      ]
+    })
       .sort({ createdAt: -1 })
       .lean();
 

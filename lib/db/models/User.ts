@@ -13,10 +13,12 @@ export interface IUser extends Document {
   avatar?: string;
   isActive: boolean;
   approvalStatus: ApprovalStatus;
+  reference?: string;
   teacherDomain?: {
     isAll: boolean;
     classes: StudentClass[];
     subjects: string[];
+    students?: mongoose.Types.ObjectId[];
   };
   refreshTokenHash?: string;
   aiProfile?: {
@@ -55,7 +57,9 @@ const UserSchema = new Schema<IUser>(
       isAll: { type: Boolean, default: false },
       classes: [{ type: String, enum: ["class-9", "class-10", "class-11", "class-12"] }],
       subjects: [{ type: String }],
+      students: [{ type: Schema.Types.ObjectId, ref: "User" }],
     },
+    reference: { type: String, trim: true },
     refreshTokenHash: { type: String, select: false },
     aiProfile: { type: Schema.Types.Mixed, default: {} },
   },
@@ -76,6 +80,7 @@ if (
   (!ExistingUserModel.schema.path("studentClass") ||
     !ExistingUserModel.schema.path("teacherDomain") ||
     !ExistingUserModel.schema.path("schoolCollege") ||
+    !ExistingUserModel.schema.path("reference") ||
     ExistingUserModel.schema.path("phone")?.options.required)
 ) {
   mongoose.deleteModel("User");

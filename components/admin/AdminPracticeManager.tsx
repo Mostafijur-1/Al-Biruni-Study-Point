@@ -25,6 +25,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { AdminTeacherMcqReview } from "./AdminTeacherMcqReview";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { SYLLABUS, type SchoolLevel } from "@/lib/content/syllabus";
 import type { Locale } from "@/lib/i18n";
@@ -1136,6 +1137,10 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             </form>
           </div>
         </div>
+      </div>
+      {/* ─── Review Teacher MCQs Panel ─── */}
+      <div className="rounded-xl border-2 border-primary/20 bg-card p-5 shadow-[var(--shadow-sm)]">
+        <AdminTeacherMcqReview locale={locale} />
       </div>
     </div>
   );

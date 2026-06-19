@@ -24,6 +24,7 @@ export const studentRegisterSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
   studentClass: studentClassSchema,
   schoolCollege: z.string().trim().optional().or(z.literal("")),
+  reference: z.string().trim().optional().or(z.literal("")),
 });
 
 export const teacherRegisterSchema = z.object({

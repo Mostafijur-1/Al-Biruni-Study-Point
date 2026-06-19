@@ -27,6 +27,14 @@ async function checkAuthorization(teacherId: string, studentId: string, subject:
     return { authorized: false, error: fail("You are not authorised to modify this result.", 403) };
   }
 
+  // Check student assignment if not all access
+  if (!domain?.isAll) {
+    const assignedStudents = (domain?.students || []).map(String);
+    if (!assignedStudents.includes(String(studentId))) {
+      return { authorized: false, error: fail("You are not authorised to view/modify this student's results.", 403) };
+    }
+  }
+
   // Find the student's class
   const student = await User.findById(studentId).lean();
   if (!student) {

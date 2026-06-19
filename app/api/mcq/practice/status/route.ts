@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import mongoose from "mongoose";
 
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
@@ -7,6 +8,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { User } from "@/lib/db/models/User";
 import { getSchoolLevel, SYLLABUS } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const scope = searchParams.get("scope");
     const level = searchParams.get("level") === "HSC" ? "HSC" : "SSC";
+    const mode = searchParams.get("mode") === "teacher" ? "teacher" : "general";
 
     let studentClass = "class-9";
     let userId: string | null = null;
@@ -58,15 +61,45 @@ export async function GET(request: NextRequest) {
       ? [subjectParam]
       : SUBJECTS) as CourseSubject[];
 
+    // Fetch assigned teachers for the student if in teacher mode
+    let assignedTeachers: any[] = [];
+    if (userId && mode === "teacher") {
+      const studentIdObj = new mongoose.Types.ObjectId(userId);
+      assignedTeachers = await User.find({
+        role: "teacher",
+        $or: [
+          { "teacherDomain.students": studentIdObj },
+          { "teacherDomain.isAll": true }
+        ]
+      }).lean();
+    }
+
     // Fetch student's practice results for target subjects (only if authenticated)
-    const results = userId ? await PracticeResult.find({ student: userId, subject: { $in: targetSubjects } }).lean() : [];
+    let resultsQuery: any = { student: userId, subject: { $in: targetSubjects } };
+    if (mode === "teacher") {
+      resultsQuery.isTeacherSet = true;
+    } else {
+      resultsQuery.isTeacherSet = { $ne: true };
+    }
+
+    const results = userId ? await PracticeResult.find(resultsQuery).lean() : [];
     const resultsMap = new Map(results.map((r) => [r.subject, r]));
 
-    // Batch query active questions for this level and target subjects (only select subject and chapter to minimize memory/payload)
-    const activeQuestions = await PracticeQuestion.find({
+    // Batch query active questions for this level and target subjects
+    const activeQuestionsQuery: any = {
       level: levelKey,
       subject: { $in: targetSubjects },
-    })
+    };
+
+    if (mode === "teacher") {
+      const teacherIds = assignedTeachers.map((t) => t._id);
+      activeQuestionsQuery.isTeacherSet = true;
+      activeQuestionsQuery.createdBy = { $in: teacherIds };
+    } else {
+      activeQuestionsQuery.isTeacherSet = { $ne: true };
+    }
+
+    const activeQuestions = await PracticeQuestion.find(activeQuestionsQuery)
       .select("subject chapter")
       .lean();
 
@@ -88,10 +121,16 @@ export async function GET(request: NextRequest) {
 
       const lastResult = resultsMap.get(subject) || null;
 
+      // Find the teacher assigned for this subject
+      const teacherForSubject = assignedTeachers.find(
+        (t) => t.teacherDomain?.isAll || t.teacherDomain?.subjects?.includes(subject)
+      );
+
       statusList.push({
         subject,
         chapters,
         lastResult,
+        teacherName: teacherForSubject ? teacherForSubject.name : null,
       });
     }
     const settings = await getPracticeSettings();

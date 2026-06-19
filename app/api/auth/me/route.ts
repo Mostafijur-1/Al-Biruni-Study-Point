@@ -12,6 +12,7 @@ const updateProfileSchema = z.object({
   email: z.string().trim().email().optional().or(z.literal("")),
   studentClass: studentClassSchema.optional(),
   schoolCollege: z.string().trim().optional().or(z.literal("")),
+  reference: z.string().trim().optional().or(z.literal("")),
 });
 
 export async function GET(request: NextRequest) {
@@ -42,6 +43,7 @@ export async function PATCH(request: NextRequest) {
     if (user.role === "student") {
       if (parsed.studentClass !== undefined) user.studentClass = parsed.studentClass;
       if (parsed.schoolCollege !== undefined) user.schoolCollege = parsed.schoolCollege || undefined;
+      if (parsed.reference !== undefined) user.reference = parsed.reference || undefined;
     }
 
     await user.save();

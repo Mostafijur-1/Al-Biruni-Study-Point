@@ -31,11 +31,13 @@ const linksByRole: Record<UserRole, NavItem[]> = {
   student: [
     { href: "/student/profile", label: "Profile", icon: UserCircle },
     { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
+    { href: "/student/exams", label: "MCQ exam", icon: FileQuestion },
     { href: "/student/results", label: "Results", icon: GraduationCap },
   ],
   teacher: [
     { href: "/teacher/profile", label: "Profile", icon: UserCircle },
     { href: "/teacher/mcq-review", label: "MCQ Review", icon: Brain },
+    { href: "/teacher/exams", label: "MCQ Exams", icon: FileQuestion },
     { href: "/teacher/results", label: "Results", icon: LineChart },
   ],
   admin: [
@@ -113,11 +115,13 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       { href: "/student/profile", label: "Profile", icon: UserCircle },
      // { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
       { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
+      { href: "/student/exams", label: "MCQ exam", icon: FileQuestion },
       { href: "/student/results", label: "Results", icon: GraduationCap },
     ],
     teacher: [
       { href: "/teacher/profile", label: "Profile", icon: UserCircle },
       { href: "/teacher/mcq-review", label: "MCQ Review", icon: Brain },
+      { href: "/teacher/exams", label: "MCQ Exams", icon: FileQuestion },
       { href: "/teacher/results", label: "Results", icon: LineChart },
     ],
     admin: [

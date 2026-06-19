@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import mongoose from "mongoose";
 
 import { serializeAdminUser } from "@/lib/admin/serialize-user";
 import { fail, handleApiError, success } from "@/lib/api/response";
@@ -57,6 +58,13 @@ export async function PATCH(request: NextRequest, context: AdminUserRouteContext
         subjects: parsed.teacherDomain.subjects.map((s: any) =>
           Array.isArray(s) ? String(s[0]) : String(s)
         ),
+        students: (parsed.teacherDomain.students || []).map((stId: string) => {
+          try {
+            return new mongoose.Types.ObjectId(stId);
+          } catch (e) {
+            return stId as any;
+          }
+        }),
       };
     }
 

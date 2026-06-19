@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       role: "student",
       studentClass: parsed.studentClass,
       schoolCollege: parsed.schoolCollege || undefined,
+      reference: parsed.reference || undefined,
       approvalStatus: "approved",
     });
 

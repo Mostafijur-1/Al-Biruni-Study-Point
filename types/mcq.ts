@@ -61,6 +61,14 @@ export type McqResultStudent = {
   subject?: string;
 };
 
+export type WrongAnswer = {
+  question: string;
+  options: string[];
+  selectedIndex: number;
+  correctIndex: number;
+  explanation: string | null;
+};
+
 export type McqResultTeacherRow = {
   _id: string;
   score: number;
@@ -73,6 +81,7 @@ export type McqResultTeacherRow = {
   exam: McqExamSummary & { _id: string };
   teacherComment?: string;
   deletedByTeacher?: boolean;
+  wrongAnswers?: WrongAnswer[];
 };
 
 export type McqSubmitResultData = {

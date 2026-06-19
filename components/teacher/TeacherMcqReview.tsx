@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   AlertTriangle,
   BookOpen,
+  Brain,
   Check,
   ChevronDown,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Upload,
   User,
   X,
 } from "lucide-react";
@@ -34,6 +36,8 @@ type MCQQuestion = {
   correctIndex: number;
   explanation?: string;
   imageUrl?: string;
+  isTeacherSet?: boolean;
+  createdBy?: string;
 };
 
 type ReportedQuestion = {
@@ -60,7 +64,20 @@ type TeacherMcqReviewProps = {
 };
 
 export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
-  const [activeTab, setActiveTab] = useState<"browse" | "reports">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "reports" | "upload">("browse");
+
+  // Upload states
+  const [uploadLevel, setUploadLevel] = useState<"ssc" | "hsc">("ssc");
+  const [uploadSubject, setUploadSubject] = useState("");
+  const [uploadChapter, setUploadChapter] = useState("");
+  const [availableChaptersForUpload, setAvailableChaptersForUpload] = useState<string[]>([]);
+  const [uploadContentType, setUploadContentType] = useState<"json" | "text" | "file" | "image">("json");
+  const [pastedText, setPastedText] = useState("");
+  const [singleUploadFile, setSingleUploadFile] = useState<File | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
   // Domain subjects/chapters
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
@@ -116,6 +133,82 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     }
     fetchSubjects();
   }, []);
+
+  // Handle MCQ Upload
+  async function handleUploadMCQ(e: React.FormEvent) {
+    e.preventDefault();
+    if (!uploadSubject) {
+      setUploadError(locale === "bn" ? "দয়া করে বিষয় নির্বাচন করুন।" : "Please select a subject.");
+      return;
+    }
+    if (!uploadChapter) {
+      setUploadError(locale === "bn" ? "দয়া করে অধ্যায় নির্বাচন করুন।" : "Please select a chapter.");
+      return;
+    }
+    
+    if (uploadContentType === "json" && uploadFiles.length === 0) {
+      setUploadError(locale === "bn" ? "দয়া করে অন্তত একটি JSON ফাইল নির্বাচন করুন।" : "Please select at least one JSON file.");
+      return;
+    }
+    if (uploadContentType === "text" && !pastedText.trim()) {
+      setUploadError(locale === "bn" ? "টেক্সট পেস্ট করুন।" : "Please paste some text.");
+      return;
+    }
+    if ((uploadContentType === "file" || uploadContentType === "image") && !singleUploadFile) {
+      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select a file.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+    setUploadSuccess("");
+
+    try {
+      const formData = new FormData();
+      formData.append("level", uploadLevel);
+      formData.append("subject", uploadSubject);
+      formData.append("chapter", uploadChapter);
+      formData.append("contentType", uploadContentType);
+
+      if (uploadContentType === "json") {
+        for (const file of uploadFiles) {
+          formData.append("files", file);
+        }
+      } else if (uploadContentType === "text") {
+        formData.append("text", pastedText);
+      } else {
+        formData.append("file", singleUploadFile as Blob);
+      }
+
+      const response = await fetch("/api/teacher/mcqs/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json();
+      if (response.ok && payload.success) {
+        let msg = locale === "bn"
+          ? `সফলভাবে ${payload.data.addedCount}টি প্রশ্ন আপলোড করা হয়েছে!`
+          : `Successfully uploaded ${payload.data.addedCount} questions!`;
+        if (payload.data.skippedCount > 0 && payload.data.skippedFiles) {
+          msg += locale === "bn"
+            ? ` বাদ দেওয়া ফাইলসমূহ: ${payload.data.skippedFiles.join(", ")}`
+            : ` Skipped ${payload.data.skippedCount} files: ${payload.data.skippedFiles.join(", ")}`;
+        }
+        setUploadSuccess(msg);
+        setUploadFiles([]);
+        setSingleUploadFile(null);
+        setPastedText("");
+      } else {
+        setUploadError(
+          getApiErrorMessage(payload, locale === "bn" ? "আপলোড ব্যর্থ হয়েছে।" : "Failed to upload. Please try again.")
+        );
+      }
+    } catch (error) {
+      setUploadError(locale === "bn" ? "সার্ভারের সাথে সংযোগ করা যায়নি।" : "Could not connect to the server.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   // Fetch MCQs when a chapter is expanded
   const fetchChapterMcqs = useCallback(async (level: string, subject: string, chapter: string) => {
@@ -371,6 +464,23 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               {reports.length}
             </span>
           )}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("upload");
+            setErrorMessage("");
+            setUploadError("");
+            setUploadSuccess("");
+          }}
+          className={cn(
+            "px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5",
+            activeTab === "upload"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-primary"
+          )}
+        >
+          <span>{locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload MCQ"}</span>
         </button>
       </div>
 
@@ -681,6 +791,257 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         </div>
       )}
 
+      {/* --- TAB CONTENT: UPLOAD --- */}
+      {activeTab === "upload" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-5">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Brain className="size-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-bold text-primary">
+                  {locale === "bn" ? "এমসিকিউ প্রশ্ন আপলোড" : "Upload MCQ Questions"}
+                </h2>
+                <p className="text-xs text-muted">
+                  {locale === "bn"
+                    ? "আপনার বিষয়ের জন্য JSON ফাইল আপলোড করুন। ফাইলের নাম অধ্যায়ের নামের সাথে মিলতে হবে।"
+                    : "Upload JSON files of MCQ questions for your subjects. Filenames must match syllabus chapter slugs."}
+                </p>
+              </div>
+            </div>
+
+            {uploadError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {uploadSuccess && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 flex items-center gap-2">
+                <Check className="size-4 shrink-0 text-emerald-600" />
+                <span>{uploadSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUploadMCQ} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Allowed Subject Select */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="upload-subject" className="font-bold">
+                    {locale === "bn" ? "বিষয়" : "Subject"}
+                  </Label>
+                  <select
+                    id="upload-subject"
+                    value={uploadSubject}
+                    onChange={(e) => {
+                      const selectedVal = e.target.value;
+                      setUploadSubject(selectedVal);
+                      setUploadChapter("");
+                      const matchingSub = subjects.find(s => s.subject === selectedVal);
+                      if (matchingSub) {
+                        setUploadLevel(matchingSub.level);
+                        setAvailableChaptersForUpload(matchingSub.chapters);
+                      } else {
+                        setAvailableChaptersForUpload([]);
+                      }
+                    }}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    <option value="">{locale === "bn" ? "-- বিষয় নির্বাচন করুন --" : "-- Select Subject --"}</option>
+                    {subjects.map((sub) => (
+                      <option key={`${sub.level}-${sub.subject}`} value={sub.subject}>
+                        {sub.subject} ({sub.level.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Chapter Select */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="upload-chapter" className="font-bold">
+                    {locale === "bn" ? "অধ্যায়" : "Chapter"}
+                  </Label>
+                  <select
+                    id="upload-chapter"
+                    value={uploadChapter}
+                    onChange={(e) => setUploadChapter(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    <option value="">{locale === "bn" ? "-- অধ্যায় নির্বাচন করুন --" : "-- Select Chapter --"}</option>
+                    {availableChaptersForUpload.map((chap) => (
+                      <option key={chap} value={chap}>
+                        {getTranslatedChapter(chap, locale)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Level Display */}
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="font-bold">
+                    {locale === "bn" ? "লেভেল" : "Level"}
+                  </Label>
+                  <input
+                    type="text"
+                    disabled
+                    value={uploadSubject ? uploadLevel.toUpperCase() : ""}
+                    className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm font-semibold text-muted-foreground outline-none cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* Source Type Selector */}
+              <div className="space-y-1.5">
+                <Label className="font-bold">Source Type</Label>
+                <div className="flex flex-wrap gap-2 bg-secondary/60 p-1 rounded-xl w-fit">
+                  <button
+                    type="button"
+                    onClick={() => { setUploadContentType("json"); setUploadFiles([]); setSingleUploadFile(null); }}
+                    className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "json" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
+                  >
+                    JSON File(s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUploadContentType("text"); setUploadFiles([]); setSingleUploadFile(null); }}
+                    className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "text" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
+                  >
+                    Paste Text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUploadContentType("file"); setUploadFiles([]); setSingleUploadFile(null); }}
+                    className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "file" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
+                  >
+                    TXT File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUploadContentType("image"); setUploadFiles([]); setSingleUploadFile(null); }}
+                    className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "image" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
+                  >
+                    Upload Image
+                  </button>
+                </div>
+              </div>
+
+              {/* Conditional Inputs */}
+              {uploadContentType === "json" && (
+                <div className="space-y-2">
+                  <Label className="font-bold">
+                    {locale === "bn" ? "JSON ফাইল(সমূহ) নির্বাচন করুন" : "Select JSON File(s)"}
+                  </Label>
+                  <div className="flex flex-col gap-3">
+                    <input
+                      type="file"
+                      id="mcq-json-files"
+                      accept=".json"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setUploadFiles(Array.from(e.target.files));
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="mcq-json-files"
+                      className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-6 text-center cursor-pointer hover:border-primary hover:bg-secondary/20 transition-all"
+                    >
+                      <FileText className="size-8 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-bold text-primary">
+                          {locale === "bn" ? "ফাইল সিলেক্ট করতে এখানে ক্লিক করুন" : "Click to select JSON files"}
+                        </p>
+                        <p className="text-2xs text-muted mt-1">
+                          {locale === "bn" ? "যেমন: chapter-1.json (একটি বা একাধিক ফাইল)" : "e.g., chapter-1.json (Single or multiple files)"}
+                        </p>
+                      </div>
+                    </label>
+                    
+                    {uploadFiles.length > 0 && (
+                      <div className="rounded-xl border border-border bg-surface/30 p-4 space-y-2">
+                        <p className="text-xs font-bold text-primary">
+                          {locale === "bn" ? `নির্বাচিত ফাইলসমূহ (${uploadFiles.length}):` : `Selected files (${uploadFiles.length}):`}
+                        </p>
+                        <ul className="text-2xs text-muted-foreground list-disc list-inside pl-1 space-y-1">
+                          {uploadFiles.map((file, idx) => (
+                            <li key={idx} className="font-mono">{file.name} ({(file.size / 1024).toFixed(1)} KB)</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {uploadContentType === "text" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="mcq-pasted-text" className="font-bold">Raw Text (Questions, options, and explanations)</Label>
+                  <textarea
+                    id="mcq-pasted-text"
+                    rows={8}
+                    placeholder="Paste questions here..."
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+                    required
+                  />
+                </div>
+              )}
+
+              {(uploadContentType === "file" || uploadContentType === "image") && (
+                <div className="space-y-2">
+                  <Label className="font-bold">
+                    {uploadContentType === "file" ? "Select TXT file" : "Select Image"}
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="mcq-single-file-input"
+                      type="file"
+                      accept={uploadContentType === "file" ? ".txt,text/plain" : "image/*"}
+                      onChange={(e) => setSingleUploadFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("mcq-single-file-input")?.click()}
+                      className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3 py-2 text-xs font-bold text-muted hover:border-primary/30 hover:bg-secondary/40 transition cursor-pointer"
+                    >
+                      <Upload className="size-4" />
+                      {singleUploadFile ? singleUploadFile.name : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose File"}
+                    </button>
+                    {singleUploadFile && (
+                      <span className="text-2xs text-muted font-bold font-sans">
+                        {Math.round(singleUploadFile.size / 1024)} KB
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  loading={uploading}
+                  disabled={
+                    uploading ||
+                    (uploadContentType === "json" && uploadFiles.length === 0) ||
+                    (uploadContentType === "text" && !pastedText.trim()) ||
+                    ((uploadContentType === "file" || uploadContentType === "image") && !singleUploadFile)
+                  }
+                  className="rounded-xl px-6"
+                >
+                  {locale === "bn" ? "আপলোড করুন" : "Upload to Database"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* --- EDIT MCQ MODAL --- */}
       {editingMcq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -886,12 +1247,21 @@ function MCQCard({ mcq, index, onEdit, onDelete, OPTION_BADGES, searchQuery }: M
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
-          <span className="grid size-6 place-items-center rounded bg-primary text-white text-[11px] font-bold">
+          <span className="grid size-6 place-items-center rounded bg-primary text-white text-[11px] font-bold shrink-0">
             {index + 1}
           </span>
-          <h4 className="text-base font-bold text-foreground pt-0.5 leading-snug">
-            {highlightText(mcq.question, searchQuery || "")}
-          </h4>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-base font-bold text-foreground pt-0.5 leading-snug">
+                {highlightText(mcq.question, searchQuery || "")}
+              </h4>
+              {mcq.isTeacherSet && (
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
+                  Teacher-Set
+                </span>
+              )}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button

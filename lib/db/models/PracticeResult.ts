@@ -11,6 +11,8 @@ export interface IPracticeResult extends Document {
   teacherComment?: string;
   commentedBy?: Types.ObjectId;
   submittedAt: Date;
+  isTeacherSet?: boolean;
+  teacherId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +29,8 @@ const PracticeResultSchema = new Schema<IPracticeResult>(
     teacherComment: { type: String, default: "" },
     commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
     submittedAt: { type: Date, default: Date.now },
+    isTeacherSet: { type: Boolean, default: false },
+    teacherId: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

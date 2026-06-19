@@ -9,6 +9,7 @@ export const adminUpdateUserSchema = z
         isAll: z.boolean(),
         classes: z.array(z.string()),
         subjects: z.array(z.string()),
+        students: z.array(z.string()).optional(),
       })
       .optional(),
   })

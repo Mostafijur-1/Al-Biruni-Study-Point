@@ -12,6 +12,7 @@ export type SessionUser = {
   role: UserRole;
   studentClass?: StudentClass;
   schoolCollege?: string;
+  reference?: string;
 };
 
 export type CourseLevel = "SSC" | "HSC";

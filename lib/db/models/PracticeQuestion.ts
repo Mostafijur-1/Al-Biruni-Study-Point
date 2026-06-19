@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export interface IPracticeQuestion extends Document {
   level: "ssc" | "hsc";
@@ -9,6 +9,9 @@ export interface IPracticeQuestion extends Document {
   correctIndex: number;
   explanation?: string;
   imageUrl?: string;
+  isTeacherSet?: boolean;
+  createdBy?: Types.ObjectId;
+  approvedByAdmin?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,12 +33,16 @@ const PracticeQuestionSchema = new Schema<IPracticeQuestion>(
     correctIndex: { type: Number, required: true, min: 0, max: 3 },
     explanation: { type: String, trim: true },
     imageUrl: { type: String, trim: true },
+    isTeacherSet: { type: Boolean, default: false },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    approvedByAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 // Indexes for fast lookup
 PracticeQuestionSchema.index({ level: 1, subject: 1, chapter: 1 });
+PracticeQuestionSchema.index({ isTeacherSet: 1, createdBy: 1 });
 
 if (process.env.NODE_ENV !== "production" && mongoose.models.PracticeQuestion) {
   mongoose.deleteModel("PracticeQuestion");

@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 
+import mongoose from "mongoose";
+
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
+import { User } from "@/lib/db/models/User";
 import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 import { startPracticeExam } from "@/lib/mcq/practice-service";
 
@@ -37,12 +40,35 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const mode = searchParams.get("mode") === "teacher" ? "teacher" : "general";
+    let teacherId: string | undefined = undefined;
+
+    if (mode === "teacher") {
+      // Find the teacher of this student for this subject
+      const studentIdObj = new mongoose.Types.ObjectId(user.id);
+      const teacher = await User.findOne({
+        role: "teacher",
+        $or: [
+          { "teacherDomain.isAll": true },
+          {
+            "teacherDomain.students": studentIdObj,
+            "teacherDomain.subjects": subject
+          }
+        ]
+      }).lean();
+      if (!teacher) {
+        return fail("You do not have a teacher assigned for this subject.", 400);
+      }
+      teacherId = String(teacher._id);
+    }
+
     const examData = await startPracticeExam(
       subject,
       studentClass,
       selectedChapters,
       limit,
-      settings.secondsPerQuestion
+      settings.secondsPerQuestion,
+      teacherId
     );
 
     return success({

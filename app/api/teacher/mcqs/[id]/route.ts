@@ -58,6 +58,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return fail("Access denied to this question's subject/level", 403);
     }
 
+    if (!question.isTeacherSet || String(question.createdBy) !== String(user._id)) {
+      return fail("Access denied. You can only edit questions you created.", 403);
+    }
+
     const body = await request.json();
     const parsed = editMcqSchema.parse(body);
 
@@ -121,6 +125,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!allowed) {
       return fail("Access denied to this question's subject/level", 403);
+    }
+
+    if (!question.isTeacherSet || String(question.createdBy) !== String(user._id)) {
+      return fail("Access denied. You can only delete questions you created.", 403);
     }
 
     await PracticeQuestion.deleteOne({ _id: id });

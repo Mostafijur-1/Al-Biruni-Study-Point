@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
+  AlertTriangle,
   Atom,
   Award,
   Beaker,
@@ -33,6 +34,7 @@ type SubjectStatus = {
     timeTaken: number;
     submittedAt: string;
   } | null;
+  teacherName?: string | null;
 };
 
 // Map subjects to icons and premium Tailwind gradient backgrounds
@@ -152,6 +154,7 @@ function StudentPracticeDashboard() {
   const isGuest = !user;
   const level = useGuestLevel();
 
+  const [mode, setMode] = useState<"general" | "teacher">("general");
   const [statusList, setStatusList] = useState<SubjectStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -161,9 +164,11 @@ function StudentPracticeDashboard() {
 
     async function loadStatus() {
       try {
+        setLoading(true);
+        setError("");
         const url = isGuest
           ? `/api/mcq/practice/status?scope=guest&level=${level}`
-          : "/api/mcq/practice/status";
+          : `/api/mcq/practice/status?mode=${mode}`;
         const { ok, payload } = await apiFetch<{ status: SubjectStatus[] }>(url);
         if (ok && isApiSuccess(payload)) {
           setStatusList(payload.data.status);
@@ -177,7 +182,7 @@ function StudentPracticeDashboard() {
       }
     }
     loadStatus();
-  }, [checking, isGuest, level]);
+  }, [checking, isGuest, level, mode]);
 
   return (
     <section className="space-y-6">
@@ -225,6 +230,7 @@ function StudentPracticeDashboard() {
         )}
       </div>
 
+
       {loading ? (
         <div className="grid gap-5 sm:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
@@ -269,6 +275,17 @@ function StudentPracticeDashboard() {
             };
             const Icon = theme.icon;
             const hasAttempt = item.lastResult !== null;
+            const hasTeacher = mode !== "teacher" || !!item.teacherName;
+
+            // Build query params string cleanly
+            const queryParams = new URLSearchParams();
+            if (mode === "teacher") {
+              queryParams.set("mode", "teacher");
+            }
+            if (isGuest) {
+              queryParams.set("level", level);
+            }
+            const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
             return (
               <div
@@ -300,7 +317,13 @@ function StudentPracticeDashboard() {
                     {/* Show base subject name (strip paper suffix for cleaner display) */}
                     {item.subject.replace(/ (1st|2nd) Paper$/, "")} {theme.paperLabel }
                   </h2>
-                
+
+                  {mode === "teacher" && item.teacherName && (
+                    <div className="mt-1 text-2xs font-bold text-emerald-700 bg-emerald-100/40 border border-emerald-100/50 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                      <GraduationCap className="size-3 shrink-0" />
+                      <span>{locale === "bn" ? `শিক্ষক: ${item.teacherName}` : `Teacher: ${item.teacherName}`}</span>
+                    </div>
+                  )}
 
                   {/* Previous Result Summary */}
                   <div className="mt-4">
@@ -358,23 +381,43 @@ function StudentPracticeDashboard() {
                   </div>
                 </div>
 
+                {!hasTeacher && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-center text-xs font-semibold text-amber-800 flex items-center gap-1.5 justify-center">
+                    <AlertTriangle className="size-4 text-amber-600 shrink-0" />
+                    {locale === "bn"
+                      ? "এই বিষয়ের জন্য কোনো শিক্ষক নিযুক্ত নেই।"
+                      : "No teacher assigned for this subject."}
+                  </div>
+                )}
+
                 <div className="mt-5">
-                  <Link
-                    href={path(
-                      `/student/practice/${encodeURIComponent(item.subject)}${isGuest ? guestLevelQuery(level) : ""}`,
-                    )}
-                    className="block"
-                  >
-                    <button
-                      type="button"
-                      className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover shadow-sm"
+                  {hasTeacher ? (
+                    <Link
+                      href={path(`/student/practice/${encodeURIComponent(item.subject)}${queryString}`)}
+                      className="block"
                     >
-                      {locale === "bn"
+                      <button
+                        type="button"
+                        className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover shadow-sm"
+                      >
+                        {locale === "bn"
                           ? "চ্যাপ্টার সিলেক্ট করো"
                           : "Select chapters"
                         }
+                      </button>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full rounded-xl bg-secondary py-2.5 text-sm font-bold text-muted cursor-not-allowed border border-border"
+                    >
+                      {locale === "bn"
+                        ? "পরীক্ষা অনুপলব্ধ"
+                        : "Exam Unavailable"
+                      }
                     </button>
-                  </Link>
+                  )}
                 </div>
               </div>
             );

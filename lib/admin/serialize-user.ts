@@ -13,6 +13,7 @@ export function serializeAdminUser(user: IUser | Record<string, unknown>) {
     schoolCollege: doc.schoolCollege,
     isActive: doc.isActive,
     approvalStatus: doc.approvalStatus,
+    reference: doc.reference,
     teacherDomain: doc.teacherDomain
       ? {
           isAll: !!doc.teacherDomain.isAll,
@@ -20,8 +21,9 @@ export function serializeAdminUser(user: IUser | Record<string, unknown>) {
           subjects: (doc.teacherDomain.subjects || []).map((s: any) =>
             Array.isArray(s) ? String(s[0]) : String(s)
           ),
+          students: (doc.teacherDomain.students || []).map((s: any) => String(s)),
         }
-      : { isAll: false, classes: [], subjects: [] },
+      : { isAll: false, classes: [], subjects: [], students: [] },
     createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : String(doc.createdAt),
   };
 }

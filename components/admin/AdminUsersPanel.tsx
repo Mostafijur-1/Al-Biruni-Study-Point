@@ -5,6 +5,7 @@ import { AlertCircle, Check, GraduationCap } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { getClassLabel } from "@/lib/content/classes";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
@@ -21,10 +22,12 @@ type AdminUserRow = {
   schoolCollege?: string;
   isActive: boolean;
   approvalStatus: ApprovalStatus;
+  reference?: string;
   teacherDomain?: {
     isAll: boolean;
     classes: StudentClass[];
     subjects: string[];
+    students: string[];
   };
   createdAt: string;
 };
@@ -45,6 +48,10 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
   const [isAllDomain, setIsAllDomain] = useState(false);
   const [allowedClasses, setAllowedClasses] = useState<StudentClass[]>([]);
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
+  const [allowedStudents, setAllowedStudents] = useState<string[]>([]);
+  const [studentSearchRef, setStudentSearchRef] = useState("");
+  const [studentSearchName, setStudentSearchName] = useState("");
+  const [studentSearchGlobalRef, setStudentSearchGlobalRef] = useState(""); // search for students by reference in the main students list
 
   const { data, message, isLoading, setData } = useApiQuery<{ users: AdminUserRow[] }>(
     `/api/admin/users?role=${role}`,
@@ -54,7 +61,35 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
     },
   );
 
+  // Load students for domain assignments
+  const { data: allStudentsData } = useApiQuery<{ users: AdminUserRow[] }>(
+    "/api/admin/users?role=student",
+    {
+      enabled: !!(isModalOpen && selectedTeacher && role === "teacher"),
+      loadingMessage: "Loading students...",
+      errorMessage: "Could not load students.",
+    }
+  );
+
   const users = data?.users ?? [];
+  const allStudents = allStudentsData?.users ?? [];
+
+  const filteredStudents = allStudents.filter((st) => {
+    const matchesRef = studentSearchRef
+      ? st.reference?.toLowerCase().includes(studentSearchRef.toLowerCase())
+      : true;
+    const matchesName = studentSearchName
+      ? st.name.toLowerCase().includes(studentSearchName.toLowerCase()) || st.phone?.includes(studentSearchName)
+      : true;
+    return matchesRef && matchesName;
+  });
+
+  const displayedUsers = users.filter((u) => {
+    if (role === "student" && studentSearchGlobalRef) {
+      return u.reference?.toLowerCase().includes(studentSearchGlobalRef.toLowerCase());
+    }
+    return true;
+  });
 
   const updateUser = useCallback(
     async (
@@ -62,7 +97,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
       body: {
         isActive?: boolean;
         approvalStatus?: ApprovalStatus;
-        teacherDomain?: { isAll: boolean; classes: string[]; subjects: string[] };
+        teacherDomain?: { isAll: boolean; classes: string[]; subjects: string[]; students?: string[] };
       },
     ) => {
       setPendingId(id);
@@ -105,7 +140,29 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
     setIsAllDomain(user.teacherDomain?.isAll ?? false);
     setAllowedClasses(user.teacherDomain?.classes ?? []);
     setAllowedSubjects(user.teacherDomain?.subjects ?? []);
+    setAllowedStudents(user.teacherDomain?.students ?? []);
+    setStudentSearchRef("");
+    setStudentSearchName("");
     setIsModalOpen(true);
+  }
+
+  function toggleStudentSelection(stId: string) {
+    setAllowedStudents((prev) =>
+      prev.includes(stId) ? prev.filter((id) => id !== stId) : [...prev, stId]
+    );
+  }
+
+  function handleSelectAllFilteredStudents() {
+    const filteredIds = filteredStudents.map((st) => st.id);
+    setAllowedStudents((prev) => {
+      const next = [...prev];
+      for (const id of filteredIds) {
+        if (!next.includes(id)) {
+          next.push(id);
+        }
+      }
+      return next;
+    });
   }
 
   function toggleClassSelection(cls: StudentClass) {
@@ -130,6 +187,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
         isAll: isAllDomain,
         classes: allowedClasses,
         subjects: allowedSubjects,
+        students: allowedStudents,
       },
     });
     setIsModalOpen(false);
@@ -156,6 +214,17 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
 
       {actionMessage && (
         <Alert variant={actionError ? "destructive" : "success"}>{actionMessage}</Alert>
+      )}
+
+      {role === "student" && (
+        <div className="flex max-w-md gap-2 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-sm)]">
+          <Input
+            placeholder={locale === "bn" ? "রেফারেন্স দিয়ে ফিল্টার করুন..." : "Filter students by reference..."}
+            value={studentSearchGlobalRef}
+            onChange={(e) => setStudentSearchGlobalRef(e.target.value)}
+            className="flex-1"
+          />
+        </div>
       )}
 
       {isLoading ? (
@@ -192,7 +261,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
         </p>
       ) : (
         <ul className="space-y-3">
-          {users.map((user) => (
+          {displayedUsers.map((user) => (
             <li
               key={user.id}
               className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]"
@@ -236,6 +305,11 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   {role === "student" && user.schoolCollege && (
                     <p className="mt-0.5 text-sm text-muted-foreground/90">
                       <span className="font-semibold text-foreground/80">{user.schoolCollege}</span>
+                    </p>
+                  )}
+                  {role === "student" && user.reference && (
+                    <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200/50 w-fit font-medium">
+                      {locale === "bn" ? `রেফারেন্স: ${user.reference}` : `Reference: ${user.reference}`}
                     </p>
                   )}
                   <p className="mt-1 text-xs text-muted">
@@ -440,6 +514,86 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       </div>
                     )}
                   </div>
+
+                  {/* Assigned Students Section */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-accent">
+                      {locale === "bn" ? "অনুমোদিত শিক্ষার্থী" : "Assigned Students"}
+                    </h4>
+                    
+                    <div className="space-y-3">
+                      {/* Search inputs */}
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder={locale === "bn" ? "রেফারেন্স দিয়ে ফিল্টার..." : "Filter by reference..."}
+                          value={studentSearchRef}
+                          onChange={(e) => setStudentSearchRef(e.target.value)}
+                          className="flex-1 text-xs"
+                        />
+                        <Input
+                          placeholder={locale === "bn" ? "নাম বা ফোন দিয়ে ফিল্টার..." : "Filter by name/phone..."}
+                          value={studentSearchName}
+                          onChange={(e) => setStudentSearchName(e.target.value)}
+                          className="flex-1 text-xs"
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center text-2xs text-muted">
+                        <span>
+                          {locale === "bn" ? `${filteredStudents.length} জন শিক্ষার্থী পাওয়া গেছে` : `${filteredStudents.length} students found`}
+                        </span>
+                        {filteredStudents.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSelectAllFilteredStudents}
+                            className="text-primary hover:text-primary-hover font-semibold text-[11px] h-auto p-0"
+                          >
+                            {locale === "bn" ? "ফিল্টার করা সবাইকে সিলেক্ট করুন" : "Select all matching"}
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="max-h-[180px] overflow-y-auto rounded-xl border border-border bg-surface/30 p-2 space-y-1">
+                        {filteredStudents.length === 0 ? (
+                          <p className="text-xs text-center text-muted py-4">
+                            {locale === "bn" ? "কোনো শিক্ষার্থী পাওয়া যায়নি" : "No students found"}
+                          </p>
+                        ) : (
+                          filteredStudents.map((st) => {
+                            const isChecked = allowedStudents.includes(st.id);
+                            return (
+                              <div
+                                key={st.id}
+                                onClick={() => toggleStudentSelection(st.id)}
+                                className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/40 cursor-pointer text-xs transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={cn(
+                                    "size-4 rounded border flex items-center justify-center transition-colors shrink-0",
+                                    isChecked ? "border-primary bg-primary text-white" : "border-border bg-white"
+                                  )}>
+                                    {isChecked && <Check className="size-2.5 stroke-[3]" />}
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-primary">{st.name} ({getClassLabel(st.studentClass!, locale)})</p>
+                                    <p className="text-2xs text-muted-foreground">{st.phone || st.email}</p>
+                                  </div>
+                                </div>
+                                {st.reference && (
+                                  <span className="text-2xs px-1.5 py-0.5 rounded bg-amber-100/70 text-amber-800 font-medium max-w-[120px] truncate">
+                                    Ref: {st.reference}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>

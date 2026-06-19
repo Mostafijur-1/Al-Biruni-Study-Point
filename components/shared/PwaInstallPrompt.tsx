@@ -4,6 +4,7 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 import { Bell, Download, X, Smartphone, Compass, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/hooks/use-session";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -18,6 +19,8 @@ export function PwaInstallPrompt() {
   const params = useParams();
   const locale = params?.locale as string;
   const isBengali = locale === "bn";
+
+  const { user, checking } = useSession({ listenToAuthChanges: true });
 
   const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = React.useState(false);
@@ -104,13 +107,7 @@ export function PwaInstallPrompt() {
       }
     }
 
-    // 2. Check current Notification permission
-    if ("Notification" in window) {
-      setNotificationPermission(Notification.permission);
-      if (Notification.permission === "granted") {
-        subscribeToPushNotifications();
-      }
-    }
+    // 2. Check current Notification permission (moved to a separate useEffect relying on session user role)
 
     // 3. Register service worker
     if ("serviceWorker" in navigator) {
@@ -151,6 +148,19 @@ export function PwaInstallPrompt() {
     };
   }, []);
 
+  // Check notification permission and subscribe once the session has finished loading and if not a teacher
+  React.useEffect(() => {
+    if (checking) return;
+    if (user?.role === "teacher") return;
+
+    if ("Notification" in window) {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === "granted") {
+        subscribeToPushNotifications();
+      }
+    }
+  }, [checking, user]);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
@@ -175,6 +185,9 @@ export function PwaInstallPrompt() {
   };
 
   const subscribeToPushNotifications = async () => {
+    if (checking || user?.role === "teacher") {
+      return;
+    }
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       return;
     }
@@ -222,6 +235,9 @@ export function PwaInstallPrompt() {
   };
 
   const requestNotificationPermission = async () => {
+    if (checking || user?.role === "teacher") {
+      return;
+    }
     if (!("Notification" in window)) {
       alert("Notifications not supported on your browser.");
       return;
@@ -312,7 +328,7 @@ export function PwaInstallPrompt() {
   // If not installed and PWA prompt is ready, show installation prompt
   // Else if installed but notification permission is still default, show request notification banner
   const showInstall = isVisible && deferredPrompt;
-  const showNotificationRequest = isStandalone && notificationPermission === "default";
+  const showNotificationRequest = isStandalone && notificationPermission === "default" && !checking && user?.role !== "teacher";
 
   if (!showInstall && !showNotificationRequest) {
     return null;

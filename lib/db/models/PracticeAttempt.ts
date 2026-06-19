@@ -22,6 +22,8 @@ export interface IPracticeAttempt extends Document {
   teacherComment?: string;
   commentedBy?: Types.ObjectId;
   deletedByTeacher?: boolean;
+  isTeacherSet?: boolean;
+  teacherId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +41,8 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
     teacherComment: { type: String, default: "" },
     commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
     deletedByTeacher: { type: Boolean, default: false },
+    isTeacherSet: { type: Boolean, default: false },
+    teacherId: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

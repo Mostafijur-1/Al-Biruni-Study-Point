@@ -112,6 +112,7 @@ function StudentRegisterForm({
       password: "",
       studentClass: defaultClass,
       schoolCollege: "",
+      reference: "",
       returnUrl: returnUrl ?? "",
     },
   });
@@ -224,6 +225,17 @@ function StudentRegisterForm({
             {errors.schoolCollege && (
               <p className="text-sm text-destructive">{errors.schoolCollege.message}</p>
             )}
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="reference">
+              {locale === "bn" ? "রেফারেন্স (শিক্ষকের নাম - ঐচ্ছিক)" : "Reference (Teacher's name - optional)"}
+            </Label>
+            <Input
+              id="reference"
+              {...register("reference")}
+              placeholder={locale === "bn" ? "যেমন: মোহাম্মদ আলি" : "e.g. Mohammad Ali"}
+            />
+            {errors.reference && <p className="text-sm text-destructive">{errors.reference.message}</p>}
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="email">
