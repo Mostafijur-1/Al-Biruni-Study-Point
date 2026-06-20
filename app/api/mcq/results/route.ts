@@ -8,6 +8,9 @@ import { McqExam } from "@/lib/db/models/McqExam";
 import { connectDB } from "@/lib/db/connect";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 
+// Prevent tree-shaking of McqExam model
+const _ = McqExam;
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request, ["admin", "student", "teacher"]);

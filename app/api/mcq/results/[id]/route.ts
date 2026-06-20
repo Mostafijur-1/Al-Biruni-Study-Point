@@ -8,6 +8,9 @@ import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 
+// Prevent tree-shaking of McqExam model
+const _ = McqExam;
+
 const commentSchema = z.object({
   teacherComment: z.string().trim().default(""),
 });

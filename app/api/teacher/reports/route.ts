@@ -7,6 +7,9 @@ import { User } from "@/lib/db/models/User";
 import { ReportedQuestion } from "@/lib/db/models/ReportedQuestion";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 
+// Prevent tree-shaking of PracticeQuestion model
+const _ = PracticeQuestion;
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
