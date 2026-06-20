@@ -5,6 +5,7 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
+import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 
 const commentSchema = z.object({

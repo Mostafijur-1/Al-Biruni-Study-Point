@@ -4,6 +4,7 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
+import { McqExam } from "@/lib/db/models/McqExam";
 import { connectDB } from "@/lib/db/connect";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 

@@ -54,6 +54,7 @@ export type McqResultStudent = {
   isPassed: boolean;
   attemptNo: number;
   submittedAt: string;
+  timeTaken?: number;
   exam?: { title?: string; totalMarks?: number };
   teacherComment?: string;
   commentedBy?: { _id: string; name: string };
