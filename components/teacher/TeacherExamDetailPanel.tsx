@@ -79,6 +79,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
   const [loadingDbQuestions, setLoadingDbQuestions] = useState(false);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [addingFromDb, setAddingFromDb] = useState(false);
+  const [dbSourceScope, setDbSourceScope] = useState<"all" | "my-uploaded">("all");
 
   // Edit Exam Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -200,7 +201,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
     }
   }, [exam]);
 
-  const fetchDbQuestions = useCallback(async (chapter: string) => {
+  const fetchDbQuestions = useCallback(async (chapter: string, scope: "all" | "my-uploaded" = "all") => {
     if (!exam || !chapter) return;
     try {
       setLoadingDbQuestions(true);
@@ -210,7 +211,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
       const isHsc = exam.targetClasses.some(c => c === "class-11" || c === "class-12");
       const level = isHsc ? "hsc" : "ssc";
 
-      const url = `/api/teacher/mcqs?level=${level}&subject=${encodeURIComponent(exam.subject)}&chapter=${encodeURIComponent(chapter)}`;
+      const url = `/api/teacher/mcqs?level=${level}&subject=${encodeURIComponent(exam.subject)}&chapter=${encodeURIComponent(chapter)}&scope=${scope}`;
       const { ok, payload } = await apiFetch<{ questions: any[] }>(url);
       if (ok && isApiSuccess(payload)) {
         setDbQuestions(payload.data.questions);
@@ -226,9 +227,9 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
 
   useEffect(() => {
     if (selectedDbChapter) {
-      fetchDbQuestions(selectedDbChapter);
+      fetchDbQuestions(selectedDbChapter, dbSourceScope);
     }
-  }, [selectedDbChapter, fetchDbQuestions]);
+  }, [selectedDbChapter, dbSourceScope, fetchDbQuestions]);
 
   const handleAddSelectedFromDb = async () => {
     if (selectedQuestionIds.length === 0 || !exam) return;
@@ -652,21 +653,35 @@ d) 9"
           <div className="space-y-6">
             <div className="rounded-xl border border-border bg-card p-5 shadow-xs space-y-4">
               <h2 className="font-display text-sm font-bold text-primary">Add Questions from Database</h2>
-              <div className="space-y-1.5 max-w-md">
-                <Label htmlFor="db-chapter-select">Select Chapter</Label>
-                <select
-                  id="db-chapter-select"
-                  value={selectedDbChapter}
-                  onChange={(e) => setSelectedDbChapter(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
-                >
-                  <option value="">-- Select Chapter --</option>
-                  {dbChapters.map((chap) => (
-                    <option key={chap} value={chap}>
-                      {getTranslatedChapter(chap, locale)}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+                <div className="space-y-1.5">
+                  <Label htmlFor="db-chapter-select">Select Chapter</Label>
+                  <select
+                    id="db-chapter-select"
+                    value={selectedDbChapter}
+                    onChange={(e) => setSelectedDbChapter(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    <option value="">-- Select Chapter --</option>
+                    {dbChapters.map((chap) => (
+                      <option key={chap} value={chap}>
+                        {getTranslatedChapter(chap, locale)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="db-source-select">Database Source</Label>
+                  <select
+                    id="db-source-select"
+                    value={dbSourceScope}
+                    onChange={(e) => setDbSourceScope(e.target.value as "all" | "my-uploaded")}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    <option value="all">Whole Database (All Questions)</option>
+                    <option value="my-uploaded">My Uploaded Questions Only</option>
+                  </select>
+                </div>
               </div>
             </div>
 

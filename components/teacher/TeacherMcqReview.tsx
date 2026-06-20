@@ -91,6 +91,12 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
 
   // Local chapter search state
   const [chapterSearchQuery, setChapterSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [expandedChapter, expandedSubject]);
 
   // Reported MCQ states
   const [reports, setReports] = useState<ReportedQuestion[]>([]);
@@ -276,6 +282,41 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     } catch (error: any) {
       console.error("[Teacher Review Delete MCQ Catch Error]:", error);
       setErrorMessage("An error occurred deleting the question.");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে এই ${selectedIds.length}টি প্রশ্ন মুছে ফেলতে চান?` : `Are you sure you want to delete these ${selectedIds.length} questions?`)) return;
+
+    setBulkDeleting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const { ok, payload } = await apiFetch("/api/teacher/mcqs", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      if (ok && isApiSuccess(payload)) {
+        setSuccessMessage(
+          locale === "bn"
+            ? `সফলভাবে ${selectedIds.length}টি প্রশ্ন মুছে ফেলা হয়েছে!`
+            : `Successfully deleted ${selectedIds.length} questions!`
+        );
+        const deletedSet = new Set(selectedIds);
+        setMcqs((prev) => prev.filter((q) => !deletedSet.has(q._id)));
+        setReports((prev) => prev.filter((r) => !r.questionId?._id || !deletedSet.has(r.questionId._id)));
+        setSelectedIds([]);
+        setTimeout(() => setSuccessMessage(""), 4000);
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to delete selected questions."));
+      }
+    } catch (error) {
+      console.error("[Teacher Review Bulk Delete MCQ Catch Error]:", error);
+      setErrorMessage("Error connecting to server.");
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -622,17 +663,66 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                           </div>
                         ) : (
                           <div className="space-y-4">
-                            {filteredMcqs.map((q, idx) => (
-                              <MCQCard
-                                key={q._id}
-                                mcq={q}
-                                index={idx}
-                                onEdit={openEditModal}
-                                onDelete={handleDeleteMcq}
-                                OPTION_BADGES={OPTION_BADGES}
-                                searchQuery={chapterSearchQuery}
-                              />
-                            ))}
+                            {(() => {
+                              const deletableMcqs = filteredMcqs.filter((q) => q.isTeacherSet === true);
+                              return (
+                                <>
+                                  {deletableMcqs.length > 0 && (
+                                    <div className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                                      <div className="flex items-center gap-3">
+                                        <input
+                                          type="checkbox"
+                                          id="select-all-deletable"
+                                          checked={selectedIds.length === deletableMcqs.length && deletableMcqs.length > 0}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setSelectedIds(deletableMcqs.map((q) => q._id));
+                                            } else {
+                                              setSelectedIds([]);
+                                            }
+                                          }}
+                                          className="rounded border-border text-primary focus:ring-primary size-4 cursor-pointer"
+                                        />
+                                        <label htmlFor="select-all-deletable" className="text-sm font-bold text-primary cursor-pointer select-none">
+                                          {locale === "bn" ? `সব নির্বাচন করুন (${deletableMcqs.length})` : `Select All My Questions (${deletableMcqs.length})`}
+                                        </label>
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        onClick={handleBulkDelete}
+                                        disabled={selectedIds.length === 0 || bulkDeleting}
+                                        loading={bulkDeleting}
+                                        className="text-brand-red border-red-100 hover:bg-red-50 hover:text-brand-red rounded-xl font-bold py-2 px-5"
+                                      >
+                                        {locale === "bn" ? `নির্বাচিতগুলো মুছুন (${selectedIds.length})` : `Delete Selected (${selectedIds.length})`}
+                                      </Button>
+                                    </div>
+                                  )}
+
+                                  <div className="space-y-4">
+                                    {filteredMcqs.map((q, idx) => (
+                                      <MCQCard
+                                        key={q._id}
+                                        mcq={q}
+                                        index={idx}
+                                        onEdit={openEditModal}
+                                        onDelete={handleDeleteMcq}
+                                        OPTION_BADGES={OPTION_BADGES}
+                                        searchQuery={chapterSearchQuery}
+                                        selected={selectedIds.includes(q._id)}
+                                        onSelectChange={(id, checked) => {
+                                          if (checked) {
+                                            setSelectedIds((prev) => [...prev, id]);
+                                          } else {
+                                            setSelectedIds((prev) => prev.filter((item) => item !== id));
+                                          }
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                       </>
@@ -1217,6 +1307,8 @@ type MCQCardProps = {
   onDelete: (id: string) => void;
   OPTION_BADGES: string[];
   searchQuery?: string;
+  selected?: boolean;
+  onSelectChange?: (id: string, selected: boolean) => void;
 };
 
 function highlightText(text: string, search: string) {
@@ -1241,12 +1333,20 @@ function highlightText(text: string, search: string) {
   );
 }
 
-function MCQCard({ mcq, index, onEdit, onDelete, OPTION_BADGES, searchQuery }: MCQCardProps) {
+function MCQCard({ mcq, index, onEdit, onDelete, OPTION_BADGES, searchQuery, selected, onSelectChange }: MCQCardProps) {
   return (
     <article className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
+          {mcq.isTeacherSet && onSelectChange && (
+            <input
+              type="checkbox"
+              checked={selected || false}
+              onChange={(e) => onSelectChange(mcq._id, e.target.checked)}
+              className="rounded border-border text-primary focus:ring-primary size-4 cursor-pointer mt-1 mr-1.5"
+            />
+          )}
           <span className="grid size-6 place-items-center rounded bg-primary text-white text-[11px] font-bold shrink-0">
             {index + 1}
           </span>
