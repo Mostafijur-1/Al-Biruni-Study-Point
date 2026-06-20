@@ -64,7 +64,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
 
   // Upload state
   const [activeTab, setActiveTab] = useState<"questions" | "upload" | "database" | "results">("questions");
-  const [contentType, setContentType] = useState<"text" | "file" | "image">("text");
+  const [contentType, setContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -526,13 +526,6 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setContentType("file"); setSelectedFile(null); }}
-                  className={cn("flex-1 sm:flex-initial rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap", contentType === "file" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
-                >
-                  TXT File
-                </button>
-                <button
-                  type="button"
                   onClick={() => { setContentType("image"); setSelectedFile(null); }}
                   className={cn("flex-1 sm:flex-initial rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap", contentType === "image" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                 >
@@ -562,12 +555,12 @@ d) 9"
               </div>
             ) : (
               <div className="space-y-2">
-                <Label>{contentType === "file" ? "Select TXT file" : "Select Image"}</Label>
+                <Label>Select Image</Label>
                 <div className="flex items-center gap-3">
                   <input
                     id="exam-file-input"
                     type="file"
-                    accept={contentType === "file" ? ".txt,text/plain" : "image/*"}
+                    accept="image/*"
                     onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                     className="hidden"
                   />

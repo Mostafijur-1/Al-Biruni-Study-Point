@@ -72,7 +72,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
   const [selectedChapter, setSelectedChapter] = useState("");
 
   // Content upload states
-  const [contentType, setContentType] = useState<"text" | "file" | "image">("text");
+  const [contentType, setContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -671,7 +671,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
           {/* Upload Method Tabs */}
           <div className="space-y-1.5">
             <Label>{locale === "bn" ? "আপলোড পদ্ধতি" : "Upload Method"}</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setContentType("text")}
@@ -688,20 +688,6 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
               <button
                 type="button"
-                onClick={() => setContentType("file")}
-                className={cn(
-                  "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
-                  contentType === "file"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-surface text-muted hover:border-primary/20"
-                )}
-              >
-                <FileText className="size-4 shrink-0" />
-                <span>{locale === "bn" ? "টেক্সট ফাইল" : "Text File"}</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setContentType("image")}
                 className={cn(
                   "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
@@ -711,7 +697,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                 )}
               >
                 <FileImage className="size-4 shrink-0" />
-                <span>{locale === "bn" ? "ছবি আপলোড" : "Image File"}</span>
+                <span>{locale === "bn" ? "ছবি আপলোড" : "Upload Image"}</span>
               </button>
             </div>
           </div>
@@ -736,19 +722,15 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
           ) : (
             <div className="space-y-1.5">
               <Label htmlFor="file-input">
-                {contentType === "image"
-                  ? locale === "bn"
-                    ? "এমসিকিউ প্রশ্ন সম্বলিত ছবি (.png, .jpg)"
-                    : "Upload Question Image (.png, .jpg)"
-                  : locale === "bn"
-                    ? "এমসিকিউ টেক্সট ফাইল (.txt)"
-                    : "Upload Text File (.txt)"}
+                {locale === "bn"
+                  ? "এমসিকিউ প্রশ্ন সম্বলিত ছবি (.png, .jpg)"
+                  : "Upload Question Image (.png, .jpg)"}
               </Label>
               <div className="flex items-center gap-3">
                 <input
                   id="file-input"
                   type="file"
-                  accept={contentType === "image" ? "image/*" : ".txt,text/plain"}
+                  accept="image/*"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   className="hidden"
                 />

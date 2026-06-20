@@ -71,7 +71,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   const [uploadSubject, setUploadSubject] = useState("");
   const [uploadChapter, setUploadChapter] = useState("");
   const [availableChaptersForUpload, setAvailableChaptersForUpload] = useState<string[]>([]);
-  const [uploadContentType, setUploadContentType] = useState<"json" | "text" | "file" | "image">("json");
+  const [uploadContentType, setUploadContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
   const [singleUploadFile, setSingleUploadFile] = useState<File | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -152,15 +152,11 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       return;
     }
     
-    if (uploadContentType === "json" && uploadFiles.length === 0) {
-      setUploadError(locale === "bn" ? "দয়া করে অন্তত একটি JSON ফাইল নির্বাচন করুন।" : "Please select at least one JSON file.");
-      return;
-    }
     if (uploadContentType === "text" && !pastedText.trim()) {
       setUploadError(locale === "bn" ? "টেক্সট পেস্ট করুন।" : "Please paste some text.");
       return;
     }
-    if ((uploadContentType === "file" || uploadContentType === "image") && !singleUploadFile) {
+    if (uploadContentType === "image" && !singleUploadFile) {
       setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select a file.");
       return;
     }
@@ -176,11 +172,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       formData.append("chapter", uploadChapter);
       formData.append("contentType", uploadContentType);
 
-      if (uploadContentType === "json") {
-        for (const file of uploadFiles) {
-          formData.append("files", file);
-        }
-      } else if (uploadContentType === "text") {
+      if (uploadContentType === "text") {
         formData.append("text", pastedText);
       } else {
         formData.append("file", singleUploadFile as Blob);
@@ -988,24 +980,10 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 <div className="flex flex-wrap gap-2 bg-secondary/60 p-1 rounded-xl w-fit">
                   <button
                     type="button"
-                    onClick={() => { setUploadContentType("json"); setUploadFiles([]); setSingleUploadFile(null); }}
-                    className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "json" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
-                  >
-                    JSON File(s)
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => { setUploadContentType("text"); setUploadFiles([]); setSingleUploadFile(null); }}
                     className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "text" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                   >
                     Paste Text
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setUploadContentType("file"); setUploadFiles([]); setSingleUploadFile(null); }}
-                    className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "file" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
-                  >
-                    TXT File
                   </button>
                   <button
                     type="button"
@@ -1018,55 +996,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               </div>
 
               {/* Conditional Inputs */}
-              {uploadContentType === "json" && (
-                <div className="space-y-2">
-                  <Label className="font-bold">
-                    {locale === "bn" ? "JSON ফাইল(সমূহ) নির্বাচন করুন" : "Select JSON File(s)"}
-                  </Label>
-                  <div className="flex flex-col gap-3">
-                    <input
-                      type="file"
-                      id="mcq-json-files"
-                      accept=".json"
-                      multiple
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setUploadFiles(Array.from(e.target.files));
-                        }
-                      }}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="mcq-json-files"
-                      className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-6 text-center cursor-pointer hover:border-primary hover:bg-secondary/20 transition-all"
-                    >
-                      <FileText className="size-8 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-bold text-primary">
-                          {locale === "bn" ? "ফাইল সিলেক্ট করতে এখানে ক্লিক করুন" : "Click to select JSON files"}
-                        </p>
-                        <p className="text-2xs text-muted mt-1">
-                          {locale === "bn" ? "যেমন: chapter-1.json (একটি বা একাধিক ফাইল)" : "e.g., chapter-1.json (Single or multiple files)"}
-                        </p>
-                      </div>
-                    </label>
-                    
-                    {uploadFiles.length > 0 && (
-                      <div className="rounded-xl border border-border bg-surface/30 p-4 space-y-2">
-                        <p className="text-xs font-bold text-primary">
-                          {locale === "bn" ? `নির্বাচিত ফাইলসমূহ (${uploadFiles.length}):` : `Selected files (${uploadFiles.length}):`}
-                        </p>
-                        <ul className="text-2xs text-muted-foreground list-disc list-inside pl-1 space-y-1">
-                          {uploadFiles.map((file, idx) => (
-                            <li key={idx} className="font-mono">{file.name} ({(file.size / 1024).toFixed(1)} KB)</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {uploadContentType === "text" && (
                 <div className="space-y-1.5">
                   <Label htmlFor="mcq-pasted-text" className="font-bold">Raw Text (Questions, options, and explanations)</Label>
@@ -1082,16 +1011,16 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 </div>
               )}
 
-              {(uploadContentType === "file" || uploadContentType === "image") && (
+              {uploadContentType === "image" && (
                 <div className="space-y-2">
                   <Label className="font-bold">
-                    {uploadContentType === "file" ? "Select TXT file" : "Select Image"}
+                    Select Image
                   </Label>
                   <div className="flex items-center gap-3">
                     <input
                       id="mcq-single-file-input"
                       type="file"
-                      accept={uploadContentType === "file" ? ".txt,text/plain" : "image/*"}
+                      accept="image/*"
                       onChange={(e) => setSingleUploadFile(e.target.files?.[0] || null)}
                       className="hidden"
                     />
@@ -1118,9 +1047,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                   loading={uploading}
                   disabled={
                     uploading ||
-                    (uploadContentType === "json" && uploadFiles.length === 0) ||
                     (uploadContentType === "text" && !pastedText.trim()) ||
-                    ((uploadContentType === "file" || uploadContentType === "image") && !singleUploadFile)
+                    (uploadContentType === "image" && !singleUploadFile)
                   }
                   className="rounded-xl px-6"
                 >
