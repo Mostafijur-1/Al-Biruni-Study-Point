@@ -44,9 +44,7 @@ export function CoursesCatalog({ locale, home }: CoursesCatalogProps) {
                     className="flex min-h-[4rem] flex-col justify-center rounded-xl border border-border bg-secondary/40 px-3 py-3 transition hover:border-primary hover:bg-secondary hover:shadow-sm sm:px-4 sm:py-4"
                   >
                     <span className="font-bold text-foreground">{subjectLabel(home, subject)}</span>
-                    <span className="mt-1 text-xs text-muted">
-                      {locale === "bn" ? "ভিডিও · MCQ · CQ" : "Video · MCQ · CQ"}
-                    </span>
+    
                   </Link>
                 </li>
               ))}

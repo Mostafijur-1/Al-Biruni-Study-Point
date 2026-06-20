@@ -1,10 +1,10 @@
-import Link from "next/link";
+
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { buttonVariants, pressableClasses } from "@/components/ui/button-variants";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
 
@@ -102,8 +102,8 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
               {locale === "bn"
-                ? "SSC ও HSC বিজ্ঞান কোচিং, ব্যাচ ও অনলাইন ক্লাস সম্পর্কে জানতে আজই যোগাযোগ করুন।"
-                : "Contact us today about SSC and HSC science coaching, batches, and online classes."}
+                ? "ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করুন।"
+                : "Contact us today about admission, batches, and courses."}
             </p>
           </div>
 
@@ -115,17 +115,11 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
               <Phone className="size-4" />
               {contact.ctaCall}
             </a>
-            <Link
-              href={getLocalizedPath("/register", locale)}
-              className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
-            >
-              {contact.ctaRegister}
-            </Link>
           </div>
 
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              "Mollabari Mosjid Jamgora Ashulia Savar Dhaka",
+              "Jamgora Fantasy Kingdom Ashulia Savar Dhaka",
             )}`}
             target="_blank"
             rel="noopener noreferrer"

@@ -90,9 +90,26 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
               <div className="mb-4 flex justify-center sm:justify-start">
                 <Logo locale={locale} size="hero" link={false} />
               </div>
-              <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-yellow sm:text-left">
+              <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-yellow sm:text-left mb-4">
                 {brand.tagline}
               </p>
+
+              <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black shadow-[var(--shadow-md)]">
+                <div className="aspect-video w-full">
+                  <iframe
+                    className="w-full h-full border-0"
+                    src="https://www.youtube.com/embed/N2DQmxN0alo?si=OuXu62shYZ9ZGYpW"
+                    title="HSC 2028 Offline Batch"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+
+              {/* Commented out SSC & HSC buttons replaced by the video */}
+              {/* 
               <div className="mt-4 grid gap-3">
                 {[
                   { icon: GraduationCap, label: "SSC", desc: dict.courses.ssc, level: "SSC" },
@@ -118,11 +135,11 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                   </Link>
                 ))}
               </div>
+              */}
             </div>
           </div>
         </div>
       </section>
-
 
       <section id="courses" className="py-12 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
