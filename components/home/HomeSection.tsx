@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
@@ -28,6 +31,7 @@ const featureColors = [
 
 export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
   const path = createLocalizedPath(locale);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   return (
     <>
@@ -95,7 +99,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
               </p>
 
               <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black shadow-[var(--shadow-md)]">
-                <div className="aspect-video w-full">
+                <div className="relative aspect-video w-full">
                   <iframe
                     className="w-full h-full border-0"
                     src="https://www.youtube.com/embed/N2DQmxN0alo?si=OuXu62shYZ9ZGYpW"
@@ -104,38 +108,25 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                     allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
                     loading="lazy"
+                    onLoad={() => setVideoLoaded(true)}
                   />
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-10 transition-opacity duration-500",
+                      videoLoaded ? "opacity-0 pointer-events-none" : "opacity-100"
+                    )}
+                  >
+                    <Image
+                      src="/hsc2028-thumbnail.jpg"
+                      alt="HSC 2028 Offline Batch"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* Commented out SSC & HSC buttons replaced by the video */}
-              {/* 
-              <div className="mt-4 grid gap-3">
-                {[
-                  { icon: GraduationCap, label: "SSC", desc: dict.courses.ssc, level: "SSC" },
-                  { icon: BookOpen, label: "HSC", desc: dict.courses.hsc, level: "HSC" },
-                ].map(({ icon: Icon, label, desc, level }, index) => (
-                  <Link
-                    key={label}
-                    href={path(`/student/practice?level=${level}`)}
-                    className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:border-brand-yellow hover:bg-white/10 sm:p-4"
-                  >
-                    <span
-                      className={cn(
-                        "grid size-10 shrink-0 place-items-center rounded-lg",
-                        featureColors[index],
-                      )}
-                    >
-                      <Icon className="size-5" />
-                    </span>
-                    <div>
-                      <p className="font-bold text-white">{label}</p>
-                      <p className="mt-0.5 text-sm text-white/75">{desc}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-              */}
             </div>
           </div>
         </div>

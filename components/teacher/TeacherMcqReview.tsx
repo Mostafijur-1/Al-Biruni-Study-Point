@@ -3,18 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   AlertTriangle,
-  BookOpen,
   Brain,
   Check,
-  ChevronDown,
-  ChevronRight,
   Edit,
-  FileText,
   Image as ImageIcon,
   Loader2,
   Mail,
-  RefreshCw,
-  Search,
   Trash2,
   Upload,
   User,
@@ -64,7 +58,7 @@ type TeacherMcqReviewProps = {
 };
 
 export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
-  const [activeTab, setActiveTab] = useState<"browse" | "reports" | "upload">("browse");
+  const [activeTab, setActiveTab] = useState<"upload" | "reports">("upload");
 
   // Upload states
   const [uploadLevel, setUploadLevel] = useState<"ssc" | "hsc">("ssc");
@@ -82,21 +76,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   // Domain subjects/chapters
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
-  const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
-  const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
-  
-  // MCQ List by Chapter
-  const [mcqs, setMcqs] = useState<MCQQuestion[]>([]);
-  const [loadingMcqs, setLoadingMcqs] = useState(false);
-
-  // Local chapter search state
-  const [chapterSearchQuery, setChapterSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [expandedChapter, expandedSubject]);
 
   // Reported MCQ states
   const [reports, setReports] = useState<ReportedQuestion[]>([]);
@@ -208,26 +187,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     }
   }
 
-  // Fetch MCQs when a chapter is expanded
-  const fetchChapterMcqs = useCallback(async (level: string, subject: string, chapter: string) => {
-    try {
-      setLoadingMcqs(true);
-      setMcqs([]);
-      setChapterSearchQuery("");
-      const url = `/api/teacher/mcqs?level=${level}&subject=${encodeURIComponent(subject)}&chapter=${encodeURIComponent(chapter)}`;
-      const { ok, payload } = await apiFetch<{ questions: MCQQuestion[] }>(url);
-      if (ok && isApiSuccess(payload)) {
-        setMcqs(payload.data.questions);
-      } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to load questions."));
-      }
-    } catch (error: any) {
-      console.error("[Teacher Review Fetch MCQ Catch Error]:", error);
-      setErrorMessage("An error occurred loading questions.");
-    } finally {
-      setLoadingMcqs(false);
-    }
-  }, []);
+
 
   // Fetch Reports
   const fetchReports = useCallback(async () => {
@@ -265,7 +225,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       if (ok && isApiSuccess(payload)) {
         setSuccessMessage(locale === "bn" ? "প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।" : "Question deleted successfully.");
         // Remove from list
-        setMcqs((prev) => prev.filter((q) => q._id !== id));
         setReports((prev) => prev.filter((r) => r.questionId?._id !== id));
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
@@ -277,40 +236,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে এই ${selectedIds.length}টি প্রশ্ন মুছে ফেলতে চান?` : `Are you sure you want to delete these ${selectedIds.length} questions?`)) return;
 
-    setBulkDeleting(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-    try {
-      const { ok, payload } = await apiFetch("/api/teacher/mcqs", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedIds }),
-      });
-      if (ok && isApiSuccess(payload)) {
-        setSuccessMessage(
-          locale === "bn"
-            ? `সফলভাবে ${selectedIds.length}টি প্রশ্ন মুছে ফেলা হয়েছে!`
-            : `Successfully deleted ${selectedIds.length} questions!`
-        );
-        const deletedSet = new Set(selectedIds);
-        setMcqs((prev) => prev.filter((q) => !deletedSet.has(q._id)));
-        setReports((prev) => prev.filter((r) => !r.questionId?._id || !deletedSet.has(r.questionId._id)));
-        setSelectedIds([]);
-        setTimeout(() => setSuccessMessage(""), 4000);
-      } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to delete selected questions."));
-      }
-    } catch (error) {
-      console.error("[Teacher Review Bulk Delete MCQ Catch Error]:", error);
-      setErrorMessage("Error connecting to server.");
-    } finally {
-      setBulkDeleting(false);
-    }
-  };
 
   // Open edit modal
   const openEditModal = (mcq: MCQQuestion) => {
@@ -388,7 +314,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         const updated = payload.data.question;
         
         // Update lists
-        setMcqs((prev) => prev.map((q) => (q._id === updated._id ? updated : q)));
         setReports((prev) => prev.filter((r) => r.questionId?._id !== updated._id)); // remove report since it's edited and resolved
         
         setSuccessMessage(locale === "bn" ? "প্রশ্নটি সফলভাবে আপডেট করা হয়েছে।" : "Question updated successfully.");
@@ -429,10 +354,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
 
   const OPTION_BADGES = ["A", "B", "C", "D"];
 
-  const filteredMcqs = mcqs.filter((q) =>
-    q.question.toLowerCase().includes(chapterSearchQuery.toLowerCase())
-  );
-
   return (
     <section className="space-y-6">
       {/* Header */}
@@ -466,17 +387,19 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         <button
           type="button"
           onClick={() => {
-            setActiveTab("browse");
+            setActiveTab("upload");
             setErrorMessage("");
+            setUploadError("");
+            setUploadSuccess("");
           }}
           className={cn(
-            "px-4 py-2 text-sm font-bold border-b-2 transition-all",
-            activeTab === "browse"
+            "px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5",
+            activeTab === "upload"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-primary"
           )}
         >
-          {locale === "bn" ? "বিষয় ও অধ্যায় ব্রাউজ করুন" : "Browse Chapters"}
+          <span>{locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload MCQ"}</span>
         </button>
         <button
           type="button"
@@ -498,234 +421,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
             </span>
           )}
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("upload");
-            setErrorMessage("");
-            setUploadError("");
-            setUploadSuccess("");
-          }}
-          className={cn(
-            "px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5",
-            activeTab === "upload"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-primary"
-          )}
-        >
-          <span>{locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload MCQ"}</span>
-        </button>
       </div>
-
-      {/* --- TAB CONTENT: BROWSE --- */}
-      {activeTab === "browse" && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          {loadingSubjects ? (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm py-8 justify-center">
-              <Loader2 className="size-5 animate-spin" />
-              <span>Loading subject mapping...</span>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-3">
-              {/* Subject Sidebar */}
-              <div className="md:col-span-1 rounded-xl border border-border bg-card p-4 h-fit space-y-2">
-                <h3 className="text-xs font-bold text-accent uppercase tracking-wider px-1 mb-3">
-                  {locale === "bn" ? "আপনার বিষয়সমূহ" : "Your Subjects"}
-                </h3>
-                {subjects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground px-1">No subjects assigned.</p>
-                ) : (
-                  subjects.map((sub) => {
-                    const key = `${sub.level}-${sub.subject}`;
-                    const isExpanded = expandedSubject === key;
-                    return (
-                      <div key={key} className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExpandedSubject(isExpanded ? null : key);
-                            setExpandedChapter(null);
-                          }}
-                          className={cn(
-                            "w-full flex items-center justify-between text-left p-2 rounded-lg text-sm font-semibold transition hover:bg-secondary",
-                            isExpanded ? "bg-secondary text-primary" : "text-muted-foreground"
-                          )}
-                        >
-                          <span className="truncate">
-                            <span className="text-[10px] uppercase font-bold mr-1.5 px-1 py-0.5 rounded bg-primary/10 text-primary">
-                              {sub.level}
-                            </span>
-                            {sub.subject}
-                          </span>
-                          {isExpanded ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
-                        </button>
-
-                        {/* Chapters */}
-                        {isExpanded && (
-                          <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-border/60 ml-3">
-                            {sub.chapters.map((chap) => {
-                              const isChapSelected = expandedChapter === chap;
-                              return (
-                                <button
-                                  key={chap}
-                                  type="button"
-                                  onClick={() => {
-                                    setExpandedChapter(chap);
-                                    fetchChapterMcqs(sub.level, sub.subject, chap);
-                                  }}
-                                  className={cn(
-                                    "w-full text-left p-1.5 rounded text-xs font-medium transition block truncate",
-                                    isChapSelected
-                                      ? "bg-primary/5 text-primary font-bold border-l-2 border-primary pl-2.5"
-                                      : "text-muted-foreground hover:text-primary hover:bg-secondary/45"
-                                  )}
-                                >
-                                  {getTranslatedChapter(chap, locale)}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Questions Area */}
-              <div className="md:col-span-2 space-y-4">
-                {!expandedChapter ? (
-                  <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center text-muted-foreground text-sm">
-                    <BookOpen className="size-8 mx-auto mb-2 opacity-50" />
-                    <span>
-                      {locale === "bn" ? (
-                        <>
-                          প্রশ্ন দেখতে{" "}
-                          <span className="hidden md:inline">বামদিকের</span>
-                          <span className="inline md:hidden">উপরের</span>{" "}
-                          প্যানেল থেকে একটি অধ্যায় নির্বাচন করুন।
-                        </>
-                      ) : (
-                        <>
-                          Select a chapter from the{" "}
-                          <span className="hidden md:inline">left</span>
-                          <span className="inline md:hidden">top</span>{" "}
-                          panel to review questions.
-                        </>
-                      )}
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-[var(--shadow-sm)] flex items-center justify-between">
-                      <span className="text-sm font-bold text-primary truncate">
-                        {getTranslatedChapter(expandedChapter, locale)}
-                      </span>
-                      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                        {mcqs.length} {locale === "bn" ? "টি প্রশ্ন" : "Questions"}
-                      </span>
-                    </div>
-
-                    {loadingMcqs ? (
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
-                        <Loader2 className="size-6 animate-spin text-primary" />
-                        <span>Loading questions...</span>
-                      </div>
-                    ) : mcqs.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-                        {"No practice questions in this chapter yet."}
-                      </div>
-                    ) : (
-                      <>
-                        {/* Chapter MCQ local search bar */}
-                        <div className="relative">
-                          <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                          <input
-                            type="text"
-                            value={chapterSearchQuery}
-                            onChange={(e) => setChapterSearchQuery(e.target.value)}
-                            placeholder={locale === "bn" ? "এই অধ্যায়ের প্রশ্ন খুঁজুন..." : "Search within this chapter..."}
-                            className="w-full rounded-xl border border-border bg-card pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                          />
-                        </div>
-
-                        {filteredMcqs.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-                            {locale === "bn" ? "কোন প্রশ্ন পাওয়া যায়নি।" : "No questions match your search query."}
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {(() => {
-                              const deletableMcqs = filteredMcqs.filter((q) => q.isTeacherSet === true);
-                              return (
-                                <>
-                                  {deletableMcqs.length > 0 && (
-                                    <div className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
-                                      <div className="flex items-center gap-3">
-                                        <input
-                                          type="checkbox"
-                                          id="select-all-deletable"
-                                          checked={selectedIds.length === deletableMcqs.length && deletableMcqs.length > 0}
-                                          onChange={(e) => {
-                                            if (e.target.checked) {
-                                              setSelectedIds(deletableMcqs.map((q) => q._id));
-                                            } else {
-                                              setSelectedIds([]);
-                                            }
-                                          }}
-                                          className="rounded border-border text-primary focus:ring-primary size-4 cursor-pointer"
-                                        />
-                                        <label htmlFor="select-all-deletable" className="text-sm font-bold text-primary cursor-pointer select-none">
-                                          {locale === "bn" ? `সব নির্বাচন করুন (${deletableMcqs.length})` : `Select All My Questions (${deletableMcqs.length})`}
-                                        </label>
-                                      </div>
-                                      <Button
-                                        variant="outline"
-                                        onClick={handleBulkDelete}
-                                        disabled={selectedIds.length === 0 || bulkDeleting}
-                                        loading={bulkDeleting}
-                                        className="text-brand-red border-red-100 hover:bg-red-50 hover:text-brand-red rounded-xl font-bold py-2 px-5"
-                                      >
-                                        {locale === "bn" ? `নির্বাচিতগুলো মুছুন (${selectedIds.length})` : `Delete Selected (${selectedIds.length})`}
-                                      </Button>
-                                    </div>
-                                  )}
-
-                                  <div className="space-y-4">
-                                    {filteredMcqs.map((q, idx) => (
-                                      <MCQCard
-                                        key={q._id}
-                                        mcq={q}
-                                        index={idx}
-                                        onEdit={openEditModal}
-                                        onDelete={handleDeleteMcq}
-                                        OPTION_BADGES={OPTION_BADGES}
-                                        searchQuery={chapterSearchQuery}
-                                        selected={selectedIds.includes(q._id)}
-                                        onSelectChange={(id, checked) => {
-                                          if (checked) {
-                                            setSelectedIds((prev) => [...prev, id]);
-                                          } else {
-                                            setSelectedIds((prev) => prev.filter((item) => item !== id));
-                                          }
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* --- TAB CONTENT: REPORTS --- */}
       {activeTab === "reports" && (
@@ -1228,128 +924,4 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   );
 }
 
-type MCQCardProps = {
-  mcq: MCQQuestion;
-  index: number;
-  onEdit: (mcq: MCQQuestion) => void;
-  onDelete: (id: string) => void;
-  OPTION_BADGES: string[];
-  searchQuery?: string;
-  selected?: boolean;
-  onSelectChange?: (id: string, selected: boolean) => void;
-};
 
-function highlightText(text: string, search: string) {
-  if (!search.trim()) return <span>{text}</span>;
-
-  const escapedSearch = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-  const regex = new RegExp(`(${escapedSearch})`, "gi");
-  const parts = text.split(regex);
-
-  return (
-    <span>
-      {parts.map((part, i) =>
-        regex.test(part) ? (
-          <mark key={i} className="bg-yellow-200 text-yellow-900 px-0.5 rounded font-bold">
-            {part}
-          </mark>
-        ) : (
-          part
-        )
-      )}
-    </span>
-  );
-}
-
-function MCQCard({ mcq, index, onEdit, onDelete, OPTION_BADGES, searchQuery, selected, onSelectChange }: MCQCardProps) {
-  return (
-    <article className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] space-y-4">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          {mcq.isTeacherSet && onSelectChange && (
-            <input
-              type="checkbox"
-              checked={selected || false}
-              onChange={(e) => onSelectChange(mcq._id, e.target.checked)}
-              className="rounded border-border text-primary focus:ring-primary size-4 cursor-pointer mt-1 mr-1.5"
-            />
-          )}
-          <span className="grid size-6 place-items-center rounded bg-primary text-white text-[11px] font-bold shrink-0">
-            {index + 1}
-          </span>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-base font-bold text-foreground pt-0.5 leading-snug">
-                {highlightText(mcq.question, searchQuery || "")}
-              </h4>
-              {mcq.isTeacherSet && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
-                  Teacher-Set
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => onEdit(mcq)}
-            className="p-1.5 rounded-lg border border-border text-muted-foreground hover:bg-secondary hover:text-primary transition"
-            title="Edit question"
-          >
-            <Edit className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(mcq._id)}
-            className="p-1.5 rounded-lg border border-red-100 text-muted-foreground hover:bg-red-50 hover:text-brand-red hover:border-brand-red/30 transition"
-            title="Delete question"
-          >
-            <Trash2 className="size-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Image illustration */}
-      {mcq.imageUrl && (
-        <img
-          src={mcq.imageUrl}
-          alt="Illustration"
-          className="max-w-full max-h-48 rounded object-contain border border-border/60 bg-muted/20"
-        />
-      )}
-
-      {/* Options grid */}
-      <div className="grid gap-2 sm:grid-cols-2">
-        {mcq.options.map((opt, oIdx) => {
-          const isCorrect = oIdx === mcq.correctIndex;
-          return (
-            <div
-              key={oIdx}
-              className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
-                isCorrect
-                  ? "border-emerald-300 bg-emerald-50/50 text-emerald-800 font-bold"
-                  : "border-border text-muted-foreground bg-secondary/10"
-              )}
-            >
-              <span className="size-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                {OPTION_BADGES[oIdx]}
-              </span>
-              <span>{opt}</span>
-              {isCorrect && <Check className="size-4 shrink-0 ml-auto text-emerald-700" />}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Explanation */}
-      {mcq.explanation && (
-        <div className="border-t border-border pt-2 text-xs text-muted-foreground">
-          <strong className="font-semibold">Explanation:</strong> {mcq.explanation}
-        </div>
-      )}
-    </article>
-  );
-}
