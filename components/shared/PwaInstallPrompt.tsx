@@ -32,6 +32,7 @@ export function PwaInstallPrompt() {
   const [isInAppBrowser, setIsInAppBrowser] = React.useState(false);
   const [isFbPromptVisible, setIsFbPromptVisible] = React.useState(false);
   const [isIos, setIsIos] = React.useState(false);
+  const [isFirefoxAndroid, setIsFirefoxAndroid] = React.useState(false);
 
   // Localized texts
   const t = {
@@ -39,6 +40,12 @@ export function PwaInstallPrompt() {
     desc: isBengali
       ? "দ্রুত MCQ পরীক্ষা ও ক্লাসের আপডেট পেতে আমাদের অফিশিয়াল অ্যাপটি ইনস্টল করুন।"
       : "Install Al-Biruni Study Point on your device for instant access, classes, and study alerts.",
+    iosInstallDesc: isBengali
+      ? "অ্যাপটি ইনস্টল করতে শেয়ার বাটন চেপে 'Add to Home Screen' (বা হোম স্ক্রিনে যোগ করুন) সিলেক্ট করুন।"
+      : "To install the app, tap the Share button and select 'Add to Home Screen'.",
+    firefoxInstallDesc: isBengali
+      ? "অ্যাপটি ইনস্টল করতে ৩-ডট মেনু চেপে 'Install' (বা হোম স্ক্রিনে যোগ করুন) সিলেক্ট করুন।"
+      : "To install the app, tap the 3-dot menu and select 'Install' or 'Add to Home Screen'.",
     installBtn: isBengali ? "ইনস্টল করুন" : "Install App",
     dismissBtn: isBengali ? "পরে" : "Later",
     notifTitle: isBengali ? "নোটিফিকেশন চালু করুন" : "Enable Alerts",
@@ -48,12 +55,12 @@ export function PwaInstallPrompt() {
     allowNotif: isBengali ? "চালু করুন" : "Enable Notifications",
     inAppTitle: isBengali ? "ব্রাউজারে ওপেন করুন" : "Open in Default Browser",
     inAppDescAndroid: isBengali
-      ? "সম্পূর্ণ ফিচার, ইনস্টলেশন ও নোটিফিকেশন পেতে অ্যাপটি ক্রোম ব্রাউজারে ওপেন করুন।"
-      : "Open this page in Google Chrome to install the app and enable alerts.",
+      ? "সম্পূর্ণ ফিচার, ইনস্টলেশন ও নোটিফিকেশন পেতে অ্যাপটি আপনার ডিফল্ট ব্রাউজারে (যেমন ক্রোম, এজ, ফায়ারফক্স) ওপেন করুন।"
+      : "Open this page in your default browser (like Chrome, Edge, Firefox) to install the app and enable alerts.",
     inAppDescIos: isBengali
       ? "অ্যাপটি ইনস্টল করতে নিচের শেয়ার বা ৩-ডট আইকন চেপে 'Open in Safari' সিলেক্ট করুন।"
       : "To install the app, tap the share or '...' button and select 'Open in Safari'.",
-    openChromeBtn: isBengali ? "ক্রোমে ওপেন করুন" : "Open in Chrome",
+    openBrowserBtn: isBengali ? "ব্রাউজারে ওপেন করুন" : "Open in Browser",
   };
 
   React.useEffect(() => {
@@ -73,7 +80,12 @@ export function PwaInstallPrompt() {
     const iosDevice = /iPhone|iPad|iPod/i.test(ua);
     setIsIos(iosDevice);
 
-    if (isFb) {
+    // Detect Android Firefox
+    const firefoxAndroid = /Android/i.test(ua) && /Firefox/i.test(ua);
+    setIsFirefoxAndroid(firefoxAndroid);
+
+    const fbDismissed = sessionStorage.getItem("absp_pwa_fb_dismissed");
+    if (isFb && !fbDismissed) {
       setIsFbPromptVisible(true);
     }
 
@@ -90,6 +102,13 @@ export function PwaInstallPrompt() {
       (window.navigator as any).standalone ||
       document.referrer.includes("android-app://");
     setIsStandalone(isPwa);
+
+    // If it's iOS or Firefox on Android, and not running in standalone mode,
+    // we can show the manual installation guide if not dismissed in this session.
+    const dismissed = sessionStorage.getItem("absp_pwa_dismissed");
+    if ((iosDevice || firefoxAndroid) && !isPwa && !dismissed) {
+      setIsVisible(true);
+    }
 
     // Track standalone launch
     if (isPwa) {
@@ -127,7 +146,12 @@ export function PwaInstallPrompt() {
       e.preventDefault();
       // Stash the event so it can be triggered later.
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsVisible(true);
+      
+      // Only show if not dismissed in this session
+      const dismissedPrompt = sessionStorage.getItem("absp_pwa_dismissed");
+      if (!dismissedPrompt) {
+        setIsVisible(true);
+      }
     };
 
     // 5. Listen for appinstalled event
@@ -178,10 +202,12 @@ export function PwaInstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
+    sessionStorage.setItem("absp_pwa_dismissed", "true");
   };
 
   const handleDismissFb = () => {
     setIsFbPromptVisible(false);
+    sessionStorage.setItem("absp_pwa_fb_dismissed", "true");
   };
 
   const subscribeToPushNotifications = async () => {
@@ -271,11 +297,11 @@ export function PwaInstallPrompt() {
       return null;
     }
 
-    // Generate Chrome intent link for Android
-    let chromeIntentUrl = "";
+    // Generate default browser intent link for Android
+    let defaultBrowserIntentUrl = "";
     if (!isIos && typeof window !== "undefined") {
       const urlWithoutProtocol = window.location.host + window.location.pathname + window.location.search;
-      chromeIntentUrl = `intent://${urlWithoutProtocol}#Intent;scheme=https;package=com.android.chrome;end`;
+      defaultBrowserIntentUrl = `intent://${urlWithoutProtocol}#Intent;scheme=https;end`;
     }
 
     return (
@@ -306,10 +332,10 @@ export function PwaInstallPrompt() {
               <Button variant="ghost" size="sm" onClick={handleDismissFb}>
                 {t.dismissBtn}
               </Button>
-              <a href={chromeIntentUrl}>
+              <a href={defaultBrowserIntentUrl}>
                 <Button variant="accent" size="sm" className="gap-1.5">
                   <ExternalLink className="size-4" />
-                  {t.openChromeBtn}
+                  {t.openBrowserBtn}
                 </Button>
               </a>
             </div>
@@ -325,9 +351,9 @@ export function PwaInstallPrompt() {
   }
 
   // Determine what type of prompt to show
-  // If not installed and PWA prompt is ready, show installation prompt
+  // If not installed and PWA prompt is ready or we are on iOS/Firefox Android, show installation prompt
   // Else if installed but notification permission is still default, show request notification banner
-  const showInstall = isVisible && deferredPrompt;
+  const showInstall = isVisible && (deferredPrompt || isIos || isFirefoxAndroid);
   const showNotificationRequest = isStandalone && notificationPermission === "default" && !checking && user?.role !== "teacher";
 
   if (!showInstall && !showNotificationRequest) {
@@ -345,7 +371,13 @@ export function PwaInstallPrompt() {
               </div>
               <div>
                 <h3 className="font-semibold text-primary">{t.title}</h3>
-                <p className="mt-1 text-xs text-muted leading-relaxed">{t.desc}</p>
+                <p className="mt-1 text-xs text-muted leading-relaxed">
+                  {deferredPrompt
+                    ? t.desc
+                    : isIos
+                    ? t.iosInstallDesc
+                    : t.firefoxInstallDesc}
+                </p>
               </div>
             </div>
             <button
@@ -360,10 +392,16 @@ export function PwaInstallPrompt() {
             <Button variant="ghost" size="sm" onClick={handleDismiss}>
               {t.dismissBtn}
             </Button>
-            <Button variant="accent" size="sm" className="gap-1.5" onClick={handleInstallClick}>
-              <Download className="size-4" />
-              {t.installBtn}
-            </Button>
+            {deferredPrompt ? (
+              <Button variant="accent" size="sm" className="gap-1.5" onClick={handleInstallClick}>
+                <Download className="size-4" />
+                {t.installBtn}
+              </Button>
+            ) : (
+              <Button variant="accent" size="sm" onClick={handleDismiss}>
+                {isBengali ? "বুঝতে পেরেছি" : "Got it"}
+              </Button>
+            )}
           </div>
         </div>
       ) : (
