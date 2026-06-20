@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import mongoose from "mongoose";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
@@ -61,12 +62,11 @@ export async function GET(request: NextRequest) {
     };
 
     if (scope === "my-uploaded") {
-      query.isTeacherSet = true;
-      query.createdBy = user._id;
+      query.createdBy = new mongoose.Types.ObjectId(String(user._id));
     } else {
       query.$or = [
         { isTeacherSet: { $ne: true } },
-        { isTeacherSet: true, createdBy: user._id }
+        { isTeacherSet: true, createdBy: new mongoose.Types.ObjectId(String(user._id)) }
       ];
     }
 

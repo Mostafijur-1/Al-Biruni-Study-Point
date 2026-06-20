@@ -246,6 +246,12 @@ Crucial Rules:
 2. Ensure the correct option is correctly determined based on standard physics/chemistry/math/ICT knowledge.
 3. The options array must contain exactly 4 options. If the source material has fewer, generate plausible options to make it 4. If more, select the 4 most relevant.
 4. Return ONLY a valid JSON array. Do not include markdown wraps like \`\`\`json. Do not include any introductory or concluding text.
+5. Do NOT use raw LaTeX math formatting or symbols such as '$', '^', '\\times', '\\cdot', etc. If any input MCQ contains these, correct them to clean text/string formats:
+   - Never use '$' as math delimiters; instead write clean plain text (e.g. '$25$' becomes '২৫').
+   - For powers/exponents, use actual Unicode superscript characters (e.g., ², ³, ⁴, ⁿ, ˣ, ʸ) instead of '^' or '^{...}'. For example, write 'x²' instead of 'x^2' or 'x^{2}', and '10⁵' instead of '10^5'.
+   - For multiplication, use the standard multiplication symbol '×' instead of '\\times', '*' or 'times'.
+   - For permutation/combination notation (like ^4P_4 or ^4C_4), format them cleanly using Unicode superscripts and subscripts (e.g., ⁴P₄ or ⁴C₄) or write them in standard plain text.
+   - Convert all raw math markup signs/code into clean, readable Bengali text or standard Unicode mathematical representation without raw LaTeX tags or symbols.
 `;
 
     let parts = [
