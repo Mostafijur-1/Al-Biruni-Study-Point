@@ -10,10 +10,23 @@ import { User } from "@/lib/db/models/User";
 import { AppInstall } from "@/lib/db/models/AppInstall";
 import { getTeacherMonthlyUsage } from "@/lib/teacher-charges";
 
+function getTodayRangeBD() {
+  const now = new Date();
+  const bdNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  const startOfTodayBD = new Date(
+    Date.UTC(bdNow.getUTCFullYear(), bdNow.getUTCMonth(), bdNow.getUTCDate(), 0, 0, 0, 0),
+  );
+  const start = new Date(startOfTodayBD.getTime() - 6 * 60 * 60 * 1000);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+  return { start, end };
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireAuth(request, ["admin"]);
     await connectDB();
+    const todayRange = getTodayRangeBD();
 
     const [
       studentsTotal,
@@ -28,6 +41,8 @@ export async function GET(request: NextRequest) {
       practiceQuestionsHSC,
       practiceAttemptsTotal,
       practiceAttemptsPassed,
+      practiceAttemptsToday,
+      practiceAttemptsPassedToday,
       uniqueDevicesCount,
       teachers,
     ] = await Promise.all([
@@ -43,6 +58,13 @@ export async function GET(request: NextRequest) {
       PracticeQuestion.countDocuments({ level: "hsc" }),
       PracticeAttempt.countDocuments(),
       PracticeAttempt.countDocuments({ isPassed: true }),
+      PracticeAttempt.countDocuments({
+        createdAt: { $gte: todayRange.start, $lte: todayRange.end },
+      }),
+      PracticeAttempt.countDocuments({
+        isPassed: true,
+        createdAt: { $gte: todayRange.start, $lte: todayRange.end },
+      }),
       AppInstall.aggregate([
         { $group: { _id: "$deviceId" } },
         { $count: "count" },
@@ -89,6 +111,8 @@ export async function GET(request: NextRequest) {
         practiceQuestionsHSC,
         practiceAttemptsTotal,
         practiceAttemptsPassed,
+        practiceAttemptsToday,
+        practiceAttemptsPassedToday,
         appInstallsTotal,
         teacherChargesTotalTk,
         teacherCharges,

@@ -23,6 +23,8 @@ type OverviewStats = {
   practiceQuestionsHSC: number;
   practiceAttemptsTotal: number;
   practiceAttemptsPassed: number;
+  practiceAttemptsToday: number;
+  practiceAttemptsPassedToday: number;
   appInstallsTotal?: number;
   teacherChargesTotalTk: number;
   teacherCharges: {
@@ -65,6 +67,36 @@ function StatCard({
       <p className="text-xs font-bold uppercase tracking-widest text-accent">{label}</p>
       <p className="mt-2 text-3xl font-bold text-primary">{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+    </div>
+  );
+}
+
+function PracticeAttemptsCard({
+  today,
+  todayPassed,
+  total,
+  totalPassed,
+}: {
+  today: number;
+  todayPassed: number;
+  total: number;
+  totalPassed: number;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:col-span-2 lg:col-span-3">
+      <p className="text-xs font-bold uppercase tracking-widest text-accent">Practice attempts</p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div className="border-b border-border pb-4 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-4">
+          <p className="text-sm font-semibold text-muted">Today</p>
+          <p className="mt-1 text-3xl font-bold text-primary">{today}</p>
+          <p className="mt-1 text-xs text-muted">{todayPassed} passed today</p>
+        </div>
+        <div className="sm:pl-1">
+          <p className="text-sm font-semibold text-muted">All</p>
+          <p className="mt-1 text-3xl font-bold text-primary">{total}</p>
+          <p className="mt-1 text-xs text-muted">{totalPassed} passed total</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -141,10 +173,11 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
               value={stats.practiceQuestionsTotal}
               hint={`SSC: ${stats.practiceQuestionsSSC} · HSC: ${stats.practiceQuestionsHSC}`}
             />
-            <StatCard
-              label={"Practice attempts"}
-              value={stats.practiceAttemptsTotal}
-              hint={`${stats.practiceAttemptsPassed} ${"passed"}`}
+            <PracticeAttemptsCard
+              today={stats.practiceAttemptsToday}
+              todayPassed={stats.practiceAttemptsPassedToday}
+              total={stats.practiceAttemptsTotal}
+              totalPassed={stats.practiceAttemptsPassed}
             />
             <StatCard
               label={locale === "bn" ? "অ্যাপ ইনস্টল" : "App Installs"}
