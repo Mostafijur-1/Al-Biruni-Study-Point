@@ -181,13 +181,17 @@ Crucial Rules:
      - Question 2: "উদ্দীপক: A ও B মৌলের পারমাণবিক সংখ্যা যথাক্রমে ৭ ও ১৫।\nB মৌলের অক্সাইডের অম্লধর্মিতা কেমন?"
    - CRITICAL: Both questions must contain the common stimulus (উদ্দীপক) separately inside their \`question\` fields. Never only include the stimulus in the first question and leave the second question without it. Each question in our database is stored separately, so they must be completely self-contained with their context.
    - STRIP QUESTION NUMBER REFERENCES: You MUST strip/exclude meta-instruction helper sentences that reference specific question numbers (e.g., "উদ্দীপকের আলোকে ১৪ ও ১৫ নং প্রশ্নের উত্তর দাও:" or "উদ্দীপকের আলোকে নিচের ১৪ ও ১৫ নং প্রশ্নের উত্তর দাও:"). Do NOT write this part in front of the extracted questions, as it is only an instruction linking the shared stimulus to those question numbers.
-8. Handle Questions with Diagrams/Figures/Tables/Charts:
+8. Strip Exam Board / Year References:
+   - Remove source citation fragments from the question text, especially parenthesized board/year references such as "(দা. বো. '১৩, সি. বো. '১০)", "(ঢা. বো. ২০১৯)", "(Rajshahi Board 2020)", or similar exam board abbreviations and years.
+   - These citations are metadata, not part of the actual MCQ. Do NOT include them in the \`question\`, \`options\`, or \`explanation\` fields.
+   - Example: "K₂O₂ যৌগে অক্সিজেনের জারণ সংখ্যা কত? (দা. বো. '১৩, সি. বো. '১০)" must become "K₂O₂ যৌগে অক্সিজেনের জারণ সংখ্যা কত?"
+9. Handle Questions with Diagrams/Figures/Tables/Charts:
    - Some input questions from images or text may refer to a diagram, circuit, graph, chart, table, or molecular structure.
    - If a question relies on a diagram, graph, chart, table, or figure:
      1. If the diagram, table, or chart can be clearly and accurately described/represented in text (such as a table formatted as a markdown table or text grid, simple chemical reactions, a simple flowchart, a list of values, or a straightforward logic gate representation), represent/express it in Bengali text and prepend it to the \`question\` field of EACH related question.
      2. If the diagram, table, graph, or chart is complex and CANNOT be clearly or fully represented in words/text (such as a complex physics circuit diagram, an intricate geometry figure, a complex chart, or a detailed organic reaction mechanism tree), you MUST skip/ignore all questions referring to this diagram/table/chart entirely. Do not include them in the parsed JSON array.
 
-9. Keep Explanations Concise and Actionable (explanation):
+10. Keep Explanations Concise and Actionable (explanation):
    - Keep the extracted \`explanation\` short and straight to the point (no unnecessary fluff or long paragraphs).
    - If a mathematical, logical, or scientific shortcut/tip/trick is possible to solve the question quickly in exams, prioritize providing that shortcut as the explanation (e.g., "শর্টকাট: সূত্র...").
    - If no shortcut exists, provide a simple, brief general explanation.
