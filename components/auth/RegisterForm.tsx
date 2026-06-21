@@ -123,8 +123,8 @@ function StudentRegisterForm({
     ? (locale === "bn" ? "স্কুল" : "School")
     : (locale === "bn" ? "কলেজ" : "College");
   const schoolCollegePlaceholder = isSchool
-    ? ("ABC School and College")
-    : ("ABC School and College");
+    ? ("তোমার স্কুলের নাম লিখো")
+    : ("তোমার কলেজের নাম লিখো");
 
   async function onSubmit(values: StudentRegisterFormInput & { returnUrl?: string }) {
     setMessage(null);
@@ -179,7 +179,7 @@ function StudentRegisterForm({
             <Input
               id="name"
               {...register("name")}
-              placeholder="Abdur Rahman"
+              placeholder="তোমার নাম লিখো"
             />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
@@ -188,7 +188,7 @@ function StudentRegisterForm({
             <Input
               id="phone"
               {...register("phone")}
-              placeholder="015816#####"
+              placeholder="তোমার ফোন নম্বর লিখো"
             />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
@@ -211,7 +211,7 @@ function StudentRegisterForm({
               type="password"
               {...register("password")}
               autoComplete="new-password"
-              placeholder={locale === "bn" ? "কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড" : "At least 8 characters"}
+              placeholder={locale === "bn" ? "কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দাও" : "At least 8 characters"}
             />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
@@ -233,7 +233,7 @@ function StudentRegisterForm({
             <Input
               id="reference"
               {...register("reference")}
-              placeholder= "Anisur Rahman"
+              placeholder= "যদি না থাকে, খালি রাখো"
             />
             {errors.reference && <p className="text-sm text-destructive">{errors.reference.message}</p>}
           </div>
