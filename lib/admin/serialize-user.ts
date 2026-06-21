@@ -1,4 +1,5 @@
 import type { IUser } from "@/lib/db/models/User";
+import { getTeacherMonthlyUsage } from "@/lib/teacher-charges";
 
 export function serializeAdminUser(user: IUser | Record<string, unknown>) {
   const doc = user as IUser;
@@ -14,6 +15,7 @@ export function serializeAdminUser(user: IUser | Record<string, unknown>) {
     isActive: doc.isActive,
     approvalStatus: doc.approvalStatus,
     reference: doc.reference,
+    teacherUsage: doc.role === "teacher" ? getTeacherMonthlyUsage(doc.teacherUsage) : undefined,
     teacherDomain: doc.teacherDomain
       ? {
           isAll: !!doc.teacherDomain.isAll,

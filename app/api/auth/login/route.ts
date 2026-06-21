@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { serializeUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
+import { isTeacherChargeExpired } from "@/lib/teacher-charges";
 import { loginSchema, normalizePhone } from "@/lib/validations/auth.schema";
 
 export async function POST(request: NextRequest) {
@@ -31,6 +32,11 @@ export async function POST(request: NextRequest) {
 
     if (!isPasswordValid) {
       return fail("Invalid phone/email or password.", 401);
+    }
+
+    if (user.role === "teacher" && user.isActive && isTeacherChargeExpired(user.teacherUsage)) {
+      user.isActive = false;
+      await user.save();
     }
 
     if (!user.isActive) {

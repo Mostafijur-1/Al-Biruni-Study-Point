@@ -5,6 +5,7 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
+import { deactivateExpiredTeacherCharges } from "@/lib/teacher-charges";
 import type { UserRole } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -18,6 +19,10 @@ export async function GET(request: NextRequest) {
 
     if (role !== "student" && role !== "teacher") {
       return fail("role must be student or teacher.", 400);
+    }
+
+    if (role === "teacher") {
+      await deactivateExpiredTeacherCharges();
     }
 
     const query: any = { role };

@@ -3,6 +3,7 @@ import { ACCESS_COOKIE } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/connect";
+import { getTeacherMonthlyUsage, isTeacherChargeExpired } from "@/lib/teacher-charges";
 import type { NextRequest } from "next/server";
 
 export class AuthError extends Error {
@@ -26,7 +27,16 @@ export function serializeUser(user: {
   approvalStatus?: string;
   schoolCollege?: string;
   reference?: string;
+  teacherUsage?: {
+    imageQuestionUploadMonth?: string;
+    imageQuestionUploadCount?: number;
+    chargeCycleStartedAt?: Date | string;
+    chargeDueAt?: Date | string;
+    lastChargeRefreshedAt?: Date | string;
+  };
 }) {
+  const teacherUsage = user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined;
+
   return {
     id: String(user._id),
     name: user.name,
@@ -38,6 +48,7 @@ export function serializeUser(user: {
     approvalStatus: user.approvalStatus,
     schoolCollege: user.schoolCollege,
     reference: user.reference,
+    teacherUsage,
   };
 }
 
@@ -66,6 +77,11 @@ export async function requireAuth(
   await connectDB();
   const user = await User.findById(payload.userId);
 
+  if (user?.role === "teacher" && user.isActive && isTeacherChargeExpired(user.teacherUsage)) {
+    user.isActive = false;
+    await user.save();
+  }
+
   if (!user || !user.isActive) {
     throw new AuthError("Account is not active.");
   }
@@ -83,5 +99,6 @@ export async function requireAuth(
     studentClass: user.studentClass,
     schoolCollege: user.schoolCollege,
     reference: user.reference,
+    teacherUsage: user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined,
   } satisfies SessionUser;
 }

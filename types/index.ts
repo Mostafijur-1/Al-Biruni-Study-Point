@@ -13,6 +13,15 @@ export type SessionUser = {
   studentClass?: StudentClass;
   schoolCollege?: string;
   reference?: string;
+  teacherUsage?: {
+    imageQuestionUploadMonth: string;
+    imageQuestionUploadCount: number;
+    monthlyChargeTk: number;
+    chargeCycleStartedAt?: string;
+    chargeDueAt?: string;
+    lastChargeRefreshedAt?: string;
+    isChargeExpired?: boolean;
+  };
 };
 
 export type CourseLevel = "SSC" | "HSC";

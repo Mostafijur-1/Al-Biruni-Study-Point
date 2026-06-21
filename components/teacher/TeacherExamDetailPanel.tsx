@@ -16,6 +16,7 @@ import {
   Trash2,
   Upload,
   Users,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,8 @@ type TeacherExamDetailPanelProps = {
   examId: string;
 };
 
+const MAX_IMAGE_UPLOADS = 3;
+
 export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPanelProps) {
   const path = createLocalizedPath(locale as Locale);
 
@@ -67,7 +70,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
   const [activeTab, setActiveTab] = useState<"questions" | "upload" | "database" | "results">("questions");
   const [contentType, setContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
@@ -295,8 +298,12 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
       setUploadError(locale === "bn" ? "টেক্সট পেস্ট করুন।" : "Please paste some text.");
       return;
     }
-    if (contentType !== "text" && !selectedFile) {
-      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select a file.");
+    if (contentType !== "text" && selectedFiles.length === 0) {
+      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select at least one image.");
+      return;
+    }
+    if (contentType !== "text" && selectedFiles.length > MAX_IMAGE_UPLOADS) {
+      setUploadError(`You can upload a maximum of ${MAX_IMAGE_UPLOADS} images at a time.`);
       return;
     }
 
@@ -308,7 +315,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
       if (contentType === "text") {
         formData.append("text", pastedText);
       } else {
-        formData.append("file", selectedFile as Blob);
+        selectedFiles.forEach((file) => formData.append("files", file));
       }
 
       const response = await fetch(`/api/teacher/exams/${examId}/questions`, {
@@ -326,7 +333,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
         );
         setParsedPreview(payload.data.questions);
         setPastedText("");
-        setSelectedFile(null);
+        setSelectedFiles([]);
         // Refresh question list
         await fetchExamDetails();
       } else {
@@ -520,14 +527,14 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
               <div className="flex flex-wrap gap-1.5 bg-secondary/60 p-1 rounded-xl w-full sm:w-fit">
                 <button
                   type="button"
-                  onClick={() => { setContentType("text"); setSelectedFile(null); }}
+                  onClick={() => { setContentType("text"); setSelectedFiles([]); }}
                   className={cn("flex-1 sm:flex-initial rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap", contentType === "text" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                 >
                   Paste Text
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setContentType("image"); setSelectedFile(null); }}
+                  onClick={() => { setContentType("image"); setSelectedFiles([]); }}
                   className={cn("flex-1 sm:flex-initial rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap", contentType === "image" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                 >
                   Upload Image
@@ -562,7 +569,17 @@ d) 9"
                     id="exam-file-input"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    multiple
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.files || []);
+                      const limited = selected.slice(0, MAX_IMAGE_UPLOADS);
+                      setSelectedFiles(limited);
+                      setUploadError(
+                        selected.length > MAX_IMAGE_UPLOADS
+                          ? `Only the first ${MAX_IMAGE_UPLOADS} images were selected.`
+                          : "",
+                      );
+                    }}
                     className="hidden"
                   />
                   <button
@@ -571,14 +588,42 @@ d) 9"
                     className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3 py-2 text-xs font-bold text-muted hover:border-primary/30 hover:bg-secondary/40 transition cursor-pointer"
                   >
                     <Upload className="size-4" />
-                    {selectedFile ? selectedFile.name : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose File"}
+                    {selectedFiles.length > 0
+                      ? `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} selected`
+                      : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose Images"}
                   </button>
-                  {selectedFile && (
+                  {selectedFiles.length > 0 && (
                     <span className="text-2xs text-muted font-bold font-sans">
-                      {Math.round(selectedFile.size / 1024)} KB
+                      Max {MAX_IMAGE_UPLOADS} images
                     </span>
                   )}
                 </div>
+                {selectedFiles.length > 0 && (
+                  <ul className="space-y-1 text-[11px] font-semibold text-muted">
+                    {selectedFiles.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.size}`}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
+                      >
+                        <span className="min-w-0 break-all">
+                          {file.name} ({Math.round(file.size / 1024)} KB)
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${file.name}`}
+                          onClick={() => {
+                            setSelectedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                            const input = document.getElementById("exam-file-input") as HTMLInputElement | null;
+                            if (input) input.value = "";
+                          }}
+                          className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 

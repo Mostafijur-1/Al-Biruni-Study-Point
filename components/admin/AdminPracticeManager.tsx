@@ -68,6 +68,7 @@ const HSC_SUBJECTS: CourseSubject[] = [
 ];
 
 const OPTION_BADGES = ["A", "B", "C", "D"];
+const MAX_IMAGE_UPLOADS = 3;
 
 export function AdminPracticeManager({ locale }: { locale: Locale }) {
   // Config states
@@ -83,7 +84,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
   // Content upload states
   const [contentType, setContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Status/Response states
   const [submitting, setSubmitting] = useState(false);
@@ -449,10 +450,14 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
       return;
     }
 
-    if (contentType !== "text" && !selectedFile) {
+    if (contentType !== "text" && selectedFiles.length === 0) {
       setErrorMessage(
-        locale === "bn" ? "অনুগ্রহ করে একটি ফাইল নির্বাচন করুন।" : "Please select a file to upload."
+        locale === "bn" ? "অনুগ্রহ করে একটি ফাইল নির্বাচন করুন।" : "Please select at least one image to upload."
       );
+      return;
+    }
+    if (contentType !== "text" && selectedFiles.length > MAX_IMAGE_UPLOADS) {
+      setErrorMessage(`You can upload a maximum of ${MAX_IMAGE_UPLOADS} images at a time.`);
       return;
     }
 
@@ -468,7 +473,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
       if (contentType === "text") {
         formData.append("text", pastedText);
       } else {
-        formData.append("file", selectedFile as Blob);
+        selectedFiles.forEach((file) => formData.append("files", file));
       }
 
       const response = await fetch("/api/admin/practice-mcqs/upload", {
@@ -487,7 +492,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
       setSuccessData(payload.data);
       setPastedText("");
-      setSelectedFile(null);
+      setSelectedFiles([]);
     } catch {
       setErrorMessage(
         locale === "bn"
@@ -732,7 +737,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setContentType("text")}
+                  onClick={() => { setContentType("text"); setSelectedFiles([]); }}
                   className={cn(
                     "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
                     contentType === "text"
@@ -746,7 +751,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
                 <button
                   type="button"
-                  onClick={() => setContentType("image")}
+                  onClick={() => { setContentType("image"); setSelectedFiles([]); }}
                   className={cn(
                     "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
                     contentType === "image"
@@ -789,7 +794,17 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                     id="file-input"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    multiple
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.files || []);
+                      const limited = selected.slice(0, MAX_IMAGE_UPLOADS);
+                      setSelectedFiles(limited);
+                      setErrorMessage(
+                        selected.length > MAX_IMAGE_UPLOADS
+                          ? `Only the first ${MAX_IMAGE_UPLOADS} images were selected.`
+                          : "",
+                      );
+                    }}
                     className="hidden"
                   />
                   <button
@@ -798,14 +813,42 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                     className="flex items-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-3 text-sm font-semibold text-muted hover:border-primary/30 hover:bg-secondary/40 transition"
                   >
                     <Upload className="size-4" />
-                    {selectedFile ? selectedFile.name : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose File"}
+                    {selectedFiles.length > 0
+                      ? `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} selected`
+                      : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose Images"}
                   </button>
-                  {selectedFile && (
+                  {selectedFiles.length > 0 && (
                     <span className="text-xs text-muted">
-                      {Math.round(selectedFile.size / 1024)} KB
+                      Max {MAX_IMAGE_UPLOADS} images
                     </span>
                   )}
                 </div>
+                {selectedFiles.length > 0 && (
+                  <ul className="space-y-1 text-[11px] font-semibold text-muted">
+                    {selectedFiles.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.size}`}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
+                      >
+                        <span className="min-w-0 break-all">
+                          {file.name} ({Math.round(file.size / 1024)} KB)
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${file.name}`}
+                          onClick={() => {
+                            setSelectedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                            const input = document.getElementById("file-input") as HTMLInputElement | null;
+                            if (input) input.value = "";
+                          }}
+                          className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 

@@ -58,6 +58,8 @@ type TeacherMcqReviewProps = {
   locale: string;
 };
 
+const MAX_IMAGE_UPLOADS = 3;
+
 export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "reports" | "uploaded">("upload");
 
@@ -68,7 +70,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   const [availableChaptersForUpload, setAvailableChaptersForUpload] = useState<string[]>([]);
   const [uploadContentType, setUploadContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
-  const [singleUploadFile, setSingleUploadFile] = useState<File | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -146,8 +147,12 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       setUploadError(locale === "bn" ? "টেক্সট পেস্ট করুন।" : "Please paste some text.");
       return;
     }
-    if (uploadContentType === "image" && !singleUploadFile) {
-      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select a file.");
+    if (uploadContentType === "image" && uploadFiles.length === 0) {
+      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select at least one image.");
+      return;
+    }
+    if (uploadContentType === "image" && uploadFiles.length > MAX_IMAGE_UPLOADS) {
+      setUploadError(`You can upload a maximum of ${MAX_IMAGE_UPLOADS} images at a time.`);
       return;
     }
 
@@ -165,7 +170,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       if (uploadContentType === "text") {
         formData.append("text", pastedText);
       } else {
-        formData.append("file", singleUploadFile as Blob);
+        uploadFiles.forEach((file) => formData.append("files", file));
       }
 
       const response = await fetch("/api/teacher/mcqs/upload", {
@@ -184,7 +189,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         }
         setUploadSuccess(msg);
         setUploadFiles([]);
-        setSingleUploadFile(null);
         setPastedText("");
       } else {
         setUploadError(
@@ -990,14 +994,14 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 <div className="flex flex-wrap gap-2 bg-secondary/60 p-1 rounded-xl w-fit">
                   <button
                     type="button"
-                    onClick={() => { setUploadContentType("text"); setUploadFiles([]); setSingleUploadFile(null); }}
+                    onClick={() => { setUploadContentType("text"); setUploadFiles([]); }}
                     className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "text" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                   >
                     Paste Text
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setUploadContentType("image"); setUploadFiles([]); setSingleUploadFile(null); }}
+                    onClick={() => { setUploadContentType("image"); setUploadFiles([]); }}
                     className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "image" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                   >
                     Upload Image
@@ -1031,7 +1035,17 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                       id="mcq-single-file-input"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setSingleUploadFile(e.target.files?.[0] || null)}
+                      multiple
+                      onChange={(e) => {
+                        const selected = Array.from(e.target.files || []);
+                        const limited = selected.slice(0, MAX_IMAGE_UPLOADS);
+                        setUploadFiles(limited);
+                        setUploadError(
+                          selected.length > MAX_IMAGE_UPLOADS
+                            ? `Only the first ${MAX_IMAGE_UPLOADS} images were selected.`
+                            : "",
+                        );
+                      }}
                       className="hidden"
                     />
                     <button
@@ -1040,14 +1054,42 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                       className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3 py-2 text-xs font-bold text-muted hover:border-primary/30 hover:bg-secondary/40 transition cursor-pointer"
                     >
                       <Upload className="size-4" />
-                      {singleUploadFile ? singleUploadFile.name : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose File"}
+                      {uploadFiles.length > 0
+                        ? `${uploadFiles.length} image${uploadFiles.length > 1 ? "s" : ""} selected`
+                        : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose Images"}
                     </button>
-                    {singleUploadFile && (
+                    {uploadFiles.length > 0 && (
                       <span className="text-2xs text-muted font-bold font-sans">
-                        {Math.round(singleUploadFile.size / 1024)} KB
+                        Max {MAX_IMAGE_UPLOADS} images
                       </span>
                     )}
                   </div>
+                  {uploadFiles.length > 0 && (
+                    <ul className="space-y-1 text-[11px] font-semibold text-muted">
+                      {uploadFiles.map((file, index) => (
+                        <li
+                          key={`${file.name}-${file.size}`}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
+                        >
+                          <span className="min-w-0 break-all">
+                            {file.name} ({Math.round(file.size / 1024)} KB)
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${file.name}`}
+                            onClick={() => {
+                              setUploadFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                              const input = document.getElementById("mcq-single-file-input") as HTMLInputElement | null;
+                              if (input) input.value = "";
+                            }}
+                            className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
 
@@ -1066,7 +1108,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                   disabled={
                     uploading ||
                     (uploadContentType === "text" && !pastedText.trim()) ||
-                    (uploadContentType === "image" && !singleUploadFile)
+                    (uploadContentType === "image" && uploadFiles.length === 0)
                   }
                   className="rounded-xl px-6"
                 >
@@ -1249,4 +1291,3 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     </section>
   );
 }
-

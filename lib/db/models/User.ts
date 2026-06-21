@@ -20,6 +20,13 @@ export interface IUser extends Document {
     subjects: string[];
     students?: mongoose.Types.ObjectId[];
   };
+  teacherUsage?: {
+    imageQuestionUploadMonth?: string;
+    imageQuestionUploadCount?: number;
+    chargeCycleStartedAt?: Date;
+    chargeDueAt?: Date;
+    lastChargeRefreshedAt?: Date;
+  };
   refreshTokenHash?: string;
   aiProfile?: {
     learningStyle?: string;
@@ -59,6 +66,13 @@ const UserSchema = new Schema<IUser>(
       subjects: [{ type: String }],
       students: [{ type: Schema.Types.ObjectId, ref: "User" }],
     },
+    teacherUsage: {
+      imageQuestionUploadMonth: { type: String, default: "" },
+      imageQuestionUploadCount: { type: Number, default: 0, min: 0 },
+      chargeCycleStartedAt: { type: Date },
+      chargeDueAt: { type: Date },
+      lastChargeRefreshedAt: { type: Date },
+    },
     reference: { type: String, trim: true },
     refreshTokenHash: { type: String, select: false },
     aiProfile: { type: Schema.Types.Mixed, default: {} },
@@ -81,6 +95,8 @@ if (
   ExistingUserModel &&
   (!ExistingUserModel.schema.path("studentClass") ||
     !ExistingUserModel.schema.path("teacherDomain") ||
+    !ExistingUserModel.schema.path("teacherUsage") ||
+    !ExistingUserModel.schema.path("teacherUsage.chargeDueAt") ||
     !ExistingUserModel.schema.path("schoolCollege") ||
     !ExistingUserModel.schema.path("reference") ||
     ExistingUserModel.schema.path("phone")?.options.required)

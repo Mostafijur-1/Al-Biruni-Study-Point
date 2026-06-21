@@ -24,7 +24,30 @@ type OverviewStats = {
   practiceAttemptsTotal: number;
   practiceAttemptsPassed: number;
   appInstallsTotal?: number;
+  teacherChargesTotalTk: number;
+  teacherCharges: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    isActive: boolean;
+    approvalStatus: string;
+    imageQuestionUploadCount: number;
+    monthlyChargeTk: number;
+    chargeCycleStartedAt?: string;
+    chargeDueAt?: string;
+    isChargeExpired?: boolean;
+  }[];
 };
+
+function formatBillingDate(value: string | undefined, locale: Locale) {
+  if (!value) return "Not set";
+  return new Date(value).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 function StatCard({
   label,
@@ -129,6 +152,59 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
               hint={locale === "bn" ? "ইউনিক ডিভাইস সংখ্যা" : "Unique devices"}
             />
           </div>
+
+          <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="font-display text-lg font-bold text-primary">Teacher monthly charges</h2>
+                <p className="text-xs text-muted">100 tk base + 3 tk per successful image question upload</p>
+              </div>
+              <span className="rounded-lg bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
+                Total: {stats.teacherChargesTotalTk} tk
+              </span>
+            </div>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                  <tr>
+                    <th className="py-2 pr-3">Teacher</th>
+                    <th className="py-2 pr-3">Contact</th>
+                    <th className="py-2 pr-3">Image uploads</th>
+                    <th className="py-2 pr-3">Monthly charge</th>
+                    <th className="py-2 pr-3">Cycle start</th>
+                    <th className="py-2 pr-3">Cycle end</th>
+                    <th className="py-2 pr-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.teacherCharges.map((teacher) => (
+                    <tr key={teacher.id} className="border-b border-border/60 last:border-0">
+                      <td className="py-3 pr-3 font-semibold text-foreground">{teacher.name}</td>
+                      <td className="py-3 pr-3 text-muted">{teacher.phone || teacher.email || "-"}</td>
+                      <td className="py-3 pr-3 font-semibold">{teacher.imageQuestionUploadCount}</td>
+                      <td className="py-3 pr-3 font-bold text-emerald-700">{teacher.monthlyChargeTk} tk</td>
+                      <td className="py-3 pr-3 text-muted">
+                        {formatBillingDate(teacher.chargeCycleStartedAt, locale)}
+                      </td>
+                      <td
+                        className={cn(
+                          "py-3 pr-3 font-semibold",
+                          teacher.isChargeExpired ? "text-red-700" : "text-amber-700",
+                        )}
+                      >
+                        {formatBillingDate(teacher.chargeDueAt, locale)}
+                      </td>
+                      <td className="py-3 pr-3 text-muted">
+                        {teacher.approvalStatus}
+                        {!teacher.isActive ? " - inactive" : ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
           <div className="flex flex-wrap gap-2">
             {quickLinks.map((link) => (

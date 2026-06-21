@@ -23,6 +23,31 @@ const roleLabels: Record<string, string> = {
   admin: "Admin",
 };
 
+function formatBillingDate(value?: string) {
+  if (!value) return "Not set";
+  return new Date(value).toLocaleDateString("bn-BD", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function getTeacherPaymentMessage(chargeDueAt?: string, isChargeExpired?: boolean) {
+  if (!chargeDueAt) {
+    return "পেমেন্টের সময় এখনো সেট করা হয়নি।";
+  }
+
+  const now = new Date();
+  const dueDate = new Date(chargeDueAt);
+  const daysLeft = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (isChargeExpired || daysLeft <= 0) {
+    return "পেমেন্টের সময় শেষ হয়েছে। অ্যাকাউন্ট সক্রিয় রাখতে অ্যাডমিনের সাথে যোগাযোগ করুন।";
+  }
+
+  return `পেমেন্ট করতে আর ${daysLeft.toLocaleString("bn-BD")} দিন বাকি।`;
+}
+
 export function ProfilePanel() {
   const { data, message, isLoading, setData } = useApiQuery<MeResponseData>("/api/auth/me", {
     loadingMessage: "Loading profile...",
@@ -130,6 +155,7 @@ export function ProfilePanel() {
 
   const userIsSchool = user.studentClass === "class-9" || user.studentClass === "class-10";
   const userSchoolCollegeLabel = userIsSchool ? "School" : "College";
+  const teacherUsage = user.role === "teacher" ? user.teacherUsage : undefined;
 
   if (isEditing) {
     return (
@@ -315,6 +341,41 @@ export function ProfilePanel() {
             <div className="rounded-lg border border-border bg-background p-4 sm:col-span-2">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted">Reference (Teacher)</dt>
               <dd className="mt-1 font-semibold text-foreground">{user.reference || "None"}</dd>
+            </div>
+          </>
+        )}
+        {user.role === "teacher" && teacherUsage && (
+          <>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 sm:col-span-2">
+              <dt className="text-xs font-bold uppercase tracking-wide text-amber-800">Payment Notice</dt>
+              <dd className="mt-1 font-semibold text-amber-900">
+                {getTeacherPaymentMessage(teacherUsage.chargeDueAt, teacherUsage.isChargeExpired)}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background p-4">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Image Requests This Month</dt>
+              <dd className="mt-1 font-semibold text-foreground">
+                {teacherUsage.imageQuestionUploadCount}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background p-4">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Monthly Charge</dt>
+              <dd className="mt-1 font-semibold text-foreground">
+                {teacherUsage.monthlyChargeTk} tk
+              </dd>
+              <p className="mt-1 text-xs text-muted">100 tk + 3 tk per image request</p>
+            </div>
+            <div className="rounded-lg border border-border bg-background p-4">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing Start</dt>
+              <dd className="mt-1 font-semibold text-foreground">
+                {formatBillingDate(teacherUsage.chargeCycleStartedAt)}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background p-4">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing End</dt>
+              <dd className="mt-1 font-semibold text-foreground">
+                {formatBillingDate(teacherUsage.chargeDueAt)}
+              </dd>
             </div>
           </>
         )}

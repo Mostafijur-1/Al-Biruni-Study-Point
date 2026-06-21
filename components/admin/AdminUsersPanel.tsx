@@ -29,6 +29,15 @@ type AdminUserRow = {
     subjects: string[];
     students: string[];
   };
+  teacherUsage?: {
+    imageQuestionUploadMonth: string;
+    imageQuestionUploadCount: number;
+    monthlyChargeTk: number;
+    chargeCycleStartedAt?: string;
+    chargeDueAt?: string;
+    lastChargeRefreshedAt?: string;
+    isChargeExpired?: boolean;
+  };
   createdAt: string;
 };
 
@@ -36,6 +45,15 @@ type AdminUsersPanelProps = {
   locale: Locale;
   role: Extract<UserRole, "student" | "teacher">;
 };
+
+function formatTeacherBillingDate(value: string | undefined, locale: Locale) {
+  if (!value) return "Not set";
+  return new Date(value).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -97,6 +115,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
       body: {
         isActive?: boolean;
         approvalStatus?: ApprovalStatus;
+        refreshCharge?: boolean;
         teacherDomain?: { isAll: boolean; classes: string[]; subjects: string[]; students?: string[] };
       },
     ) => {
@@ -312,6 +331,36 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       {locale === "bn" ? `রেফারেন্স: ${user.reference}` : `Reference: ${user.reference}`}
                     </p>
                   )}
+                  {role === "teacher" && user.teacherUsage && (
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      <span className="rounded border border-border bg-background px-2 py-1 font-semibold text-muted">
+                        Image requests: {user.teacherUsage.imageQuestionUploadCount}
+                      </span>
+                      <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 font-bold text-emerald-700">
+                        Monthly charge: {user.teacherUsage.monthlyChargeTk} tk
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded border px-2 py-1 font-bold",
+                          user.teacherUsage.isChargeExpired
+                            ? "border-red-200 bg-red-50 text-red-700"
+                            : "border-amber-200 bg-amber-50 text-amber-800",
+                        )}
+                      >
+                        Start: {formatTeacherBillingDate(user.teacherUsage.chargeCycleStartedAt, locale)}
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded border px-2 py-1 font-bold",
+                          user.teacherUsage.isChargeExpired
+                            ? "border-red-200 bg-red-50 text-red-700"
+                            : "border-amber-200 bg-amber-50 text-amber-800",
+                        )}
+                      >
+                        End: {formatTeacherBillingDate(user.teacherUsage.chargeDueAt, locale)}
+                      </span>
+                    </div>
+                  )}
                   <p className="mt-1 text-xs text-muted">
                     {"Joined"}:{" "}
                     {new Date(user.createdAt).toLocaleDateString(
@@ -357,6 +406,16 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       onClick={() => openDomainModal(user)}
                     >
                       {"Manage Domain"}
+                    </Button>
+                  )}
+                  {role === "teacher" && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      loading={pendingId === user.id}
+                      onClick={() => updateUser(user.id, { refreshCharge: true })}
+                    >
+                      {"Refresh Charge"}
                     </Button>
                   )}
                 </div>

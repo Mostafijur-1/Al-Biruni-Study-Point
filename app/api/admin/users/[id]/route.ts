@@ -6,6 +6,7 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
+import { getNextTeacherChargeDueDate, refreshTeacherCharge } from "@/lib/teacher-charges";
 import { adminUpdateUserSchema } from "@/lib/validations/admin.schema";
 import type { StudentClass } from "@/types";
 
@@ -39,11 +40,27 @@ export async function PATCH(request: NextRequest, context: AdminUserRouteContext
       user.isActive = parsed.isActive;
     }
 
+    if (parsed.refreshCharge === true) {
+      if (user.role !== "teacher") {
+        return fail("Charge refresh is only available for teachers.", 400);
+      }
+
+      await refreshTeacherCharge(String(user._id));
+      const refreshedUser = await User.findById(id);
+      return success({ user: serializeAdminUser(refreshedUser || user) });
+    }
+
     if (parsed.approvalStatus !== undefined && user.role === "teacher") {
       user.approvalStatus = parsed.approvalStatus;
 
       if (parsed.approvalStatus === "approved") {
         user.isActive = true;
+        user.teacherUsage = {
+          ...(user.teacherUsage || {}),
+          chargeCycleStartedAt: user.teacherUsage?.chargeCycleStartedAt || new Date(),
+          chargeDueAt: user.teacherUsage?.chargeDueAt || getNextTeacherChargeDueDate(),
+          lastChargeRefreshedAt: user.teacherUsage?.lastChargeRefreshedAt || new Date(),
+        };
       }
 
       if (parsed.approvalStatus === "rejected") {

@@ -8,6 +8,7 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
 import { AppInstall } from "@/lib/db/models/AppInstall";
+import { getTeacherMonthlyUsage } from "@/lib/teacher-charges";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
       practiceAttemptsTotal,
       practiceAttemptsPassed,
       uniqueDevicesCount,
+      teachers,
     ] = await Promise.all([
       User.countDocuments({ role: "student" }),
       User.countDocuments({ role: "student", isActive: true }),
@@ -45,9 +47,33 @@ export async function GET(request: NextRequest) {
         { $group: { _id: "$deviceId" } },
         { $count: "count" },
       ]),
+      User.find({ role: "teacher" })
+        .select("name phone email approvalStatus isActive teacherUsage")
+        .sort({ createdAt: -1 })
+        .lean(),
     ]);
 
     const appInstallsTotal = uniqueDevicesCount[0]?.count || 0;
+    const teacherCharges = teachers.map((teacher) => {
+      const usage = getTeacherMonthlyUsage(teacher.teacherUsage);
+      return {
+        id: String(teacher._id),
+        name: teacher.name,
+        phone: teacher.phone,
+        email: teacher.email,
+        isActive: teacher.isActive,
+        approvalStatus: teacher.approvalStatus,
+        imageQuestionUploadCount: usage.imageQuestionUploadCount,
+        monthlyChargeTk: usage.monthlyChargeTk,
+        chargeCycleStartedAt: usage.chargeCycleStartedAt,
+        chargeDueAt: usage.chargeDueAt,
+        isChargeExpired: usage.isChargeExpired,
+      };
+    });
+    const teacherChargesTotalTk = teacherCharges.reduce(
+      (total, teacher) => total + teacher.monthlyChargeTk,
+      0,
+    );
 
     return success({
       stats: {
@@ -64,10 +90,11 @@ export async function GET(request: NextRequest) {
         practiceAttemptsTotal,
         practiceAttemptsPassed,
         appInstallsTotal,
+        teacherChargesTotalTk,
+        teacherCharges,
       },
     });
   } catch (error) {
     return handleApiError(error);
   }
 }
-

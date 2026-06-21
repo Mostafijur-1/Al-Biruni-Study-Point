@@ -4,6 +4,9 @@ import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
+import { incrementTeacherImageQuestionUpload } from "@/lib/teacher-charges";
+
+const MAX_IMAGE_UPLOADS = 3;
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     const formData = await request.formData();
-    let contentType = formData.get("contentType") as string; // "text" | "image" | "file"
+    const contentType = formData.get("contentType") as string; // "text" | "image" | "file"
     let rawText = "";
     let outputText = "";
 
@@ -143,15 +146,33 @@ Crucial Rules:
     const openrouterModel = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
 
     if (contentType === "image") {
-      const file = formData.get("file") as File;
-      if (!file) {
-        return fail("No image file was uploaded.", 400);
+      const files = formData
+        .getAll("files")
+        .filter((item): item is File => item instanceof File && item.size > 0);
+      const legacyFile = formData.get("file");
+      if (legacyFile instanceof File && legacyFile.size > 0 && files.length === 0) {
+        files.push(legacyFile);
+      }
+      if (files.length === 0) {
+        return fail("No image files were uploaded.", 400);
+      }
+      if (files.length > MAX_IMAGE_UPLOADS) {
+        return fail(`You can upload a maximum of ${MAX_IMAGE_UPLOADS} images at a time.`, 400);
       }
       try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const base64Data = buffer.toString("base64");
-        const mimeType = file.type || "image/jpeg";
-        const imageUrl = `data:${mimeType};base64,${base64Data}`;
+        const imageParts = await Promise.all(
+          files.map(async (file) => {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const base64Data = buffer.toString("base64");
+            const mimeType = file.type || "image/jpeg";
+            return {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64Data}`,
+              },
+            };
+          }),
+        );
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
@@ -168,12 +189,8 @@ Crucial Rules:
                 role: "user",
                 content: [
                   { type: "text", text: promptInstruction },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: imageUrl
-                    }
-                  }
+                  { type: "text", text: `Parse all ${files.length} uploaded image(s) together in order.` },
+                  ...imageParts,
                 ]
               }
             ],
@@ -320,6 +337,9 @@ Crucial Rules:
     }
 
     const savedQuestions = await McqQuestion.insertMany(docs);
+    if (contentType === "image") {
+      await incrementTeacherImageQuestionUpload(user.id);
+    }
 
     return success({
       addedCount: savedQuestions.length,
