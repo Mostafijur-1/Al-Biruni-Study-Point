@@ -25,6 +25,7 @@ import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import { TeacherMcqResults } from "@/components/exam/TeacherMcqResults";
 import { cn } from "@/lib/utils";
+import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
 import { getTranslatedChapter } from "@/lib/content/syllabus";
 
 type MCQQuestion = {
@@ -595,13 +596,19 @@ d) 9"
               </div>
             )}
 
+            <UploadingIndicator isUploading={uploading} locale={locale} className="my-2" />
+
             <Button
               type="submit"
               loading={uploading}
               disabled={uploading}
               className="w-full rounded-xl py-2 font-bold"
             >
-              Parse & Add Questions
+              {uploading ? (
+                locale === "bn" ? "প্রশ্ন প্রসেস করা হচ্ছে..." : "Parsing & Adding Questions..."
+              ) : (
+                locale === "bn" ? "পার্স এবং প্রশ্ন যোগ করুন" : "Parse & Add Questions"
+              )}
             </Button>
           </form>
 

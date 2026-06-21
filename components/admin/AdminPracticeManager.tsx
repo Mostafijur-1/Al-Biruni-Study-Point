@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   AlertTriangle,
   Atom,
@@ -8,19 +8,25 @@ import {
   BookOpen,
   Brain,
   Calculator,
+  Check,
   CheckCircle2,
   Cpu,
   Database,
+  Edit,
   FileImage,
   FileJson,
   FileText,
   GraduationCap,
+  Image as ImageIcon,
+  Loader2,
   RefreshCw,
   Save,
   Server,
   Settings,
+  Trash2,
   Type,
   Upload,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +36,7 @@ import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { SYLLABUS, type SchoolLevel } from "@/lib/content/syllabus";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
 import type { CourseSubject } from "@/types";
 
 type ParsedQuestion = {
@@ -59,6 +66,8 @@ const HSC_SUBJECTS: CourseSubject[] = [
   "Higher Math 2nd Paper",
   "ICT",
 ];
+
+const OPTION_BADGES = ["A", "B", "C", "D"];
 
 export function AdminPracticeManager({ locale }: { locale: Locale }) {
   // Config states
@@ -94,6 +103,270 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsError, setSettingsError] = useState("");
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Active Tab for main MCQ panel
+  const [activeMcqTab, setActiveMcqTab] = useState<"upload" | "uploaded">("upload");
+
+  // Admin's own uploaded pending MCQs states
+  const [filterLevel, setFilterLevel] = useState<SchoolLevel>("ssc");
+  const [filterSubject, setFilterSubject] = useState<CourseSubject>("Physics");
+  const [filterChapter, setFilterChapter] = useState("");
+  const [uploadedQuestions, setUploadedQuestions] = useState<any[]>([]);
+  const [loadingUploaded, setLoadingUploaded] = useState(false);
+  const [selectedUploadedIds, setSelectedUploadedIds] = useState<string[]>([]);
+  const [syncingUploaded, setSyncingUploaded] = useState(false);
+  const [deletingUploaded, setDeletingUploaded] = useState(false);
+
+  // Edit MCQ modal states
+  const [editingMcq, setEditingMcq] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    question: "",
+    options: ["", "", "", ""],
+    correctIndex: 0,
+    explanation: "",
+    imageUrl: "",
+    level: "ssc" as SchoolLevel,
+    subject: "Physics" as CourseSubject,
+    chapter: "",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
+
+  const filterSubjects = filterLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+  const filterChapters = SYLLABUS[filterLevel]?.[filterSubject] || [];
+
+  // Reset selected filter subject when filter level changes
+  useEffect(() => {
+    const subjects = filterLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+    if (!subjects.includes(filterSubject)) {
+      setFilterSubject(subjects[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterLevel]);
+
+  // Set filter chapter to first chapter of selected subject
+  useEffect(() => {
+    const list = SYLLABUS[filterLevel]?.[filterSubject] || [];
+    if (list.length > 0) {
+      setFilterChapter(list[0]);
+    } else {
+      setFilterChapter("");
+    }
+  }, [filterLevel, filterSubject]);
+
+  // Fetch admin's own uploaded pending questions
+  const fetchUploadedQuestions = useCallback(async (level: SchoolLevel, subject: CourseSubject, chapter: string) => {
+    if (!level || !subject || !chapter) return;
+    try {
+      setLoadingUploaded(true);
+      setErrorMessage("");
+      setSelectedUploadedIds([]);
+      const { ok, payload } = await apiFetch<{ questions: any[] }>(
+        `/api/admin/teacher-mcqs?level=${level}&subject=${subject}&chapter=${chapter}&scope=me`
+      );
+      if (ok && isApiSuccess(payload)) {
+        setUploadedQuestions(payload.data.questions);
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to load uploaded questions."));
+      }
+    } catch (error) {
+      console.error("[Fetch Uploaded Questions Catch Error]:", error);
+      setErrorMessage("An error occurred fetching uploaded questions.");
+    } finally {
+      setLoadingUploaded(false);
+    }
+  }, []);
+
+  // Fetch when filters or tab changes
+  useEffect(() => {
+    if (activeMcqTab === "uploaded" && filterLevel && filterSubject && filterChapter) {
+      fetchUploadedQuestions(filterLevel, filterSubject, filterChapter);
+    }
+  }, [activeMcqTab, filterLevel, filterSubject, filterChapter, fetchUploadedQuestions]);
+
+  // Sync selected questions to database (approve them)
+  const handleBulkSync = async () => {
+    if (selectedUploadedIds.length === 0) return;
+    setSyncingUploaded(true);
+    setErrorMessage("");
+    try {
+      const { ok, payload } = await apiFetch<{ modifiedCount: number }>("/api/admin/teacher-mcqs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedUploadedIds }),
+      });
+      if (ok && isApiSuccess(payload)) {
+        const syncedCount = payload.data.modifiedCount;
+        setSuccessData({
+          addedCount: syncedCount,
+          questions: [],
+        });
+        setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q.id)));
+        setSelectedUploadedIds([]);
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to sync selected questions."));
+      }
+    } catch (error) {
+      console.error("[Bulk Sync Catch Error]:", error);
+      setErrorMessage("Could not connect to the server.");
+    } finally {
+      setSyncingUploaded(false);
+    }
+  };
+
+  // Bulk delete selected pending questions
+  const handleBulkDeleteUploaded = async () => {
+    if (selectedUploadedIds.length === 0) return;
+    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে আপনি ${selectedUploadedIds.length}টি প্রশ্ন মুছে ফেলতে চান?` : `Are you sure you want to delete ${selectedUploadedIds.length} selected questions?`)) return;
+
+    setDeletingUploaded(true);
+    setErrorMessage("");
+    try {
+      const { ok, payload } = await apiFetch("/api/admin/teacher-mcqs", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedUploadedIds }),
+      });
+      if (ok && isApiSuccess(payload)) {
+        setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q.id)));
+        setSelectedUploadedIds([]);
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to delete selected questions."));
+      }
+    } catch (error) {
+      console.error("[Bulk Delete Catch Error]:", error);
+      setErrorMessage("Could not connect to the server.");
+    } finally {
+      setDeletingUploaded(false);
+    }
+  };
+
+  // Delete individual pending question
+  const handleDeleteUploadedQuestion = async (id: string) => {
+    if (!confirm(locale === "bn" ? "আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?" : "Are you sure you want to delete this question?")) return;
+    try {
+      const { ok, payload } = await apiFetch(`/api/admin/teacher-mcqs/${id}`, {
+        method: "DELETE",
+      });
+      if (ok && isApiSuccess(payload)) {
+        setUploadedQuestions((prev) => prev.filter((q) => q.id !== id));
+        setSelectedUploadedIds((prev) => prev.filter((item) => item !== id));
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to delete question."));
+      }
+    } catch (error) {
+      console.error("[Delete Question Catch Error]:", error);
+      setErrorMessage("Could not connect to the server.");
+    }
+  };
+
+  // Open edit modal
+  const handleOpenEdit = (q: any) => {
+    setEditingMcq(q);
+    setEditForm({
+      question: q.question,
+      options: [...q.options],
+      correctIndex: q.correctIndex,
+      explanation: q.explanation || "",
+      imageUrl: q.imageUrl || "",
+      level: q.level,
+      subject: q.subject as CourseSubject,
+      chapter: q.chapter,
+    });
+    setEditError("");
+    setImageError("");
+  };
+
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setImageError("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setEditForm((prev) => ({ ...prev, imageUrl: data.data.url }));
+      } else {
+        setImageError(data.error?.message || "Failed to upload image.");
+      }
+    } catch {
+      setImageError("Network error uploading image.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMcq) return;
+    if (!editForm.question.trim()) {
+      setEditError("Question text is required.");
+      return;
+    }
+    if (editForm.options.some((o) => !o.trim())) {
+      setEditError("All 4 options must be filled.");
+      return;
+    }
+    if (!editForm.subject.trim()) {
+      setEditError("Subject is required.");
+      return;
+    }
+    if (!editForm.chapter.trim()) {
+      setEditError("Chapter is required.");
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError("");
+    try {
+      const { ok, payload } = await apiFetch<{ question: any }>(
+        `/api/admin/teacher-mcqs/${editingMcq.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editForm),
+        }
+      );
+      if (ok && isApiSuccess(payload)) {
+        const updated = payload.data.question;
+        setUploadedQuestions((prev) =>
+          prev.map((item) =>
+            item.id === editingMcq.id
+              ? {
+                  ...item,
+                  question: updated.question,
+                  options: updated.options,
+                  correctIndex: updated.correctIndex,
+                  explanation: updated.explanation,
+                  imageUrl: updated.imageUrl,
+                  level: updated.level,
+                  subject: updated.subject,
+                  chapter: updated.chapter,
+                }
+              : item
+          )
+        );
+        setEditingMcq(null);
+      } else {
+        setEditError(getApiErrorMessage(payload, "Failed to save edits."));
+      }
+    } catch {
+      setEditError("Error connecting to server.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   // Reset selected chapter when level or subject changes
   useEffect(() => {
@@ -226,259 +499,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
     }
   }
 
-  // DB Sync states
-  const [serverFiles, setServerFiles] = useState<Array<{
-    level: "ssc" | "hsc";
-    subject: string;
-    chapter: string;
-    questionCount: number;
-    isSynced: boolean;
-  }>>([]);
-  const [selectedServerFiles, setSelectedServerFiles] = useState<Array<{
-    level: "ssc" | "hsc";
-    subject: string;
-    chapter: string;
-  }>>([]);
-  const [serverFilesLoading, setServerFilesLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState("");
-  const [syncSuccess, setSyncSuccess] = useState("");
-
-  // DB Direct Upload states
-  const [localUploadLevel, setLocalUploadLevel] = useState<SchoolLevel>("ssc");
-  const [localUploadSubject, setLocalUploadSubject] = useState<CourseSubject>("Physics");
-  const [localFiles, setLocalFiles] = useState<File[]>([]);
-  const [localUploading, setLocalUploading] = useState(false);
-  const [localError, setLocalError] = useState("");
-  const [localSuccess, setLocalSuccess] = useState("");
-
-  const localSubjects = localUploadLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
-
-  // Sync direct local level with local subjects list
-  useEffect(() => {
-    const subjects = localUploadLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
-    if (!subjects.includes(localUploadSubject)) {
-      setLocalUploadSubject(subjects[0]);
-    }
-  }, [localUploadLevel]);
-
-  // Fetch server files list on mount
-  async function fetchServerFiles() {
-    setServerFilesLoading(true);
-    setSyncError("");
-    try {
-      const response = await fetch("/api/admin/practice-mcqs/list-files");
-      const payload = await response.json();
-      if (response.ok && payload.success) {
-        setServerFiles(payload.data);
-      } else {
-        console.error("[List Files Failure Technical Details]:", payload);
-        setSyncError(
-          locale === "bn"
-            ? "সার্ভার ফাইল তালিকা লোড করতে ব্যর্থ হয়েছে।"
-            : "Failed to load files from server. Please try again later."
-        );
-      }
-    } catch (error: any) {
-      console.error("[List Files Catch Technical Details]:", error);
-      setSyncError(
-        locale === "bn"
-          ? "সার্ভারের সাথে সংযোগ করা যায়নি। আপনার নেটওয়ার্ক চেক করুন।"
-          : "Could not connect to the server. Please check your connection."
-      );
-    } finally {
-      setServerFilesLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchServerFiles();
-  }, []);
-
-  // Sync selected server files to MongoDB
-  async function handleServerSync(e: React.FormEvent) {
-    e.preventDefault();
-    if (selectedServerFiles.length === 0) {
-      setSyncError("Please select at least one file to sync.");
-      return;
-    }
-
-    setSyncing(true);
-    setSyncError("");
-    setSyncSuccess("");
-
-    try {
-      const response = await fetch("/api/admin/practice-mcqs/db-upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: selectedServerFiles }),
-      });
-      const payload = await response.json();
-      if (response.ok && payload.success) {
-        setSyncSuccess(
-          locale === "bn"
-            ? `সফলভাবে ডেটাবেজে ${payload.data.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
-            : `Successfully synced ${payload.data.addedCount} questions to the database!`
-        );
-        // Automatically mark as synced in state
-        setServerFiles((prev) =>
-          prev.map((f) => {
-            const wasSelected = selectedServerFiles.some(
-              (sf) => sf.level === f.level && sf.subject === f.subject && sf.chapter === f.chapter
-            );
-            return wasSelected ? { ...f, isSynced: true } : f;
-          })
-        );
-        setSelectedServerFiles([]);
-      } else {
-        console.error("[Sync Server Files Failure Technical Details]:", payload);
-        setSyncError(
-          locale === "bn"
-            ? "ডেটাবেজ সিঙ্ক করা ব্যর্থ হয়েছে।"
-            : "Database sync failed. Please try again."
-        );
-      }
-    } catch (error: any) {
-      console.error("[Sync Server Files Catch Technical Details]:", error);
-      setSyncError(
-        locale === "bn"
-          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
-          : "Could not connect to the server."
-      );
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  // Upload local computer JSON files direct to MongoDB
-  async function handleLocalJsonUpload(e: React.FormEvent) {
-    e.preventDefault();
-    if (localFiles.length === 0) {
-      setLocalError("Please select at least one JSON file.");
-      return;
-    }
-
-    setLocalUploading(true);
-    setLocalError("");
-    setLocalSuccess("");
-
-    try {
-      const formData = new FormData();
-      formData.append("level", localUploadLevel);
-      formData.append("subject", localUploadSubject);
-      for (const file of localFiles) {
-        formData.append("files", file);
-      }
-
-      const response = await fetch("/api/admin/practice-mcqs/db-upload", {
-        method: "POST",
-        body: formData,
-      });
-      const payload = await response.json();
-      if (response.ok && payload.success) {
-        let msg = locale === "bn"
-          ? `সফলভাবে ${payload.data.addedCount}টি প্রশ্ন আপলোড করা হয়েছে!`
-          : `Successfully uploaded ${payload.data.addedCount} questions!`;
-        if (payload.data.skippedCount > 0) {
-          msg += locale === "bn"
-            ? ` বাদ দেওয়া ফাইলসমূহ: ${payload.data.skippedFiles.join(", ")}`
-            : ` Skipped ${payload.data.skippedCount} files: ${payload.data.skippedFiles.join(", ")}`;
-        }
-        setLocalSuccess(msg);
-        setLocalFiles([]);
-        fetchServerFiles(); // Refresh synced indicators
-      } else {
-        console.error("[Local File DB Upload Failure Technical Details]:", payload);
-        setLocalError(
-          locale === "bn"
-            ? "ফাইল আপলোড ব্যর্থ হয়েছে।"
-            : "Failed to upload files. Please try again."
-        );
-      }
-    } catch (error: any) {
-      console.error("[Local File DB Upload Catch Technical Details]:", error);
-      setLocalError(
-        locale === "bn"
-          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
-          : "Could not connect to the server."
-      );
-    } finally {
-      setLocalUploading(false);
-    }
-  }
-
-  // Toggle server files selection
-  function toggleServerFile(level: "ssc" | "hsc", subject: string, chapter: string) {
-    const exists = selectedServerFiles.some(
-      (f) => f.level === level && f.subject === subject && f.chapter === chapter
-    );
-    if (exists) {
-      setSelectedServerFiles((prev) =>
-        prev.filter((f) => !(f.level === level && f.subject === subject && f.chapter === chapter))
-      );
-    } else {
-      setSelectedServerFiles((prev) => [...prev, { level, subject, chapter }]);
-    }
-  }
-
-  // Toggle select all server files
-  function toggleSelectAllServerFiles() {
-    const unsyncedFiles = serverFiles.filter((f) => !f.isSynced);
-    if (selectedServerFiles.length === unsyncedFiles.length) {
-      setSelectedServerFiles([]);
-    } else {
-      setSelectedServerFiles(
-        unsyncedFiles.map((f) => ({ level: f.level, subject: f.subject, chapter: f.chapter }))
-      );
-    }
-  }
-
-  // Toggle SyncedChapter mark manually
-  async function toggleMarkSync(
-    level: "ssc" | "hsc",
-    subject: string,
-    chapter: string,
-    currentMark: boolean
-  ) {
-    const newMark = !currentMark;
-    try {
-      const response = await fetch("/api/admin/practice-mcqs/mark-sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ level, subject, chapter, mark: newMark }),
-      });
-      const payload = await response.json();
-      if (response.ok && payload.success) {
-        setServerFiles((prev) =>
-          prev.map((f) =>
-            f.level === level && f.subject === subject && f.chapter === chapter
-              ? { ...f, isSynced: newMark }
-              : f
-          )
-        );
-        // If marked, deselect it from server sync list
-        if (newMark) {
-          setSelectedServerFiles((prev) =>
-            prev.filter((f) => !(f.level === level && f.subject === subject && f.chapter === chapter))
-          );
-        }
-      } else {
-        console.error("[Mark Sync Failure Technical Details]:", payload);
-        setSyncError(
-          locale === "bn"
-            ? "সিঙ্ক চিহ্ন পরিবর্তন করতে ব্যর্থ হয়েছে।"
-            : "Failed to update synced status. Please try again."
-        );
-      }
-    } catch (error: any) {
-      console.error("[Mark Sync Catch Technical Details]:", error);
-      setSyncError(
-        locale === "bn"
-          ? "সার্ভারের সাথে সংযোগ করা যায়নি।"
-          : "Could not connect to the server."
-      );
-    }
-  }
+  // (Local JSON file sync state and functions removed)
 
   return (
     <div className="space-y-8">
@@ -602,156 +623,357 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
         )}
       </div>
 
-      {/* ─── Upload MCQs ─── */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Upload Form */}
-        <form
-          onSubmit={handleUpload}
-          className="lg:col-span-2 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-5"
+      {/* Main MCQ Management Tabs */}
+      <div className="flex border-b border-border gap-1">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMcqTab("upload");
+            setErrorMessage("");
+            setSuccessData(null);
+          }}
+          className={cn(
+            "px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5",
+            activeMcqTab === "upload"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-primary"
+          )}
         >
-          <h2 className="font-display text-lg font-bold text-primary">
-            {locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload Questions"}
-          </h2>
+          <span>{locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload MCQ"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMcqTab("uploaded");
+            setErrorMessage("");
+            setSuccessData(null);
+          }}
+          className={cn(
+            "px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5",
+            activeMcqTab === "uploaded"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-primary"
+          )}
+        >
+          <span>{locale === "bn" ? "আপলোডকৃত প্রশ্নসমূহ" : "Uploaded MCQs"}</span>
+        </button>
+      </div>
 
-          {/* Target Info */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="level-select">{locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}</Label>
-              <select
-                id="level-select"
-                value={selectedLevel}
-                onChange={(e) => setSelectedLevel(e.target.value as SchoolLevel)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
-              >
-                <option value="ssc">SSC (Class 9-10)</option>
-                <option value="hsc">HSC (Class 11-12)</option>
-              </select>
+      {/* --- TAB CONTENT: UPLOAD --- */}
+      {activeMcqTab === "upload" && (
+        <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-200">
+          {/* Upload Form */}
+          <form
+            onSubmit={handleUpload}
+            className="lg:col-span-2 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-5"
+          >
+            <h2 className="font-display text-lg font-bold text-primary">
+              {locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload Questions"}
+            </h2>
+
+            {/* Target Info */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="level-select">{locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}</Label>
+                <select
+                  id="level-select"
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value as SchoolLevel)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                >
+                  <option value="ssc">SSC (Class 9-10)</option>
+                  <option value="hsc">HSC (Class 11-12)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="subject-select">{locale === "bn" ? "বিষয়" : "Subject"}</Label>
+                <select
+                  id="subject-select"
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value as CourseSubject)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                >
+                  {SUBJECTS.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="subject-select">{locale === "bn" ? "বিষয়" : "Subject"}</Label>
-              <select
-                id="subject-select"
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value as CourseSubject)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
-              >
-                {SUBJECTS.map((sub) => (
-                  <option key={sub} value={sub}>
-                    {sub}
-                  </option>
-                ))}
-              </select>
+            {/* Chapter Select */}
+            <div className="space-y-2">
+              <Label htmlFor="chapter-select">{locale === "bn" ? "অধ্যায়" : "Chapter"}</Label>
+              {chapters.length > 0 ? (
+                <select
+                  id="chapter-select"
+                  value={selectedChapter}
+                  onChange={(e) => setSelectedChapter(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                >
+                  {chapters.map((chap) => (
+                    <option key={chap} value={chap}>
+                      {chap}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-muted">
+                  {locale === "bn" ? "অধ্যায় লোড করা যায়নি।" : "No chapters available."}
+                </p>
+              )}
             </div>
-          </div>
 
-          {/* Chapter Select */}
-          <div className="space-y-2">
-            <Label htmlFor="chapter-select">{locale === "bn" ? "অধ্যায়" : "Chapter"}</Label>
-            {chapters.length > 0 ? (
-              <select
-                id="chapter-select"
-                value={selectedChapter}
-                onChange={(e) => setSelectedChapter(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
-              >
-                {chapters.map((chap) => (
-                  <option key={chap} value={chap}>
-                    {chap}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-sm text-muted">
-                {locale === "bn" ? "অধ্যায় লোড করা যায়নি।" : "No chapters available."}
-              </p>
-            )}
-          </div>
-
-          {/* Upload Method Tabs */}
-          <div className="space-y-1.5">
-            <Label>{locale === "bn" ? "আপলোড পদ্ধতি" : "Upload Method"}</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setContentType("text")}
-                className={cn(
-                  "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
-                  contentType === "text"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-surface text-muted hover:border-primary/20"
-                )}
-              >
-                <Type className="size-4 shrink-0" />
-                <span>{locale === "bn" ? "টেক্সট পেস্ট" : "Paste Text"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setContentType("image")}
-                className={cn(
-                  "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
-                  contentType === "image"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-surface text-muted hover:border-primary/20"
-                )}
-              >
-                <FileImage className="size-4 shrink-0" />
-                <span>{locale === "bn" ? "ছবি আপলোড" : "Upload Image"}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Content Inputs */}
-          {contentType === "text" ? (
+            {/* Upload Method Tabs */}
             <div className="space-y-1.5">
-              <Label htmlFor="paste-area">{locale === "bn" ? "প্রশ্নাবলি পেস্ট করুন" : "Paste MCQ Content"}</Label>
-              <textarea
-                id="paste-area"
-                rows={8}
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                placeholder={
-                  locale === "bn"
-                    ? "১. ভৌত রাশির একক কোনটি?\nক) মিটার খ) সেকেন্ড গ) কেজি ঘ) সব কয়টি\nসঠিক উত্তর: ঘ\n\n(যেকোনো ফরম্যাটে লিখুন, এআই নিজে এটি সাজিয়ে নিবে!)"
-                    : "1. What is the SI unit of force?\nA) Pascal B) Joule C) Newton D) Watt\nAnswer: C\n\n(Write/paste in any format, Gemini AI will handle the parsing!)"
-                }
-                className="w-full rounded-lg border border-border bg-surface p-3 text-sm font-medium outline-none focus:border-primary"
-              />
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <Label htmlFor="file-input">
-                {locale === "bn"
-                  ? "এমসিকিউ প্রশ্ন সম্বলিত ছবি (.png, .jpg)"
-                  : "Upload Question Image (.png, .jpg)"}
-              </Label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="file-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
+              <Label>{locale === "bn" ? "আপলোড পদ্ধতি" : "Upload Method"}</Label>
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => document.getElementById("file-input")?.click()}
-                  className="flex items-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-3 text-sm font-semibold text-muted hover:border-primary/30 hover:bg-secondary/40 transition"
+                  onClick={() => setContentType("text")}
+                  className={cn(
+                    "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
+                    contentType === "text"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-surface text-muted hover:border-primary/20"
+                  )}
                 >
-                  <Upload className="size-4" />
-                  {selectedFile ? selectedFile.name : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose File"}
+                  <Type className="size-4 shrink-0" />
+                  <span>{locale === "bn" ? "টেক্সট পেস্ট" : "Paste Text"}</span>
                 </button>
-                {selectedFile && (
-                  <span className="text-xs text-muted">
-                    {Math.round(selectedFile.size / 1024)} KB
+
+                <button
+                  type="button"
+                  onClick={() => setContentType("image")}
+                  className={cn(
+                    "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
+                    contentType === "image"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-surface text-muted hover:border-primary/20"
+                  )}
+                >
+                  <FileImage className="size-4 shrink-0" />
+                  <span>{locale === "bn" ? "ছবি আপলোড" : "Upload Image"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Inputs */}
+            {contentType === "text" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="paste-area">{locale === "bn" ? "প্রশ্নাবলি পেস্ট করুন" : "Paste MCQ Content"}</Label>
+                <textarea
+                  id="paste-area"
+                  rows={8}
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder={
+                    locale === "bn"
+                      ? "১. ভৌত রাশির একক কোনটি?\nক) মিটার খ) সেকেন্ড গ) কেজি ঘ) সব কয়টি\nসঠিক উত্তর: ঘ\n\n(যেকোনো ফরম্যাটে লিখুন, এআই নিজে এটি সাজিয়ে নিবে!)"
+                      : "1. What is the SI unit of force?\nA) Pascal B) Joule C) Newton D) Watt\nAnswer: C\n\n(Write/paste in any format, Gemini AI will handle the parsing!)"
+                  }
+                  className="w-full rounded-lg border border-border bg-surface p-3 text-sm font-medium outline-none focus:border-primary"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="file-input">
+                  {locale === "bn"
+                    ? "এমসিকিউ প্রশ্ন সম্বলিত ছবি (.png, .jpg)"
+                    : "Upload Question Image (.png, .jpg)"}
+                </Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("file-input")?.click()}
+                    className="flex items-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-3 text-sm font-semibold text-muted hover:border-primary/30 hover:bg-secondary/40 transition"
+                  >
+                    <Upload className="size-4" />
+                    {selectedFile ? selectedFile.name : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose File"}
+                  </button>
+                  {selectedFile && (
+                    <span className="text-xs text-muted">
+                      {Math.round(selectedFile.size / 1024)} KB
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action button & states */}
+            {errorMessage && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <UploadingIndicator isUploading={submitting} locale={locale} className="my-2" />
+
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full rounded-xl"
+              loading={submitting}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  {locale === "bn" ? "এমসিকিউ রূপান্তর হচ্ছে..." : "Converting MCQs..."}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Upload className="size-4" />
+                  {locale === "bn" ? "আপলোড ও রূপান্তর করুন" : "Upload & Convert"}
+                </span>
+              )}
+            </Button>
+          </form>
+
+          {/* Sidebar Guidelines/Parsed Preview */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4">
+            <h2 className="font-display text-lg font-bold text-primary">
+              {locale === "bn" ? "আপলোড তথ্য" : "Upload Guidelines"}
+            </h2>
+
+            {!successData ? (
+              <div className="text-sm text-muted space-y-3">
+                <p>
+                  {locale === "bn"
+                    ? "১. জেমিনি এআই ইমেজ বা অগোছালো টেক্সট ফাইল থেকে এমসিকিউ প্রশ্ন, অপশন ও সঠিক উত্তর সনাক্ত করতে পারে।"
+                    : "1. Gemini AI can parse messy, raw text or images of papers to detect questions, options, correct answers, and explanations."}
+                </p>
+                <p>
+                  {locale === "bn"
+                    ? "২. HSC-তে Physics, Chemistry ও Higher Math এর 1st Paper ও 2nd Paper আলাদাভাবে আপলোড করুন।"
+                    : "2. For HSC, upload Physics, Chemistry and Higher Math 1st Paper and 2nd Paper separately."}
+                </p>
+                <p>
+                  {locale === "bn"
+                    ? "৩. কনভার্ট শেষ হলে নিচে প্রশ্নগুলোর প্রিভিউ দেখতে পাবেন।"
+                    : "3. Once conversion completes, you will see a real-time preview of the parsed questions here."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 flex items-center gap-2">
+                  <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+                  <span className="text-xs font-bold">
+                    {locale === "bn"
+                      ? `সফলভাবে ${successData.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
+                      : `Successfully added ${successData.addedCount} questions!`}
                   </span>
+                </div>
+
+                <div className="border-t border-border pt-3 space-y-3 max-h-[30rem] overflow-y-auto">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
+                    {locale === "bn" ? "প্রশ্নাবলি প্রিভিউ" : "Questions Preview"}
+                  </h3>
+                  {successData.questions.map((q, idx) => (
+                    <div key={q.id || idx} className="rounded-lg border border-border bg-surface p-3 text-sm space-y-2">
+                      <div className="font-semibold text-primary">
+                        {idx + 1}. {q.question}
+                      </div>
+                      <div className="grid gap-1 pl-4 text-xs font-medium text-muted">
+                        {q.options.map((opt, oIdx) => (
+                          <div
+                            key={oIdx}
+                            className={cn(
+                              oIdx === q.correctIndex ? "text-emerald-700 font-bold" : "text-muted"
+                            )}
+                          >
+                            {String.fromCharCode(65 + oIdx)}) {opt}
+                            {oIdx === q.correctIndex && " (Correct)"}
+                          </div>
+                        ))}
+                      </div>
+                      {q.explanation && (
+                        <p className="text-2xs text-emerald-800 bg-emerald-50/50 p-1.5 rounded border border-emerald-100">
+                          <strong>Explanation:</strong> {q.explanation}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* --- TAB CONTENT: UPLOADED --- */}
+      {activeMcqTab === "uploaded" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4">
+            <h2 className="font-display text-lg font-bold text-primary">
+              {locale === "bn" ? "আপলোডকৃত প্রশ্নসমূহ" : "Uploaded MCQs"}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* Level select */}
+              <div className="space-y-1.5">
+                <Label htmlFor="filter-level">{locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}</Label>
+                <select
+                  id="filter-level"
+                  value={filterLevel}
+                  onChange={(e) => setFilterLevel(e.target.value as SchoolLevel)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                >
+                  <option value="ssc">SSC (Class 9-10)</option>
+                  <option value="hsc">HSC (Class 11-12)</option>
+                </select>
+              </div>
+
+              {/* Subject Select */}
+              <div className="space-y-1.5">
+                <Label htmlFor="filter-subject">{locale === "bn" ? "বিষয়" : "Subject"}</Label>
+                <select
+                  id="filter-subject"
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value as CourseSubject)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                >
+                  {filterSubjects.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chapter Select */}
+              <div className="space-y-1.5">
+                <Label htmlFor="filter-chapter">{locale === "bn" ? "অধ্যায়" : "Chapter"}</Label>
+                {filterChapters.length > 0 ? (
+                  <select
+                    id="filter-chapter"
+                    value={filterChapter}
+                    onChange={(e) => setFilterChapter(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
+                  >
+                    {filterChapters.map((chap: string) => (
+                      <option key={chap} value={chap}>
+                        {chap}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-muted">
+                    {locale === "bn" ? "অধ্যায় লোড করা যায়নি।" : "No chapters available."}
+                  </p>
                 )}
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Action button & states */}
           {errorMessage && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2">
               <AlertTriangle className="size-4 shrink-0" />
@@ -759,371 +981,380 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
             </div>
           )}
 
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full rounded-xl"
-            loading={submitting}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <span className="flex items-center gap-2">
-                <Brain className="size-4 animate-pulse text-brand-yellow" />
-                {locale === "bn" ? "জেমিনি এআই রূপান্তর করছে..." : "Gemini AI converting..."}
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Upload className="size-4" />
-                {locale === "bn" ? "আপলোড ও রূপান্তর করুন" : "Upload & Convert"}
-              </span>
-            )}
-          </Button>
-        </form>
-
-        {/* Sidebar Guidelines/Parsed Preview */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4">
-          <h2 className="font-display text-lg font-bold text-primary">
-            {locale === "bn" ? "আপলোড তথ্য" : "Upload Guidelines"}
-          </h2>
-
-          {!successData ? (
-            <div className="text-sm text-muted space-y-3">
-              <p>
-                {locale === "bn"
-                  ? "১. জেমিনি এআই ইমেজ বা অগোছালো টেক্সট ফাইল থেকে এমসিকিউ প্রশ্ন, অপশন ও সঠিক উত্তর সনাক্ত করতে পারে।"
-                  : "1. Gemini AI can parse messy, raw text or images of papers to detect questions, options, correct answers, and explanations."}
-              </p>
-              <p>
-                {locale === "bn"
-                  ? "২. HSC-তে Physics, Chemistry ও Higher Math এর 1st Paper ও 2nd Paper আলাদাভাবে আপলোড করুন।"
-                  : "2. For HSC, upload Physics, Chemistry and Higher Math 1st Paper and 2nd Paper separately."}
-              </p>
-              <p>
-                {locale === "bn"
-                  ? "৩. কনভার্ট শেষ হলে নিচে প্রশ্নগুলোর প্রিভিউ দেখতে পাবেন।"
-                  : "3. Once conversion completes, you will see a real-time preview of the parsed questions here."}
-              </p>
+          {/* MCQs List */}
+          {loadingUploaded ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
+              <Loader2 className="size-6 animate-spin text-primary" />
+              <span>{locale === "bn" ? "প্রশ্ন লোড হচ্ছে..." : "Loading uploaded questions..."}</span>
+            </div>
+          ) : !filterChapter ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
+              {locale === "bn" ? "প্রশ্ন দেখতে বিষয় এবং অধ্যায় নির্বাচন করুন।" : "Please select subject and chapter to view questions."}
+            </div>
+          ) : uploadedQuestions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
+              {locale === "bn" ? "এই অধ্যায়ে আপনার আপলোডকৃত কোনো প্রশ্ন পাওয়া যায়নি।" : "No uploaded questions found for this chapter."}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-800 flex items-center gap-2">
-                <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
-                <span className="text-xs font-bold">
-                  {locale === "bn"
-                    ? `সফলভাবে ${successData.addedCount}টি প্রশ্ন যুক্ত করা হয়েছে!`
-                    : `Successfully added ${successData.addedCount} questions!`}
-                </span>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Bulk Actions Header */}
+              <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4 shadow-sm">
+                <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={
+                      uploadedQuestions.length > 0 &&
+                      selectedUploadedIds.length === uploadedQuestions.length
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedUploadedIds(uploadedQuestions.map((q) => q.id));
+                      } else {
+                        setSelectedUploadedIds([]);
+                      }
+                    }}
+                    className="rounded border-border text-primary focus:ring-primary size-4"
+                  />
+                  <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    {selectedUploadedIds.length} {locale === "bn" ? "টি নির্বাচিত" : "selected"}
+                  </span>
+                  <Button
+                    type="button"
+                    disabled={selectedUploadedIds.length === 0 || syncingUploaded}
+                    loading={syncingUploaded}
+                    onClick={handleBulkSync}
+                    className="rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <Server className="size-3.5 mr-1" />
+                    {locale === "bn" ? "ডেটাবেজে সিঙ্ক করুন" : "Sync to Database"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={selectedUploadedIds.length === 0 || deletingUploaded}
+                    loading={deletingUploaded}
+                    onClick={handleBulkDeleteUploaded}
+                    className="rounded-lg text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
+                  >
+                    <Trash2 className="size-3.5 mr-1" />
+                    {locale === "bn" ? "মুছে ফেলুন" : "Delete Selected"}
+                  </Button>
+                </div>
               </div>
 
-              <div className="border-t border-border pt-3 space-y-3 max-h-[30rem] overflow-y-auto">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
-                  {locale === "bn" ? "প্রশ্নাবলি প্রিভিউ" : "Questions Preview"}
-                </h3>
-                {successData.questions.map((q, idx) => (
-                  <div key={q.id} className="rounded-lg border border-border bg-surface p-3 text-sm space-y-2">
-                    <div className="font-semibold text-primary">
-                      {idx + 1}. {q.question}
-                    </div>
-                    <div className="grid gap-1 pl-4 text-xs font-medium text-muted">
-                      {q.options.map((opt, oIdx) => (
-                        <div
-                          key={oIdx}
-                          className={cn(
-                            oIdx === q.correctIndex ? "text-emerald-700 font-bold" : "text-muted"
-                          )}
+              {/* Questions List */}
+              <div className="space-y-4">
+                {uploadedQuestions.map((q, idx) => (
+                  <article
+                    key={q.id}
+                    className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedUploadedIds.includes(q.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUploadedIds((prev) => [...prev, q.id]);
+                            } else {
+                              setSelectedUploadedIds((prev) => prev.filter((id) => id !== q.id));
+                            }
+                          }}
+                          className="rounded border-border text-primary focus:ring-primary size-4"
+                        />
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-secondary text-primary">
+                          Q {idx + 1}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenEdit(q)}
+                          className="rounded-lg h-8 text-xs font-bold text-primary"
                         >
-                          {String.fromCharCode(65 + oIdx)}) {opt}
-                          {oIdx === q.correctIndex && " (Correct)"}
-                        </div>
-                      ))}
+                          <Edit className="size-3.5 mr-1" />
+                          {locale === "bn" ? "এডিট" : "Edit"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteUploadedQuestion(q.id)}
+                          className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
+                        >
+                          <Trash2 className="size-3.5 mr-1" />
+                          {locale === "bn" ? "মুছুন" : "Delete"}
+                        </Button>
+                      </div>
                     </div>
-                    {q.explanation && (
-                      <p className="text-2xs text-emerald-800 bg-emerald-50/50 p-1.5 rounded border border-emerald-100">
-                        <strong>Explanation:</strong> {q.explanation}
-                      </p>
-                    )}
-                  </div>
+
+                    <div className="space-y-3.5">
+                      <h4 className="text-base font-bold text-foreground">{q.question}</h4>
+
+                      {q.imageUrl && (
+                        <img
+                          src={q.imageUrl}
+                          alt="MCQ image"
+                          className="max-w-full max-h-48 rounded object-contain border bg-secondary/10"
+                        />
+                      )}
+
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {q.options.map((opt: string, oIdx: number) => {
+                          const isCorrect = oIdx === q.correctIndex;
+                          return (
+                            <div
+                              key={oIdx}
+                              className={cn(
+                                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+                                isCorrect
+                                  ? "border-emerald-300 bg-emerald-50/50 text-emerald-800 font-bold"
+                                  : "border-border text-muted-foreground"
+                              )}
+                            >
+                              <span className="size-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
+                                {OPTION_BADGES[oIdx]}
+                              </span>
+                              <span>{opt}</span>
+                              {isCorrect && <Check className="size-4 shrink-0 ml-auto" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {q.explanation && (
+                        <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
+                          <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                        </div>
+                      )}
+                    </div>
+                  </article>
                 ))}
               </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* ─── Database Sync & Upload ─── */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-6">
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <Database className="size-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-bold text-primary">
-              {locale === "bn" ? "ডেটাবেজ সিঙ্ক ও আপলোড" : "Database Sync & Upload"}
-            </h2>
-            <p className="text-xs text-muted">
-              {locale === "bn"
-                ? "লোকাল ফাইল ডেটাবেজে যুক্ত করুন বা সরাসরি নতুন জেএসওএন আপলোড করুন।"
-                : "Sync local files to MongoDB or upload JSON files directly."}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Server Sync */}
-          <div className="border border-border rounded-xl p-4 bg-surface/50 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-sm font-bold text-primary flex items-center gap-2">
-                <Server className="size-4 text-accent" />
-                {locale === "bn" ? "সার্ভার ফাইল সিঙ্ক" : "Server Files Sync"}
-              </h3>
-              <button
-                type="button"
-                onClick={fetchServerFiles}
-                className="text-xs text-muted hover:text-primary flex items-center gap-1 transition"
-              >
-                <RefreshCw className="size-3" />
-                {locale === "bn" ? "রিফ্রেশ" : "Refresh"}
-              </button>
-            </div>
-
-            {serverFilesLoading ? (
-              <div className="flex items-center justify-center py-8 gap-2 text-sm text-muted">
-                <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                {locale === "bn" ? "ফাইল খোঁজা হচ্ছে..." : "Loading server files..."}
-              </div>
-            ) : serverFiles.length === 0 ? (
-              <p className="text-xs text-muted py-8 text-center">
-                {locale === "bn" ? "সার্ভারে কোনো অনুশীলন ফাইল পাওয়া যায়নি।" : "No practice files found on the server."}
-              </p>
-            ) : (
-              <form onSubmit={handleServerSync} className="space-y-4">
-                <div className="flex items-center justify-between text-xs font-semibold text-muted border-b border-border pb-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedServerFiles.length === serverFiles.filter((f) => !f.isSynced).length &&
-                        serverFiles.filter((f) => !f.isSynced).length > 0
-                      }
-                      onChange={toggleSelectAllServerFiles}
-                      disabled={serverFiles.filter((f) => !f.isSynced).length === 0}
-                      className="rounded border-border text-primary focus:ring-primary size-3.5 disabled:opacity-50"
-                    />
-                    <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
-                  </label>
-                  <span>
-                    {selectedServerFiles.length} / {serverFiles.length} {locale === "bn" ? "ফাইল নির্বাচিত" : "files selected"}
-                  </span>
-                </div>
-
-                <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-                  {serverFiles.map((file, idx) => {
-                    const isSelected = selectedServerFiles.some(
-                      (f) => f.level === file.level && f.subject === file.subject && f.chapter === file.chapter
-                    );
-                    return (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "flex items-center justify-between rounded-lg border border-border bg-card p-2 text-xs transition",
-                          file.isSynced ? "bg-secondary/20 opacity-80" : "hover:border-primary/30"
-                        )}
-                      >
-                        <label
-                          className={cn(
-                            "flex items-start gap-3 font-medium flex-1 min-w-0",
-                            file.isSynced ? "cursor-not-allowed text-muted" : "cursor-pointer"
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            disabled={file.isSynced}
-                            onChange={() => toggleServerFile(file.level, file.subject, file.chapter)}
-                            className="mt-0.5 rounded border-border text-primary focus:ring-primary size-3.5 disabled:opacity-50"
-                          />
-                          <div className="space-y-0.5 truncate">
-                            <div className={cn("font-bold text-primary truncate", file.isSynced && "text-muted")}>
-                              {file.chapter}
-                            </div>
-                            <div className="text-2xs text-muted flex items-center gap-2 flex-wrap">
-                              <span className="uppercase font-bold text-accent">{file.level}</span>
-                              <span>•</span>
-                              <span>{file.subject}</span>
-                              <span>•</span>
-                              <span className="font-semibold text-emerald-600">
-                                {file.questionCount} {locale === "bn" ? "টি প্রশ্ন" : "questions"}
-                              </span>
-                              {file.isSynced && (
-                                <span className="font-bold text-emerald-700 bg-emerald-100/50 border border-emerald-200/50 px-1 rounded">
-                                  {locale === "bn" ? "চিহ্নিত" : "Marked"}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </label>
-
-                        {/* Mark/Unmark toggle */}
-                        <button
-                          type="button"
-                          onClick={() => toggleMarkSync(file.level, file.subject, file.chapter, file.isSynced)}
-                          className={cn(
-                            "ml-3 rounded px-2 py-1 text-2xs font-bold transition shrink-0",
-                            file.isSynced
-                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                              : "bg-primary/10 text-primary hover:bg-primary/20"
-                          )}
-                        >
-                          {file.isSynced
-                            ? locale === "bn"
-                              ? "আনমার্ক"
-                              : "Unmark"
-                            : locale === "bn"
-                              ? "মার্ক করুন"
-                              : "Mark Synced"}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {syncError && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 flex items-center gap-2">
-                    <AlertTriangle className="size-3.5 shrink-0" />
-                    <span>{syncError}</span>
-                  </div>
-                )}
-
-                {syncSuccess && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700 flex items-center gap-2">
-                    <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
-                    <span>{syncSuccess}</span>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  loading={syncing}
-                  disabled={syncing || selectedServerFiles.length === 0}
-                  className="w-full rounded-xl py-2 text-xs font-bold"
-                >
-                  <Server className="mr-1.5 size-3.5" />
-                  {locale === "bn" ? "ডেটাবেজে সিঙ্ক করুন" : "Sync to Database"}
-                </Button>
-              </form>
-            )}
-          </div>
-
-          {/* Local JSON Upload */}
-          <div className="border border-border rounded-xl p-4 bg-surface/50 space-y-4">
-            <h3 className="font-display text-sm font-bold text-primary flex items-center gap-2">
-              <FileJson className="size-4 text-accent" />
-              {locale === "bn" ? "সরাসরি JSON ফাইল আপলোড" : "Direct JSON Files Upload"}
-            </h3>
-
-            <form onSubmit={handleLocalJsonUpload} className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="db-level-select" className="text-2xs">
-                    {locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}
-                  </Label>
-                  <select
-                    id="db-level-select"
-                    value={localUploadLevel}
-                    onChange={(e) => setLocalUploadLevel(e.target.value as SchoolLevel)}
-                    className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
-                  >
-                    <option value="ssc">SSC (Class 9-10)</option>
-                    <option value="hsc">HSC (Class 11-12)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="db-subject-select" className="text-2xs">
-                    {locale === "bn" ? "বিষয়" : "Subject"}
-                  </Label>
-                  <select
-                    id="db-subject-select"
-                    value={localUploadSubject}
-                    onChange={(e) => setLocalUploadSubject(e.target.value as CourseSubject)}
-                    className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
-                  >
-                    {localSubjects.map((sub) => (
-                      <option key={sub} value={sub}>
-                        {sub}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="db-json-input" className="text-2xs">
-                  {locale === "bn" ? "JSON ফাইলসমূহ (.json)" : "Select MCQ JSON Files (.json)"}
-                </Label>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="db-json-input"
-                    type="file"
-                    multiple
-                    accept=".json,application/json"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setLocalFiles(files);
-                    }}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById("db-json-input")?.click()}
-                    className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-card px-3 py-2 text-xs font-semibold text-muted hover:border-primary/30 hover:bg-secondary/40 transition"
-                  >
-                    <Upload className="size-3.5" />
-                    {localFiles.length > 0
-                      ? `${localFiles.length} ${locale === "bn" ? "টি ফাইল নির্বাচন করা হয়েছে" : "files selected"}`
-                      : locale === "bn" ? "ফাইলসমূহ নির্বাচন করুন" : "Choose Files"}
-                  </button>
-                </div>
-                {localFiles.length > 0 && (
-                  <div className="text-2xs text-muted max-h-20 overflow-y-auto border border-border bg-card/50 rounded-lg p-2 font-mono">
-                    {localFiles.map((f, i) => (
-                      <div key={i}>{f.name} ({Math.round(f.size / 1024)} KB)</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {localError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 flex items-center gap-2">
-                  <AlertTriangle className="size-3.5 shrink-0" />
-                  <span>{localError}</span>
-                </div>
-              )}
-
-              {localSuccess && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700 flex items-center gap-2">
-                  <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
-                  <span>{localSuccess}</span>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                loading={localUploading}
-                disabled={localUploading || localFiles.length === 0}
-                className="w-full rounded-xl py-2 text-xs font-bold"
-              >
-                <Upload className="mr-1.5 size-3.5" />
-                {locale === "bn" ? "ডেটাবেজে আপলোড করুন" : "Upload to Database"}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
       {/* ─── Review Teacher MCQs Panel ─── */}
       <div className="rounded-xl border-2 border-primary/20 bg-card p-5 shadow-[var(--shadow-sm)]">
         <AdminTeacherMcqReview locale={locale} />
       </div>
+
+      {/* --- EDIT MCQ MODAL --- */}
+      {editingMcq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-display text-lg font-bold text-primary">
+                {locale === "bn" ? "এমসিকিউ এডিট করুন" : "Edit MCQ Question"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingMcq(null)}
+                className="rounded-lg p-1 text-muted-foreground hover:bg-secondary hover:text-primary transition"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Question Text */}
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-question" className="font-bold">Question Text</Label>
+                <textarea
+                  id="edit-question"
+                  rows={2}
+                  value={editForm.question}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, question: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  placeholder="Enter the question text..."
+                />
+              </div>
+
+              {/* Image Upload Block */}
+              <div className="space-y-2.5">
+                <Label className="font-bold">Question Illustration (Image)</Label>
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 space-y-1.5">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id="image-file-edit"
+                        accept="image/*"
+                        onChange={handleEditImageUpload}
+                        disabled={isUploadingImage}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="image-file-edit"
+                        className={cn(
+                          "flex items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold cursor-pointer hover:border-primary hover:bg-secondary/20 transition-all",
+                          isUploadingImage && "pointer-events-none opacity-60"
+                        )}
+                      >
+                        {isUploadingImage ? (
+                          <Loader2 className="size-4 animate-spin text-primary" />
+                        ) : (
+                          <ImageIcon className="size-4 text-muted-foreground" />
+                        )}
+                        <span>{isUploadingImage ? "Uploading..." : "Choose File"}</span>
+                      </label>
+                    </div>
+                    {imageError && <p className="text-[10px] text-brand-red font-semibold">{imageError}</p>}
+                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, GIF. Hosted securely on Cloudinary.</p>
+                  </div>
+
+                  {editForm.imageUrl && (
+                    <div className="relative size-20 rounded-lg border border-border bg-secondary/10 overflow-hidden shrink-0 group">
+                      <img src={editForm.imageUrl} alt="Preview" className="size-full object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => setEditForm((prev) => ({ ...prev, imageUrl: "" }))}
+                        className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 text-white rounded-lg"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Subject/Chapter select for Edit */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-level" className="font-bold">Level</Label>
+                  <select
+                    id="edit-level"
+                    value={editForm.level}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, level: e.target.value as SchoolLevel }))}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    <option value="ssc">SSC</option>
+                    <option value="hsc">HSC</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-subject" className="font-bold">Subject</Label>
+                  <select
+                    id="edit-subject"
+                    value={editForm.subject}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, subject: e.target.value as CourseSubject }))}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    {(editForm.level === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS).map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="edit-chapter" className="font-bold">Chapter</Label>
+                  <select
+                    id="edit-chapter"
+                    value={editForm.chapter}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, chapter: e.target.value }))}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  >
+                    {(SYLLABUS[editForm.level]?.[editForm.subject] || []).map((chap) => (
+                      <option key={chap} value={chap}>{chap}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {editForm.options.map((opt: string, idx: number) => (
+                  <div key={idx} className="space-y-1.5">
+                    <Label htmlFor={`option-${idx}`} className="font-bold">
+                      Option {OPTION_BADGES[idx]}
+                    </Label>
+                    <input
+                      type="text"
+                      id={`option-${idx}`}
+                      value={opt}
+                      onChange={(e) => {
+                        const newOpts = [...editForm.options];
+                        newOpts[idx] = e.target.value;
+                        setEditForm((prev) => ({ ...prev, options: newOpts }));
+                      }}
+                      className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                      placeholder={`Option ${OPTION_BADGES[idx]}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Correct Index */}
+              <div className="space-y-1.5">
+                <Label htmlFor="correct-idx" className="font-bold">Correct Option</Label>
+                <select
+                  id="correct-idx"
+                  value={editForm.correctIndex}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, correctIndex: Number(e.target.value) }))}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                >
+                  {OPTION_BADGES.map((badge: string, idx: number) => (
+                    <option key={idx} value={idx}>
+                      Option {badge}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Explanation */}
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-explanation" className="font-bold">Solution Explanation (Optional)</Label>
+                <textarea
+                  id="edit-explanation"
+                  rows={2}
+                  value={editForm.explanation}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, explanation: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  placeholder="Explain why this is correct..."
+                />
+              </div>
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingMcq(null)}
+                disabled={savingEdit}
+                className="rounded-xl px-5"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveEdit}
+                loading={savingEdit}
+                disabled={savingEdit}
+                className="rounded-xl px-6"
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

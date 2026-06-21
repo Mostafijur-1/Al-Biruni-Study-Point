@@ -1,17 +1,16 @@
 import { NextRequest } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
-import { getChapterFilePath } from "@/lib/mcq/practice-service";
 import { SYLLABUS, type SchoolLevel } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
+import { connectDB } from "@/lib/db/connect";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate that user is Admin
-    await requireAuth(request, ["admin"]);
+    const sessionUser = await requireAuth(request, ["admin"]);
 
     // 2. Parse form data
     const formData = await request.formData();
@@ -31,205 +30,9 @@ export async function POST(request: NextRequest) {
     }
 
     let rawText = "";
+    let outputText = "";
 
-    // 3. Image OCR Pipeline using API Ninjas Image to Text API after CloudConvert Image Compression
-    if (contentType === "image") {
-      const imageToTextKey = process.env.ImageToText_API_KEY;
-      const imageCompressionKey = process.env.ImageCompression_API_KEY;
-
-      if (!imageToTextKey) {
-        return fail("Server Error: ImageToText_API_KEY is not configured in .env.local", 500);
-      }
-      if (!imageCompressionKey) {
-        return fail("Server Error: ImageCompression_API_KEY is not configured in .env.local", 500);
-      }
-
-      const file = formData.get("file") as File;
-      if (!file) {
-        return fail("No image file was uploaded.", 400);
-      }
-
-      let ocrBuffer: ArrayBuffer;
-
-      if (file.size > 200 * 1024) {
-        console.log(`Image size is ${Math.round(file.size / 1024)}KB (> 200KB). Compressing with CloudConvert...`);
-        // A. Extract and clean Base64 data for CloudConvert
-        let base64Data = "";
-        const fileText = await file.text().catch(() => "");
-        if (fileText.trim().startsWith("data:") && fileText.includes(";base64,")) {
-          const commaIndex = fileText.indexOf(",");
-          base64Data = fileText.trim().substring(commaIndex + 1);
-        } else {
-          const buffer = Buffer.from(await file.arrayBuffer());
-          base64Data = buffer.toString("base64");
-        }
-
-        // Clean all spaces, newlines, and carriage returns from base64 string
-        base64Data = base64Data.replace(/\s+/g, "");
-
-        let ext = "jpg";
-        if (file.name) {
-          const parts = file.name.split(".");
-          if (parts.length > 1) {
-            const fileExt = parts.pop()?.toLowerCase();
-            if (fileExt === "png" || fileExt === "pdf" || fileExt === "webp") {
-              ext = fileExt;
-            } else if (fileExt === "jpeg" || fileExt === "jpg") {
-              ext = "jpg";
-            }
-          }
-        }
-
-        const ccFilename = `image.${ext}`;
-
-        // B. Create CloudConvert job to compress the image
-        const jobResponse = await fetch("https://api.cloudconvert.com/v2/jobs", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${imageCompressionKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tasks: {
-              "import-file": {
-                operation: "import/base64",
-                file: base64Data,
-                filename: ccFilename,
-              },
-              "optimize-file": {
-                operation: "optimize",
-                input: "import-file",
-                input_format: ext,
-                quality: 60,
-              },
-              "export-file": {
-                operation: "export/url",
-                input: "optimize-file",
-              },
-            },
-          }),
-        });
-
-        if (!jobResponse.ok) {
-          const errDetails = await jobResponse.text();
-          console.error("CloudConvert job creation error details:", errDetails);
-          let errMsg = `CloudConvert Image Compression job creation failed: ${jobResponse.statusText}`;
-          try {
-            const parsedErr = JSON.parse(errDetails);
-            if (parsedErr.code === "FORBIDDEN" || parsedErr.message?.includes("scope")) {
-              errMsg = "CloudConvert API Key lacks the required permissions. Please go to your CloudConvert dashboard (https://cloudconvert.com/dashboard/api/v2/keys), edit this API key, and check/enable the 'task.write' and 'task.read' scopes.";
-            } else if (parsedErr.message) {
-              errMsg = `CloudConvert error: ${parsedErr.message}`;
-            }
-          } catch (e) {}
-          return fail(errMsg, 502);
-        }
-
-        const jobData = await jobResponse.json();
-        let job = jobData.data;
-        const jobId = job.id;
-
-        // C. Poll job status
-        let attempts = 0;
-        const maxAttempts = 30; // 30 seconds max wait time
-        while (job.status !== "finished" && job.status !== "failed" && attempts < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const pollResponse = await fetch(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
-            headers: {
-              "Authorization": `Bearer ${imageCompressionKey}`,
-            },
-          });
-          if (pollResponse.ok) {
-            const pollData = await pollResponse.json();
-            job = pollData.data;
-          }
-          attempts++;
-        }
-
-        if (job.status !== "finished") {
-          return fail(`CloudConvert image compression failed with status: ${job.status}`, 502);
-        }
-
-        // D. Find the exported download URL
-        const exportTask = job.tasks.find(
-          (t: any) => t.operation === "export/url" && t.status === "finished"
-        );
-        const compressedUrl = exportTask?.result?.files?.[0]?.url;
-
-        if (!compressedUrl) {
-          return fail("CloudConvert completed but exported compressed file URL was not found.", 502);
-        }
-
-        console.log("Image compressed successfully using CloudConvert. URL:", compressedUrl);
-
-        // E. Fetch the compressed image buffer
-        const compressedRes = await fetch(compressedUrl);
-        if (!compressedRes.ok) {
-          return fail(`Failed to download compressed image from CloudConvert: ${compressedRes.statusText}`, 502);
-        }
-        ocrBuffer = await compressedRes.arrayBuffer();
-      } else {
-        console.log(`Image size is ${Math.round(file.size / 1024)}KB (<= 200KB). Skipping CloudConvert compression.`);
-        ocrBuffer = await file.arrayBuffer();
-      }
-
-      // F. Send file to API Ninjas OCR
-      const apiFormData = new FormData();
-      const ocrBlob = new Blob([ocrBuffer], { type: "image/jpeg" });
-      apiFormData.append("image", ocrBlob, "image.jpg");
-
-      const ocrResponse = await fetch("https://api.api-ninjas.com/v1/imagetotext", {
-        method: "POST",
-        headers: {
-          "X-Api-Key": imageToTextKey,
-        },
-        body: apiFormData,
-      });
-
-      if (!ocrResponse.ok) {
-        const errorText = await ocrResponse.text();
-        console.error("API Ninjas Image to Text error details:", errorText);
-        return fail(`OCR Service returned error: ${ocrResponse.statusText}`, 502);
-      }
-
-      const ocrData = await ocrResponse.json();
-      if (!Array.isArray(ocrData)) {
-        console.error("API Ninjas unexpected response format:", ocrData);
-        const ocrErr = ocrData as any;
-        return fail(`OCR conversion failed: ${ocrErr?.error || "Unexpected response format"}`, 422);
-      }
-
-      // Join the detected text segments with a newline
-      rawText = ocrData.map((item: any) => item.text).join("\n");
-
-      if (!rawText.trim()) {
-        return fail("OCR completed but no text could be extracted from this image.", 422);
-      }
-
-      contentType = "text";
-      console.log("Extracted text from image successfully using API Ninjas after CloudConvert compression.");
-    } else if (contentType === "text") {
-      const text = formData.get("text") as string;
-      if (!text || text.trim() === "") {
-        return fail("Pasted text is empty.", 400);
-      }
-      rawText = text;
-    } else if (contentType === "file") {
-      const file = formData.get("file") as File;
-      if (!file) {
-        return fail("No file was uploaded.", 400);
-      }
-      const textContent = await file.text();
-      if (!textContent || textContent.trim() === "") {
-        return fail("Uploaded text file is empty.", 400);
-      }
-      rawText = textContent;
-    } else {
-      return fail("Invalid content type.", 400);
-    }
-
-    // 4. Gemini Formatting Prompt
-    let promptInstruction = `
+    const promptInstruction = `
 You are an expert educational content parser. Extract multiple-choice questions (MCQs) from the provided input and translate them to Bengali (Bangla) if they are in English.
 Convert them into a valid JSON array of objects representing MCQ questions.
 
@@ -252,72 +55,209 @@ Crucial Rules:
    - For multiplication, use the standard multiplication symbol '×' instead of '\\times', '*' or 'times'.
    - For permutation/combination notation (like ^4P_4 or ^4C_4), format them cleanly using Unicode superscripts and subscripts (e.g., ⁴P₄ or ⁴C₄) or write them in standard plain text.
    - Convert all raw math markup signs/code into clean, readable Bengali text or standard Unicode mathematical representation without raw LaTeX tags or symbols.
+6. Handle Multi-Statement / Roman-Numeral Questions (উদ্দীপক/বহুপদী সমাপ্তিসূচক প্রশ্ন) Properly:
+   - For questions that rely on a set of statements, facts, or roman numerals (e.g. "I. BeCl₂", "II. PCl₅", "III. BF₃" or "১. HCl", "২. H₂O", "৩. NH₃") and then ask a query based on them (e.g. "কোনটি সঠিক?" or "কোন যৌগগুলোর ক্ষেত্রে অষ্টক নিয়ম কার্যকর নয়?"), you MUST include the list of statements (with their roman numerals/numbers) and their introductory text directly inside the \`question\` field.
+   - For example, if the input is:
+     "নিচের যৌগগুলো লক্ষ্য কর:
+      I. BeCl₂
+      II. PCl₅
+      III. BF₃
+      অষ্টক নিয়ম কার্যকর নয় কোন যৌগগুলোর ক্ষেত্রে?"
+     The extracted \`question\` field MUST be:
+     "নিচের যৌগগুলো লক্ষ্য কর:\nI. BeCl₂\nII. PCl₅\nIII. BF₃\nঅষ্টক নিয়ম কার্যকর নয় কোন যৌগগুলোর ক্ষেত্রে?"
+   - Never omit the list of statements (I, II, III / ১, ২, ৩) from the \`question\` field.
+7. Handle Common Stimulus/Passage/Stem (উদ্দীপক) for Multiple Questions:
+   - In Bangladesh curriculum exams, a single passage, diagram description, text, or table (referred to as "উদ্দীপক") is often followed by multiple questions (e.g., "উদ্দীপকের আলোকে নিচের ১ ও ২ নং প্রশ্নের উত্তর দাও").
+   - If there is a common stimulus/passage/stem (উদ্দীপক) in the input, you MUST prepend/duplicate the full text/description of that stimulus/passage/stem to the \`question\` field of EACH individual MCQ question that refers to it.
+   - The helper line such as "উদ্দীপকের আলোকে ১৬ ও ১৭ নং প্রশ্নের উত্তর দাও:" is NOT the stimulus. Remove that helper line, then copy the actual stimulus text that appears before/around it (e.g., "P, Q, R [P,Q,R প্রতীকী অর্থে]") into every linked question.
+   - If a question clearly depends on an উদ্দীপক but the actual stimulus text/diagram/table cannot be extracted accurately because of OCR noise, missing text, cropping, or ambiguity, you MUST skip/ignore all dependent questions. Never save a contextless question that only says something like "Q মৌলটি কোন গ্রুপের?" without its required উদ্দীপক.
+   - For example, if the input is:
+     "উদ্দীপক: A ও B মৌলের পারমাণবিক সংখ্যা যথাক্রমে ৭ ও ১৫।
+      ১. A মৌলটি কোন গ্রুপে অবস্থিত?
+      ২. B মৌলের অক্সাইডের অম্লধর্মিতা কেমন?"
+     The extracted MCQ list should have:
+     - Question 1: "উদ্দীপক: A ও B মৌলের পারমাণবিক সংখ্যা যথাক্রমে ৭ ও ১৫।\nA মৌলটি কোন গ্রুপে অবস্থিত?"
+     - Question 2: "উদ্দীপক: A ও B মৌলের পারমাণবিক সংখ্যা যথাক্রমে ৭ ও ১৫।\nB মৌলের অক্সাইডের অম্লধর্মিতা কেমন?"
+   - CRITICAL: Both questions must contain the common stimulus (উদ্দীপক) separately inside their \`question\` fields. Never only include the stimulus in the first question and leave the second question without it. Each question in our database is stored separately, so they must be completely self-contained with their context.
+   - STRIP QUESTION NUMBERS REFERENCES: You MUST strip/exclude meta-instruction helper sentences that reference specific question numbers (e.g., "উদ্দীপকের আলোকে ১৪ ও ১৫ নং প্রশ্নের উত্তর দাও:", "উদ্দীপকের আলোকে নিচের ১৪ ও ১৫ নং প্রশ্নের উত্তর দাও:", or "উদ্দীপকটি পড়ে ৩ ও ৪ নং প্রশ্নের উত্তর দাও:"). Do NOT write this part in front of the extracted questions or include these sentence references in the \`question\` text, as they are redundant and confusing when stored as independent questions.
+
+8. Handle Questions with Diagrams/Figures/Tables/Charts:
+   - Some input questions from images or text may refer to a diagram, circuit, graph, chart, table, or molecular structure.
+   - If a question relies on a diagram, graph, chart, table, or figure:
+     1. If the diagram, table, or chart can be clearly and accurately described/represented in text (such as a table formatted as a markdown table or text grid, simple chemical reactions, a simple flowchart, a list of values, or a straightforward logic gate representation), represent/express it in Bengali text and prepend it to the \`question\` field of EACH related question.
+     2. If the diagram, table, graph, or chart is complex and CANNOT be clearly or fully represented in words/text (such as a complex physics circuit diagram, an intricate geometry figure, a complex chart, or a detailed organic reaction mechanism tree), you MUST skip/ignore all questions referring to this diagram/table/chart entirely. Do not include them in the parsed JSON array.
+
+9. Keep Explanations Concise and Actionable (explanation):
+   - Keep the extracted \`explanation\` short and straight to the point (no unnecessary fluff or long paragraphs).
+   - If a mathematical, logical, or scientific shortcut/tip/trick is possible to solve the question quickly in exams, prioritize providing that shortcut as the explanation (e.g., "শর্টকাট: সূত্র...").
+   - If no shortcut exists, provide a simple, brief general explanation.
+   - The explanation MUST be in Bengali (Bangla).
+
+
+
+
+
 `;
 
-    let parts = [
-      { text: promptInstruction },
-      { text: `Raw Text:\n${rawText}` }
-    ];
-
-    // 5. Call Gemini API with fallback keys
-    const apiKeysEnv = process.env.GEMINI_API_KEYS;
-    const apiKeys = apiKeysEnv ? apiKeysEnv.split(',').map(k => k.trim()).filter(k => !!k) : [];
-    if (apiKeys.length === 0) {
-      return fail("Server Error: GEMINI_API_KEYS is not configured in .env.local", 500);
+    const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+    if (!openrouterKey) {
+      return fail("Server Error: OPENROUTER_API_KEY is not configured in .env.local", 500);
     }
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-    let geminiResponse: Response | null = null;
-    for (const key of apiKeys) {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const requestBody = {
-        contents: [{ parts }],
-        generationConfig: { responseMimeType: "application/json" },
-      };
-      const response = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-      if (response.ok) {
-        geminiResponse = response;
-        break;
+    const openrouterModel = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
+
+    if (contentType === "image") {
+      const file = formData.get("file") as File;
+      if (!file) {
+        return fail("No image file was uploaded.", 400);
       }
-      // If rate‑limited (429), try next key; otherwise break
-      if (response.status !== 429) {
-        break;
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const base64Data = buffer.toString("base64");
+        const mimeType = file.type || "image/jpeg";
+        const imageUrl = `data:${mimeType};base64,${base64Data}`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openrouterKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/Mostafijur-1/Al-Biruni-Study-Point",
+            "X-OpenRouter-Title": "Al-Biruni Study Point",
+          },
+          body: JSON.stringify({
+            model: openrouterModel,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: promptInstruction },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: imageUrl
+                    }
+                  }
+                ]
+              }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 4096
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("OpenRouter Vision API error:", errText);
+          return fail(`OpenRouter Vision API failed: ${response.statusText}`, 502);
+        }
+
+        const data = await response.json();
+        outputText = data?.choices?.[0]?.message?.content || "";
+        if (!outputText) {
+          return fail("OpenRouter returned empty response.", 502);
+        }
+      } catch (err: any) {
+        console.error("OpenRouter Vision API exception:", err);
+        return fail(`OpenRouter Vision API error: ${err.message || err}`, 502);
       }
-    }
-    if (!geminiResponse) {
-      return fail("All Gemini API keys exhausted or quota reached", 500);
-    }
+    } else if (contentType === "text" || contentType === "file") {
+      if (contentType === "text") {
+        const text = formData.get("text") as string;
+        if (!text || text.trim() === "") {
+          return fail("Pasted text is empty.", 400);
+        }
+        rawText = text;
+      } else {
+        const file = formData.get("file") as File;
+        if (!file) {
+          return fail("No file was uploaded.", 400);
+        }
+        const textContent = await file.text();
+        if (!textContent || textContent.trim() === "") {
+          return fail("Uploaded text file is empty.", 400);
+        }
+        rawText = textContent;
+      }
 
-    const responseData = await geminiResponse.json();
-    const candidate = responseData?.candidates?.[0];
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openrouterKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/Mostafijur-1/Al-Biruni-Study-Point",
+            "X-OpenRouter-Title": "Al-Biruni Study Point",
+          },
+          body: JSON.stringify({
+            model: openrouterModel,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: promptInstruction },
+                  { type: "text", text: `Raw Text:\n${rawText}` }
+                ]
+              }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 4096
+          })
+        });
 
-    if (candidate?.finishReason && candidate.finishReason !== "STOP") {
-      return fail(`Gemini generation finished early: ${candidate.finishReason}`, 502);
-    }
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("OpenRouter API error:", errText);
+          return fail(`OpenRouter API failed: ${response.statusText}`, 502);
+        }
 
-    const outputText = candidate?.content?.parts?.[0]?.text;
-    if (!outputText) {
-      return fail("Gemini returned empty content.", 502);
+        const data = await response.json();
+        outputText = data?.choices?.[0]?.message?.content || "";
+        if (!outputText) {
+          return fail("OpenRouter returned empty response.", 502);
+        }
+      } catch (err: any) {
+        console.error("OpenRouter API exception:", err);
+        return fail(`OpenRouter API error: ${err.message || err}`, 502);
+      }
+    } else {
+      return fail("Invalid content type.", 400);
     }
 
     // 6. Parse JSON questions
     let newQuestions: any[] = [];
+    let cleanedText = outputText.trim();
+    if (cleanedText.startsWith("```")) {
+      cleanedText = cleanedText.replace(/^```(json)?/, "").replace(/```$/, "").trim();
+    }
     try {
-      let cleanedText = outputText.trim();
-      if (cleanedText.startsWith("```")) {
-        cleanedText = cleanedText.replace(/^```(json)?/, "").replace(/```$/, "").trim();
+      const parsedJson = JSON.parse(cleanedText);
+      if (Array.isArray(parsedJson)) {
+        newQuestions = parsedJson;
+      } else if (parsedJson && typeof parsedJson === "object") {
+        if ("question" in parsedJson && "options" in parsedJson) {
+          newQuestions = [parsedJson];
+        } else {
+          const arrayProp = Object.values(parsedJson).find(
+            (val) => Array.isArray(val) && val.length > 0 && typeof val[0] === "object" && val[0] !== null && ("question" in val[0] || "options" in val[0])
+          );
+          if (arrayProp) {
+            newQuestions = arrayProp as any[];
+          } else {
+            newQuestions = [parsedJson];
+          }
+        }
       }
-      newQuestions = JSON.parse(cleanedText);
     } catch (e: any) {
-      console.error("Failed to parse Gemini output as JSON. Output was:", outputText);
-      return fail("Failed to parse questions. Please ensure formatting is clear.", 422);
+      // Fallback: Use stack-based scanner to extract successfully parsed question objects from partial/truncated JSON
+      newQuestions = extractQuestionObjects(cleanedText);
+      if (newQuestions.length === 0) {
+        console.error("Failed to parse output as JSON. Output was:", outputText);
+        return fail("Failed to parse questions. Please ensure formatting is clear.", 422);
+      }
     }
 
     if (!Array.isArray(newQuestions)) {
-      return fail("Gemini did not return an array of questions.", 422);
+      return fail("Parser did not return an array of questions.", 422);
     }
 
     // Assign unique IDs to the questions
@@ -345,30 +285,82 @@ Crucial Rules:
       return fail("No questions could be extracted/added.", 422);
     }
 
-    // 7. Update JSON Store file
-    const dataFilePath = getChapterFilePath(targetLevel, targetSubject, targetChapter);
-    
-    // Ensure parent directories exist
-    await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
+    // 7. Save to Database directly as pending
+    await connectDB();
+    const docs = formattedQuestions.map((q) => ({
+      level: targetLevel,
+      subject: targetSubject,
+      chapter: targetChapter,
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      explanation: q.explanation || "",
+      isTeacherSet: true,
+      createdBy: sessionUser.id,
+      approvedByAdmin: false,
+    }));
 
-    let currentQuestions: any[] = [];
+    const createdQuestions = await PracticeQuestion.insertMany(docs);
 
-    try {
-      const fileContent = await fs.readFile(dataFilePath, "utf-8");
-      currentQuestions = JSON.parse(fileContent);
-    } catch (err) {
-      currentQuestions = [];
-    }
-
-    currentQuestions.push(...formattedQuestions);
-
-    await fs.writeFile(dataFilePath, JSON.stringify(currentQuestions, null, 2), "utf-8");
+    const returnedQuestions = createdQuestions.map((q) => ({
+      id: String(q._id),
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      explanation: q.explanation || "",
+    }));
 
     return success({
-      addedCount: formattedQuestions.length,
-      questions: formattedQuestions,
+      addedCount: returnedQuestions.length,
+      questions: returnedQuestions,
     });
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+function extractQuestionObjects(jsonStr: string): any[] {
+  const objects: any[] = [];
+  let inString = false;
+  let escape = false;
+  const stack: number[] = [];
+
+  for (let i = 0; i < jsonStr.length; i++) {
+    const char = jsonStr[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escape = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === '{') {
+        stack.push(i);
+      } else if (char === '}') {
+        const start = stack.pop();
+        if (start !== undefined) {
+          const objStr = jsonStr.substring(start, i + 1);
+          try {
+            const obj = JSON.parse(objStr);
+            if (obj && typeof obj === "object" && "question" in obj && "options" in obj) {
+              objects.push(obj);
+            }
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }
+    }
+  }
+  return objects;
 }

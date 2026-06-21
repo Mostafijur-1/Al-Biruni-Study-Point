@@ -31,6 +31,22 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Filters State
+  const [filterLevel, setFilterLevel] = useState<string>("all");
+  const [filterSubject, setFilterSubject] = useState<string>("all");
+  const [filterChapter, setFilterChapter] = useState<string>("all");
+  const [filterTeacherId, setFilterTeacherId] = useState<string>("all");
+
+  // Reset selected ids when filter changes
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [filterLevel, filterSubject, filterChapter, filterTeacherId]);
+
+  // Reset chapter filter when subject filter changes
+  useEffect(() => {
+    setFilterChapter("all");
+  }, [filterSubject]);
+
   // Bulk Actions State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkApproving, setBulkApproving] = useState(false);
@@ -73,6 +89,36 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
   useEffect(() => {
     fetchPendingQuestions();
   }, []);
+
+  // Extract unique filter options from pending questions list
+  const uniqueTeachers = Array.from(
+    new Map(
+      questions
+        .map((q) => q.createdBy)
+        .filter((t): t is { id: string; name: string } => !!t)
+        .map((t) => [t.id, t])
+    ).values()
+  );
+
+  const uniqueSubjects = Array.from(new Set(questions.map((q) => q.subject)));
+
+  // If filterSubject is set, only show chapters for that subject
+  const uniqueChapters = Array.from(
+    new Set(
+      questions
+        .filter((q) => filterSubject === "all" || q.subject === filterSubject)
+        .map((q) => q.chapter)
+    )
+  );
+
+  // Apply filters
+  const filteredQuestions = questions.filter((q) => {
+    if (filterLevel !== "all" && q.level !== filterLevel) return false;
+    if (filterSubject !== "all" && q.subject !== filterSubject) return false;
+    if (filterChapter !== "all" && q.chapter !== filterChapter) return false;
+    if (filterTeacherId !== "all" && (!q.createdBy || q.createdBy.id !== filterTeacherId)) return false;
+    return true;
+  });
 
   async function handleApprove(id: string) {
     setActionId(id);
@@ -125,7 +171,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
   // Bulk Select Handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(questions.map((q) => q.id));
+      setSelectedIds(filteredQuestions.map((q) => q.id));
     } else {
       setSelectedIds([]);
     }
@@ -327,33 +373,117 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Bulk Selection Bar */}
-          <div className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="select-all-pending"
-                checked={selectedIds.length === questions.length && questions.length > 0}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-                className="rounded border-border text-primary focus:ring-primary size-4 cursor-pointer"
-              />
-              <label htmlFor="select-all-pending" className="text-sm font-bold text-primary cursor-pointer select-none">
-                {locale === "bn" ? `সব নির্বাচন করুন (${questions.length})` : `Select All (${questions.length})`}
-              </label>
+          {/* Filters Control Panel */}
+          <div className="rounded-xl border border-border bg-card p-4 shadow-xs grid gap-4 sm:grid-cols-4">
+            {/* Level filter */}
+            <div className="space-y-1">
+              <Label htmlFor="filter-review-level" className="text-xs font-bold text-muted-foreground">
+                {locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}
+              </Label>
+              <select
+                id="filter-review-level"
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
+              >
+                <option value="all">{locale === "bn" ? "সকল স্তর" : "All Levels"}</option>
+                <option value="ssc">SSC</option>
+                <option value="hsc">HSC</option>
+              </select>
             </div>
-            <Button
-              onClick={handleBulkApprove}
-              disabled={selectedIds.length === 0 || bulkApproving}
-              loading={bulkApproving}
-              className="rounded-xl font-bold py-2 px-5"
-            >
-              {locale === "bn" ? `নির্বাচিতগুলো অনুমোদন করুন (${selectedIds.length})` : `Approve Selected (${selectedIds.length})`}
-            </Button>
+
+            {/* Subject filter */}
+            <div className="space-y-1">
+              <Label htmlFor="filter-review-subject" className="text-xs font-bold text-muted-foreground">
+                {locale === "bn" ? "বিষয়" : "Subject"}
+              </Label>
+              <select
+                id="filter-review-subject"
+                value={filterSubject}
+                onChange={(e) => setFilterSubject(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
+              >
+                <option value="all">{locale === "bn" ? "সকল বিষয়" : "All Subjects"}</option>
+                {uniqueSubjects.map((sub) => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Chapter filter */}
+            <div className="space-y-1">
+              <Label htmlFor="filter-review-chapter" className="text-xs font-bold text-muted-foreground">
+                {locale === "bn" ? "অধ্যায়" : "Chapter"}
+              </Label>
+              <select
+                id="filter-review-chapter"
+                value={filterChapter}
+                onChange={(e) => setFilterChapter(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
+              >
+                <option value="all">{locale === "bn" ? "সকল অধ্যায়" : "All Chapters"}</option>
+                {uniqueChapters.map((chap) => (
+                  <option key={chap} value={chap}>
+                    {getTranslatedChapter(chap, locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Teacher filter */}
+            <div className="space-y-1">
+              <Label htmlFor="filter-review-teacher" className="text-xs font-bold text-muted-foreground">
+                {locale === "bn" ? "শিক্ষক" : "Teacher"}
+              </Label>
+              <select
+                id="filter-review-teacher"
+                value={filterTeacherId}
+                onChange={(e) => setFilterTeacherId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
+              >
+                <option value="all">{locale === "bn" ? "সকল শিক্ষক" : "All Teachers"}</option>
+                {uniqueTeachers.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Questions list */}
-          <div className="space-y-4">
-            {questions.map((q, idx) => (
+          {filteredQuestions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/45 p-12 text-center text-muted-foreground text-sm">
+              {locale === "bn"
+                ? "বাছাইকৃত ফিল্টার অনুযায়ী কোনো অপেক্ষমান প্রশ্ন পাওয়া যায়নি।"
+                : "No pending questions match the selected filters."}
+            </div>
+          ) : (
+            <>
+              {/* Bulk Selection Bar */}
+              <div className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in duration-150">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="select-all-pending"
+                    checked={selectedIds.length === filteredQuestions.length && filteredQuestions.length > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded border-border text-primary focus:ring-primary size-4 cursor-pointer"
+                  />
+                  <label htmlFor="select-all-pending" className="text-sm font-bold text-primary cursor-pointer select-none">
+                    {locale === "bn" ? `সব নির্বাচন করুন (${filteredQuestions.length})` : `Select All (${filteredQuestions.length})`}
+                  </label>
+                </div>
+                <Button
+                  onClick={handleBulkApprove}
+                  disabled={selectedIds.length === 0 || bulkApproving}
+                  loading={bulkApproving}
+                  className="rounded-xl font-bold py-2 px-5"
+                >
+                  {locale === "bn" ? `নির্বাচিতগুলো অনুমোদন করুন (${selectedIds.length})` : `Approve Selected (${selectedIds.length})`}
+                </Button>
+              </div>
+
+              {/* Questions list */}
+              <div className="space-y-4">
+                {filteredQuestions.map((q, idx) => (
               <article
                 key={q.id}
                 className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4"
@@ -471,8 +601,10 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
               </article>
             ))}
           </div>
-        </div>
+        </>
       )}
+    </div>
+  )}
 
       {/* --- ADMIN EDIT MCQ MODAL --- */}
       {editingMcq && (

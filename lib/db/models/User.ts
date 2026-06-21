@@ -66,11 +66,13 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true },
 );
 
-UserSchema.index({ phone: 1 }, { unique: true, sparse: true });
-UserSchema.index({ email: 1 }, { unique: true, sparse: true });
-UserSchema.index({ role: 1, isActive: 1 });
-UserSchema.index({ role: 1, studentClass: 1 });
-UserSchema.index({ approvalStatus: 1 });
+if (!mongoose.models.User) {
+  UserSchema.index({ phone: 1 }, { unique: true, sparse: true });
+  UserSchema.index({ email: 1 }, { unique: true, sparse: true });
+  UserSchema.index({ role: 1, isActive: 1 });
+  UserSchema.index({ role: 1, studentClass: 1 });
+  UserSchema.index({ approvalStatus: 1 });
+}
 
 const ExistingUserModel = mongoose.models.User as Model<IUser> | undefined;
 

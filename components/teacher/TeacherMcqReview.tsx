@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { getTranslatedChapter } from "@/lib/content/syllabus";
@@ -58,7 +59,7 @@ type TeacherMcqReviewProps = {
 };
 
 export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
-  const [activeTab, setActiveTab] = useState<"upload" | "reports">("upload");
+  const [activeTab, setActiveTab] = useState<"upload" | "reports" | "uploaded">("upload");
 
   // Upload states
   const [uploadLevel, setUploadLevel] = useState<"ssc" | "hsc">("ssc");
@@ -72,6 +73,16 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
+
+  // Uploaded MCQs filter and selection states
+  const [filterLevel, setFilterLevel] = useState<"ssc" | "hsc">("ssc");
+  const [filterSubject, setFilterSubject] = useState("");
+  const [filterChapter, setFilterChapter] = useState("");
+  const [availableChaptersForFilter, setAvailableChaptersForFilter] = useState<string[]>([]);
+  const [uploadedQuestions, setUploadedQuestions] = useState<MCQQuestion[]>([]);
+  const [loadingUploaded, setLoadingUploaded] = useState(false);
+  const [selectedUploadedIds, setSelectedUploadedIds] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Domain subjects/chapters
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
@@ -213,6 +224,66 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     }
   }, [activeTab, fetchReports]);
 
+  // Fetch teacher's own uploaded MCQs
+  const fetchUploadedQuestions = useCallback(async (level: string, subject: string, chapter: string) => {
+    if (!level || !subject || !chapter) return;
+    try {
+      setLoadingUploaded(true);
+      setErrorMessage("");
+      setSelectedUploadedIds([]);
+      const { ok, payload } = await apiFetch<{ questions: MCQQuestion[] }>(
+        `/api/teacher/mcqs?level=${level}&subject=${subject}&chapter=${chapter}&scope=my-uploaded`
+      );
+      if (ok && isApiSuccess(payload)) {
+        setUploadedQuestions(payload.data.questions);
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to load uploaded questions."));
+      }
+    } catch (error) {
+      console.error("[Fetch Uploaded Questions Catch Error]:", error);
+      setErrorMessage("An error occurred fetching uploaded questions.");
+    } finally {
+      setLoadingUploaded(false);
+    }
+  }, []);
+
+  // Fetch when filter selections change
+  useEffect(() => {
+    if (activeTab === "uploaded" && filterLevel && filterSubject && filterChapter) {
+      fetchUploadedQuestions(filterLevel, filterSubject, filterChapter);
+    }
+  }, [activeTab, filterLevel, filterSubject, filterChapter, fetchUploadedQuestions]);
+
+  // Bulk delete uploaded MCQs
+  const handleBulkDeleteUploaded = async () => {
+    if (selectedUploadedIds.length === 0) return;
+    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে আপনি ${selectedUploadedIds.length}টি প্রশ্ন মুছে ফেলতে চান?` : `Are you sure you want to delete ${selectedUploadedIds.length} selected questions?`)) return;
+
+    try {
+      setBulkDeleting(true);
+      const { ok, payload } = await apiFetch("/api/teacher/mcqs", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedUploadedIds }),
+      });
+
+      if (ok && isApiSuccess(payload)) {
+        setSuccessMessage(locale === "bn" ? "নির্বাচিত প্রশ্নসমূহ সফলভাবে মুছে ফেলা হয়েছে।" : "Selected questions deleted successfully.");
+        setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q._id)));
+        setReports((prev) => prev.filter((r) => !r.questionId || !selectedUploadedIds.includes(r.questionId._id)));
+        setSelectedUploadedIds([]);
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } else {
+        setErrorMessage(getApiErrorMessage(payload, "Failed to delete selected questions."));
+      }
+    } catch (error) {
+      console.error("[Bulk Delete MCQ Catch Error]:", error);
+      setErrorMessage("An error occurred during bulk deletion.");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   // Delete MCQ
   const handleDeleteMcq = async (id: string) => {
     if (!confirm(locale === "bn" ? "আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?" : "Are you sure you want to delete this question?")) return;
@@ -226,6 +297,8 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         setSuccessMessage(locale === "bn" ? "প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।" : "Question deleted successfully.");
         // Remove from list
         setReports((prev) => prev.filter((r) => r.questionId?._id !== id));
+        setUploadedQuestions((prev) => prev.filter((q) => q._id !== id));
+        setSelectedUploadedIds((prev) => prev.filter((item) => item !== id));
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to delete question."));
@@ -315,6 +388,9 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         
         // Update lists
         setReports((prev) => prev.filter((r) => r.questionId?._id !== updated._id)); // remove report since it's edited and resolved
+        setUploadedQuestions((prev) =>
+          prev.map((q) => (q._id === updated._id ? updated : q))
+        );
         
         setSuccessMessage(locale === "bn" ? "প্রশ্নটি সফলভাবে আপডেট করা হয়েছে।" : "Question updated successfully.");
         setEditingMcq(null);
@@ -400,6 +476,23 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
           )}
         >
           <span>{locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload MCQ"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("uploaded");
+            setErrorMessage("");
+            setUploadError("");
+            setUploadSuccess("");
+          }}
+          className={cn(
+            "px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5",
+            activeTab === "uploaded"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-primary"
+          )}
+        >
+          <span>{locale === "bn" ? "আপলোডকৃত প্রশ্নসমূহ" : "Uploaded MCQs"}</span>
         </button>
         <button
           type="button"
@@ -569,6 +662,234 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         </div>
       )}
 
+      {/* --- TAB CONTENT: UPLOADED --- */}
+      {activeTab === "uploaded" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4">
+            <h2 className="font-display text-lg font-bold text-primary">
+              {locale === "bn" ? "আপনার আপলোডকৃত প্রশ্নসমূহ" : "Your Uploaded MCQs"}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* Subject Selection */}
+              <div className="space-y-1.5">
+                <Label htmlFor="filter-subject" className="font-bold">
+                  {locale === "bn" ? "বিষয়" : "Subject"}
+                </Label>
+                <select
+                  id="filter-subject"
+                  value={filterSubject}
+                  onChange={(e) => {
+                    const selectedVal = e.target.value;
+                    setFilterSubject(selectedVal);
+                    setFilterChapter("");
+                    const matchingSub = subjects.find(s => s.subject === selectedVal);
+                    if (matchingSub) {
+                      setFilterLevel(matchingSub.level);
+                      setAvailableChaptersForFilter(matchingSub.chapters);
+                    } else {
+                      setAvailableChaptersForFilter([]);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                >
+                  <option value="">{locale === "bn" ? "-- বিষয় নির্বাচন করুন --" : "-- Select Subject --"}</option>
+                  {subjects.map((sub) => (
+                    <option key={`${sub.level}-${sub.subject}`} value={sub.subject}>
+                      {sub.subject} ({sub.level.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chapter Selection */}
+              <div className="space-y-1.5">
+                <Label htmlFor="filter-chapter" className="font-bold">
+                  {locale === "bn" ? "অধ্যায়" : "Chapter"}
+                </Label>
+                <select
+                  id="filter-chapter"
+                  value={filterChapter}
+                  onChange={(e) => setFilterChapter(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
+                  disabled={!filterSubject}
+                >
+                  <option value="">{locale === "bn" ? "-- অধ্যায় নির্বাচন করুন --" : "-- Select Chapter --"}</option>
+                  {availableChaptersForFilter.map((chap) => (
+                    <option key={chap} value={chap}>
+                      {getTranslatedChapter(chap, locale)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Level Display */}
+              <div className="space-y-1.5">
+                <Label className="font-bold">
+                  {locale === "bn" ? "লেভেল" : "Level"}
+                </Label>
+                <input
+                  type="text"
+                  disabled
+                  value={filterSubject ? filterLevel.toUpperCase() : ""}
+                  className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm font-semibold text-muted-foreground outline-none cursor-not-allowed"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* MCQs List */}
+          {loadingUploaded ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
+              <Loader2 className="size-6 animate-spin text-primary" />
+              <span>{locale === "bn" ? "প্রশ্ন লোড হচ্ছে..." : "Loading uploaded questions..."}</span>
+            </div>
+          ) : !filterSubject || !filterChapter ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
+              {locale === "bn" ? "প্রশ্ন দেখতে বিষয় এবং অধ্যায় নির্বাচন করুন।" : "Please select subject and chapter to view questions."}
+            </div>
+          ) : uploadedQuestions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
+              {locale === "bn" ? "এই অধ্যায়ে আপনার আপলোডকৃত কোনো প্রশ্ন পাওয়া যায়নি।" : "No uploaded questions found for this chapter."}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Bulk Actions Header */}
+              <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4 shadow-sm">
+                <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={
+                      uploadedQuestions.length > 0 &&
+                      selectedUploadedIds.length === uploadedQuestions.length
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedUploadedIds(uploadedQuestions.map((q) => q._id));
+                      } else {
+                        setSelectedUploadedIds([]);
+                      }
+                    }}
+                    className="rounded border-border text-primary focus:ring-primary size-4"
+                  />
+                  <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    {selectedUploadedIds.length} {locale === "bn" ? "টি নির্বাচিত" : "selected"}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={selectedUploadedIds.length === 0 || bulkDeleting}
+                    loading={bulkDeleting}
+                    onClick={handleBulkDeleteUploaded}
+                    className="rounded-lg text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
+                  >
+                    <Trash2 className="size-3.5 mr-1" />
+                    {locale === "bn" ? "মুছে ফেলুন" : "Delete Selected"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Questions List */}
+              <div className="space-y-4">
+                {uploadedQuestions.map((q, idx) => (
+                  <article
+                    key={q._id}
+                    className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedUploadedIds.includes(q._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUploadedIds((prev) => [...prev, q._id]);
+                            } else {
+                              setSelectedUploadedIds((prev) => prev.filter((id) => id !== q._id));
+                            }
+                          }}
+                          className="rounded border-border text-primary focus:ring-primary size-4"
+                        />
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-secondary text-primary">
+                          Q {idx + 1}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal(q)}
+                          className="rounded-lg h-8 text-xs font-bold text-primary"
+                        >
+                          <Edit className="size-3.5 mr-1" />
+                          {locale === "bn" ? "এডিট" : "Edit"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteMcq(q._id)}
+                          className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
+                        >
+                          <Trash2 className="size-3.5 mr-1" />
+                          {locale === "bn" ? "মুছুন" : "Delete"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3.5">
+                      <h4 className="text-base font-bold text-foreground">{q.question}</h4>
+
+                      {q.imageUrl && (
+                        <img
+                          src={q.imageUrl}
+                          alt="MCQ image"
+                          className="max-w-full max-h-48 rounded object-contain border bg-secondary/10"
+                        />
+                      )}
+
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {q.options.map((opt, oIdx) => {
+                          const isCorrect = oIdx === q.correctIndex;
+                          return (
+                            <div
+                              key={oIdx}
+                              className={cn(
+                                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+                                isCorrect
+                                  ? "border-emerald-300 bg-emerald-50/50 text-emerald-800 font-bold"
+                                  : "border-border text-muted-foreground"
+                              )}
+                            >
+                              <span className="size-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
+                                {OPTION_BADGES[oIdx]}
+                              </span>
+                              <span>{opt}</span>
+                              {isCorrect && <Check className="size-4 shrink-0 ml-auto" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {q.explanation && (
+                        <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
+                          <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* --- TAB CONTENT: UPLOAD --- */}
       {activeTab === "upload" && (
         <div className="space-y-4 animate-in fade-in duration-200">
@@ -593,13 +914,6 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-2">
                 <AlertTriangle className="size-4 shrink-0" />
                 <span>{uploadError}</span>
-              </div>
-            )}
-
-            {uploadSuccess && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 flex items-center gap-2">
-                <Check className="size-4 shrink-0 text-emerald-600" />
-                <span>{uploadSuccess}</span>
               </div>
             )}
 
@@ -737,7 +1051,15 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 </div>
               )}
 
-              <div className="flex justify-end pt-2">
+              <UploadingIndicator isUploading={uploading} locale={locale} className="my-2" />
+
+              <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+                {uploadSuccess && (
+                  <div className="flex min-w-0 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 sm:max-w-md">
+                    <Check className="size-4 shrink-0 text-emerald-600" />
+                    <span className="min-w-0 break-words">{uploadSuccess}</span>
+                  </div>
+                )}
                 <Button
                   type="submit"
                   loading={uploading}
@@ -748,7 +1070,11 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                   }
                   className="rounded-xl px-6"
                 >
-                  {locale === "bn" ? "আপলোড করুন" : "Upload to Database"}
+                  {uploading ? (
+                    locale === "bn" ? "এমসিকিউ আপলোড হচ্ছে..." : "Uploading MCQs..."
+                  ) : (
+                    locale === "bn" ? "আপলোড করুন" : "Upload to Database"
+                  )}
                 </Button>
               </div>
             </form>
@@ -923,5 +1249,4 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
     </section>
   );
 }
-
 
