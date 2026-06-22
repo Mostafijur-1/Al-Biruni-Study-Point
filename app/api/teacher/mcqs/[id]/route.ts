@@ -58,8 +58,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return fail("Access denied to this question's subject/level", 403);
     }
 
-    if (!question.isTeacherSet || String(question.createdBy) !== String(user._id)) {
-      return fail("Access denied. You can only edit questions you created.", 403);
+    const isCreator = question.isTeacherSet && String(question.createdBy) === String(user._id);
+    const isReported = await ReportedQuestion.exists({ questionId: question._id });
+
+    if (!isCreator && !isReported) {
+      return fail("Access denied. You can only edit questions you created or that have been reported.", 403);
     }
 
     const body = await request.json();
@@ -127,8 +130,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return fail("Access denied to this question's subject/level", 403);
     }
 
-    if (!question.isTeacherSet || String(question.createdBy) !== String(user._id)) {
-      return fail("Access denied. You can only delete questions you created.", 403);
+    const isCreator = question.isTeacherSet && String(question.createdBy) === String(user._id);
+    const isReported = await ReportedQuestion.exists({ questionId: question._id });
+
+    if (!isCreator && !isReported) {
+      return fail("Access denied. You can only delete questions you created or that have been reported.", 403);
     }
 
     await PracticeQuestion.deleteOne({ _id: id });

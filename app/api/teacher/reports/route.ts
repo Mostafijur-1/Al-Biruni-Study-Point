@@ -70,14 +70,46 @@ const resolveReportSchema = z.object({
 export async function PUT(request: NextRequest) {
   try {
     await connectDB();
-    await requireAuth(request, ["teacher"]);
+    const sessionUser = await requireAuth(request, ["teacher"]);
 
     const body = await request.json();
     const parsed = resolveReportSchema.parse(body);
 
-    const report = await ReportedQuestion.findById(parsed.reportId);
+    // Retrieve full user to get teacherDomain
+    const user = await User.findById(sessionUser.id).lean();
+    if (!user) {
+      return fail("User not found", 404);
+    }
+
+    const report = await ReportedQuestion.findById(parsed.reportId).populate({
+      path: "questionId",
+      model: "PracticeQuestion",
+    });
     if (!report) {
       return fail("Report not found", 404);
+    }
+
+    const question = report.questionId as any;
+    if (question) {
+      const domain = user.teacherDomain;
+      let allowed = false;
+      if (domain?.isAll) {
+        allowed = true;
+      } else {
+        const allowedLevels: string[] = [];
+        if (domain?.classes?.some(c => c === "class-9" || c === "class-10")) allowedLevels.push("ssc");
+        if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
+
+        const levelAllowed = allowedLevels.includes(question.level);
+        const subjectAllowed = domain?.subjects?.includes(question.subject);
+        if (levelAllowed && subjectAllowed) {
+          allowed = true;
+        }
+      }
+
+      if (!allowed) {
+        return fail("Access denied to this question's subject/level", 403);
+      }
     }
 
     report.resolved = true;
