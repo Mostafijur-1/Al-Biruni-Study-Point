@@ -45,7 +45,7 @@ const linksByRole: Record<UserRole, NavItem[]> = {
     { href: "/admin/profile", label: "Profile", icon: UserCircle },
     { href: "/admin/students", label: "Students", icon: Users },
     { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
-    { href: "/admin/practice-mcqs", label: "Practice MCQs", icon: Brain },
+    { href: "/admin/practice-mcqs", label: "Settings", icon: Brain },
   ],
 };
 
