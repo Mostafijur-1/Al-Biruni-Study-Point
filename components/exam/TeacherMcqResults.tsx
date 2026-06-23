@@ -429,7 +429,7 @@ function McqResultMobileCard({
                 <XCircle className="size-3.5" />
                 {row.wrongAnswers.length} Wrong Answers
               </p>
-              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              <div className="space-y-3">
                 {row.wrongAnswers.map((wa, idx) => (
                   <WrongAnswerCard key={idx} wa={wa} index={idx} />
                 ))}
