@@ -28,9 +28,7 @@ export function Footer({ brand, footer, navigation, contact }: FooterProps) {
             <p className="col-span-2 text-xs font-bold uppercase tracking-widest text-brand-yellow sm:col-span-1">
               {footer.quickLinks}
             </p>
-            <Link href={"/about"} className="text-white/90 transition hover:text-brand-yellow">
-              {navigation.about}
-            </Link>
+            
             <Link href={"/courses"} className="text-white/90 transition hover:text-brand-yellow">
               {navigation.courses}
             </Link>
