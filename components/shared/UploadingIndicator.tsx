@@ -11,29 +11,21 @@ interface UploadingIndicatorProps {
 }
 
 const STEPS_BN = [
-  { text: "ফাইল সার্ভারে পাঠানো হচ্ছে...", icon: FileText },
-  { text: "জেমিনী এআই (Gemini AI) প্রশ্নগুলো বিশ্লেষণ করছে...", icon: Brain },
-  { text: "এমসিকিউ এর গঠন ও অপশনগুলো বিন্যাস করা হচ্ছে...", icon: Cpu },
-  { text: "গাণিতিক প্রতীক ও লেখা সংশোধন করা হচ্ছে...", icon: Sparkles },
-  { text: "ডাটাবেজে যুক্ত করা হচ্ছে... প্রায় শেষ!", icon: Database },
-];
-
-const STEPS_EN = [
-  { text: "Uploading file/text to the server...", icon: FileText },
-  { text: "Gemini AI is analyzing and processing the questions...", icon: Brain },
-  { text: "Structuring options and answers for the MCQs...", icon: Cpu },
-  { text: "Formatting mathematical notations & text...", icon: Sparkles },
-  { text: "Saving questions to the database... almost done!", icon: Database },
+  { text: "File সার্ভারে আপলোড করা হচ্ছে...", icon: FileText },
+  { text: "Gemini AI প্রশ্নগুলো Analyze করছে...", icon: Brain },
+  { text: "MCQ-এর Structure ও Options সাজানো হচ্ছে...", icon: Cpu },
+  { text: "গাণিতিক প্রতীক ও Text সংশোধন করা হচ্ছে...", icon: Sparkles },
+  { text: "Database-এ সেভ করা হচ্ছে... প্রায় শেষ!", icon: Database },
 ];
 
 export function UploadingIndicator({
   isUploading,
-  locale = "en",
+  locale = "bn",
   className,
 }: UploadingIndicatorProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [progress, setProgress] = useState(5);
-  const steps = locale === "bn" ? STEPS_BN : STEPS_EN;
+  const steps = STEPS_BN;
 
   useEffect(() => {
     if (!isUploading) {
@@ -98,10 +90,10 @@ export function UploadingIndicator({
         <div className="flex-1 text-center md:text-left space-y-1.5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
             <span className="text-2xs font-bold uppercase tracking-wider text-primary font-mono">
-              {locale === "bn" ? "এআই রূপান্তর চলমান" : "AI CONVERSION IN PROGRESS"}
+              AI Conversion চলমান
             </span>
             <span className="text-2xs font-bold text-muted font-sans">
-              {locale === "bn" ? `আনুমানিক অগ্রগতি: ${progress}%` : `Estimated Progress: ${progress}%`}
+              আনুমানিক Progress: {progress}%
             </span>
           </div>
 
@@ -110,9 +102,7 @@ export function UploadingIndicator({
           </h4>
 
           <p className="text-3xs md:text-2xs text-muted font-medium">
-            {locale === "bn"
-              ? "⚠️ দয়া করে পেজটি রিফ্রেশ বা উইন্ডোটি বন্ধ করবেন না। এআই প্রসেস করতে ৩০-৬০ সেকেন্ড সময় লাগতে পারে।"
-              : "⚠️ Please do not refresh the page or close this window. AI processing may take 30-60 seconds."}
+            ⚠️ দয়া করে Page রিফ্রেশ বা Window বন্ধ করবেন না। AI processing সম্পন্ন হতে ৩০-৬০ সেকেন্ড সময় লাগতে পারে।
           </p>
         </div>
       </div>

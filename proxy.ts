@@ -37,14 +37,9 @@ export function proxy(request: NextRequest) {
 
   if (!matchedRole) {
     // If not protected, and not explicit bn (handled above),
-    // and it is English, we don't rewrite because Next.js handles it natively at /en/...
-    // But if it is Bangla (locale = 'bn'), we must rewrite internally to /bn/...
-    // because all pages are structured inside app/[locale].
-    if (locale === "bn") {
-      const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
-      return NextResponse.rewrite(url);
-    }
-    return NextResponse.next();
+    // we rewrite internally to /bn/... because all pages are structured inside app/[locale].
+    const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
+    return NextResponse.rewrite(url);
   }
 
   // Auth/Role protection logic:
@@ -66,11 +61,8 @@ export function proxy(request: NextRequest) {
       pathWithoutLocale === "/student/practice" ||
       pathWithoutLocale.startsWith("/student/practice/");
     if (isGuestAllowed) {
-      if (locale === "bn") {
-        const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
-        return NextResponse.rewrite(url);
-      }
-      return NextResponse.next();
+      const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
+      return NextResponse.rewrite(url);
     }
   }
 
@@ -89,12 +81,8 @@ export function proxy(request: NextRequest) {
   }
 
   // If role is authorized:
-  if (locale === "bn") {
-    const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
-    return NextResponse.rewrite(url);
-  }
-
-  return NextResponse.next();
+  const url = new URL(`/bn${pathname}${request.nextUrl.search}`, request.url);
+  return NextResponse.rewrite(url);
 }
 
 export const config = {

@@ -17,14 +17,19 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-brand-red text-white shadow-sm hover:bg-brand-red-hover",
-        secondary: "border-2 border-primary bg-surface text-primary hover:bg-secondary",
+        secondary:
+          "border-2 border-primary bg-surface text-primary hover:bg-secondary " +
+          "dark:border-border dark:text-foreground dark:bg-surface dark:hover:bg-secondary/70",
         accent: "bg-brand-yellow text-accent-foreground shadow-sm hover:bg-accent-hover",
         navy: "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover",
-        ghost: "text-muted hover:bg-secondary hover:text-primary",
+        ghost:
+          "text-muted hover:bg-secondary hover:text-primary " +
+          "dark:hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
         link: "text-brand-red underline-offset-4 hover:underline active:scale-100",
         outline:
-          "border border-border bg-surface text-primary shadow-sm hover:border-primary hover:bg-secondary",
+          "border border-border bg-surface text-primary shadow-sm hover:border-primary hover:bg-secondary " +
+          "dark:text-foreground dark:hover:border-border dark:hover:bg-secondary/70",
       },
       size: {
         default: "h-11 px-5 py-2",

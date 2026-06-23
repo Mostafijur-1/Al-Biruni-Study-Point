@@ -1,15 +1,11 @@
-export const locales = ["bn", "en"] as const;
+export const locales = ["bn"] as const;
 
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = "bn";
 
 export function getLocalizedPath(path: string, locale: Locale = defaultLocale) {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  if (locale === "bn") {
-    return normalizedPath;
-  }
-  return `/en${normalizedPath === "/" ? "" : normalizedPath}`;
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
 export function createLocalizedPath(locale: Locale) {
@@ -23,11 +19,7 @@ export function parseLocalizedPath(urlOrPath: string): { locale: Locale; pathWit
   let locale: Locale = "bn";
   let cleanPath = pathOnly;
 
-  if (pathOnly.startsWith("/en") && (pathOnly.length === 3 || pathOnly[3] === "/")) {
-    locale = "en";
-    cleanPath = pathOnly.substring(3) || "/";
-  } else if (pathOnly.startsWith("/bn") && (pathOnly.length === 3 || pathOnly[3] === "/")) {
-    locale = "bn";
+  if (pathOnly.startsWith("/bn") && (pathOnly.length === 3 || pathOnly[3] === "/")) {
     cleanPath = pathOnly.substring(3) || "/";
   }
 

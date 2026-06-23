@@ -18,7 +18,7 @@ export function Footer({ locale, brand, footer, navigation, contact }: FooterPro
   const path = createLocalizedPath(locale);
 
   return (
-    <footer className="mt-auto border-t-4 border-brand-yellow bg-primary text-primary-foreground">
+    <footer className="mt-auto border-t-4 border-brand-yellow bg-navy text-primary-foreground">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10 lg:px-6">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-10">
           <div className="max-w-sm sm:col-span-2 lg:col-span-1">

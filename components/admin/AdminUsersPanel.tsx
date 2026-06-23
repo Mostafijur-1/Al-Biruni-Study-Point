@@ -457,7 +457,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                 <div className="flex items-start gap-3.5 pr-4">
                   <div className={cn(
                     "size-5 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-150",
-                    isAllDomain ? "border-emerald-500 bg-emerald-500 text-white" : "border-border bg-white"
+                    isAllDomain ? "border-emerald-500 bg-emerald-500 text-white" : "border-border bg-surface"
                   )}>
                     {isAllDomain && <Check className="size-3.5 stroke-[3]" />}
                   </div>
@@ -505,7 +505,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                               </span>
                               <div className={cn(
                                 "size-4 rounded-full border flex items-center justify-center transition-colors",
-                                isChecked ? "border-primary bg-primary text-white" : "border-border bg-white"
+                                isChecked ? "border-primary bg-primary text-white" : "border-border bg-surface"
                               )}>
                                 {isChecked && <Check className="size-2.5 stroke-[3]" />}
                               </div>
@@ -631,7 +631,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                                 <div className="flex items-center gap-2">
                                   <div className={cn(
                                     "size-4 rounded border flex items-center justify-center transition-colors shrink-0",
-                                    isChecked ? "border-primary bg-primary text-white" : "border-border bg-white"
+                                    isChecked ? "border-primary bg-primary text-white" : "border-border bg-surface"
                                   )}>
                                     {isChecked && <Check className="size-2.5 stroke-[3]" />}
                                   </div>

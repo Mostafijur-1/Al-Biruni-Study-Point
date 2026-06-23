@@ -48,7 +48,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
               {dict.hero.subtitle}
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 max-w-2xl">
-              <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-white/60 p-3 shadow-xs transition duration-200 hover:border-brand-blue/30 hover:bg-white/90">
+              <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-card/80 p-3 shadow-xs transition duration-200 hover:border-brand-blue/30 hover:bg-card">
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-red/10 text-brand-red">
                   <Calendar className="size-5" />
                 </span>
@@ -57,7 +57,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                   <p className="text-sm font-bold text-primary">{dict.hero.classStartVal}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-white/60 p-3 shadow-xs transition duration-200 hover:border-brand-yellow/40 hover:bg-white/90">
+              <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-card/80 p-3 shadow-xs transition duration-200 hover:border-brand-yellow/40 hover:bg-card">
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-yellow/15 text-accent-foreground">
                   <Percent className="size-5" />
                 </span>
@@ -90,7 +90,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
           </div>
 
           <div className="order-1 md:order-2">
-            <div className="overflow-hidden rounded-2xl border-2 border-brand-yellow bg-primary p-4 shadow-[var(--shadow-lg)] sm:p-6">
+            <div className="overflow-hidden rounded-2xl border-2 border-brand-yellow bg-navy p-4 shadow-[var(--shadow-lg)] sm:p-6">
               <div className="mb-4 flex justify-center sm:justify-start">
                 <Logo locale={locale} size="hero" link={false} />
               </div>
@@ -191,7 +191,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                       <span className={cn("grid size-11 place-items-center rounded-xl", subject.badgeBg)}>
                         <Icon className="size-5.5" />
                       </span>
-                      <span className="rounded-full bg-white/50 border border-white/80 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs uppercase tracking-wider text-muted-foreground">
+                      <span className="rounded-full bg-surface/60 border border-border/60 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs uppercase tracking-wider text-muted-foreground">
                         HSC 2028
                       </span>
                     </div>
@@ -326,7 +326,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
               <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-br from-brand-yellow via-brand-red to-brand-blue opacity-35 blur-xs transition duration-300 group-hover/tutor-img:opacity-60 group-hover/tutor-img:blur-md" />
               
               {/* Main image container */}
-              <div className="relative size-28 overflow-hidden rounded-2xl border-4 border-white bg-card shadow-md transition-all duration-300 sm:size-32 md:size-36 group-hover/tutor-img:scale-[1.02] group-hover/tutor-img:shadow-lg">
+              <div className="relative size-28 overflow-hidden rounded-2xl border-4 border-border bg-card shadow-md transition-all duration-300 sm:size-32 md:size-36 group-hover/tutor-img:scale-[1.02] group-hover/tutor-img:shadow-lg">
                 <Image
                   src="/lead-tutor.png"
                   alt={dict.tutor.name}

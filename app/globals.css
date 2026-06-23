@@ -52,7 +52,6 @@
   );
   --header-height: 4.25rem;
 }
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -80,6 +79,7 @@
   --color-brand-red-hover: var(--brand-red-hover);
   --color-brand-yellow: var(--brand-yellow);
   --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-light: var(--brand-blue-light);
   --color-navy: var(--navy);
   --font-sans: "Noto Sans Bengali", "Hind Siliguri", "Inter", system-ui, sans-serif;
   --font-serif: "Playfair Display", "Noto Serif Bengali", Georgia, serif;
@@ -128,4 +128,17 @@ a {
 button,
 [role="button"] {
   -webkit-tap-highlight-color: transparent;
+}
+
+
+/* ─── Smooth color transitions on theme switch ─────────── */
+body,
+header,
+footer,
+main,
+nav,
+aside,
+section,
+article {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease;
 }

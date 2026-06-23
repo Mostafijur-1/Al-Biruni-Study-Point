@@ -7,23 +7,23 @@ export const STUDENT_CLASSES = [
   "class-12",
 ] as const satisfies readonly StudentClass[];
 
-export const CLASS_LABELS: Record<StudentClass, { bn: string; en: string }> = {
-  "class-9": { bn: "নবম শ্রেণি", en: "Class 9" },
-  "class-10": { bn: "দশম শ্রেণি", en: "Class 10" },
-  "class-11": { bn: "একাদশ শ্রেণি", en: "Class 11" },
-  "class-12": { bn: "দ্বাদশ শ্রেণি", en: "Class 12" },
+export const CLASS_LABELS: Record<StudentClass, string> = {
+  "class-9": "নবম শ্রেণি",
+  "class-10": "দশম শ্রেণি",
+  "class-11": "একাদশ শ্রেণি",
+  "class-12": "দ্বাদশ শ্রেণি",
 };
 
-export function getClassLabel(studentClass: StudentClass, locale: "bn" | "en") {
-  return CLASS_LABELS[studentClass][locale];
+export function getClassLabel(studentClass: StudentClass, locale?: string) {
+  return CLASS_LABELS[studentClass];
 }
 
 export function formatClassList(
   classes: StudentClass[] | undefined,
-  locale: "bn" | "en",
+  locale?: string,
 ) {
   if (!classes?.length) {
-    return locale === "bn" ? "কোন শ্রেণি নির্ধারিত নয়" : "No class assigned";
+    return "কোন শ্রেণি নির্ধারিত নয়";
   }
 
   return classes.map((item) => getClassLabel(item, locale)).join(", ");

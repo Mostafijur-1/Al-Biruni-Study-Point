@@ -114,7 +114,7 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
                   ? "border-emerald-300 bg-emerald-50 text-emerald-900 font-semibold"
                   : isSelected
                   ? "border-red-300 bg-red-100 text-red-800"
-                  : "border-transparent bg-white/60 text-muted"
+                  : "border-transparent bg-card/60 text-muted"
               )}
             >
               <span className="shrink-0 font-bold">{OPTION_LABELS[i] ?? String.fromCharCode(65 + i)}.</span>
@@ -310,7 +310,7 @@ function ResultRow({
               }}
               className={cn(
                 "p-1.5 rounded-lg border text-muted transition hover:bg-secondary hover:text-primary cursor-pointer",
-                (commentOpen || result.teacherComment) ? "border-brand-yellow bg-brand-yellow/10 text-accent-foreground" : "border-border bg-white"
+                (commentOpen || result.teacherComment) ? "border-brand-yellow bg-brand-yellow/10 text-accent-foreground" : "border-border bg-surface"
               )}
               title="Add/Edit Comment"
             >
@@ -353,7 +353,7 @@ function ResultRow({
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer",
                 (commentOpen || result.teacherComment)
                   ? "border-brand-yellow bg-brand-yellow/10 text-accent-foreground"
-                  : "border-border bg-white text-muted hover:text-primary hover:bg-secondary"
+                  : "border-border bg-surface text-muted hover:text-primary hover:bg-secondary"
               )}
             >
               <MessageSquare className="size-3.5" />
@@ -419,7 +419,7 @@ function ResultRow({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="শিক্ষার্থীর জন্য মন্তব্য লিখুন... (Write a comment for the student)"
-              className="flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
             />
             <button
               type="button"
@@ -443,7 +443,7 @@ function ResultRow({
           }}
         >
           <div
-            className="bg-white rounded-2xl border border-border p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
+            className="bg-surface rounded-2xl border border-border p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-primary flex items-center gap-2">
@@ -457,7 +457,7 @@ function ResultRow({
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-muted hover:bg-secondary cursor-pointer"
+                className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted hover:bg-secondary cursor-pointer"
               >
                 Cancel
               </button>

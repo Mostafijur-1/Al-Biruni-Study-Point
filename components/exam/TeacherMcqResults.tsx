@@ -49,7 +49,7 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
                   ? "border-emerald-300 bg-emerald-50 text-emerald-900 font-semibold"
                   : isSelected
                   ? "border-red-300 bg-red-100 text-red-800"
-                  : "border-transparent bg-white/60 text-muted"
+                  : "border-transparent bg-card/60 text-muted"
               )}
             >
               <span className="shrink-0 font-bold">{OPTION_LABELS[i] ?? String.fromCharCode(65 + i)}.</span>
@@ -180,7 +180,7 @@ function McqResultRow({
               onClick={() => setExpanded(!expanded)}
               className={cn(
                 "p-1.5 rounded-lg border text-muted transition hover:bg-secondary hover:text-primary cursor-pointer",
-                (expanded || row.teacherComment) ? "border-brand-yellow bg-brand-yellow/10 text-accent-foreground" : "border-border bg-white"
+                (expanded || row.teacherComment) ? "border-brand-yellow bg-brand-yellow/10 text-accent-foreground" : "border-border bg-surface"
               )}
               title="Add/Edit Comment"
             >
@@ -201,7 +201,7 @@ function McqResultRow({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="rounded border border-border bg-white px-2 py-0.5 text-[9px] font-bold text-muted hover:bg-secondary cursor-pointer"
+                  className="rounded border border-border bg-surface px-2 py-0.5 text-[9px] font-bold text-muted hover:bg-secondary cursor-pointer"
                 >
                   No
                 </button>
@@ -222,7 +222,7 @@ function McqResultRow({
       {expanded && (
         <tr className="bg-secondary/5">
           <td colSpan={8} className="px-4 py-3">
-            <div className="space-y-4 p-4 bg-white/60 rounded-xl border border-border/80 my-1 shadow-2xs">
+            <div className="space-y-4 p-4 bg-surface/60 rounded-xl border border-border/80 my-1 shadow-2xs">
               
               {/* Wrong Answers List */}
               {row.wrongAnswers && row.wrongAnswers.length > 0 ? (
@@ -252,7 +252,7 @@ function McqResultRow({
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="শিক্ষার্থীর জন্য মন্তব্য লিখুন... (Write a comment for the student)"
-                    className="flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+                    className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"
@@ -406,7 +406,7 @@ function McqResultMobileCard({
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="rounded border border-border bg-white px-2 py-0.5 text-[9px] font-bold text-muted hover:bg-secondary cursor-pointer"
+              className="rounded border border-border bg-surface px-2 py-0.5 text-[9px] font-bold text-muted hover:bg-secondary cursor-pointer"
             >
               No
             </button>

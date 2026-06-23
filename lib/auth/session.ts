@@ -75,11 +75,14 @@ export async function requireAuth(
   }
 
   await connectDB();
-  const user = await User.findById(payload.userId);
+  const isTeacher = payload.role === "teacher";
+  const user = isTeacher
+    ? await User.findById(payload.userId)
+    : (await User.findById(payload.userId).lean()) as any;
 
   if (user?.role === "teacher" && user.isActive && isTeacherChargeExpired(user.teacherUsage)) {
     user.isActive = false;
-    await user.save();
+    await (user as any).save();
   }
 
   if (!user || !user.isActive) {

@@ -203,7 +203,7 @@ function StudentPracticeDashboard() {
         </div>
 
         {!checking && isGuest && (
-          <div className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-white/60 p-1 shadow-xs transition duration-200 hover:border-brand-blue/30 max-w-fit">
+          <div className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card/80 p-1 shadow-xs transition duration-200 hover:border-brand-blue/30 max-w-fit">
             <Link
               href={path(`/student/practice?level=SSC`)}
               className={cn(

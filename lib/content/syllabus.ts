@@ -373,11 +373,6 @@ export const CHAPTER_TRANSLATIONS: Record<string, string> = {
   "Chapter 6: Database Management System": "অধ্যায় ৬: ডেটাবেস ম্যানেজমেন্ট সিস্টেম",
 };
 
-/**
- * Returns the Bangla translation of a chapter name,
- * falling back to the original English string if not found.
- */
-export function getTranslatedChapter(chapter: string, locale: string): string {
-  if (locale !== "bn") return chapter;
+export function getTranslatedChapter(chapter: string, locale?: string): string {
   return CHAPTER_TRANSLATIONS[chapter] ?? chapter;
 }

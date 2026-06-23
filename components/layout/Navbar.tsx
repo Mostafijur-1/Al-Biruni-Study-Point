@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { GuestAuthLinks, UserMenu } from "@/components/layout/UserMenu";
-import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { useSession } from "@/lib/hooks/use-session";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import { publicNavPaths } from "@/lib/routes";
@@ -23,7 +22,7 @@ export function Navbar({ locale, navigation, auth }: NavbarProps) {
   });
 
   return (
-    <header className="sticky top-0 z-50 border-b-4 border-brand-yellow bg-primary shadow-[var(--shadow-md)]">
+    <header className="sticky top-0 z-50 border-b-4 border-brand-yellow bg-navy shadow-[var(--shadow-md)]">
       <div className="mx-auto flex h-[var(--header-height)] max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 lg:h-[4.75rem] lg:px-8 lg:py-2 xl:px-10">
         <Logo locale={locale} size="md" className="min-w-0 flex-1 sm:flex-none" />
 
@@ -40,13 +39,6 @@ export function Navbar({ locale, navigation, auth }: NavbarProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <div className="hidden lg:block">
-            <LocaleSwitcher
-              locale={locale}
-              className="border-white/25 bg-white/10 text-white hover:bg-white/15"
-            />
-          </div>
-
           <div className="hidden lg:flex lg:items-center lg:gap-2">
             {session ? (
               <UserMenu locale={locale} user={session} auth={auth} onLogout={() => setSession(null)} />

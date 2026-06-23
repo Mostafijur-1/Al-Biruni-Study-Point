@@ -8,11 +8,11 @@
     "home": "হোম",
     "explore": "ব্রাউজ",
     "about": "আমাদের সম্পর্কে",
-    "courses": "কোর্স",
-    "batches": "ব্যাচ",
+    "courses": "Courses",
+    "batches": "Batches",
     "contact": "যোগাযোগ",
-    "login": "লগইন",
-    "register": "রেজিস্টার"
+    "login": "Login",
+    "register": "Register"
   },
   "home": {
     "hero": {
@@ -38,22 +38,22 @@
       "title": "HSC 2028 অফলাইন ব্যাচে যা থাকছে",
       "subtitle": "বিশেষ আকর্ষণ ও বিষয়ভিত্তিক ফি কাঠামো",
       "physics": {
-        "title": "পদার্থবিজ্ঞান",
+        "title": "Physics",
         "schedule": "সপ্তাহে ২ টি ক্লাস",
         "fee": "১৩০০ টাকা"
       },
       "chemistry": {
-        "title": "রসায়ন",
+        "title": "Chemistry",
         "schedule": "সপ্তাহে ২ টি ক্লাস",
         "fee": "১৩০০ টাকা"
       },
       "math": {
-        "title": "উচ্চতর গণিত",
+        "title": "Higher Math",
         "schedule": "সপ্তাহে ২/৩ টি ক্লাস",
         "fee": "১৫০০ টাকা"
       },
       "ict": {
-        "title": "তথ্য ও যোগাযোগ প্রযুক্তি",
+        "title": "ICT",
         "schedule": "সপ্তাহে ২ টি ক্লাস",
         "fee": "১০০০ টাকা"
       },
@@ -69,11 +69,11 @@
       }
     },
     "subjects": {
-      "Physics": "পদার্থবিজ্ঞান",
-      "Chemistry": "রসায়ন",
-      "Math": "গণিত",
-      "Higher Math": "উচ্চতর গণিত",
-      "ICT": "তথ্য ও যোগাযোগ প্রযুক্তি"
+      "Physics": "Physics",
+      "Chemistry": "Chemistry",
+      "Math": "Math",
+      "Higher Math": "Higher Math",
+      "ICT": "ICT"
     },
     "batches": {
       "title": "চলমান ব্যাচ",
@@ -118,14 +118,14 @@
       "footer": "©ABSP — আল-বিরুনি স্টাডি পয়েন্ট"
     },
     "login": {
-      "title": "লগইন",
+      "title": "Login",
       "subtitle": "আপনার অ্যাকাউন্টে প্রবেশ করুন",
       "identifier": "ফোন বা ইমেইল",
       "password": "পাসওয়ার্ড",
-      "submit": "লগইন করুন",
-      "submitting": "লগইন হচ্ছে...",
+      "submit": "Login করুন",
+      "submitting": "Login হচ্ছে...",
       "noAccount": "অ্যাকাউন্ট নেই?",
-      "registerLink": "রেজিস্টার করুন"
+      "registerLink": "Register করুন"
     },
     "register": {
       "name": "নাম",
@@ -134,24 +134,24 @@
       "password": "পাসওয়ার্ড",
       "studentClass": "শ্রেণি",
       "hasAccount": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
-      "loginLink": "লগইন করুন",
-      "continueLogin": "লগইন পেজে যান",
+      "loginLink": "Login করুন",
+      "continueLogin": "Login পেজে যান",
       "teacherPrompt": "আপনি শিক্ষক?",
-      "teacherLink": "শিক্ষক রেজিস্ট্রেশন",
+      "teacherLink": "Teacher Registration",
       "studentPrompt": "শিক্ষার্থী রেজিস্ট্রেশন?",
-      "studentLink": "রেজিস্টার",
+      "studentLink": "Register",
       "student": {
         "eyebrow": "শিক্ষার্থী",
-        "title": "রেজিস্ট্রেশন",
+        "title": "Registration",
         "subtitle": "আপনার অ্যাকাউন্ট তৈরি করুন।",
-        "submit": "অ্যাকাউন্ট তৈরি করুন",
+        "submit": "Register করুন",
         "submitting": "তৈরি হচ্ছে..."
       },
       "teacher": {
         "eyebrow": "শিক্ষক",
-        "title": "শিক্ষক রেজিস্ট্রেশন",
+        "title": "Teacher Registration",
         "subtitle": "ফোন ও ইমেইল দিয়ে শিক্ষক হিসেবে আবেদন করুন। লগইনের আগে অ্যাডমিন অনুমোদন প্রয়োজন।",
-        "submit": "শিক্ষক হিসেবে আবেদন করুন",
+        "submit": "Apply as Teacher",
         "submitting": "আবেদন পাঠানো হচ্ছে..."
       },
       "classes": {
@@ -166,8 +166,8 @@
       "teacher": "শিক্ষক",
       "admin": "admin"
     },
-    "dashboard": "ড্যাশবোর্ড",
-    "logout": "লগআউট",
+    "dashboard": "Dashboard",
+    "logout": "Logout",
     "guestAccess": {
       "accessTitle": "লগইন প্রয়োজন",
       "accessBody": "এক্সেস করতে রেজিস্টার বা লগইন করুন।"

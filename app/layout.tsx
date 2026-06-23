@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" className="h-full antialiased">
-      <body className="min-h-full bg-background text-foreground">
+      <body className="min-h-full bg-background text-foreground transition-colors duration-200">
         {children}
         <PwaInstallPrompt />
       </body>

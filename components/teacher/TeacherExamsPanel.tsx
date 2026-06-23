@@ -301,7 +301,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
                       "flex items-center justify-center gap-1 rounded-xl border py-2 text-2xs font-bold transition cursor-pointer",
                       exam.isPublished
                         ? "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                        : "border-border bg-white text-muted hover:bg-secondary/40"
+                        : "border-border bg-surface text-muted hover:bg-secondary/40"
                     )}
                   >
                     {exam.isPublished ? (
@@ -323,7 +323,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
                       "flex items-center justify-center gap-1 rounded-xl border py-2 text-2xs font-bold transition cursor-pointer",
                       exam.resultsPublished
                         ? "border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100"
-                        : "border-border bg-white text-muted hover:bg-secondary/40"
+                        : "border-border bg-surface text-muted hover:bg-secondary/40"
                     )}
                   >
                     {exam.resultsPublished ? (

@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
 import { GuestAuthLinks, UserMenu } from "@/components/layout/UserMenu";
-import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { Logo } from "@/components/brand/Logo";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
@@ -66,7 +65,7 @@ export function MobileNav({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-primary lg:hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-navy lg:hidden">
           <div className="flex h-[var(--header-height)] shrink-0 items-center justify-between border-b border-white/15 px-4">
             <Logo locale={locale} size="sm" tone="onDark" link={false} />
             <button
@@ -104,10 +103,6 @@ export function MobileNav({
                 );
               })}
             </nav>
-
-            <div className="mt-6 flex items-center justify-between border-t border-white/15 pt-5">
-              <LocaleSwitcher locale={locale} className="border-white/25 text-white hover:bg-white/10" />
-            </div>
 
             <div className="mt-6 space-y-3 border-t border-white/15 pt-5">
               {session ? (

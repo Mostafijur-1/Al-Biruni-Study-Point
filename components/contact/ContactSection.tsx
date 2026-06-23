@@ -94,7 +94,7 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
           </article>
         </div>
 
-        <aside className="flex flex-col justify-between gap-6 rounded-xl border-2 border-primary/20 bg-[linear-gradient(160deg,#fff9e6_0%,#ffffff_50%,#e8f4fc_100%)] p-6 shadow-[var(--shadow-md)] sm:p-8">
+        <aside className="flex flex-col justify-between gap-6 rounded-xl border-2 border-primary/20 bg-[linear-gradient(160deg,#fff9e6_0%,#ffffff_50%,#e8f4fc_100%)] p-6 shadow-[var(--shadow-md)] dark:bg-[linear-gradient(160deg,#172536_0%,#162331_52%,#201d2a_100%)] sm:p-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-accent">ABSP</p>
             <h2 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">

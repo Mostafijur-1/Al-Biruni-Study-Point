@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const BRAND_MAIN = "আল-বিরুনি";
 const BRAND_SUB = "স্টাডি পয়েন্ট";
 
-type LogoTone = "onDark" | "onLight";
+type LogoTone = "onDark" | "onLight" | "dynamic";
 
 type LogoProps = {
   locale: Locale;
@@ -56,6 +56,10 @@ const palette = {
   onLight: {
     main: "text-[#0b2545]",
     sub: "text-[#5a6b7d]",
+  },
+  dynamic: {
+    main: "text-primary",
+    sub: "text-muted",
   },
 } as const;
 
