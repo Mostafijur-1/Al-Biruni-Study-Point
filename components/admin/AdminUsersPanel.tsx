@@ -42,21 +42,21 @@ type AdminUserRow = {
 };
 
 type AdminUsersPanelProps = {
-  locale: Locale;
-  role: Extract<UserRole, "student" | "teacher">;
+    role: Extract<UserRole, "student" | "teacher">;
 };
 
 function formatTeacherBillingDate(value: string | undefined, locale: Locale) {
   if (!value) return "Not set";
-  return new Date(value).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-US", {
+  return new Date(value).toLocaleDateString("bn-BD", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
+  const locale = "bn";
+      const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -74,8 +74,8 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
   const { data, message, isLoading, setData } = useApiQuery<{ users: AdminUserRow[] }>(
     `/api/admin/users?role=${role}`,
     {
-      loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
-      errorMessage: locale === "bn" ? "তালিকা লোড করা যায়নি।" : "Could not load users.",
+      loadingMessage: "লোড হচ্ছে...",
+      errorMessage: "তালিকা লোড করা যায়নি।",
     },
   );
 
@@ -138,7 +138,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
 
       setActionError(false);
       setActionMessage(
-        locale === "bn" ? "অ্যাকাউন্ট আপডেট হয়েছে।" : "Account updated successfully.",
+        "অ্যাকাউন্ট আপডেট হয়েছে।",
       );
       setData((current) =>
         current
@@ -238,7 +238,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
       {role === "student" && (
         <div className="flex max-w-md gap-2 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-sm)]">
           <Input
-            placeholder={locale === "bn" ? "রেফারেন্স দিয়ে ফিল্টার করুন..." : "Filter students by reference..."}
+            placeholder={"রেফারেন্স দিয়ে ফিল্টার করুন..."}
             value={studentSearchGlobalRef}
             onChange={(e) => setStudentSearchGlobalRef(e.target.value)}
             className="flex-1"
@@ -276,7 +276,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">{message}</p>
       ) : users.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-          {locale === "bn" ? "কোনো ব্যবহারকারী নেই।" : "No users found."}
+          {"কোনো ব্যবহারকারী নেই।"}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -364,7 +364,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   <p className="mt-1 text-xs text-muted">
                     {"Joined"}:{" "}
                     {new Date(user.createdAt).toLocaleDateString(
-                      locale === "bn" ? "bn-BD" : "en-US",
+                      "bn-BD",
                     )}
                   </p>
                 </div>
@@ -437,9 +437,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                 {`Manage Domain - ${selectedTeacher.name}`}
               </h3>
               <p className="text-xs text-muted mt-1.5">
-                {locale === "bn"
-                  ? "এই শিক্ষক কোন কোন ক্লাস ও বিষয়ের রেজাল্ট দেখতে পারবেন তা সিলেক্ট করুন।"
-                  : "Select which classes and subjects this teacher is authorized to view results for."}
+                {"এই শিক্ষক কোন কোন ক্লাস ও বিষয়ের রেজাল্ট দেখতে পারবেন তা সিলেক্ট করুন।"}
               </p>
             </div>
 
@@ -463,12 +461,10 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-primary">
-                      {locale === "bn" ? "সম্পূর্ণ অ্যাক্সেস (সব ক্লাস এবং বিষয়)" : "Full Access (All Classes & Subjects)"}
+                      {"সম্পূর্ণ অ্যাক্সেস (সব ক্লাস এবং বিষয়)"}
                     </p>
                     <p className="text-2xs text-muted mt-0.5 leading-relaxed">
-                      {locale === "bn"
-                        ? "এটি Active থাকলে এই শিক্ষক সকল ছাত্র-ছাত্রীর সকল বিষয়ের পরীক্ষার রেজাল্ট দেখতে পারবেন।"
-                        : "If enabled, this teacher can view all exam results for all subjects and classes."}
+                      {"এটি Active থাকলে এই শিক্ষক সকল ছাত্র-ছাত্রীর সকল বিষয়ের পরীক্ষার রেজাল্ট দেখতে পারবেন।"}
                     </p>
                   </div>
                 </div>
@@ -479,7 +475,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   {/* Classes Section */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-accent">
-                      {locale === "bn" ? "অনুমোদিত ক্লাস" : "Allowed Classes"}
+                      {"অনুমোদিত ক্লাস"}
                     </h4>
                     <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
                       {ALL_CLASSES.map((cls) => {
@@ -522,16 +518,14 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   {/* Subjects Section */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-accent">
-                      {locale === "bn" ? "অনুমোদিত বিষয়" : "Allowed Subjects"}
+                      {"অনুমোদিত বিষয়"}
                     </h4>
                     
                     {allowedClasses.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-border bg-surface/20 p-8 text-center flex flex-col items-center justify-center">
                         <AlertCircle className="size-8 text-muted/50 mb-2.5 animate-pulse" />
                         <p className="text-sm font-medium text-muted">
-                          {locale === "bn"
-                            ? "বিষয় কনফিগার করার জন্য প্রথমে উপরে ক্লাস সিলেক্ট করুন।"
-                            : "Please select at least one class above to configure subjects."}
+                          {"বিষয় কনফিগার করার জন্য প্রথমে উপরে ক্লাস সিলেক্ট করুন।"}
                         </p>
                       </div>
                     ) : (
@@ -577,20 +571,20 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   {/* Assigned Students Section */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-accent">
-                      {locale === "bn" ? "অনুমোদিত শিক্ষার্থী" : "Assigned Students"}
+                      {"অনুমোদিত শিক্ষার্থী"}
                     </h4>
                     
                     <div className="space-y-3">
                       {/* Search inputs */}
                       <div className="flex gap-2">
                         <Input
-                          placeholder={locale === "bn" ? "রেফারেন্স দিয়ে ফিল্টার..." : "Filter by reference..."}
+                          placeholder={"রেফারেন্স দিয়ে ফিল্টার..."}
                           value={studentSearchRef}
                           onChange={(e) => setStudentSearchRef(e.target.value)}
                           className="flex-1 text-xs"
                         />
                         <Input
-                          placeholder={locale === "bn" ? "নাম বা ফোন দিয়ে ফিল্টার..." : "Filter by name/phone..."}
+                          placeholder={"নাম বা ফোন দিয়ে ফিল্টার..."}
                           value={studentSearchName}
                           onChange={(e) => setStudentSearchName(e.target.value)}
                           className="flex-1 text-xs"
@@ -609,7 +603,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                             onClick={handleSelectAllFilteredStudents}
                             className="text-primary hover:text-primary-hover font-semibold text-[11px] h-auto p-0"
                           >
-                            {locale === "bn" ? "ফিল্টার করা সবাইকে সিলেক্ট করুন" : "Select all matching"}
+                            {"ফিল্টার করা সবাইকে সিলেক্ট করুন"}
                           </Button>
                         )}
                       </div>
@@ -617,7 +611,7 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                       <div className="max-h-[180px] overflow-y-auto rounded-xl border border-border bg-surface/30 p-2 space-y-1">
                         {filteredStudents.length === 0 ? (
                           <p className="text-xs text-center text-muted py-4">
-                            {locale === "bn" ? "কোনো শিক্ষার্থী পাওয়া যায়নি" : "No students found"}
+                            {"কোনো শিক্ষার্থী পাওয়া যায়নি"}
                           </p>
                         ) : (
                           filteredStudents.map((st) => {
@@ -665,10 +659,10 @@ export function AdminUsersPanel({ locale, role }: AdminUsersPanelProps) {
                   setSelectedTeacher(null);
                 }}
               >
-                {locale === "bn" ? "বাতিল" : "Cancel"}
+                {"বাতিল"}
               </Button>
               <Button onClick={handleSaveDomain}>
-                {locale === "bn" ? "সংরক্ষণ করুন" : "Save Changes"}
+                {"সংরক্ষণ করুন"}
               </Button>
             </div>
           </div>

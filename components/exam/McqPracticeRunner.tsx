@@ -53,7 +53,7 @@ type PracticeSubmitResult = {
 
 type McqPracticeRunnerProps = {
   subject: string;
-  locale: string;
+  locale?: string;
   mode?: string;
 };
 
@@ -275,8 +275,9 @@ const ChapterListItem = React.memo(function ChapterListItem({
   );
 });
 
-export function McqPracticeRunner({ subject, locale, mode = "general" }: McqPracticeRunnerProps) {
-  const path = createLocalizedPath(locale as any);
+export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunnerProps) {
+  const locale = "bn";
+  const path = createLocalizedPath(locale);
   const router = useRouter();
   const { user, checking } = useSession({ listenToAuthChanges: true });
   const isGuest = !user;
@@ -383,11 +384,7 @@ export function McqPracticeRunner({ subject, locale, mode = "general" }: McqPrac
             }
             setConfigLoaded(true);
           } else {
-            setErrorMessage(
-              locale === "bn"
-                ? "এই বিষয়ে কোন অধ্যায় পাওয়া যায়নি।"
-                : "No chapters found for this subject."
-            );
+            setErrorMessage("এই বিষয়ে কোন অধ্যায় পাওয়া যায়নি।");
           }
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Could not load practice chapters."));
@@ -427,7 +424,7 @@ export function McqPracticeRunner({ subject, locale, mode = "general" }: McqPrac
 
     if (isGuest) {
       const nextPath = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
-      router.push(getLocalizedPath(`/login?next=${nextPath}&reason=access`, locale as Locale));
+      router.push(getLocalizedPath(`/login?next=${nextPath}&reason=access`));
       return;
     }
 

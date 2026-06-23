@@ -8,14 +8,13 @@ import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical,
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { subjectsForLevel } from "@/lib/data/subjects";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
 import type { CourseSubject } from "@/types";
 
 type HomeSectionProps = {
-  locale: Locale;
-  dict: Dictionary["home"];
+    dict: Dictionary["home"];
   brand: Dictionary["brand"];
 };
 
@@ -29,9 +28,8 @@ const featureColors = [
   "bg-brand-yellow/25 text-accent-foreground",
 ];
 
-export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
-  const path = createLocalizedPath(locale);
-  const [videoLoaded, setVideoLoaded] = useState(false);
+export function HomeSection({ dict, brand }: HomeSectionProps) {
+    const [videoLoaded, setVideoLoaded] = useState(false);
 
   return (
     <>
@@ -69,19 +67,19 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
               <Link
-                href={path("/student/practice?level=SSC")}
+                href={"/student/practice?level=SSC"}
                 className={cn(buttonVariants({ variant: "navy", size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaExplore}
               </Link>
               {/* <Link
-                href={path("/courses")}
+                href={"/courses"}
                 className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaCourses}
               </Link> */}
               <Link
-                href={path("/contact")}
+                href={"/contact"}
                 className={cn(buttonVariants({ size: "lg" }), "justify-center")}
               >
                 {dict.hero.ctaRegister}
@@ -92,7 +90,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
           <div className="order-1 md:order-2">
             <div className="overflow-hidden rounded-2xl border-2 border-brand-yellow bg-navy p-4 shadow-[var(--shadow-lg)] sm:p-6">
               <div className="mb-4 flex justify-center sm:justify-start">
-                <Logo locale={locale} size="hero" link={false} />
+                <Logo size="hero" link={false} />
               </div>
               <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-yellow sm:text-left mb-4">
                 {brand.tagline}
@@ -249,7 +247,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
                   </p>
                 </div>
                 <Link
-                  href={path("/contact")}
+                  href={"/contact"}
                   className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-6 w-full justify-center shadow-md hover:shadow-lg transition-all")}
                 >
                   {dict.hsc2028.combo.cta} <ArrowRight className="size-5" />
@@ -270,7 +268,7 @@ export function HomeSection({ locale, dict, brand }: HomeSectionProps) {
               </h2>
               <p className="mt-2 text-sm text-muted sm:text-base">{dict.batches.subtitle}</p>
             </div>
-            <Link href={path("/batches")} className="font-semibold text-primary hover:underline">
+            <Link href={"/batches"} className="font-semibold text-primary hover:underline">
               {dict.batches.link} →
             </Link>
           </div>

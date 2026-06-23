@@ -24,8 +24,9 @@ type PendingMCQ = {
 
 const OPTION_BADGES = ["A", "B", "C", "D"];
 
-export function AdminTeacherMcqReview({ locale }: { locale: string }) {
-  const [questions, setQuestions] = useState<PendingMCQ[]>([]);
+export function AdminTeacherMcqReview() {
+  const locale = "bn";
+      const [questions, setQuestions] = useState<PendingMCQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -129,7 +130,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
         method: "PATCH",
       });
       if (ok && isApiSuccess(payload)) {
-        setSuccess(locale === "bn" ? "প্রশ্নটি সফলভাবে সাধারণ পুলে যুক্ত করা হয়েছে।" : "Question approved and added to general pool!");
+        setSuccess("প্রশ্নটি সফলভাবে সাধারণ পুলে যুক্ত করা হয়েছে।");
         setQuestions((prev) => prev.filter((q) => q.id !== id));
         setSelectedIds((prev) => prev.filter((item) => item !== id));
         setTimeout(() => setSuccess(""), 4000);
@@ -144,7 +145,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(locale === "bn" ? "আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?" : "Are you sure you want to delete this question?")) return;
+    if (!confirm("আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?")) return;
 
     setActionId(id);
     setError("");
@@ -154,7 +155,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
         method: "DELETE",
       });
       if (ok && isApiSuccess(payload)) {
-        setSuccess(locale === "bn" ? "প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।" : "Question deleted successfully.");
+        setSuccess("প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।");
         setQuestions((prev) => prev.filter((q) => q.id !== id));
         setSelectedIds((prev) => prev.filter((item) => item !== id));
         setTimeout(() => setSuccess(""), 4000);
@@ -312,7 +313,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
           )
         );
         setEditingMcq(null);
-        setSuccess(locale === "bn" ? "প্রশ্নটি সফলভাবে এডিট করা হয়েছে।" : "Question edited successfully.");
+        setSuccess("প্রশ্নটি সফলভাবে এডিট করা হয়েছে।");
         setTimeout(() => setSuccess(""), 4000);
       } else {
         setEditError(getApiErrorMessage(payload, "Failed to save edits."));
@@ -328,7 +329,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
         <Loader2 className="size-6 animate-spin text-primary" />
-        <span>{locale === "bn" ? "অপেক্ষমান প্রশ্নসমূহ লোড হচ্ছে..." : "Loading pending questions..."}</span>
+        <span>{"অপেক্ষমান প্রশ্নসমূহ লোড হচ্ছে..."}</span>
       </div>
     );
   }
@@ -338,7 +339,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
           <h2 className="font-display text-lg font-bold text-primary">
-            {locale === "bn" ? "শিক্ষকদের তৈরি প্রশ্নাবলী রিভিউ" : "Review Teacher MCQs"}
+            {"শিক্ষকদের তৈরি প্রশ্নাবলী রিভিউ"}
           </h2>
           <p className="text-xs text-muted">
             {locale === "bn"
@@ -347,7 +348,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchPendingQuestions}>
-          {locale === "bn" ? "রিফ্রেশ" : "Refresh"}
+          {"রিফ্রেশ"}
         </Button>
       </div>
 
@@ -367,9 +368,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
 
       {questions.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-          {locale === "bn"
-            ? "রিভিউ করার জন্য শিক্ষকদের তৈরি কোনো প্রশ্ন নেই।"
-            : "No pending teacher questions to review. All caught up!"}
+          {"রিভিউ করার জন্য শিক্ষকদের তৈরি কোনো প্রশ্ন নেই।"}
         </div>
       ) : (
         <div className="space-y-4">
@@ -378,7 +377,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
             {/* Level filter */}
             <div className="space-y-1">
               <Label htmlFor="filter-review-level" className="text-xs font-bold text-muted-foreground">
-                {locale === "bn" ? "শ্রেণি স্তর" : "Class Level"}
+                {"শ্রেণি স্তর"}
               </Label>
               <select
                 id="filter-review-level"
@@ -386,7 +385,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                 onChange={(e) => setFilterLevel(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
-                <option value="all">{locale === "bn" ? "সকল স্তর" : "All Levels"}</option>
+                <option value="all">{"সকল স্তর"}</option>
                 <option value="ssc">SSC</option>
                 <option value="hsc">HSC</option>
               </select>
@@ -395,7 +394,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
             {/* Subject filter */}
             <div className="space-y-1">
               <Label htmlFor="filter-review-subject" className="text-xs font-bold text-muted-foreground">
-                {locale === "bn" ? "বিষয়" : "Subject"}
+                {"বিষয়"}
               </Label>
               <select
                 id="filter-review-subject"
@@ -403,7 +402,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                 onChange={(e) => setFilterSubject(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
-                <option value="all">{locale === "bn" ? "সকল বিষয়" : "All Subjects"}</option>
+                <option value="all">{"সকল বিষয়"}</option>
                 {uniqueSubjects.map((sub) => (
                   <option key={sub} value={sub}>{sub}</option>
                 ))}
@@ -413,7 +412,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
             {/* Chapter filter */}
             <div className="space-y-1">
               <Label htmlFor="filter-review-chapter" className="text-xs font-bold text-muted-foreground">
-                {locale === "bn" ? "অধ্যায়" : "Chapter"}
+                {"অধ্যায়"}
               </Label>
               <select
                 id="filter-review-chapter"
@@ -421,7 +420,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                 onChange={(e) => setFilterChapter(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
-                <option value="all">{locale === "bn" ? "সকল অধ্যায়" : "All Chapters"}</option>
+                <option value="all">{"সকল অধ্যায়"}</option>
                 {uniqueChapters.map((chap) => (
                   <option key={chap} value={chap}>
                     {getTranslatedChapter(chap, locale)}
@@ -433,7 +432,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
             {/* Teacher filter */}
             <div className="space-y-1">
               <Label htmlFor="filter-review-teacher" className="text-xs font-bold text-muted-foreground">
-                {locale === "bn" ? "শিক্ষক" : "Teacher"}
+                {"শিক্ষক"}
               </Label>
               <select
                 id="filter-review-teacher"
@@ -441,7 +440,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                 onChange={(e) => setFilterTeacherId(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
-                <option value="all">{locale === "bn" ? "সকল শিক্ষক" : "All Teachers"}</option>
+                <option value="all">{"সকল শিক্ষক"}</option>
                 {uniqueTeachers.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -451,9 +450,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
 
           {filteredQuestions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card/45 p-12 text-center text-muted-foreground text-sm">
-              {locale === "bn"
-                ? "বাছাইকৃত ফিল্টার অনুযায়ী কোনো অপেক্ষমান প্রশ্ন পাওয়া যায়নি।"
-                : "No pending questions match the selected filters."}
+              {"বাছাইকৃত ফিল্টার অনুযায়ী কোনো অপেক্ষমান প্রশ্ন পাওয়া যায়নি।"}
             </div>
           ) : (
             <>
@@ -573,7 +570,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                     className="text-muted hover:text-primary hover:bg-secondary flex items-center gap-1.5"
                   >
                     <Edit className="size-4" />
-                    {locale === "bn" ? "সম্পাদনা করুন" : "Edit Question"}
+                    {"সম্পাদনা করুন"}
                   </Button>
                   <div className="flex gap-2.5 ml-auto">
                     <Button
@@ -585,7 +582,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                       className="text-brand-red border-red-100 hover:bg-red-50 hover:text-brand-red"
                     >
                       <Trash2 className="size-4 mr-1.5" />
-                      {locale === "bn" ? "বাতিল করুন" : "Reject & Delete"}
+                      {"বাতিল করুন"}
                     </Button>
                     <Button
                       size="sm"
@@ -594,7 +591,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
                       disabled={actionId !== null}
                     >
                       <Check className="size-4 mr-1.5" />
-                      {locale === "bn" ? "অনুমোদন করুন" : "Approve & Add"}
+                      {"অনুমোদন করুন"}
                     </Button>
                   </div>
                 </div>
@@ -612,7 +609,7 @@ export function AdminTeacherMcqReview({ locale }: { locale: string }) {
           <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="font-display text-base md:text-lg font-bold text-primary">
-                {locale === "bn" ? "প্রশ্ন সম্পাদনা" : "Edit MCQ Question"}
+                {"প্রশ্ন সম্পাদনা"}
               </h3>
               <button
                 type="button"

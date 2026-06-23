@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AdminTeacherMcqReview } from "./AdminTeacherMcqReview";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { SYLLABUS, type SchoolLevel } from "@/lib/content/syllabus";
+import { getSyllabusChapters, type SchoolLevel } from "@/lib/content/syllabus";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
@@ -54,31 +54,51 @@ type PracticeTestSettings = {
 };
 
 /** SSC subjects for upload */
-const SSC_SUBJECTS: CourseSubject[] = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"];
+const SSC_SUBJECTS: CourseSubject[] = [
+  "পদার্থবিজ্ঞান",
+  "রসায়ন",
+  "সাধারণ গণিত",
+  "উচ্চতর গণিত",
+  "জীববিজ্ঞান",
+  "তথ্য ও যোগাযোগ প্রযুক্তি",
+  "বাংলা ১ম পত্র",
+  "বাংলা ২য় পত্র",
+  "ইংরেজি ১ম পত্র",
+  "ইংরেজি ২য় পত্র",
+  "ইসলাম ও নৈতিক শিক্ষা",
+  "বাংলাদেশ ও বিশ্বপরিচয়",
+];
 
 /** HSC subjects — paper-split for Physics, Chemistry, Higher Math */
 const HSC_SUBJECTS: CourseSubject[] = [
-  "Physics 1st Paper",
-  "Physics 2nd Paper",
-  "Chemistry 1st Paper",
-  "Chemistry 2nd Paper",
-  "Higher Math 1st Paper",
-  "Higher Math 2nd Paper",
-  "ICT",
+  "পদার্থবিজ্ঞান ১ম পত্র",
+  "পদার্থবিজ্ঞান ২য় পত্র",
+  "রসায়ন ১ম পত্র",
+  "রসায়ন ২য় পত্র",
+  "উচ্চতর গণিত ১ম পত্র",
+  "উচ্চতর গণিত ২য় পত্র",
+  "জীববিজ্ঞান ১ম পত্র",
+  "জীববিজ্ঞান ২য় পত্র",
+  "তথ্য ও যোগাযোগ প্রযুক্তি",
+  "বাংলা ১ম পত্র",
+  "বাংলা ২য় পত্র",
+  "ইংরেজি ১ম পত্র",
+  "ইংরেজি ২য় পত্র",
 ];
 
 const OPTION_BADGES = ["A", "B", "C", "D"];
 const MAX_IMAGE_UPLOADS = 3;
 
-export function AdminPracticeManager({ locale }: { locale: Locale }) {
+export function AdminPracticeManager() {
+  const locale = "bn";
   // Config states
   const [selectedLevel, setSelectedLevel] = useState<SchoolLevel>("ssc");
-  const [selectedSubject, setSelectedSubject] = useState<CourseSubject>("Physics");
+  const [selectedSubject, setSelectedSubject] = useState<CourseSubject>("পদার্থবিজ্ঞান");
 
   const SUBJECTS = selectedLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
 
   // Chapter list from static syllabus
-  const chapters = SYLLABUS[selectedLevel]?.[selectedSubject] || [];
+  const chapters = getSyllabusChapters(selectedLevel, selectedSubject);
   const [selectedChapter, setSelectedChapter] = useState("");
 
   // Content upload states
@@ -110,7 +130,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
   // Admin's own uploaded pending MCQs states
   const [filterLevel, setFilterLevel] = useState<SchoolLevel>("ssc");
-  const [filterSubject, setFilterSubject] = useState<CourseSubject>("Physics");
+  const [filterSubject, setFilterSubject] = useState<CourseSubject>("পদার্থবিজ্ঞান");
   const [filterChapter, setFilterChapter] = useState("");
   const [uploadedQuestions, setUploadedQuestions] = useState<any[]>([]);
   const [loadingUploaded, setLoadingUploaded] = useState(false);
@@ -127,7 +147,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
     explanation: "",
     imageUrl: "",
     level: "ssc" as SchoolLevel,
-    subject: "Physics" as CourseSubject,
+    subject: "পদার্থবিজ্ঞান" as CourseSubject,
     chapter: "",
   });
   const [savingEdit, setSavingEdit] = useState(false);
@@ -136,7 +156,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
   const [imageError, setImageError] = useState("");
 
   const filterSubjects = filterLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
-  const filterChapters = SYLLABUS[filterLevel]?.[filterSubject] || [];
+  const filterChapters = getSyllabusChapters(filterLevel, filterSubject);
 
   // Reset selected filter subject when filter level changes
   useEffect(() => {
@@ -149,7 +169,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
   // Set filter chapter to first chapter of selected subject
   useEffect(() => {
-    const list = SYLLABUS[filterLevel]?.[filterSubject] || [];
+    const list = getSyllabusChapters(filterLevel, filterSubject);
     if (list.length > 0) {
       setFilterChapter(list[0]);
     } else {
@@ -380,7 +400,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
   }, [selectedLevel]);
 
   useEffect(() => {
-    const list = SYLLABUS[selectedLevel]?.[selectedSubject] || [];
+    const list = getSyllabusChapters(selectedLevel, selectedSubject);
     if (list.length > 0) {
       setSelectedChapter(list[0]);
     } else {
@@ -860,7 +880,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
               </div>
             )}
 
-            <UploadingIndicator isUploading={submitting} locale={locale} className="my-2" />
+            <UploadingIndicator isUploading={submitting} className="my-2" />
 
             <Button
               type="submit"
@@ -1189,7 +1209,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
 
       {/* ─── Review Teacher MCQs Panel ─── */}
       <div className="rounded-xl border-2 border-primary/20 bg-card p-5 shadow-[var(--shadow-sm)]">
-        <AdminTeacherMcqReview locale={locale} />
+        <AdminTeacherMcqReview />
       </div>
 
       {/* --- EDIT MCQ MODAL --- */}
@@ -1313,7 +1333,7 @@ export function AdminPracticeManager({ locale }: { locale: Locale }) {
                     onChange={(e) => setEditForm((prev) => ({ ...prev, chapter: e.target.value }))}
                     className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                   >
-                    {(SYLLABUS[editForm.level]?.[editForm.subject] || []).map((chap) => (
+                    {(getSyllabusChapters(editForm.level, editForm.subject)).map((chap) => (
                       <option key={chap} value={chap}>{chap}</option>
                     ))}
                   </select>

@@ -6,23 +6,21 @@ import { cn } from "@/lib/utils";
 import type { StudentClass } from "@/types";
 
 type TargetClassPickerProps = {
-  locale: Locale;
-  value: StudentClass[];
+    value: StudentClass[];
   onChange: (classes: StudentClass[]) => void;
   error?: string;
   label?: string;
   hint?: string;
 };
 
-export function TargetClassPicker({
-  locale,
-  value,
+export function TargetClassPicker({ value,
   onChange,
   error,
   label,
   hint,
 }: TargetClassPickerProps) {
-  const selectedClasses = value ?? [];
+  const locale = "bn";
+      const selectedClasses = value ?? [];
 
   function toggle(studentClass: StudentClass) {
     if (selectedClasses.includes(studentClass)) {

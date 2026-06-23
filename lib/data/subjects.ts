@@ -25,3 +25,4 @@ export const hscSubjects: SubjectOffering[] = [
 export function subjectsForLevel(level: CourseLevel): SubjectOffering[] {
   return level === "SSC" ? sscSubjects : hscSubjects;
 }
+

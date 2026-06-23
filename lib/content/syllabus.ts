@@ -376,3 +376,69 @@ export const CHAPTER_TRANSLATIONS: Record<string, string> = {
 export function getTranslatedChapter(chapter: string, locale?: string): string {
   return CHAPTER_TRANSLATIONS[chapter] ?? chapter;
 }
+
+export const BENGALI_TO_ENGLISH_SUBJECT_MAP: Record<string, string> = {
+  "পদার্থবিজ্ঞান": "Physics",
+  "পদার্থবিজ্ঞান ১ম পত্র": "Physics 1st Paper",
+  "পদার্থবিজ্ঞান ২য় পত্র": "Physics 2nd Paper",
+  "রসায়ন": "Chemistry",
+  "রসায়ন ১ম পত্র": "Chemistry 1st Paper",
+  "রসায়ন ২য় পত্র": "Chemistry 2nd Paper",
+  "সাধারণ গণিত": "Math",
+  "উচ্চতর গণিত": "Higher Math",
+  "উচ্চতর গণিত ১ম পত্র": "Higher Math 1st Paper",
+  "উচ্চতর গণিত ২য় পত্র": "Higher Math 2nd Paper",
+  "তথ্য ও যোগাযোগ প্রযুক্তি": "ICT",
+};
+
+export function getSyllabusChapters(level: SchoolLevel, subject: string): string[] {
+  const canonicalSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
+  return SYLLABUS[level]?.[canonicalSubject as CourseSubject] || [];
+}
+
+export const SSC_MCQ_SUBJECTS = [
+  "পদার্থবিজ্ঞান",
+  "রসায়ন",
+  "সাধারণ গণিত",
+  "উচ্চতর গণিত",
+  "জীববিজ্ঞান",
+  "তথ্য ও যোগাযোগ প্রযুক্তি",
+  "বাংলা ১ম পত্র",
+  "বাংলা ২য় পত্র",
+  "ইংরেজি ১ম পত্র",
+  "ইংরেজি ২য় পত্র",
+  "ইসলাম ও নৈতিক শিক্ষা",
+  "বাংলাদেশ ও বিশ্বপরিচয়",
+];
+
+export const HSC_MCQ_SUBJECTS = [
+  "পদার্থবিজ্ঞান ১ম পত্র",
+  "পদার্থবিজ্ঞান ২য় পত্র",
+  "রসায়ন ১ম পত্র",
+  "রসায়ন ২য় পত্র",
+  "উচ্চতর গণিত ১ম পত্র",
+  "উচ্চতর গণিত ২য় পত্র",
+  "জীববিজ্ঞান ১ম পত্র",
+  "জীববিজ্ঞান ২য় পত্র",
+  "তথ্য ও যোগাযোগ প্রযুক্তি",
+  "বাংলা ১ম পত্র",
+  "বাংলা ২য় পত্র",
+  "ইংরেজি ১ম পত্র",
+  "ইংরেজি ২য় পত্র",
+];
+
+export const COURSE_TO_MCQ_SUBJECT_MAP: Record<"ssc" | "hsc", Record<string, string[]>> = {
+  ssc: {
+    Physics: ["পদার্থবিজ্ঞান"],
+    Chemistry: ["রসায়ন"],
+    Math: ["সাধারণ গণিত"],
+    "Higher Math": ["উচ্চতর গণিত"],
+    ICT: ["তথ্য ও যোগাযোগ প্রযুক্তি"],
+  },
+  hsc: {
+    Physics: ["পদার্থবিজ্ঞান ১ম পত্র", "পদার্থবিজ্ঞান ২য় পত্র"],
+    Chemistry: ["রসায়ন ১ম পত্র", "রসায়ন ২য় পত্র"],
+    "Higher Math": ["উচ্চতর গণিত ১ম পত্র", "উচ্চতর গণিত ২য় পত্র"],
+    ICT: ["তথ্য ও যোগাযোগ প্রযুক্তি"],
+  },
+};

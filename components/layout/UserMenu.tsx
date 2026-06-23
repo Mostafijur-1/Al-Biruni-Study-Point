@@ -9,19 +9,18 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { dashboardPath } from "@/lib/routes";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { SessionUser } from "@/types";
 
 type UserMenuProps = {
-  locale: Locale;
-  user: SessionUser;
+    user: SessionUser;
   auth: Dictionary["auth"];
   onLogout: () => void;
   mobile?: boolean;
 };
 
-export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps) {
+export function UserMenu({ user, auth, onLogout, mobile }: UserMenuProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -31,7 +30,7 @@ export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps
       await fetch("/api/auth/logout", { method: "POST" });
       onLogout();
       window.dispatchEvent(new Event("absp-auth-changed"));
-      router.push(getLocalizedPath("/", locale));
+      router.push(getLocalizedPath("/"));
       router.refresh();
     } finally {
       setLoading(false);
@@ -65,7 +64,7 @@ export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps
           </div>
         </div>
         <Link
-          href={dashboardPath(user.role, locale)}
+          href={dashboardPath(user.role)}
           className={cn(buttonVariants({ variant: "accent", size: "lg" }), "w-full justify-center")}
         >
           <LayoutDashboard className="size-4" />
@@ -98,7 +97,7 @@ export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps
       </div>
 
       <Link
-        href={dashboardPath(user.role, locale)}
+        href={dashboardPath(user.role)}
         className={cn(buttonVariants({ variant: "navy", size: "sm" }))}
       >
         <LayoutDashboard className="size-4" />
@@ -120,20 +119,17 @@ export function UserMenu({ locale, user, auth, onLogout, mobile }: UserMenuProps
   );
 }
 
-export function GuestAuthLinks({
-  locale,
-  navigation,
+export function GuestAuthLinks({ navigation,
   mobile,
 }: {
-  locale: Locale;
-  navigation: Dictionary["navigation"];
+    navigation: Dictionary["navigation"];
   mobile?: boolean;
 }) {
   if (mobile) {
     return (
       <>
         <Link
-          href={getLocalizedPath("/login", locale)}
+          href={getLocalizedPath("/login")}
           className={cn(
             buttonVariants({ variant: "secondary", size: "lg" }),
             "w-full justify-center border-white/30 bg-transparent text-white hover:bg-white/10",
@@ -143,7 +139,7 @@ export function GuestAuthLinks({
           {navigation.login}
         </Link>
         <Link
-          href={getLocalizedPath("/register", locale)}
+          href={getLocalizedPath("/register")}
           className={cn(buttonVariants({ size: "lg" }), "w-full justify-center")}
         >
           {navigation.register}
@@ -155,13 +151,13 @@ export function GuestAuthLinks({
   return (
     <>
       <Link
-        href={getLocalizedPath("/login", locale)}
+        href={getLocalizedPath("/login")}
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden sm:inline-flex")}
       >
         <User className="size-4" />
         {navigation.login}
       </Link>
-      <Link href={getLocalizedPath("/register", locale)} className={cn(buttonVariants({ size: "sm" }))}>
+      <Link href={getLocalizedPath("/register")} className={cn(buttonVariants({ size: "sm" }))}>
         {navigation.register}
       </Link>
     </>

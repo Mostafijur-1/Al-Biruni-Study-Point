@@ -59,11 +59,12 @@ function roleFromPathname(pathname: string): UserRole {
 
 function buildHref(href: string, locale: Locale, level: "SSC" | "HSC", levelAware?: boolean) {
   const levelSuffix = levelAware ? `?level=${level}` : "";
-  return getLocalizedPath(`${href}${levelSuffix}`, locale);
+  return getLocalizedPath(`${href}${levelSuffix}`);
 }
 
-export function DashboardMobileNav({ locale }: { locale: string }) {
-  const pathname = usePathname();
+export function DashboardMobileNav() {
+  const locale = "bn";
+      const pathname = usePathname();
   const level = useGuestLevel();
   const role = roleFromPathname(pathname);
   const links = linksByRole[role];
@@ -76,7 +77,7 @@ export function DashboardMobileNav({ locale }: { locale: string }) {
       <ul className="flex items-stretch justify-around gap-0.5">
         {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
           const fullHref = buildHref(href, locale as Locale, level, levelAware);
-          const fullHrefBase = getLocalizedPath(href, locale as Locale);
+          const fullHrefBase = getLocalizedPath(href);
           const isRoleRoot = href === `/${role}`;
           const active =
             pathname === fullHrefBase ||
@@ -104,8 +105,9 @@ export function DashboardMobileNav({ locale }: { locale: string }) {
   );
 }
 
-export function DashboardSidebar({ locale }: { locale: string }) {
-  const pathname = usePathname();
+export function DashboardSidebar() {
+  const locale = "bn";
+      const pathname = usePathname();
   const level = useGuestLevel();
   const role = roleFromPathname(pathname);
 
@@ -144,7 +146,7 @@ export function DashboardSidebar({ locale }: { locale: string }) {
       <nav className="mt-1 space-y-0.5">
         {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
           const fullHref = buildHref(href, locale as Locale, level, levelAware);
-          const fullHrefBase = getLocalizedPath(href, locale as Locale);
+          const fullHrefBase = getLocalizedPath(href);
           const isRoleRoot = href === `/${role}`;
           const active =
             pathname === fullHrefBase ||

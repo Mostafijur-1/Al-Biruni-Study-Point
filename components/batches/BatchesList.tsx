@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Calendar, Users, Video, MapPin, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath } from "@/lib/i18n";
 
 type Batch = {
   name: string;
@@ -15,8 +15,7 @@ type Batch = {
 };
 
 type BatchesListProps = {
-  locale: Locale;
-  dict: {
+    dict: {
     title: string;
     subtitle: string;
     offline: string;
@@ -27,9 +26,8 @@ type BatchesListProps = {
   };
 };
 
-export function BatchesList({ locale, dict }: BatchesListProps) {
-  const path = createLocalizedPath(locale);
-  const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
+export function BatchesList({ dict }: BatchesListProps) {
+    const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
 
   const filteredBatches = dict.sample.filter(
     (batch) => filter === "all" || batch.mode === filter
@@ -40,7 +38,7 @@ export function BatchesList({ locale, dict }: BatchesListProps) {
       {/* Premium Header */}
       <div className="rounded-xl border border-border border-t-4 border-t-brand-yellow bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6 md:p-8">
         <p className="text-xs font-bold uppercase tracking-widest text-accent">
-          {locale === "bn" ? "ব্যাচসমূহ" : "Batches"}
+          {"ব্যাচসমূহ"}
         </p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl md:text-4xl">
           {dict.title}
@@ -65,9 +63,7 @@ export function BatchesList({ locale, dict }: BatchesListProps) {
             )}
           >
             {mode === "all"
-              ? locale === "bn"
-                ? "সব ব্যাচ"
-                : "All Batches"
+              ? "সব ব্যাচ"
               : mode === "online"
               ? dict.online
               : dict.offline}
@@ -79,7 +75,7 @@ export function BatchesList({ locale, dict }: BatchesListProps) {
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredBatches.length === 0 ? (
           <p className="col-span-full rounded-xl border border-border bg-card p-6 text-center text-muted">
-            {locale === "bn" ? "কোনো ব্যাচ পাওয়া যায়নি।" : "No batches found."}
+            {"কোনো ব্যাচ পাওয়া যায়নি।"}
           </p>
         ) : (
           filteredBatches.map((batch) => (
@@ -129,13 +125,13 @@ export function BatchesList({ locale, dict }: BatchesListProps) {
 
               <div className="mt-6">
                 <Link
-                  href={path("/contact")}
+                  href={"/contact"}
                   className={cn(
                     buttonVariants({ variant: "navy", size: "default" }),
                     "w-full justify-center gap-1.5 rounded-xl font-bold"
                   )}
                 >
-                  {locale === "bn" ? "ভর্তি হতে যোগাযোগ করুন" : "Contact to Enroll"}
+                  {"ভর্তি হতে যোগাযোগ করুন"}
                   <ArrowRight className="size-4" />
                 </Link>
               </div>

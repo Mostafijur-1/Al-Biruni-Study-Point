@@ -27,8 +27,7 @@ import {
 import type { SessionUser } from "@/types";
 
 type RegisterFormProps = {
-  locale: Locale;
-  auth: Dictionary["auth"];
+    auth: Dictionary["auth"];
   kind: "student" | "teacher";
   returnUrl?: string | null;
   reason?: string | null;
@@ -38,16 +37,13 @@ type RegisterFormProps = {
 const selectClassName =
   "flex h-11 w-full rounded-lg border border-input bg-surface px-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
 
-function RegisterFooter({
-  locale,
-  auth,
+function RegisterFooter({ auth,
   kind,
   isSubmitting,
   copy,
   returnUrl,
 }: {
-  locale: Locale;
-  auth: Dictionary["auth"];
+    auth: Dictionary["auth"];
   kind: "student" | "teacher";
   isSubmitting: boolean;
   copy: any;
@@ -63,7 +59,7 @@ function RegisterFooter({
           <p className="text-center text-sm text-muted">
             {auth.register.hasAccount}{" "}
             <Link
-              href={buildLoginUrl(locale, returnUrl ?? undefined)}
+              href={buildLoginUrl(returnUrl ?? undefined)}
               className="font-semibold text-primary hover:underline"
             >
               {auth.register.loginLink}
@@ -72,7 +68,7 @@ function RegisterFooter({
           <p className="text-center text-sm text-muted">
             {auth.register.studentPrompt}{" "}
             <Link
-              href={getLocalizedPath("/register", locale)}
+              href={getLocalizedPath("/register")}
               className="font-semibold text-primary hover:underline"
             >
               {auth.register.studentLink}
@@ -84,9 +80,7 @@ function RegisterFooter({
   );
 }
 
-function StudentRegisterForm({
-  locale,
-  auth,
+function StudentRegisterForm({ auth,
   returnUrl,
   reason,
   initialClass,
@@ -120,8 +114,8 @@ function StudentRegisterForm({
   const selectedClass = watch("studentClass", defaultClass);
   const isSchool = selectedClass === "class-9" || selectedClass === "class-10";
   const schoolCollegeLabel = isSchool
-    ? (locale === "bn" ? "স্কুল" : "School")
-    : (locale === "bn" ? "কলেজ" : "College");
+    ? ("স্কুল")
+    : ("কলেজ");
   const schoolCollegePlaceholder = isSchool
     ? ("তোমার স্কুলের নাম লিখো")
     : ("তোমার কলেজের নাম লিখো");
@@ -165,7 +159,7 @@ function StudentRegisterForm({
         <div className="mb-4 rounded-xl bg-secondary/30 border border-border/40 p-3 text-center text-sm text-muted">
           {auth.register.hasAccount}{" "}
           <Link
-            href={buildLoginUrl(locale, returnUrl ?? undefined)}
+            href={buildLoginUrl(returnUrl ?? undefined)}
             className="font-semibold text-primary hover:underline"
           >
             {auth.register.loginLink}
@@ -211,7 +205,7 @@ function StudentRegisterForm({
               type="password"
               {...register("password")}
               autoComplete="new-password"
-              placeholder={locale === "bn" ? "কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দাও" : "At least 8 characters"}
+              placeholder={"কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দাও"}
             />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
@@ -228,7 +222,7 @@ function StudentRegisterForm({
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="reference">
-              {locale === "bn" ? "রেফারেন্স (শিক্ষকের নাম - Optional)" : "Reference (Teacher's name - optional)"}
+              {"রেফারেন্স (শিক্ষকের নাম - Optional)"}
             </Label>
             <Input
               id="reference"
@@ -245,7 +239,6 @@ function StudentRegisterForm({
         </form>
       </CardContent>
       <RegisterFooter
-        locale={locale}
         auth={auth}
         kind="student"
         isSubmitting={isSubmitting}
@@ -256,7 +249,7 @@ function StudentRegisterForm({
   );
 }
 
-function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) {
+function TeacherRegisterForm({ auth }: Omit<RegisterFormProps, "kind">) {
   const copy = auth.register.teacher;
   
   const [message, setMessage] = useState<string | null>(null);
@@ -310,7 +303,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
             <Input
               id="name"
               {...register("name")}
-              placeholder={locale === "bn" ? "যেমন: মোস্তাফিজুর রহমান" : "e.g. Mostafijur Rahman"}
+              placeholder={"যেমন: মোস্তাফিজুর রহমান"}
             />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
@@ -319,7 +312,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
             <Input
               id="phone"
               {...register("phone")}
-              placeholder={locale === "bn" ? "যেমন: ০১XXXXXXXXX" : "e.g. 01XXXXXXXXX"}
+              placeholder={"যেমন: ০১XXXXXXXXX"}
               required
               autoComplete="tel"
             />
@@ -331,7 +324,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
               id="email"
               type="email"
               {...register("email")}
-              placeholder={locale === "bn" ? "যেমন: teacher@example.com" : "e.g. teacher@example.com"}
+              placeholder={"যেমন: teacher@example.com"}
               required
               autoComplete="email"
             />
@@ -344,7 +337,7 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
               type="password"
               {...register("password")}
               autoComplete="new-password"
-              placeholder={locale === "bn" ? "কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন" : "At least 8 characters"}
+              placeholder={"কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন"}
             />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
@@ -356,7 +349,6 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
         </form>
       </CardContent>
       <RegisterFooter
-        locale={locale}
         auth={auth}
         kind="teacher"
         isSubmitting={isSubmitting}
@@ -366,14 +358,13 @@ function TeacherRegisterForm({ locale, auth }: Omit<RegisterFormProps, "kind">) 
   );
 }
 
-export function RegisterForm({ locale, auth, kind, returnUrl, reason, initialClass }: RegisterFormProps) {
+export function RegisterForm({ auth, kind, returnUrl, reason, initialClass }: RegisterFormProps) {
   if (kind === "teacher") {
-    return <TeacherRegisterForm locale={locale} auth={auth} />;
+    return <TeacherRegisterForm auth={auth} />;
   }
 
   return (
     <StudentRegisterForm
-      locale={locale}
       auth={auth}
       returnUrl={returnUrl}
       reason={reason}

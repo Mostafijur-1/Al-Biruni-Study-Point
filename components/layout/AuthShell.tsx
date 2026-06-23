@@ -5,13 +5,12 @@ import type { Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type AuthShellProps = {
-  locale: Locale;
-  brand: Dictionary["brand"];
+    brand: Dictionary["brand"];
   auth: Dictionary["auth"];
   children: ReactNode;
 };
 
-export function AuthShell({ locale, brand, auth, children }: AuthShellProps) {
+export function AuthShell({ brand, auth, children }: AuthShellProps) {
   return (
     <div className="min-h-[calc(100vh-var(--header-height))] min-h-[calc(100dvh-var(--header-height))] lg:grid lg:grid-cols-2">
       <div
@@ -21,7 +20,7 @@ export function AuthShell({ locale, brand, auth, children }: AuthShellProps) {
         <div className="absolute -right-20 -top-20 size-72 rounded-full bg-brand-blue/20" />
         <div className="absolute -bottom-24 -left-12 size-80 rounded-full bg-brand-yellow/15" />
 
-        <Logo locale={locale} size="lg" className="relative" />
+        <Logo size="lg" className="relative" />
 
         <div className="relative max-w-md">
           <h2 className="font-display text-3xl font-bold leading-tight">{auth.shell.title}</h2>
@@ -43,7 +42,7 @@ export function AuthShell({ locale, brand, auth, children }: AuthShellProps) {
 
       <div className="flex flex-col">
         <div className="border-b border-border bg-secondary/40 px-4 py-4 lg:hidden">
-          <Logo locale={locale} size="sm" tone="dynamic" className="mb-2 inline-block" />
+          <Logo size="sm" tone="dynamic" className="mb-2 inline-block" />
           <p className="text-sm font-medium text-muted">{brand.tagline}</p>
         </div>
 

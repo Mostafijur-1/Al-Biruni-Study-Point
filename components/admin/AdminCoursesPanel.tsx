@@ -26,10 +26,11 @@ type AdminCourseRow = {
   examCount: number;
 };
 
-export function AdminCoursesPanel({ locale }: { locale: Locale }) {
-  const { data, message, isLoading } = useApiQuery<{ courses: AdminCourseRow[] }>("/api/admin/courses", {
-    loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
-    errorMessage: locale === "bn" ? "কোর্স লোড করা যায়নি।" : "Could not load courses.",
+export function AdminCoursesPanel() {
+  const locale = "bn";
+      const { data, message, isLoading } = useApiQuery<{ courses: AdminCourseRow[] }>("/api/admin/courses", {
+    loadingMessage: "লোড হচ্ছে...",
+    errorMessage: "কোর্স লোড করা যায়নি।",
   });
 
   const courses = data?.courses ?? [];
@@ -39,12 +40,10 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-          {locale === "bn" ? "কোর্স পরিচালনা" : "Manage courses"}
+          {"কোর্স পরিচালনা"}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          {locale === "bn"
-            ? "প্রতিটি কোর্সের শিক্ষক, লক্ষ্য শ্রেণি ও সম্পর্কিত শিক্ষার্থী দেখুন।"
-            : "View teachers, target classes, and related students for each course."}
+          {"প্রতিটি কোর্সের শিক্ষক, লক্ষ্য শ্রেণি ও সম্পর্কিত শিক্ষার্থী দেখুন।"}
         </p>
       </div>
 
@@ -81,7 +80,7 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">{message}</p>
       ) : courses.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-          {locale === "bn" ? "কোনো কোর্স নেই।" : "No courses yet."}
+          {"কোনো কোর্স নেই।"}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -94,7 +93,7 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-bold text-primary">
-                      {locale === "bn" && course.titleBn ? course.titleBn : course.title}
+                      {course.titleBn ? course.titleBn : course.title}
                     </h2>
                     <span
                       className={cn(
@@ -115,7 +114,7 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
                   </p>
                   {course.teacher && (
                     <p className="mt-2 text-sm text-primary">
-                      {locale === "bn" ? "শিক্ষক" : "Teacher"}:{" "}
+                      {"শিক্ষক"}:{" "}
                       <span className="font-semibold">{course.teacher.name}</span>
                       {course.teacher.phone && (
                         <span className="text-muted"> · {course.teacher.phone}</span>
@@ -126,16 +125,16 @@ export function AdminCoursesPanel({ locale }: { locale: Locale }) {
                 <div className="flex gap-4 text-sm">
                   <div>
                     <p className="text-xs font-bold uppercase text-accent">
-                      {locale === "bn" ? "শিক্ষার্থী" : "Students"}
+                      {"শিক্ষার্থী"}
                     </p>
                     <p className="mt-1 text-lg font-bold text-primary">{course.studentCount}</p>
                     <p className="text-xs text-muted">
-                      {locale === "bn" ? "লক্ষ্য শ্রেণিতে" : "in target classes"}
+                      {"লক্ষ্য শ্রেণিতে"}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase text-accent">
-                      {locale === "bn" ? "অনুশীলন প্রশ্ন" : "Practice Qs"}
+                      {"অনুশীলন প্রশ্ন"}
                     </p>
                     <p className="mt-1 text-lg font-bold text-primary">{course.examCount}</p>
                   </div>

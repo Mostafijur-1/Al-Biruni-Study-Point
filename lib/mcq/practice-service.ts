@@ -20,12 +20,26 @@ export interface JSONPracticeQuestion {
  * e.g. "Physics 1st Paper" → "physics" folder.
  */
 const SUBJECT_DIR_MAP: Partial<Record<CourseSubject, string>> = {
-  "Physics 1st Paper": "physics",
-  "Physics 2nd Paper": "physics",
-  "Chemistry 1st Paper": "chemistry",
-  "Chemistry 2nd Paper": "chemistry",
-  "Higher Math 1st Paper": "higher-math",
-  "Higher Math 2nd Paper": "higher-math",
+  "পদার্থবিজ্ঞান": "physics",
+  "পদার্থবিজ্ঞান ১ম পত্র": "physics",
+  "পদার্থবিজ্ঞান ২য় পত্র": "physics",
+  "রসায়ন": "chemistry",
+  "রসায়ন ১ম পত্র": "chemistry",
+  "রসায়ন ২য় পত্র": "chemistry",
+  "সাধারণ গণিত": "math",
+  "উচ্চতর গণিত": "higher-math",
+  "উচ্চতর গণিত ১ম পত্র": "higher-math",
+  "উচ্চতর গণিত ২য় পত্র": "higher-math",
+  "জীববিজ্ঞান": "biology",
+  "জীববিজ্ঞান ১ম পত্র": "biology",
+  "জীববিজ্ঞান ২য় পত্র": "biology",
+  "তথ্য ও যোগাযোগ প্রযুক্তি": "ict",
+  "বাংলা ১ম পত্র": "bangla",
+  "বাংলা ২য় পত্র": "bangla",
+  "ইংরেজি ১ম পত্র": "english",
+  "ইংরেজি ২য় পত্র": "english",
+  "ইসলাম ও নৈতিক শিক্ষা": "islam-education",
+  "বাংলাদেশ ও বিশ্বপরিচয়": "bgs",
 };
 
 export function shuffleArray<T>(array: T[]): T[] {
@@ -43,7 +57,7 @@ export function getChapterFilePath(level: "ssc" | "hsc", subject: string, chapte
   const subjectDir = mappedDir ?? subject.toLowerCase().replace(/\s+/g, "-");
   const chapterSlug = chapter
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\u0980-\u09FFa-zA-Z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
   let fileName = chapterSlug;
@@ -66,7 +80,7 @@ export function getChapterFromSlug(
   for (const chapter of chapters) {
     const chapterSlug = chapter
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/[^\u0980-\u09FFa-zA-Z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
     if (chapterSlug === slug || `${subjectPrefix}-${chapterSlug}` === slug) {
       return chapter;

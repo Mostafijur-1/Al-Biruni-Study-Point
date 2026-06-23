@@ -14,7 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath } from "@/lib/i18n";
 import { McqOption, getOptionLabel } from "@/components/exam/McqOption";
 import { cn } from "@/lib/utils";
 
@@ -152,13 +152,12 @@ const ExamQuestionCard = React.memo(function ExamQuestionCard({
 
 type McqExamRunnerProps = {
   examId: string;
-  locale: string;
-};
+  };
 
-export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
-  const router = useRouter();
-  const path = createLocalizedPath(locale as Locale);
-
+export function McqExamRunner({ examId }: McqExamRunnerProps) {
+  const locale = "bn";
+      const router = useRouter();
+  
   const [phase, setPhase] = useState<"instructions" | "loading" | "running" | "submitting" | "completed">("instructions");
   const [exam, setExam] = useState<ExamData | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
@@ -383,7 +382,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
 
     const handlePopState = () => {
       window.history.pushState(null, "", window.location.href);
-      setPendingNavigationUrl(path("/student/exams"));
+      setPendingNavigationUrl("/student/exams");
       setShowLeaveWarning(true);
     };
 
@@ -400,7 +399,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
       document.removeEventListener("click", handleAnchorClick, true);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [phase, path, submitExam]);
+  }, [phase, submitExam]);
 
   // Scroll to top when phase changes
   useEffect(() => {
@@ -415,7 +414,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
       <div className="flex flex-col items-center justify-center py-24 space-y-3">
         <RefreshCw className="size-10 animate-spin text-primary" />
         <p className="text-sm font-semibold text-muted">
-          {locale === "bn" ? "পরীক্ষা লোড হচ্ছে..." : "Loading exam questions..."}
+          {"পরীক্ষা লোড হচ্ছে..."}
         </p>
       </div>
     );
@@ -426,11 +425,11 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
       <div className="max-w-xl mx-auto rounded-2xl border border-red-200 bg-red-50 p-6 text-center space-y-4">
         <AlertTriangle className="size-12 text-brand-red mx-auto" />
         <h2 className="text-lg font-bold text-red-800">
-          {locale === "bn" ? "ত্রুটি ঘটেছে" : "Error Occurred"}
+          {"ত্রুটি ঘটেছে"}
         </h2>
         <p className="text-sm text-red-700">{errorMessage}</p>
-        <Button onClick={() => router.push(path("/student/exams"))} className="rounded-xl font-bold">
-          {locale === "bn" ? "পরীক্ষা তালিকায় ফিরে যান" : "Go Back to Exams"}
+        <Button onClick={() => router.push("/student/exams")} className="rounded-xl font-bold">
+          {"পরীক্ষা তালিকায় ফিরে যান"}
         </Button>
       </div>
     );
@@ -444,7 +443,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
       <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-6 md:p-8 shadow-[var(--shadow-md)] space-y-6">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-accent">
-            {locale === "bn" ? "পরীক্ষার বিবরণ" : "Exam Overview"}
+            {"পরীক্ষার বিবরণ"}
           </p>
           <h1 className="font-display mt-2 text-2xl font-bold text-primary md:text-3xl leading-tight">
             {exam.title}
@@ -455,17 +454,17 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
           <div className="rounded-xl bg-secondary/50 border border-border/40 p-4 text-center">
             <Clock className="size-6 text-primary mx-auto mb-1.5" />
             <span className="block text-2xs text-muted font-bold uppercase">
-              {locale === "bn" ? "সময়সীমা" : "Duration"}
+              {"সময়সীমা"}
             </span>
             <span className="text-base font-bold text-primary">
-              {exam.duration} {locale === "bn" ? "মিনিট" : "mins"}
+              {exam.duration} {"মিনিট"}
             </span>
           </div>
 
           <div className="rounded-xl bg-secondary/50 border border-border/40 p-4 text-center">
             <Award className="size-6 text-brand-yellow mx-auto mb-1.5" />
             <span className="block text-2xs text-muted font-bold uppercase">
-              {locale === "bn" ? "মোট নম্বর" : "Total Marks"}
+              {"মোট নম্বর"}
             </span>
             <span className="text-base font-bold text-primary">{exam.totalMarks}</span>
           </div>
@@ -473,7 +472,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
           <div className="rounded-xl bg-secondary/50 border border-border/40 p-4 text-center">
             <BookOpen className="size-6 text-brand-blue mx-auto mb-1.5" />
             <span className="block text-2xs text-muted font-bold uppercase">
-              {locale === "bn" ? "পাস নম্বর" : "Pass Mark"}
+              {"পাস নম্বর"}
             </span>
             <span className="text-base font-bold text-primary">{exam.passMark}</span>
           </div>
@@ -481,28 +480,20 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
 
         <div className="border-t border-border pt-5 space-y-3.5">
           <h3 className="font-bold text-primary text-sm">
-            {locale === "bn" ? "গুরুত্বপূর্ণ নির্দেশনাবলী:" : "Important Instructions:"}
+            {"গুরুত্বপূর্ণ নির্দেশনাবলী:"}
           </h3>
           <ul className="text-xs text-muted space-y-2.5 list-disc pl-5 font-semibold leading-relaxed">
             <li>
-              {locale === "bn"
-                ? "পরীক্ষা চলাকালীন পেজ রিফ্রেশ বা ব্যাক করবেন না।"
-                : "Do not refresh or navigate away from the page during the exam."}
+              {"পরীক্ষা চলাকালীন পেজ রিফ্রেশ বা ব্যাক করবেন না।"}
             </li>
             <li>
-              {locale === "bn"
-                ? "সময় শেষ হয়ে গেলে পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।"
-                : "The exam will auto-submit when the timer expires."}
+              {"সময় শেষ হয়ে গেলে পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।"}
             </li>
             <li>
-              {locale === "bn"
-                ? "প্রতিটি প্রশ্নের জন্য ১ নম্বর বরাদ্দ রয়েছে এবং কোনো নেগেটিভ মার্ক নেই।"
-                : "Each question carries 1 mark. There is no negative marking."}
+              {"প্রতিটি প্রশ্নের জন্য ১ নম্বর বরাদ্দ রয়েছে এবং কোনো নেগেটিভ মার্ক নেই।"}
             </li>
             <li>
-              {locale === "bn"
-                ? "পরীক্ষার ফলাফল এবং সঠিক উত্তর আপনার শিক্ষক পরবর্তীতে প্রকাশ করবেন।"
-                : "Results and correct answers will be published by your teacher later."}
+              {"পরীক্ষার ফলাফল এবং সঠিক উত্তর আপনার শিক্ষক পরবর্তীতে প্রকাশ করবেন।"}
             </li>
           </ul>
         </div>
@@ -510,10 +501,10 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
         <div className="flex justify-end gap-3 pt-5 border-t border-border">
           <Button
             variant="ghost"
-            onClick={() => router.push(path("/student/exams"))}
+            onClick={() => router.push("/student/exams")}
             className="rounded-xl font-bold"
           >
-            {locale === "bn" ? "বাতিল" : "Cancel"}
+            {"বাতিল"}
           </Button>
           <Button
             onClick={() => {
@@ -523,7 +514,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
             className="rounded-xl font-bold flex items-center gap-1.5 px-6"
           >
             <Play className="size-3.5 fill-current" />
-            {locale === "bn" ? "পরীক্ষা শুরু করুন" : "Start Exam Now"}
+            {"পরীক্ষা শুরু করুন"}
           </Button>
         </div>
       </div>
@@ -543,12 +534,10 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-bounce" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {locale === "bn" ? "আপনি এখন অফলাইন আছেন" : "You are Offline"}
+                {"আপনি এখন অফলাইন আছেন"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
-                {locale === "bn"
-                  ? "আপনার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"
-                  : "Your internet connection is currently disconnected. Please do not close or refresh this page. Your selected answers are saved locally, and you can submit them once your connection is restored."}
+                {"আপনার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"}
               </p>
             </div>
           </div>
@@ -627,12 +616,10 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                 <div className="space-y-4 w-full">
                   <div className="space-y-1">
                     <h3 className="font-display text-lg font-bold text-primary">
-                      {locale === "bn" ? "পরীক্ষা জমা দিতে চান?" : "Submit Exam?"}
+                      {"পরীক্ষা জমা দিতে চান?"}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {locale === "bn"
-                        ? "জমা দেওয়ার পূর্বে আপনার উত্তরগুলো মিলিয়ে নিন।"
-                        : "Please review your answers before submitting."}
+                      {"জমা দেওয়ার পূর্বে আপনার উত্তরগুলো মিলিয়ে নিন।"}
                     </p>
                   </div>
 
@@ -640,7 +627,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-center">
                       <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                        {locale === "bn" ? "উত্তর দেওয়া হয়েছে" : "Answered"}
+                        {"উত্তর দেওয়া হয়েছে"}
                       </span>
                       <span className="text-xl font-extrabold text-emerald-700">{answeredCount}</span>
                     </div>
@@ -658,7 +645,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                           questions.length - answeredCount > 0 ? "text-brand-red" : "text-emerald-800"
                         )}
                       >
-                        {locale === "bn" ? "বাকি আছে" : "Unanswered"}
+                        {"বাকি আছে"}
                       </span>
                       <span
                         className={cn(
@@ -676,9 +663,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                     <div className="rounded-xl border border-red-200/50 bg-red-50/80 p-3 text-left flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
                       <AlertTriangle className="size-4 text-brand-red shrink-0 mt-0.5" />
                       <p className="text-[11px] text-red-800 leading-normal font-semibold">
-                        {locale === "bn"
-                          ? "সতর্কতা: বাকি থাকা প্রশ্নগুলোর জন্য কোনো নম্বর পাওয়া যাবে না।"
-                          : "Warning: Unanswered questions will receive no marks."}
+                        {"সতর্কতা: বাকি থাকা প্রশ্নগুলোর জন্য কোনো নম্বর পাওয়া যাবে না।"}
                       </p>
                     </div>
                   )}
@@ -691,7 +676,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                     className="w-full rounded-xl py-2.5 font-bold"
                     onClick={() => setShowSubmitConfirm(false)}
                   >
-                    {locale === "bn" ? "ফিরে যান" : "Cancel"}
+                    {"ফিরে যান"}
                   </Button>
                   <Button
                     type="button"
@@ -705,7 +690,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                       submitExam(elapsedSeconds, answers);
                     }}
                   >
-                    {locale === "bn" ? "জমা দিন" : "Submit Now"}
+                    {"জমা দিন"}
                   </Button>
                 </div>
               </div>
@@ -723,7 +708,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-display text-lg font-bold text-primary">
-                    {locale === "bn" ? "সাবমিশন ব্যর্থ হয়েছে" : "Submission Failed"}
+                    {"সাবমিশন ব্যর্থ হয়েছে"}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {submitError}
@@ -734,7 +719,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                   className="w-full rounded-xl py-2.5 font-bold"
                   onClick={() => setSubmitError(null)}
                 >
-                  {locale === "bn" ? "ঠিক আছে" : "Close"}
+                  {"ঠিক আছে"}
                 </Button>
               </div>
             </div>
@@ -751,12 +736,10 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-display text-lg font-bold text-primary">
-                    {locale === "bn" ? "পরীক্ষা চলমান আছে!" : "Exam in Progress!"}
+                    {"পরীক্ষা চলমান আছে!"}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {locale === "bn"
-                      ? "পরীক্ষা চলাকালীন আপনি অন্য পৃষ্ঠায় যেতে পারবেন না। অনুগ্রহ করে প্রথমে আপনার পরীক্ষাটি সাবমিট করুন।"
-                      : "You cannot navigate to other pages during the test. Please submit your exam first."}
+                    {"পরীক্ষা চলাকালীন আপনি অন্য পৃষ্ঠায় যেতে পারবেন না। অনুগ্রহ করে প্রথমে আপনার পরীক্ষাটি সাবমিট করুন।"}
                   </p>
                 </div>
                 <div className="mt-2 flex flex-col sm:flex-row items-center gap-3 w-full">
@@ -769,7 +752,7 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                       setPendingNavigationUrl(null);
                     }}
                   >
-                    {locale === "bn" ? "পরীক্ষায় ফিরে যান" : "Back to Exam"}
+                    {"পরীক্ষায় ফিরে যান"}
                   </Button>
                   <Button
                     type="button"
@@ -784,11 +767,11 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
                       if (pendingNavigationUrl) {
                         window.location.href = pendingNavigationUrl;
                       } else {
-                        window.location.href = path("/student/exams");
+                        window.location.href = "/student/exams";
                       }
                     }}
                   >
-                    {locale === "bn" ? "সাবমিট করে চলে যান" : "Submit & Leave"}
+                    {"সাবমিট করে চলে যান"}
                   </Button>
                 </div>
               </div>
@@ -808,12 +791,10 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {locale === "bn" ? "স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে" : "Automatically Submitted"}
+                {"স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
-                {locale === "bn"
-                  ? "পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করার কারণে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"
-                  : "Your exam was automatically submitted because you changed windows or switched tabs during the test."}
+                {"পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করার কারণে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"}
               </p>
             </div>
           </div>
@@ -824,19 +805,17 @@ export function McqExamRunner({ examId, locale }: McqExamRunnerProps) {
         )}
 
         <h2 className="font-display text-xl font-bold text-primary">
-          {locale === "bn" ? "পরীক্ষা সফলভাবে সম্পন্ন হয়েছে!" : "Exam Submitted Successfully!"}
+          {"পরীক্ষা সফলভাবে সম্পন্ন হয়েছে!"}
         </h2>
         <p className="text-xs text-muted leading-relaxed font-semibold">
-          {locale === "bn"
-            ? "আপনার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। আপনার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"
-            : "Your answers have been submitted. Your teacher will evaluate and publish the results soon."}
+          {"আপনার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। আপনার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"}
         </p>
         <div className="pt-4 border-t border-border">
           <Button
-            onClick={() => router.push(path("/student/exams"))}
+            onClick={() => router.push("/student/exams")}
             className="w-full rounded-xl py-2.5 font-bold"
           >
-            {locale === "bn" ? "পরীক্ষা তালিকায় ফিরে যান" : "Back to Exams"}
+            {"পরীক্ষা তালিকায় ফিরে যান"}
           </Button>
         </div>
       </div>

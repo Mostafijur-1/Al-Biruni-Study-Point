@@ -1,22 +1,17 @@
-export const locales = ["bn"] as const;
+export type Locale = "bn";
 
-export type Locale = (typeof locales)[number];
-
-export const defaultLocale: Locale = "bn";
-
-export function getLocalizedPath(path: string, locale: Locale = defaultLocale) {
+export function getLocalizedPath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-export function createLocalizedPath(locale: Locale) {
-  return (path: string) => getLocalizedPath(path, locale);
+export function createLocalizedPath(locale?: string) {
+  return (path: string) => path.startsWith("/") ? path : `/${path}`;
 }
 
-export function parseLocalizedPath(urlOrPath: string): { locale: Locale; pathWithoutLocale: string } {
+export function parseLocalizedPath(urlOrPath: string): { pathWithoutLocale: string } {
   // Extract path only, removing query parameters and hashes
   const pathOnly = urlOrPath.split("?")[0].split("#")[0];
   
-  let locale: Locale = "bn";
   let cleanPath = pathOnly;
 
   if (pathOnly.startsWith("/bn") && (pathOnly.length === 3 || pathOnly[3] === "/")) {
@@ -27,7 +22,7 @@ export function parseLocalizedPath(urlOrPath: string): { locale: Locale; pathWit
   const queryAndHash = urlOrPath.slice(pathOnly.length);
   
   return {
-    locale,
     pathWithoutLocale: cleanPath + queryAndHash,
   };
 }
+

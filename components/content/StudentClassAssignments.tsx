@@ -14,12 +14,13 @@ type AssignmentRow = {
   targetClasses: StudentClass[];
 };
 
-export function StudentClassAssignments({ locale }: { locale: Locale }) {
-  const { data, message } = useApiQuery<{ assignments: AssignmentRow[] }>(
+export function StudentClassAssignments() {
+  const locale = "bn";
+      const { data, message } = useApiQuery<{ assignments: AssignmentRow[] }>(
     "/api/cq/assignments?scope=student",
     {
-      loadingMessage: locale === "bn" ? "অ্যাসাইনমেন্ট লোড হচ্ছে..." : "Loading assignments...",
-      errorMessage: locale === "bn" ? "অ্যাসাইনমেন্ট লোড করা যায়নি।" : "Could not load assignments.",
+      loadingMessage: "অ্যাসাইনমেন্ট লোড হচ্ছে...",
+      errorMessage: "অ্যাসাইনমেন্ট লোড করা যায়নি।",
     },
   );
 
@@ -31,9 +32,7 @@ export function StudentClassAssignments({ locale }: { locale: Locale }) {
         <p className="text-sm text-muted">{message}</p>
       ) : assignments.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-          {locale === "bn"
-            ? "আপনার শ্রেণির জন্য এখনও কোনো CQ অ্যাসাইনমেন্ট নেই।"
-            : "No CQ assignments are available for your class yet."}
+          {"আপনার শ্রেণির জন্য এখনও কোনো CQ অ্যাসাইনমেন্ট নেই।"}
         </p>
       ) : (
         <ul className="grid gap-3">
@@ -44,12 +43,12 @@ export function StudentClassAssignments({ locale }: { locale: Locale }) {
                 <p className="mt-1 text-sm text-muted">{assignment.description}</p>
               )}
               <p className="mt-2 text-xs text-muted">
-                {locale === "bn" ? "নম্বর" : "Marks"}: {assignment.totalMarks}
+                {"নম্বর"}: {assignment.totalMarks}
                 {assignment.dueDate && (
                   <>
                     {" "}
-                    · {locale === "bn" ? "শেষ তারিখ" : "Due"}:{" "}
-                    {new Date(assignment.dueDate).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-US")}
+                    · {"শেষ তারিখ"}:{" "}
+                    {new Date(assignment.dueDate).toLocaleDateString("bn-BD")}
                   </>
                 )}
               </p>

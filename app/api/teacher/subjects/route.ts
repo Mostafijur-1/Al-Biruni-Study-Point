@@ -3,7 +3,12 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
-import { SYLLABUS } from "@/lib/content/syllabus";
+import {
+  SSC_MCQ_SUBJECTS,
+  HSC_MCQ_SUBJECTS,
+  COURSE_TO_MCQ_SUBJECT_MAP,
+  getSyllabusChapters,
+} from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,14 +34,25 @@ export async function GET(request: NextRequest) {
     const subjectsWithChapters: { level: "ssc" | "hsc"; subject: string; chapters: string[] }[] = [];
 
     for (const lvl of allowedLevels) {
-      const lvlSubjects = SYLLABUS[lvl];
-      for (const subjectName in lvlSubjects) {
-        const hasAccess = domain?.isAll || domain?.subjects?.includes(subjectName);
+      const mcqSubjects = lvl === "ssc" ? SSC_MCQ_SUBJECTS : HSC_MCQ_SUBJECTS;
+      for (const bengSub of mcqSubjects) {
+        let hasAccess = domain?.isAll || false;
+
+        if (!hasAccess && domain?.subjects) {
+          const mapping = COURSE_TO_MCQ_SUBJECT_MAP[lvl];
+          for (const engSub in mapping) {
+            if (domain.subjects.includes(engSub) && mapping[engSub].includes(bengSub)) {
+              hasAccess = true;
+              break;
+            }
+          }
+        }
+
         if (hasAccess) {
           subjectsWithChapters.push({
             level: lvl,
-            subject: subjectName,
-            chapters: lvlSubjects[subjectName as keyof typeof lvlSubjects] || [],
+            subject: bengSub,
+            chapters: getSyllabusChapters(lvl, bengSub),
           });
         }
       }

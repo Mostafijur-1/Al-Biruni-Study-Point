@@ -3,12 +3,9 @@
 import Link from "next/link";
 
 import { useApiQuery } from "@/lib/hooks/use-api-query";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-type AdminOverviewProps = {
-  locale: Locale;
-};
+type AdminOverviewProps = {};
 
 type OverviewStats = {
   studentsTotal: number;
@@ -42,9 +39,9 @@ type OverviewStats = {
   }[];
 };
 
-function formatBillingDate(value: string | undefined, locale: Locale) {
+function formatBillingDate(value: string | undefined) {
   if (!value) return "Not set";
-  return new Date(value).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-US", {
+  return new Date(value).toLocaleDateString("bn-BD", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -101,20 +98,19 @@ function PracticeAttemptsCard({
   );
 }
 
-export function AdminOverview({ locale }: AdminOverviewProps) {
-  const path = createLocalizedPath(locale);
-  const { data, message, isLoading } = useApiQuery<{ stats: OverviewStats }>("/api/admin/overview", {
-    loadingMessage: locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
-    errorMessage: locale === "bn" ? "ড্যাশবোর্ড লোড করা যায়নি।" : "Could not load dashboard.",
+export function AdminOverview() {
+    const { data, message, isLoading } = useApiQuery<{ stats: OverviewStats }>("/api/admin/overview", {
+    loadingMessage: "লোড হচ্ছে...",
+    errorMessage: "ড্যাশবোর্ড লোড করা যায়নি।",
   });
 
   const stats = data?.stats;
 
   const quickLinks = [
-    { href: path("/admin/students"), label:"Students" },
-    { href: path("/admin/teachers"), label:"Teachers" },
-    // { href: path("/admin/courses"), label: locale === "bn" ? "কোর্স" : "Courses" },
-    { href: path("/admin/practice-mcqs"), label:"MCQ Management" },
+    { href: "/admin/students", label:"Students" },
+    { href: "/admin/teachers", label:"Teachers" },
+    // { href: "/admin/courses", label: "কোর্স" },
+    { href: "/admin/practice-mcqs", label:"MCQ Management" },
   ];
 
   return (
@@ -122,12 +118,10 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-          {locale === "bn" ? "অ্যাডমিন ড্যাশবোর্ড" : "Admin dashboard"}
+          {"অ্যাডমিন ড্যাশবোর্ড"}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          {locale === "bn"
-            ? "শিক্ষার্থী-শিক্ষক অ্যাকাউন্ট, কোর্স, পরীক্ষা ও ফলাফল পরিচালনা করুন।"
-            : "Manage students, teachers, courses, exams, and results."}
+          {"শিক্ষার্থী-শিক্ষক অ্যাকাউন্ট, কোর্স, পরীক্ষা ও ফলাফল পরিচালনা করুন।"}
         </p>
       </div>
 
@@ -154,19 +148,19 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard
-              label={locale === "bn" ? "শিক্ষার্থী" : "Students"}
+              label={"শিক্ষার্থী"}
               value={stats.studentsTotal}
               hint={`${stats.studentsActive} ${"active"}`}
             />
             <StatCard
-              label={locale === "bn" ? "শিক্ষক" : "Teachers"}
+              label={"শিক্ষক"}
               value={stats.teachersTotal}
               hint={`${stats.teachersPending} ${"pending"}`}
             />
             {/* <StatCard
-              label={locale === "bn" ? "কোর্স" : "Courses"}
+              label={"কোর্স"}
               value={stats.coursesTotal}
-              hint={`${stats.coursesPublished} ${locale === "bn" ? "প্রকাশিত" : "published"}`}
+              hint={`${stats.coursesPublished} ${"প্রকাশিত"}`}
             /> */}
             <StatCard
               label={"Practice questions"}
@@ -180,9 +174,9 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
               totalPassed={stats.practiceAttemptsPassed}
             />
             <StatCard
-              label={locale === "bn" ? "অ্যাপ ইনস্টল" : "App Installs"}
+              label={"অ্যাপ ইনস্টল"}
               value={stats.appInstallsTotal || 0}
-              hint={locale === "bn" ? "ইউনিক ডিভাইস সংখ্যা" : "Unique devices"}
+              hint={"ইউনিক ডিভাইস সংখ্যা"}
             />
           </div>
 
@@ -218,7 +212,7 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
                       <td className="py-3 pr-3 font-semibold">{teacher.imageQuestionUploadCount}</td>
                       <td className="py-3 pr-3 font-bold text-emerald-700">{teacher.monthlyChargeTk} tk</td>
                       <td className="py-3 pr-3 text-muted">
-                        {formatBillingDate(teacher.chargeCycleStartedAt, locale)}
+                        {formatBillingDate(teacher.chargeCycleStartedAt)}
                       </td>
                       <td
                         className={cn(
@@ -226,7 +220,7 @@ export function AdminOverview({ locale }: AdminOverviewProps) {
                           teacher.isChargeExpired ? "text-red-700" : "text-amber-700",
                         )}
                       >
-                        {formatBillingDate(teacher.chargeDueAt, locale)}
+                        {formatBillingDate(teacher.chargeDueAt)}
                       </td>
                       <td className="py-3 pr-3 text-muted">
                         {teacher.approvalStatus}

@@ -1,13 +1,13 @@
-import { locales, type Locale, getLocalizedPath, parseLocalizedPath, defaultLocale } from "@/lib/i18n";
+import { getLocalizedPath, parseLocalizedPath } from "@/lib/i18n";
 import type { UserRole } from "@/types";
 
 const AUTH_PATH_SEGMENTS = ["/login", "/register"];
 
 function getSaferPostAuthUrl(value: string) {
-  const { locale, pathWithoutLocale } = parseLocalizedPath(value);
+  const { pathWithoutLocale } = parseLocalizedPath(value);
 
   if (/^\/student\/exams\/[^/]+/.test(pathWithoutLocale)) {
-    return getLocalizedPath("/student/exams", locale);
+    return getLocalizedPath("/student/exams");
   }
 
   return value;
@@ -15,12 +15,6 @@ function getSaferPostAuthUrl(value: string) {
 
 export function getSafeReturnUrl(value: string | null | undefined): string | null {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return null;
-  }
-
-  const { locale } = parseLocalizedPath(value);
-
-  if (!locales.includes(locale)) {
     return null;
   }
 
@@ -37,10 +31,10 @@ export function resolvePostAuthRedirect(role: UserRole, returnUrl: string | null
   const safe = getSafeReturnUrl(returnUrl);
 
   if (!safe) {
-    return getLocalizedPath(`/${role}`, defaultLocale);
+    return getLocalizedPath(`/${role}`);
   }
 
-  const { locale, pathWithoutLocale } = parseLocalizedPath(safe);
+  const { pathWithoutLocale } = parseLocalizedPath(safe);
 
   if (role === "student" && (pathWithoutLocale.startsWith("/student") || pathWithoutLocale.startsWith("/explore"))) {
     return safe;
@@ -54,10 +48,10 @@ export function resolvePostAuthRedirect(role: UserRole, returnUrl: string | null
     return safe;
   }
 
-  return getLocalizedPath(`/${role}`, locale);
+  return getLocalizedPath(`/${role}`);
 }
 
-export function buildLoginUrl(locale: Locale, returnUrl?: string | null, reason?: string) {
+export function buildLoginUrl(returnUrl?: string | null, reason?: string) {
   const params = new URLSearchParams();
 
   if (returnUrl) {
@@ -74,10 +68,10 @@ export function buildLoginUrl(locale: Locale, returnUrl?: string | null, reason?
 
   const query = params.toString();
 
-  return getLocalizedPath(`/login`, locale) + (query ? `?${query}` : "");
+  return getLocalizedPath(`/login`) + (query ? `?${query}` : "");
 }
 
-export function buildRegisterUrl(locale: Locale, returnUrl?: string | null) {
+export function buildRegisterUrl(returnUrl?: string | null) {
   const params = new URLSearchParams();
   const safe = getSafeReturnUrl(returnUrl);
 
@@ -87,5 +81,6 @@ export function buildRegisterUrl(locale: Locale, returnUrl?: string | null) {
 
   const query = params.toString();
 
-  return getLocalizedPath(`/register`, locale) + (query ? `?${query}` : "");
+  return getLocalizedPath(`/register`) + (query ? `?${query}` : "");
 }
+

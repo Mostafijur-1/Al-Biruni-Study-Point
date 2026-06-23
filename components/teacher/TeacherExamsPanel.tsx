@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+
 import { cn } from "@/lib/utils";
 
 type ExamInfo = {
@@ -36,12 +36,10 @@ type ExamInfo = {
 };
 
 type TeacherExamsPanelProps = {
-  locale: string;
-};
+  };
 
-export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
-  const path = createLocalizedPath(locale as Locale);
-
+export function TeacherExamsPanel() {
+    
   const [exams, setExams] = useState<ExamInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -114,9 +112,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
   };
 
   const handleDelete = async (id: string) => {
-    const msg = locale === "bn"
-      ? "আপনি কি নিশ্চিত যে এই পরীক্ষাটি এবং এর সকল প্রশ্ন ও ফলাফল মুছে ফেলতে চান?"
-      : "Are you sure you want to delete this exam, all its questions, and student results?";
+    const msg = "আপনি কি নিশ্চিত যে এই পরীক্ষাটি এবং এর সকল প্রশ্ন ও ফলাফল মুছে ফেলতে চান?";
     if (!confirm(msg)) return;
 
     try {
@@ -137,7 +133,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !subject.trim() || targetClasses.length === 0) {
-      setFormError(locale === "bn" ? "সকল ফিল্ড পূরণ করুন।" : "Please fill in all fields.");
+      setFormError("সকল ফিল্ড পূরণ করুন।");
       return;
     }
 
@@ -191,12 +187,10 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-accent">Teacher panel</p>
           <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-            {locale === "bn" ? "এমসিকিউ পরীক্ষা পরিচালনা" : "MCQ Exams"}
+            MCQ Exam Management
           </h1>
           <p className="mt-2 text-sm text-muted">
-            {locale === "bn"
-              ? "শিক্ষার্থীদের জন্য পরীক্ষা সেট করুন এবং সমাধান ও ফলাফল প্রকাশ করুন।"
-              : "Create exams, upload questions, and manage result publication."}
+            {"শিক্ষার্থীদের জন্য পরীক্ষা সেট করুন এবং সমাধান ও ফলাফল প্রকাশ করুন।"}
           </p>
         </div>
 
@@ -205,7 +199,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
           className="flex items-center gap-1.5 self-start sm:self-auto rounded-xl font-bold"
         >
           <Plus className="size-4" />
-          {locale === "bn" ? "নতুন পরীক্ষা সেট করুন" : "Set New Exam"}
+          {"নতুন পরীক্ষা সেট করুন"}
         </Button>
       </div>
 
@@ -230,9 +224,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
         </div>
       ) : exams.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted">
-          {locale === "bn"
-            ? "আপনার তৈরি কোনো পরীক্ষা নেই।"
-            : "No exams set yet. Click the button above to set your first exam."}
+          {"আপনার তৈরি কোনো পরীক্ষা নেই।"}
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -278,7 +270,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
 
                 <div className="rounded-xl border border-border/60 bg-surface/50 p-3 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold">
-                    <span className="text-muted">Questions added:</span>
+                    <span className="text-muted">প্রশ্ন যুক্ত করা হয়েছে</span>
                     <span className="rounded-md bg-primary/10 px-2 py-0.5 text-primary">
                       {exam.questionCount}
                     </span>
@@ -287,10 +279,10 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
               </div>
 
               <div className="mt-5 space-y-3">
-                <Link href={path(`/teacher/exams/${exam._id}`)} className="block">
+                <Link href={`/teacher/exams/${exam._id}`} className="block">
                   <Button variant="outline" className="w-full rounded-xl py-2 text-xs font-bold">
                     <FileQuestion className="mr-1.5 size-4" />
-                    {locale === "bn" ? "প্রশ্ন আপলোড ও বিবরণ" : "Upload Qs & Details"}
+                    {"প্রশ্ন আপলোড ও রেজাল্ট দেখুন"}
                   </Button>
                 </Link>
 
@@ -351,7 +343,7 @@ export function TeacherExamsPanel({ locale }: TeacherExamsPanelProps) {
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 animate-scale-up">
             <div className="flex items-center justify-between border-b border-border/80 pb-3">
               <h2 className="font-display text-lg font-bold text-primary">
-                {locale === "bn" ? "নতুন পরীক্ষা সেট করুন" : "Set New MCQ Exam"}
+                {"নতুন পরীক্ষা সেট করুন"}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}

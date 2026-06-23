@@ -16,9 +16,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PwaInstallPrompt() {
-  const params = useParams();
-  const locale = params?.locale as string;
-  const isBengali = locale === "bn";
+    const isBengali = true;
 
   const { user, checking } = useSession({ listenToAuthChanges: true });
 

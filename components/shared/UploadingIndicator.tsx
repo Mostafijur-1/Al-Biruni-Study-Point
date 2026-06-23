@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface UploadingIndicatorProps {
   isUploading: boolean;
-  locale?: string;
-  className?: string;
+    className?: string;
 }
 
 const STEPS_BN = [
@@ -20,7 +19,6 @@ const STEPS_BN = [
 
 export function UploadingIndicator({
   isUploading,
-  locale = "bn",
   className,
 }: UploadingIndicatorProps) {
   const [stepIndex, setStepIndex] = useState(0);

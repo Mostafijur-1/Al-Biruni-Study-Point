@@ -20,13 +20,12 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth.schema";
 import type { SessionUser } from "@/types";
 
 type LoginFormProps = {
-  locale: Locale;
-  auth: Dictionary["auth"];
+    auth: Dictionary["auth"];
   returnUrl?: string | null;
   reason?: string | null;
 };
 
-export function LoginForm({ locale, auth, returnUrl, reason }: LoginFormProps) {
+export function LoginForm({ auth, returnUrl, reason }: LoginFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const {
@@ -100,7 +99,7 @@ export function LoginForm({ locale, auth, returnUrl, reason }: LoginFormProps) {
         <p className="text-center text-sm text-muted">
           {auth.login.noAccount}{" "}
           <Link
-            href={buildRegisterUrl(locale, returnUrl ?? undefined)}
+            href={buildRegisterUrl(returnUrl ?? undefined)}
             className="font-semibold text-primary hover:underline"
           >
             {auth.login.registerLink}

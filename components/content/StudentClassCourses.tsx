@@ -25,12 +25,12 @@ type VideoRow = {
 };
 
 type Props = {
-  locale: Locale;
-  level: "SSC" | "HSC";
+    level: "SSC" | "HSC";
 };
 
-export function StudentClassCourses({ locale, level }: Props) {
-  const { user, checking } = useSession({ listenToAuthChanges: true });
+export function StudentClassCourses({ level }: Props) {
+  const locale = "bn";
+      const { user, checking } = useSession({ listenToAuthChanges: true });
   const isGuest = !user;
 
   const coursesUrl = checking
@@ -49,8 +49,8 @@ export function StudentClassCourses({ locale, level }: Props) {
     coursesUrl,
     {
       enabled: !checking,
-      loadingMessage: locale === "bn" ? "কোর্স লোড হচ্ছে..." : "Loading courses...",
-      errorMessage: locale === "bn" ? "কোর্স লোড করা যায়নি।" : "Could not load courses.",
+      loadingMessage: "কোর্স লোড হচ্ছে...",
+      errorMessage: "কোর্স লোড করা যায়নি।",
     },
   );
 
@@ -58,8 +58,8 @@ export function StudentClassCourses({ locale, level }: Props) {
     videosUrl,
     {
       enabled: !checking,
-      loadingMessage: locale === "bn" ? "ভিডিও লোড হচ্ছে..." : "Loading videos...",
-      errorMessage: locale === "bn" ? "ভিডিও লোড করা যায়নি।" : "Could not load videos.",
+      loadingMessage: "ভিডিও লোড হচ্ছে...",
+      errorMessage: "ভিডিও লোড করা যায়নি।",
     },
   );
 
@@ -70,22 +70,20 @@ export function StudentClassCourses({ locale, level }: Props) {
     <div className="space-y-8">
       <section className="space-y-4">
         <h2 className="text-lg font-bold text-primary">
-          {locale === "bn" ? "আমার কোর্স" : "My courses"}
+          {"আমার কোর্স"}
         </h2>
         {courseMessage ? (
           <p className="text-sm text-muted">{courseMessage}</p>
         ) : courses.length === 0 ? (
           <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-            {locale === "bn"
-              ? "আপনার শ্রেণির জন্য এখনও কোনো কোর্স নেই।"
-              : "No courses are available for your class yet."}
+            {"আপনার শ্রেণির জন্য এখনও কোনো কোর্স নেই।"}
           </p>
         ) : (
           <ul className="grid gap-3">
             {courses.map((course) => (
               <li key={course._id} className="rounded-xl border border-border bg-card p-4">
                 <p className="font-semibold text-primary">
-                  {locale === "bn" && course.titleBn ? course.titleBn : course.title}
+                  {course.titleBn ? course.titleBn : course.title}
                 </p>
                 <p className="mt-1 text-xs text-muted">
                   {course.subject} · {course.level}
@@ -99,15 +97,13 @@ export function StudentClassCourses({ locale, level }: Props) {
 
       <section className="space-y-4">
         <h2 className="text-lg font-bold text-primary">
-          {locale === "bn" ? "ক্লাস ভিডিও" : "Class videos"}
+          {"ক্লাস ভিডিও"}
         </h2>
         {videoMessage ? (
           <p className="text-sm text-muted">{videoMessage}</p>
         ) : videos.length === 0 ? (
           <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-            {locale === "bn"
-              ? "আপনার শ্রেণির জন্য এখনও কোনো ভিডিও নেই।"
-              : "No class videos are available for your class yet."}
+            {"আপনার শ্রেণির জন্য এখনও কোনো ভিডিও নেই।"}
           </p>
         ) : (
           <ul className="grid gap-3">
@@ -117,12 +113,11 @@ export function StudentClassCourses({ locale, level }: Props) {
                 {video.description && <p className="mt-1 text-sm text-muted">{video.description}</p>}
                 {isGuest ? (
                   <AuthGateLink
-                    locale={locale}
                     href={video.videoUrl}
                     returnUrl={`/student/courses?level=${level}`}
                     className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
                   >
-                    {locale === "bn" ? "ভিডিও দেখুন" : "Watch video"}
+                    {"ভিডিও দেখুন"}
                   </AuthGateLink>
                 ) : (
                   <a
@@ -131,7 +126,7 @@ export function StudentClassCourses({ locale, level }: Props) {
                     rel="noopener noreferrer"
                     className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
                   >
-                    {locale === "bn" ? "ভিডিও দেখুন" : "Watch video"}
+                    {"ভিডিও দেখুন"}
                   </a>
                 )}
               </li>

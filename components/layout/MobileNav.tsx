@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react";
 
 import { GuestAuthLinks, UserMenu } from "@/components/layout/UserMenu";
 import { Logo } from "@/components/brand/Logo";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { publicNavPaths } from "@/lib/routes";
 import type { SessionUser } from "@/types";
@@ -15,17 +15,14 @@ import { pressableClasses } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 type MobileNavProps = {
-  locale: Locale;
-  navigation: Dictionary["navigation"];
+    navigation: Dictionary["navigation"];
   auth: Dictionary["auth"];
   session: SessionUser | null;
   checkingSession: boolean;
   onLogout: () => void;
 };
 
-export function MobileNav({
-  locale,
-  navigation,
+export function MobileNav({ navigation,
   auth,
   session,
   checkingSession,
@@ -67,7 +64,7 @@ export function MobileNav({
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col bg-navy lg:hidden">
           <div className="flex h-[var(--header-height)] shrink-0 items-center justify-between border-b border-white/15 px-4">
-            <Logo locale={locale} size="sm" tone="onDark" link={false} />
+            <Logo size="sm" tone="onDark" link={false} />
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -84,7 +81,7 @@ export function MobileNav({
           <div className="flex-1 overflow-y-auto px-4 py-5">
             <nav className="space-y-2">
               {publicNavPaths.map(({ key, path }) => {
-                const href = getLocalizedPath(path, locale);
+                const href = getLocalizedPath(path);
                 const active = pathname === href;
 
                 return (
@@ -107,7 +104,6 @@ export function MobileNav({
             <div className="mt-6 space-y-3 border-t border-white/15 pt-5">
               {session ? (
                 <UserMenu
-                  locale={locale}
                   user={session}
                   auth={auth}
                   onLogout={onLogout}
@@ -117,7 +113,7 @@ export function MobileNav({
                 <div className="h-11 rounded-lg bg-white/10" aria-hidden />
               ) : (
                 <div className="flex flex-col gap-2">
-                  <GuestAuthLinks locale={locale} navigation={navigation} mobile />
+                  <GuestAuthLinks navigation={navigation} mobile />
                 </div>
               )}
             </div>

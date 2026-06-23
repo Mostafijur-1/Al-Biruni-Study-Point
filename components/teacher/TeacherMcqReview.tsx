@@ -55,13 +55,13 @@ type SubjectInfo = {
 };
 
 type TeacherMcqReviewProps = {
-  locale: string;
-};
+  };
 
 const MAX_IMAGE_UPLOADS = 3;
 
-export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
-  const [activeTab, setActiveTab] = useState<"upload" | "reports" | "uploaded">("upload");
+export function TeacherMcqReview() {
+  const locale = "bn";
+      const [activeTab, setActiveTab] = useState<"upload" | "reports" | "uploaded">("upload");
 
   // Upload states
   const [uploadLevel, setUploadLevel] = useState<"ssc" | "hsc">("ssc");
@@ -135,20 +135,20 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
   async function handleUploadMCQ(e: React.FormEvent) {
     e.preventDefault();
     if (!uploadSubject) {
-      setUploadError(locale === "bn" ? "দয়া করে বিষয় নির্বাচন করুন।" : "Please select a subject.");
+      setUploadError("দয়া করে বিষয় নির্বাচন করুন।");
       return;
     }
     if (!uploadChapter) {
-      setUploadError(locale === "bn" ? "দয়া করে অধ্যায় নির্বাচন করুন।" : "Please select a chapter.");
+      setUploadError("দয়া করে অধ্যায় নির্বাচন করুন।");
       return;
     }
     
     if (uploadContentType === "text" && !pastedText.trim()) {
-      setUploadError(locale === "bn" ? "টেক্সট পেস্ট করুন।" : "Please paste some text.");
+      setUploadError("টেক্সট পেস্ট করুন।");
       return;
     }
     if (uploadContentType === "image" && uploadFiles.length === 0) {
-      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select at least one image.");
+      setUploadError("অনুগ্রহ করে ফাইল নির্বাচন করুন।");
       return;
     }
     if (uploadContentType === "image" && uploadFiles.length > MAX_IMAGE_UPLOADS) {
@@ -192,11 +192,11 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         setPastedText("");
       } else {
         setUploadError(
-          getApiErrorMessage(payload, locale === "bn" ? "আপলোড ব্যর্থ হয়েছে।" : "Failed to upload. Please try again.")
+          getApiErrorMessage(payload, "আপলোড ব্যর্থ হয়েছে।")
         );
       }
     } catch (error) {
-      setUploadError(locale === "bn" ? "সার্ভারের সাথে সংযোগ করা যায়নি।" : "Could not connect to the server.");
+      setUploadError("সার্ভারের সাথে সংযোগ করা যায়নি।");
     } finally {
       setUploading(false);
     }
@@ -272,7 +272,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       });
 
       if (ok && isApiSuccess(payload)) {
-        setSuccessMessage(locale === "bn" ? "নির্বাচিত প্রশ্নসমূহ সফলভাবে মুছে ফেলা হয়েছে।" : "Selected questions deleted successfully.");
+        setSuccessMessage("নির্বাচিত প্রশ্নসমূহ সফলভাবে মুছে ফেলা হয়েছে।");
         setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q._id)));
         setReports((prev) => prev.filter((r) => !r.questionId || !selectedUploadedIds.includes(r.questionId._id)));
         setSelectedUploadedIds([]);
@@ -290,7 +290,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
 
   // Delete MCQ
   const handleDeleteMcq = async (id: string) => {
-    if (!confirm(locale === "bn" ? "আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?" : "Are you sure you want to delete this question?")) return;
+    if (!confirm("আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?")) return;
 
     try {
       const { ok, payload } = await apiFetch(`/api/teacher/mcqs/${id}`, {
@@ -298,7 +298,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       });
 
       if (ok && isApiSuccess(payload)) {
-        setSuccessMessage(locale === "bn" ? "প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।" : "Question deleted successfully.");
+        setSuccessMessage("প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।");
         // Remove from list
         setReports((prev) => prev.filter((r) => r.questionId?._id !== id));
         setUploadedQuestions((prev) => prev.filter((q) => q._id !== id));
@@ -396,7 +396,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
           prev.map((q) => (q._id === updated._id ? updated : q))
         );
         
-        setSuccessMessage(locale === "bn" ? "প্রশ্নটি সফলভাবে আপডেট করা হয়েছে।" : "Question updated successfully.");
+        setSuccessMessage("প্রশ্নটি সফলভাবে আপডেট করা হয়েছে।");
         setEditingMcq(null);
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
@@ -421,7 +421,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
 
       if (ok && isApiSuccess(payload)) {
         setReports((prev) => prev.filter((r) => r._id !== reportId));
-        setSuccessMessage(locale === "bn" ? "রিপোর্টটি সমাধান করা হয়েছে।" : "Report resolved successfully.");
+        setSuccessMessage("রিপোর্টটি সমাধান করা হয়েছে।");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to resolve report."));
@@ -439,12 +439,10 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
       {/* Header */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
         <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
-          {locale === "bn" ? "এমসিকিউ রিভিউ প্যানেল" : "MCQ Review Panel"}
+          {"এমসিকিউ রিভিউ প্যানেল"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          {locale === "bn"
-            ? "আপনার সিলেক্ট করা বিষয়ের প্রশ্নগুলো দেখুন, এডিট বা ডিলিট করুন এবং রিপোর্ট চেক করুন।"
-            : "Review, edit, delete MCQs within your subjects and manage student reports."}
+          {"আপনার সিলেক্ট করা বিষয়ের প্রশ্নগুলো দেখুন, এডিট বা ডিলিট করুন এবং রিপোর্ট চেক করুন।"}
         </p>
       </div>
 
@@ -479,7 +477,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               : "border-transparent text-muted-foreground hover:text-primary"
           )}
         >
-          <span>{locale === "bn" ? "প্রশ্ন আপলোড করুন" : "Upload MCQ"}</span>
+          <span>{"প্রশ্ন আপলোড করুন"}</span>
         </button>
         <button
           type="button"
@@ -496,7 +494,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               : "border-transparent text-muted-foreground hover:text-primary"
           )}
         >
-          <span>{locale === "bn" ? "আপলোডকৃত প্রশ্নসমূহ" : "Uploaded MCQs"}</span>
+          <span>{"আপলোডকৃত প্রশ্নসমূহ"}</span>
         </button>
         <button
           type="button"
@@ -511,7 +509,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               : "border-transparent text-muted-foreground hover:text-primary"
           )}
         >
-          <span>{locale === "bn" ? "রিপোর্ট করা প্রশ্নসমূহ" : "Reported Questions"}</span>
+          <span>{"রিপোর্ট করা প্রশ্নসমূহ"}</span>
           {reports.length > 0 && (
             <span className="bg-brand-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               {reports.length}
@@ -671,13 +669,13 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
         <div className="space-y-4 animate-in fade-in duration-200">
           <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] space-y-4">
             <h2 className="font-display text-lg font-bold text-primary">
-              {locale === "bn" ? "আপনার আপলোডকৃত প্রশ্নসমূহ" : "Your Uploaded MCQs"}
+              {"আপনার আপলোডকৃত প্রশ্নসমূহ"}
             </h2>
             <div className="grid gap-4 sm:grid-cols-3">
               {/* Subject Selection */}
               <div className="space-y-1.5">
                 <Label htmlFor="filter-subject" className="font-bold">
-                  {locale === "bn" ? "বিষয়" : "Subject"}
+                  {"বিষয়"}
                 </Label>
                 <select
                   id="filter-subject"
@@ -696,7 +694,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                   }}
                   className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                 >
-                  <option value="">{locale === "bn" ? "-- বিষয় নির্বাচন করুন --" : "-- Select Subject --"}</option>
+                  <option value="">{"-- বিষয় নির্বাচন করুন --"}</option>
                   {subjects.map((sub) => (
                     <option key={`${sub.level}-${sub.subject}`} value={sub.subject}>
                       {sub.subject} ({sub.level.toUpperCase()})
@@ -708,7 +706,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               {/* Chapter Selection */}
               <div className="space-y-1.5">
                 <Label htmlFor="filter-chapter" className="font-bold">
-                  {locale === "bn" ? "অধ্যায়" : "Chapter"}
+                  {"অধ্যায়"}
                 </Label>
                 <select
                   id="filter-chapter"
@@ -717,7 +715,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                   className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                   disabled={!filterSubject}
                 >
-                  <option value="">{locale === "bn" ? "-- অধ্যায় নির্বাচন করুন --" : "-- Select Chapter --"}</option>
+                  <option value="">{"-- অধ্যায় নির্বাচন করুন --"}</option>
                   {availableChaptersForFilter.map((chap) => (
                     <option key={chap} value={chap}>
                       {getTranslatedChapter(chap, locale)}
@@ -729,7 +727,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               {/* Level Display */}
               <div className="space-y-1.5">
                 <Label className="font-bold">
-                  {locale === "bn" ? "লেভেল" : "Level"}
+                  {"লেভেল"}
                 </Label>
                 <input
                   type="text"
@@ -745,15 +743,15 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
           {loadingUploaded ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
               <Loader2 className="size-6 animate-spin text-primary" />
-              <span>{locale === "bn" ? "প্রশ্ন লোড হচ্ছে..." : "Loading uploaded questions..."}</span>
+              <span>{"প্রশ্ন লোড হচ্ছে..."}</span>
             </div>
           ) : !filterSubject || !filterChapter ? (
             <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-              {locale === "bn" ? "প্রশ্ন দেখতে বিষয় এবং অধ্যায় নির্বাচন করুন।" : "Please select subject and chapter to view questions."}
+              {"প্রশ্ন দেখতে বিষয় এবং অধ্যায় নির্বাচন করুন।"}
             </div>
           ) : uploadedQuestions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-              {locale === "bn" ? "এই অধ্যায়ে আপনার আপলোডকৃত কোনো প্রশ্ন পাওয়া যায়নি।" : "No uploaded questions found for this chapter."}
+              {"এই অধ্যায়ে আপনার আপলোডকৃত কোনো প্রশ্ন পাওয়া যায়নি।"}
             </div>
           ) : (
             <div className="space-y-4">
@@ -775,11 +773,11 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                     }}
                     className="rounded border-border text-primary focus:ring-primary size-4"
                   />
-                  <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
+                  <span>{"সব নির্বাচন করুন"}</span>
                 </label>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground font-semibold">
-                    {selectedUploadedIds.length} {locale === "bn" ? "টি নির্বাচিত" : "selected"}
+                    {selectedUploadedIds.length} {"টি নির্বাচিত"}
                   </span>
                   <Button
                     type="button"
@@ -791,7 +789,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                     className="rounded-lg text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                   >
                     <Trash2 className="size-3.5 mr-1" />
-                    {locale === "bn" ? "মুছে ফেলুন" : "Delete Selected"}
+                    {"মুছে ফেলুন"}
                   </Button>
                 </div>
               </div>
@@ -831,7 +829,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                           className="rounded-lg h-8 text-xs font-bold text-primary"
                         >
                           <Edit className="size-3.5 mr-1" />
-                          {locale === "bn" ? "এডিট" : "Edit"}
+                          {"এডিট"}
                         </Button>
                         <Button
                           type="button"
@@ -841,7 +839,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                           className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                         >
                           <Trash2 className="size-3.5 mr-1" />
-                          {locale === "bn" ? "মুছুন" : "Delete"}
+                          {"মুছুন"}
                         </Button>
                       </div>
                     </div>
@@ -904,12 +902,10 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
               </div>
               <div>
                 <h2 className="font-display text-lg font-bold text-primary">
-                  {locale === "bn" ? "এমসিকিউ প্রশ্ন আপলোড" : "Upload MCQ Questions"}
+                  {"এমসিকিউ প্রশ্ন আপলোড"}
                 </h2>
                 <p className="text-xs text-muted">
-                  {locale === "bn"
-                    ? "আপনার বিষয়ের জন্য JSON ফাইল আপলোড করুন। ফাইলের নাম অধ্যায়ের নামের সাথে মিলতে হবে।"
-                    : "Upload JSON files of MCQ questions for your subjects. Filenames must match syllabus chapter slugs."}
+                  {"আপনার বিষয়ের জন্য JSON ফাইল আপলোড করুন। ফাইলের নাম অধ্যায়ের নামের সাথে মিলতে হবে।"}
                 </p>
               </div>
             </div>
@@ -926,7 +922,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 {/* Allowed Subject Select */}
                 <div className="space-y-1.5">
                   <Label htmlFor="upload-subject" className="font-bold">
-                    {locale === "bn" ? "বিষয়" : "Subject"}
+                    {"বিষয়"}
                   </Label>
                   <select
                     id="upload-subject"
@@ -945,7 +941,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                     }}
                     className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                   >
-                    <option value="">{locale === "bn" ? "-- বিষয় নির্বাচন করুন --" : "-- Select Subject --"}</option>
+                    <option value="">{"-- বিষয় নির্বাচন করুন --"}</option>
                     {subjects.map((sub) => (
                       <option key={`${sub.level}-${sub.subject}`} value={sub.subject}>
                         {sub.subject} ({sub.level.toUpperCase()})
@@ -957,7 +953,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 {/* Chapter Select */}
                 <div className="space-y-1.5">
                   <Label htmlFor="upload-chapter" className="font-bold">
-                    {locale === "bn" ? "অধ্যায়" : "Chapter"}
+                    {"অধ্যায়"}
                   </Label>
                   <select
                     id="upload-chapter"
@@ -965,7 +961,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                     onChange={(e) => setUploadChapter(e.target.value)}
                     className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                   >
-                    <option value="">{locale === "bn" ? "-- অধ্যায় নির্বাচন করুন --" : "-- Select Chapter --"}</option>
+                    <option value="">{"-- অধ্যায় নির্বাচন করুন --"}</option>
                     {availableChaptersForUpload.map((chap) => (
                       <option key={chap} value={chap}>
                         {getTranslatedChapter(chap, locale)}
@@ -977,7 +973,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 {/* Level Display */}
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label className="font-bold">
-                    {locale === "bn" ? "লেভেল" : "Level"}
+                    {"লেভেল"}
                   </Label>
                   <input
                     type="text"
@@ -1056,7 +1052,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                       <Upload className="size-4" />
                       {uploadFiles.length > 0
                         ? `${uploadFiles.length} image${uploadFiles.length > 1 ? "s" : ""} selected`
-                        : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose Images"}
+                        : "ফাইল নির্বাচন করুন"}
                     </button>
                     {uploadFiles.length > 0 && (
                       <span className="text-2xs text-muted font-bold font-sans">
@@ -1093,7 +1089,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                 </div>
               )}
 
-              <UploadingIndicator isUploading={uploading} locale={locale} className="my-2" />
+              <UploadingIndicator isUploading={uploading} className="my-2" />
 
               <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
                 {uploadSuccess && (
@@ -1113,9 +1109,9 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
                   className="rounded-xl px-6"
                 >
                   {uploading ? (
-                    locale === "bn" ? "এমসিকিউ আপলোড হচ্ছে..." : "Uploading MCQs..."
+                    "এমসিকিউ আপলোড হচ্ছে..."
                   ) : (
-                    locale === "bn" ? "আপলোড করুন" : "Upload to Database"
+                    "আপলোড করুন"
                   )}
                 </Button>
               </div>
@@ -1130,7 +1126,7 @@ export function TeacherMcqReview({ locale }: TeacherMcqReviewProps) {
           <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="font-display text-lg font-bold text-primary">
-                {locale === "bn" ? "এমসিকিউ এডিট করুন" : "Edit MCQ Question"}
+                {"এমসিকিউ এডিট করুন"}
               </h3>
               <button
                 type="button"

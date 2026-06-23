@@ -15,7 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type StudentExam = {
@@ -33,12 +33,10 @@ type StudentExam = {
 };
 
 type StudentExamsPanelProps = {
-  locale: string;
-};
+  };
 
-export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
-  const path = createLocalizedPath(locale as Locale);
-
+export function StudentExamsPanel({}: StudentExamsPanelProps) {
+  
   const [exams, setExams] = useState<StudentExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -76,12 +74,10 @@ export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-accent">Student Portal</p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-          {locale === "bn" ? "শ্রেণীকক্ষ পরীক্ষা" : "MCQ Exams"}
+          {"শ্রেণীকক্ষ পরীক্ষা"}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          {locale === "bn"
-            ? "আপনার শিক্ষকের দেওয়া পরীক্ষাগুলোতে অংশ নিন।"
-            : "Take MCQ exams assigned by your corresponding teacher."}
+          {"আপনার শিক্ষকের দেওয়া পরীক্ষাগুলোতে অংশ নিন।"}
         </p>
       </div>
 
@@ -102,7 +98,7 @@ export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
               : "border-transparent text-muted hover:text-primary"
           )}
         >
-          {locale === "bn" ? "চলমান পরীক্ষা" : "Available Exams"} ({availableExams.length})
+          {"চলমান পরীক্ষা"} ({availableExams.length})
         </button>
         <button
           onClick={() => setActiveTab("completed")}
@@ -113,7 +109,7 @@ export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
               : "border-transparent text-muted hover:text-primary"
           )}
         >
-          {locale === "bn" ? "সম্পন্ন পরীক্ষা" : "Completed Exams"} ({completedExams.length})
+          {"সম্পন্ন পরীক্ষা"} ({completedExams.length})
         </button>
       </div>
 
@@ -133,12 +129,8 @@ export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
       ) : currentList.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-10 text-center text-muted">
           {activeTab === "available"
-            ? locale === "bn"
-              ? "এই মুহূর্তে কোনো নতুন পরীক্ষা নেই।"
-              : "No available exams to take right now."
-            : locale === "bn"
-              ? "আপনি এখনো কোনো পরীক্ষা সম্পন্ন করেননি।"
-              : "You have not completed any exams yet."}
+            ? "এই মুহূর্তে কোনো নতুন পরীক্ষা নেই।"
+            : "আপনি এখনো কোনো পরীক্ষা সম্পন্ন করেননি।"}
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -154,7 +146,7 @@ export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
                   </span>
                   <span className="text-2xs text-muted font-bold flex items-center gap-1">
                     <Calendar className="size-3 text-muted" />
-                    {new Date(exam.createdAt).toLocaleDateString(locale === "bn" ? "bn-BD" : "en-US", {
+                    {new Date(exam.createdAt).toLocaleDateString("bn-BD", {
                       month: "short",
                       day: "numeric",
                     })}
@@ -173,41 +165,39 @@ export function StudentExamsPanel({ locale }: StudentExamsPanelProps) {
                 <div className="grid grid-cols-2 gap-2 text-2xs font-semibold text-muted bg-surface/50 p-2.5 rounded-xl border border-border/40">
                   <span className="flex items-center gap-1">
                     <Clock className="size-3 text-primary" />
-                    {exam.duration} {locale === "bn" ? "মিনিট" : "mins"}
+                    {exam.duration} {"মিনিট"}
                   </span>
                   <span className="flex items-center gap-1">
                     <Award className="size-3 text-brand-yellow" />
-                    {exam.totalMarks} {locale === "bn" ? "নম্বর" : "marks"}
+                    {exam.totalMarks} {"নম্বর"}
                   </span>
                   <span className="flex items-center gap-1 mt-1 col-span-2">
                     <FileQuestion className="size-3 text-brand-blue" />
-                    {exam.questionCount} {locale === "bn" ? "টি প্রশ্ন" : "questions"}
+                    {exam.questionCount} {"টি প্রশ্ন"}
                   </span>
                 </div>
               </div>
 
               <div className="mt-5">
                 {activeTab === "available" ? (
-                  <Link href={path(`/student/exams/${exam._id}`)} className="block">
+                  <Link href={`/student/exams/${exam._id}`} className="block">
                     <Button className="w-full rounded-xl py-2 text-xs font-bold flex items-center justify-center gap-1.5">
                       <Play className="size-3.5 fill-current" />
-                      {locale === "bn" ? "পরীক্ষা শুরু করুন" : "Start Exam"}
+                      {"পরীক্ষা শুরু করুন"}
                     </Button>
                   </Link>
                 ) : (
                   <div className="space-y-2">
                     {exam.resultsPublished ? (
-                      <Link href={path("/student/results")} className="block">
+                      <Link href={"/student/results"} className="block">
                         <Button variant="outline" className="w-full rounded-xl py-2 text-xs font-bold border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100 flex items-center justify-center gap-1.5">
                           <GraduationCap className="size-4" />
-                          {locale === "bn" ? "ফলাফল ও সমাধান দেখুন" : "View Results & Answers"}
+                          {"ফলাফল ও সমাধান দেখুন"}
                         </Button>
                       </Link>
                     ) : (
                       <div className="rounded-xl border border-amber-200 bg-amber-50 p-2 text-center text-2xs font-bold text-amber-800">
-                        {locale === "bn"
-                          ? "ফলাফল প্রকাশের অপেক্ষায়"
-                          : "Results pending publication"}
+                        {"ফলাফল প্রকাশের অপেক্ষায়"}
                       </div>
                     )}
                   </div>

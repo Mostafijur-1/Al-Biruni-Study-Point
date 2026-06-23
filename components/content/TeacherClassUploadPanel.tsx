@@ -12,9 +12,7 @@ import { formatClassList } from "@/lib/content/classes";
 import type { Locale } from "@/lib/i18n";
 import type { StudentClass } from "@/types";
 
-type TeacherClassUploadPanelProps = {
-  locale: Locale;
-};
+type TeacherClassUploadPanelProps = Record<string, never>;
 
 type VideoRow = {
   _id: string;
@@ -40,7 +38,8 @@ type AssignmentRow = {
   targetClasses: StudentClass[];
 };
 
-export function TeacherClassUploadPanel({ locale }: TeacherClassUploadPanelProps) {
+export function TeacherClassUploadPanel() {
+  const locale = "bn";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -256,7 +255,6 @@ export function TeacherClassUploadPanel({ locale }: TeacherClassUploadPanelProps
         </div>
 
         <TargetClassPicker
-          locale={locale}
           value={targetClasses}
           onChange={setTargetClasses}
           label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}
@@ -339,7 +337,6 @@ export function TeacherClassUploadPanel({ locale }: TeacherClassUploadPanelProps
           />
         </div>
         <TargetClassPicker
-          locale={locale}
           value={targetClasses}
           onChange={setTargetClasses}
           label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}
@@ -390,7 +387,6 @@ export function TeacherClassUploadPanel({ locale }: TeacherClassUploadPanelProps
           />
         </div>
         <TargetClassPicker
-          locale={locale}
           value={targetClasses}
           onChange={setTargetClasses}
           label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}

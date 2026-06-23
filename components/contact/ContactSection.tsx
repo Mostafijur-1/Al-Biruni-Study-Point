@@ -4,16 +4,14 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { buttonVariants, pressableClasses } from "@/components/ui/button-variants";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
-import { type Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
 
 type ContactSectionProps = {
-  locale: Locale;
-  contact: Dictionary["contact"];
+    contact: Dictionary["contact"];
 };
 
-export function ContactSection({ locale, contact }: ContactSectionProps) {
+export function ContactSection({ contact }: ContactSectionProps) {
   const primaryPhone = contact.phones[0];
 
   return (
@@ -98,12 +96,10 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-accent">ABSP</p>
             <h2 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
-              {locale === "bn" ? "ভর্তি ও পরামর্শ" : "Admission & inquiry"}
+              {"ভর্তি ও পরামর্শ"}
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
-              {locale === "bn"
-                ? "ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করুন।"
-                : "Contact us today about admission, batches, and courses."}
+              {"ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করুন।"}
             </p>
           </div>
 
@@ -129,7 +125,7 @@ export function ContactSection({ locale, contact }: ContactSectionProps) {
             )}
           >
             <MapPin className="size-4" />
-            {locale === "bn" ? "গুগল ম্যাপে দেখুন" : "Open in Google Maps"}
+            {"গুগল ম্যাপে দেখুন"}
           </a>
         </aside>
       </div>

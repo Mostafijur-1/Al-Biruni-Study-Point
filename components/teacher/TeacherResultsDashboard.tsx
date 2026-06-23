@@ -144,14 +144,11 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
 // Result row
 // ---------------------------------------------------------------------------
 function ResultRow({
-  result,
-  locale,
-  onCommentSaved,
+  result, onCommentSaved,
   onDeleted,
 }: {
   result: StudentResult;
-  locale: string;
-  onCommentSaved: (id: string, comment: string) => void;
+    onCommentSaved: (id: string, comment: string) => void;
   onDeleted: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -480,8 +477,8 @@ function ResultRow({
 // ---------------------------------------------------------------------------
 // Main Dashboard
 // ---------------------------------------------------------------------------
-export function TeacherResultsDashboard({ locale }: { locale: string }) {
-  const [results, setResults] = useState<StudentResult[]>([]);
+export function TeacherResultsDashboard() {
+      const [results, setResults] = useState<StudentResult[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -621,8 +618,7 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
           </div>
         </div>
         <p className="mt-3 text-sm text-muted leading-6">
-          View your students' MCQ practice performance. Click any result to expand and see the wrong answers in detail.
-          Your access is limited to classes and subjects configured by the admin.
+          শিক্ষার্থীদের MCQ প্র্যাকটিসের পারফরম্যান্স দেখুন। যেকোনো রেজাল্টে ক্লিক করে ভুল উত্তরগুলো বিস্তারিত দেখুন। 
         </p>
       </div>
 
@@ -825,7 +821,6 @@ export function TeacherResultsDashboard({ locale }: { locale: string }) {
             <ResultRow
               key={result.id}
               result={result}
-              locale={locale}
               onCommentSaved={handleCommentSaved}
               onDeleted={handleDeleted}
             />

@@ -1,15 +1,15 @@
 import { User } from "@/lib/db/models/User";
 
-export const TEACHER_MONTHLY_BASE_CHARGE_TK = 100;
-export const TEACHER_IMAGE_UPLOAD_TK = 3;
+export const TEACHER_MONTHLY_BASE_CHARGE_TK = 200;
+export const TEACHER_IMAGE_UPLOAD_TK = 0;
 export const TEACHER_CHARGE_PERIOD_DAYS = 30;
 
 export function getCurrentChargeMonth(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function calculateTeacherMonthlyCharge(imageUploadCount = 0) {
-  return TEACHER_MONTHLY_BASE_CHARGE_TK + TEACHER_IMAGE_UPLOAD_TK * imageUploadCount;
+export function calculateTeacherMonthlyCharge(monthlyChargeOverride?: number) {
+  return monthlyChargeOverride ?? TEACHER_MONTHLY_BASE_CHARGE_TK;
 }
 
 export function getNextTeacherChargeDueDate(date = new Date()) {
@@ -33,6 +33,7 @@ export function getTeacherMonthlyUsage(
     chargeCycleStartedAt?: Date | string;
     chargeDueAt?: Date | string;
     lastChargeRefreshedAt?: Date | string;
+    monthlyChargeTk?: number;
   },
   month = getCurrentChargeMonth(),
 ) {
@@ -43,7 +44,7 @@ export function getTeacherMonthlyUsage(
   return {
     imageQuestionUploadMonth: month,
     imageQuestionUploadCount,
-    monthlyChargeTk: calculateTeacherMonthlyCharge(imageQuestionUploadCount),
+    monthlyChargeTk: calculateTeacherMonthlyCharge(usage?.monthlyChargeTk),
     chargeCycleStartedAt: usage?.chargeCycleStartedAt
       ? new Date(usage.chargeCycleStartedAt).toISOString()
       : undefined,

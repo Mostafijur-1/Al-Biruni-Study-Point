@@ -9,24 +9,42 @@ import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
-import { getSchoolLevel, SYLLABUS } from "@/lib/content/syllabus";
+import { getSchoolLevel, getSyllabusChapters } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 
 /** Subjects shown for SSC students */
-const SSC_SUBJECTS: CourseSubject[] = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"];
+const SSC_SUBJECTS: CourseSubject[] = [
+  "পদার্থবিজ্ঞান",
+  "রসায়ন",
+  "সাধারণ গণিত",
+  "উচ্চতর গণিত",
+  "জীববিজ্ঞান",
+  "তথ্য ও যোগাযোগ প্রযুক্তি",
+  "বাংলা ১ম পত্র",
+  "বাংলা ২য় পত্র",
+  "ইংরেজি ১ম পত্র",
+  "ইংরেজি ২য় পত্র",
+  "ইসলাম ও নৈতিক শিক্ষা",
+  "বাংলাদেশ ও বিশ্বপরিচয়",
+];
 
 /**
  * Subjects shown for HSC students.
- * Physics, Chemistry and Higher Math are split into 1st and 2nd paper.
  */
 const HSC_SUBJECTS: CourseSubject[] = [
-  "Physics 1st Paper",
-  "Physics 2nd Paper",
-  "Chemistry 1st Paper",
-  "Chemistry 2nd Paper",
-  "Higher Math 1st Paper",
-  "Higher Math 2nd Paper",
-  "ICT",
+  "পদার্থবিজ্ঞান ১ম পত্র",
+  "পদার্থবিজ্ঞান ২য় পত্র",
+  "রসায়ন ১ম পত্র",
+  "রসায়ন ২য় পত্র",
+  "উচ্চতর গণিত ১ম পত্র",
+  "উচ্চতর গণিত ২য় পত্র",
+  "জীববিজ্ঞান ১ম পত্র",
+  "জীববিজ্ঞান ২য় পত্র",
+  "তথ্য ও যোগাযোগ প্রযুক্তি",
+  "বাংলা ১ম পত্র",
+  "বাংলা ২য় পত্র",
+  "ইংরেজি ১ম পত্র",
+  "ইংরেজি ২য় পত্র",
 ];
 
 export async function GET(request: NextRequest) {
@@ -110,7 +128,14 @@ export async function GET(request: NextRequest) {
     const statusList = [];
 
     for (const subject of targetSubjects) {
-      const syllabusChapters = SYLLABUS[levelKey]?.[subject] || [];
+      let syllabusChapters = getSyllabusChapters(levelKey, subject);
+      if (syllabusChapters.length === 0) {
+        // Retrieve chapters dynamically from the activeQuestions (populatedSet)
+        const activeChaps = Array.from(populatedSet)
+          .filter(key => key.startsWith(`${subject}_`))
+          .map(key => key.substring(subject.length + 1));
+        syllabusChapters = activeChaps;
+      }
       const chapters = syllabusChapters.map((ch: string) => ({
         name: ch,
         hasMcqs: populatedSet.has(`${subject}_${ch}`),

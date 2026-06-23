@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+import { createLocalizedPath } from "@/lib/i18n";
 import { TeacherMcqResults } from "@/components/exam/TeacherMcqResults";
 import { cn } from "@/lib/utils";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
@@ -52,15 +52,14 @@ type ExamDetail = {
 };
 
 type TeacherExamDetailPanelProps = {
-  locale: string;
-  examId: string;
+    examId: string;
 };
 
 const MAX_IMAGE_UPLOADS = 3;
 
-export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPanelProps) {
-  const path = createLocalizedPath(locale as Locale);
-
+export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) {
+  const locale = "bn";
+      
   const [exam, setExam] = useState<ExamDetail | null>(null);
   const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,11 +294,11 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
     setParsedPreview([]);
 
     if (contentType === "text" && !pastedText.trim()) {
-      setUploadError(locale === "bn" ? "টেক্সট পেস্ট করুন।" : "Please paste some text.");
+      setUploadError("টেক্সট পেস্ট করুন।");
       return;
     }
     if (contentType !== "text" && selectedFiles.length === 0) {
-      setUploadError(locale === "bn" ? "অনুগ্রহ করে ফাইল নির্বাচন করুন।" : "Please select at least one image.");
+      setUploadError("অনুগ্রহ করে ফাইল নির্বাচন করুন।");
       return;
     }
     if (contentType !== "text" && selectedFiles.length > MAX_IMAGE_UPLOADS) {
@@ -367,7 +366,7 @@ export function TeacherExamDetailPanel({ locale, examId }: TeacherExamDetailPane
     <div className="space-y-6">
       {/* Header & Back Link */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <Link href={path("/teacher/exams")} className="text-sm font-semibold text-primary hover:underline">
+        <Link href={"/teacher/exams"} className="text-sm font-semibold text-primary hover:underline">
           ← Back to MCQ exams
         </Link>
         <div className="flex gap-2">
@@ -590,7 +589,7 @@ d) 9"
                     <Upload className="size-4" />
                     {selectedFiles.length > 0
                       ? `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} selected`
-                      : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose Images"}
+                      : "ফাইল নির্বাচন করুন"}
                   </button>
                   {selectedFiles.length > 0 && (
                     <span className="text-2xs text-muted font-bold font-sans">
@@ -641,7 +640,7 @@ d) 9"
               </div>
             )}
 
-            <UploadingIndicator isUploading={uploading} locale={locale} className="my-2" />
+            <UploadingIndicator isUploading={uploading} className="my-2" />
 
             <Button
               type="submit"
@@ -650,9 +649,9 @@ d) 9"
               className="w-full rounded-xl py-2 font-bold"
             >
               {uploading ? (
-                locale === "bn" ? "প্রশ্ন প্রসেস করা হচ্ছে..." : "Parsing & Adding Questions..."
+                "প্রশ্ন প্রসেস করা হচ্ছে..."
               ) : (
-                locale === "bn" ? "পার্স এবং প্রশ্ন যোগ করুন" : "Parse & Add Questions"
+                "পার্স এবং প্রশ্ন যোগ করুন"
               )}
             </Button>
           </form>
@@ -842,7 +841,7 @@ d) 9"
       {/* Tab content: Student Results */}
       {activeTab === "results" && (
         <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
-          <TeacherMcqResults locale={locale as Locale} examId={examId} />
+          <TeacherMcqResults examId={examId} />
         </div>
       )}
 
@@ -852,7 +851,7 @@ d) 9"
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 animate-scale-up">
             <div className="flex items-center justify-between border-b border-border/80 pb-3">
               <h2 className="font-display text-lg font-bold text-primary">
-                {locale === "bn" ? "পরীক্ষার তথ্য সংশোধন" : "Edit Exam Details"}
+                {"পরীক্ষার তথ্য সংশোধন"}
               </h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}

@@ -24,7 +24,7 @@ export const refreshCookieOptions: Partial<ResponseCookie> = {
 };
 
 export const roleCookieOptions: Partial<ResponseCookie> = {
-  httpOnly: true,
+  httpOnly: false,
   sameSite: "lax",
   secure: isProduction,
   path: "/",

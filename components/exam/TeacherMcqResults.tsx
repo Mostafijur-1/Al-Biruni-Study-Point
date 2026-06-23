@@ -5,15 +5,14 @@ import Link from "next/link";
 import { MessageSquare, Trash2, XCircle } from "lucide-react";
 
 import { useApiQuery } from "@/lib/hooks/use-api-query";
-import { createLocalizedPath, type Locale } from "@/lib/i18n";
+
 import { formatDurationSeconds } from "@/lib/format/time";
 import type { McqResultTeacherRow } from "@/types/mcq";
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type TeacherMcqResultsProps = {
-  locale: Locale;
-  examId: string;
+    examId: string;
 };
 
 const OPTION_LABELS = ["ক", "খ", "গ", "ঘ"];
@@ -466,9 +465,8 @@ function McqResultMobileCard({
   );
 }
 
-export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
-  const path = createLocalizedPath(locale);
-  const { data, message, isLoading, setData } = useApiQuery<{ results: McqResultTeacherRow[] }>(
+export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
+    const { data, message, isLoading, setData } = useApiQuery<{ results: McqResultTeacherRow[] }>(
     `/api/mcq/results?examId=${examId}`,
     {
       loadingMessage: "Loading results...",
@@ -503,13 +501,13 @@ export function TeacherMcqResults({ locale, examId }: TeacherMcqResultsProps) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={path("/teacher/mcq")}
+          href={"/teacher/mcq"}
           className="text-sm font-semibold text-primary hover:underline"
         >
           ← Back to MCQ exams
         </Link>
         <Link
-          href={path(`/teacher/mcq/${examId}/edit`)}
+          href={`/teacher/mcq/${examId}/edit`}
           className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold text-primary"
         >
           Edit exam

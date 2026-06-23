@@ -10,14 +10,13 @@ import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type AuthGateLinkProps = {
-  locale: Locale;
-  href: string;
+    href: string;
   returnUrl: string;
   className?: string;
   children: ReactNode;
 };
 
-export function AuthGateLink({ locale, href, returnUrl, className, children }: AuthGateLinkProps) {
+export function AuthGateLink({ href, returnUrl, className, children }: AuthGateLinkProps) {
   const router = useRouter();
   const { user, checking } = useSession({ listenToAuthChanges: true });
 
@@ -39,11 +38,11 @@ export function AuthGateLink({ locale, href, returnUrl, className, children }: A
 
   return (
     <Link
-      href={buildLoginUrl(locale, returnUrl, "access")}
+      href={buildLoginUrl(returnUrl, "access")}
       className={className}
       onClick={(event) => {
         event.preventDefault();
-        router.push(buildLoginUrl(locale, returnUrl, "access"));
+        router.push(buildLoginUrl(returnUrl, "access"));
       }}
     >
       {children}
@@ -51,14 +50,12 @@ export function AuthGateLink({ locale, href, returnUrl, className, children }: A
   );
 }
 
-export function AuthGateRegisterLink({
-  locale,
-  returnUrl,
+export function AuthGateRegisterLink({ returnUrl,
   className,
   children,
 }: Omit<AuthGateLinkProps, "href">) {
   return (
-    <Link href={buildRegisterUrl(locale, returnUrl)} className={className}>
+    <Link href={buildRegisterUrl(returnUrl)} className={className}>
       {children}
     </Link>
   );

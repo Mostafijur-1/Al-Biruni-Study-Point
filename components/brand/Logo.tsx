@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
+import { getLocalizedPath } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const BRAND_MAIN = "আল-বিরুনি";
@@ -10,8 +10,7 @@ const BRAND_SUB = "স্টাডি পয়েন্ট";
 type LogoTone = "onDark" | "onLight" | "dynamic";
 
 type LogoProps = {
-  locale: Locale;
-  size?: "sm" | "md" | "lg" | "hero";
+    size?: "sm" | "md" | "lg" | "hero";
   tone?: LogoTone;
   className?: string;
   link?: boolean;
@@ -97,9 +96,7 @@ function LogoMark({ size, tone }: { size: keyof typeof sizeStyles; tone: LogoTon
   );
 }
 
-export function Logo({
-  locale,
-  size = "md",
+export function Logo({ size = "md",
   tone = "onDark",
   className,
   link = true,
@@ -116,7 +113,7 @@ export function Logo({
 
   return (
     <Link
-      href={getLocalizedPath("/", locale)}
+      href={getLocalizedPath("/")}
       className={cn(
         "inline-flex shrink-0 items-center transition-opacity hover:opacity-90",
         className,

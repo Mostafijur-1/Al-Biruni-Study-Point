@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
-import { SYLLABUS, type SchoolLevel } from "@/lib/content/syllabus";
+import { getSyllabusChapters, type SchoolLevel } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that the chapter matches the syllabus configuration
-    const validChapters = SYLLABUS[targetLevel]?.[targetSubject];
-    if (!validChapters || !validChapters.includes(targetChapter)) {
+    const validChapters = getSyllabusChapters(targetLevel, targetSubject);
+    if (validChapters.length > 0 && !validChapters.includes(targetChapter)) {
       return fail("Invalid chapter selection for this subject and level.", 400);
     }
 
