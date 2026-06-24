@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/connect";
-import { getSchoolLevel } from "@/lib/content/syllabus";
+import { getSchoolLevel, COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 const getDayRange = (rangeType: string) => {
   const now = new Date();
   // Bangladesh timezone is UTC+6
@@ -77,13 +77,23 @@ export async function GET(request: NextRequest) {
       allowedClasses = [filterClass];
     }
 
-    // Build the list of allowed subjects
-    let allowedSubjects: string[] | null = null;
+    // Build the list of allowed subjects (mapped to Bengali)
+    let allowedSubjectsBengali: string[] | null = null;
     if (!domain?.isAll && domain?.subjects && domain.subjects.length > 0) {
-      allowedSubjects = domain.subjects;
+      allowedSubjectsBengali = [];
+      for (const lvl of ["ssc", "hsc"] as const) {
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[lvl] || {};
+        for (const engSub of domain.subjects) {
+          const bengaliNames = mapping[engSub];
+          if (Array.isArray(bengaliNames)) {
+            allowedSubjectsBengali.push(...bengaliNames);
+          }
+        }
+      }
+      allowedSubjectsBengali.push(...domain.subjects);
     }
 
-    if (filterSubject && allowedSubjects && !allowedSubjects.includes(filterSubject)) {
+    if (filterSubject && allowedSubjectsBengali && !allowedSubjectsBengali.includes(filterSubject)) {
       return fail("You are not authorised to view results for this subject.", 403);
     }
 
@@ -106,8 +116,8 @@ export async function GET(request: NextRequest) {
     // Subject filter
     if (filterSubject) {
       attemptQuery.subject = filterSubject;
-    } else if (allowedSubjects) {
-      attemptQuery.subject = { $in: allowedSubjects };
+    } else if (allowedSubjectsBengali) {
+      attemptQuery.subject = { $in: allowedSubjectsBengali };
     }
 
     // Determine student IDs we are allowed to see

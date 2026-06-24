@@ -30,7 +30,7 @@ const McqQuestionSchema = new Schema<IMcqQuestion>(
         message: "Each MCQ question must have exactly four options.",
       },
     },
-    correctIndex: { type: Number, required: true, min: 0, max: 3, select: false },
+    correctIndex: { type: Number, required: true, min: 0, max: 3 },
     explanation: { type: String },
     marks: { type: Number, default: 1, min: 0 },
     difficulty: {

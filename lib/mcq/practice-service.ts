@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 
 import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
-import { getSchoolLevel, SYLLABUS } from "@/lib/content/syllabus";
+import { getSchoolLevel, getSyllabusChapters, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 
 export interface JSONPracticeQuestion {
@@ -74,7 +74,8 @@ export function getChapterFromSlug(
   subject: string,
   slug: string
 ): string | null {
-  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  // Use getSyllabusChapters to handle Bengali subject names
+  const chapters = getSyllabusChapters(level, subject);
   const subjectPrefix = subject.toLowerCase().replace(/\s+/g, "-");
 
   for (const chapter of chapters) {
@@ -94,10 +95,15 @@ export async function loadPracticeQuestionsData(
   subject: string
 ): Promise<Record<string, JSONPracticeQuestion[]>> {
   await connectDB();
-  const dbQuestions = await PracticeQuestion.find({ level, subject }).lean();
+  const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
+  const dbQuestions = await PracticeQuestion.find({
+    level,
+    subject: { $in: [subject, englishSubject] }
+  }).lean();
 
   const result: Record<string, JSONPracticeQuestion[]> = {};
-  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  // Use getSyllabusChapters to handle Bengali subject names correctly
+  const chapters = getSyllabusChapters(level, subject);
 
   // Initialize all syllabus chapters to empty arrays
   for (const chapter of chapters) {
@@ -145,7 +151,8 @@ export async function startPracticeExam(
   const level = getSchoolLevel(studentClass);
   await connectDB();
 
-  const chapters = SYLLABUS[level]?.[subject as CourseSubject] || [];
+  // Use getSyllabusChapters to handle Bengali subject names
+  const chapters = getSyllabusChapters(level, subject);
   let chaptersToUse = chapters;
   if (selectedChapters && selectedChapters.length > 0) {
     chaptersToUse = chapters.filter((c) => selectedChapters.includes(c));
@@ -156,9 +163,10 @@ export async function startPracticeExam(
   }
 
   // Optimize: Query only a random sample of maxQuestions matching the selected chapters in MongoDB
+  const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
   const matchQuery: any = {
     level,
-    subject,
+    subject: { $in: [subject, englishSubject] },
     chapter: { $in: chaptersToUse },
   };
 
@@ -213,10 +221,11 @@ export async function loadFullQuestionById(
 ): Promise<{ question: string; options: string[]; imageUrl?: string } | null> {
   await connectDB();
   try {
+    const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
     const found = await PracticeQuestion.findOne({
       _id: questionId,
       level,
-      subject,
+      subject: { $in: [subject, englishSubject] },
     }).lean();
     if (found) {
       return { question: found.question, options: found.options, imageUrl: found.imageUrl };

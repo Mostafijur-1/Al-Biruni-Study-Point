@@ -7,6 +7,7 @@ import { getChapterFromSlug } from "@/lib/mcq/practice-service";
 import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { incrementTeacherImageQuestionUpload } from "@/lib/teacher-charges";
+import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 const MAX_IMAGE_UPLOADS = 3;
 
@@ -52,7 +53,23 @@ export async function POST(request: NextRequest) {
       if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 
       const levelAllowed = allowedLevels.includes(level);
-      const subjectAllowed = domain?.subjects?.includes(subject);
+
+      // domain.subjects stores English names (e.g. "Physics") but `subject`
+      // from the UI is Bengali (e.g. "পদার্থবিজ্ঞান").
+      // Use COURSE_TO_MCQ_SUBJECT_MAP to map English → Bengali for the check.
+      let subjectAllowed = false;
+      if (domain?.subjects && domain.subjects.length > 0) {
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[level as "ssc" | "hsc"] || {};
+        subjectAllowed = domain.subjects.some((engSub) => {
+          const bengaliNames = mapping[engSub];
+          return Array.isArray(bengaliNames) && bengaliNames.includes(subject);
+        });
+        // Fallback: also allow if the stored name directly matches
+        if (!subjectAllowed) {
+          subjectAllowed = domain.subjects.includes(subject);
+        }
+      }
+
       if (levelAllowed && subjectAllowed) {
         allowed = true;
       }

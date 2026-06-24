@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import mongoose from "mongoose";
 
-import { getSchoolLevel } from "@/lib/content/syllabus";
+import { getSchoolLevel, COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
@@ -50,13 +50,26 @@ export async function POST(request: NextRequest) {
     let teacherId: string | undefined = undefined;
     if (isTeacher) {
       const studentIdObj = new mongoose.Types.ObjectId(user.id);
+
+      // Map Bengali subject to English equivalents for database query
+      const isHsc = studentClass === "class-11" || studentClass === "class-12";
+      const levelKey = isHsc ? "hsc" : "ssc";
+      const mapping = COURSE_TO_MCQ_SUBJECT_MAP[levelKey] || {};
+      const englishSubjects: string[] = [];
+      for (const engSub in mapping) {
+        if (mapping[engSub].includes(parsed.subject)) {
+          englishSubjects.push(engSub);
+        }
+      }
+      englishSubjects.push(parsed.subject);
+
       const teacher = await User.findOne({
         role: "teacher",
         $or: [
           { "teacherDomain.isAll": true },
           {
             "teacherDomain.students": studentIdObj,
-            "teacherDomain.subjects": parsed.subject
+            "teacherDomain.subjects": { $in: englishSubjects }
           }
         ]
       }).lean();

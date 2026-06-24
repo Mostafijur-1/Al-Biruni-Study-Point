@@ -5,6 +5,7 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/connect";
+import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 type Context = {
   params: Promise<{ id: string }>;
@@ -45,12 +46,22 @@ async function checkAuthorization(teacherId: string, studentId: string, subject:
     return { authorized: false, error: fail("You are not authorised to modify this result's class.", 403) };
   }
 
-  let allowedSubjects: string[] | null = null;
+  let allowedSubjectsBengali: string[] | null = null;
   if (!domain?.isAll && domain?.subjects && domain.subjects.length > 0) {
-    allowedSubjects = domain.subjects;
+    allowedSubjectsBengali = [];
+    for (const lvl of ["ssc", "hsc"] as const) {
+      const mapping = COURSE_TO_MCQ_SUBJECT_MAP[lvl] || {};
+      for (const engSub of domain.subjects) {
+        const bengaliNames = mapping[engSub];
+        if (Array.isArray(bengaliNames)) {
+          allowedSubjectsBengali.push(...bengaliNames);
+        }
+      }
+    }
+    allowedSubjectsBengali.push(...domain.subjects);
   }
 
-  if (allowedSubjects && !allowedSubjects.includes(subject)) {
+  if (allowedSubjectsBengali && !allowedSubjectsBengali.includes(subject)) {
     return { authorized: false, error: fail("You are not authorised to modify this result's subject.", 403) };
   }
 

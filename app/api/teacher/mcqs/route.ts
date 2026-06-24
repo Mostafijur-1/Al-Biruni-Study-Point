@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { COURSE_TO_MCQ_SUBJECT_MAP, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,7 +45,24 @@ export async function GET(request: NextRequest) {
       if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 
       const levelAllowed = allowedLevels.includes(level);
-      const subjectAllowed = domain?.subjects?.includes(subject);
+
+      // domain.subjects stores English names (e.g. "Physics") but `subject`
+      // from the UI is the Bengali name (e.g. "পদার্থবিজ্ঞান").
+      // Use COURSE_TO_MCQ_SUBJECT_MAP to check if ANY of the teacher's English
+      // subjects maps to the requested Bengali subject.
+      let subjectAllowed = false;
+      if (domain?.subjects && domain.subjects.length > 0) {
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[level as "ssc" | "hsc"] || {};
+        subjectAllowed = domain.subjects.some((engSub) => {
+          const bengaliNames = mapping[engSub];
+          return Array.isArray(bengaliNames) && bengaliNames.includes(subject);
+        });
+        // Fallback: also allow if stored subject name directly matches (Bengali stored directly)
+        if (!subjectAllowed) {
+          subjectAllowed = domain.subjects.includes(subject);
+        }
+      }
+
       if (levelAllowed && subjectAllowed) {
         allowed = true;
       }
@@ -55,9 +73,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by scope
+    const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
     const query: any = {
       level,
-      subject,
+      subject: { $in: [subject, englishSubject] },
       chapter,
     };
 

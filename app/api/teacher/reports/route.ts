@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { ReportedQuestion } from "@/lib/db/models/ReportedQuestion";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 // Prevent tree-shaking of PracticeQuestion model
 const _ = PracticeQuestion;
@@ -51,7 +52,16 @@ export async function GET(request: NextRequest) {
       if (domain?.isAll) return true;
 
       const levelAllowed = allowedLevels.includes(q.level);
-      const subjectAllowed = domain?.subjects?.includes(q.subject);
+      // domain.subjects stores English names; q.subject is Bengali
+      let subjectAllowed = false;
+      if (domain?.subjects && domain.subjects.length > 0) {
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[q.level as "ssc" | "hsc"] || {};
+        subjectAllowed = domain.subjects.some((engSub) => {
+          const bengaliNames = mapping[engSub];
+          return Array.isArray(bengaliNames) && bengaliNames.includes(q.subject);
+        });
+        if (!subjectAllowed) subjectAllowed = domain.subjects.includes(q.subject);
+      }
       return levelAllowed && subjectAllowed;
     });
 
@@ -101,7 +111,16 @@ export async function PUT(request: NextRequest) {
         if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 
         const levelAllowed = allowedLevels.includes(question.level);
-        const subjectAllowed = domain?.subjects?.includes(question.subject);
+        // domain.subjects stores English names; question.subject is Bengali
+        let subjectAllowed = false;
+        if (domain?.subjects && domain.subjects.length > 0) {
+          const mapping = COURSE_TO_MCQ_SUBJECT_MAP[question.level as "ssc" | "hsc"] || {};
+          subjectAllowed = domain.subjects.some((engSub) => {
+            const bengaliNames = mapping[engSub];
+            return Array.isArray(bengaliNames) && bengaliNames.includes(question.subject);
+          });
+          if (!subjectAllowed) subjectAllowed = domain.subjects.includes(question.subject);
+        }
         if (levelAllowed && subjectAllowed) {
           allowed = true;
         }

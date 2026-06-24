@@ -9,6 +9,7 @@ import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 import { startPracticeExam } from "@/lib/mcq/practice-service";
+import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,13 +47,26 @@ export async function GET(request: NextRequest) {
     if (mode === "teacher") {
       // Find the teacher of this student for this subject
       const studentIdObj = new mongoose.Types.ObjectId(user.id);
+
+      // Map Bengali subject to English equivalents for database query
+      const isHsc = studentClass === "class-11" || studentClass === "class-12";
+      const levelKey = isHsc ? "hsc" : "ssc";
+      const mapping = COURSE_TO_MCQ_SUBJECT_MAP[levelKey] || {};
+      const englishSubjects: string[] = [];
+      for (const engSub in mapping) {
+        if (mapping[engSub].includes(subject)) {
+          englishSubjects.push(engSub);
+        }
+      }
+      englishSubjects.push(subject);
+
       const teacher = await User.findOne({
         role: "teacher",
         $or: [
           { "teacherDomain.isAll": true },
           {
             "teacherDomain.students": studentIdObj,
-            "teacherDomain.subjects": subject
+            "teacherDomain.subjects": { $in: englishSubjects }
           }
         ]
       }).lean();

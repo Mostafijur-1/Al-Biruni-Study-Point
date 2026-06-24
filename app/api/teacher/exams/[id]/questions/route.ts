@@ -29,9 +29,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       }
 
       const { PracticeQuestion } = await import("@/lib/db/models/PracticeQuestion");
+      const { BENGALI_TO_ENGLISH_SUBJECT_MAP } = await import("@/lib/content/syllabus");
+      const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[exam.subject] || exam.subject;
+
       const practiceQs = await PracticeQuestion.find({
         _id: { $in: questionIds },
-        subject: exam.subject,
+        subject: { $in: [exam.subject, englishSubject] },
       }).lean();
 
       if (practiceQs.length === 0) {

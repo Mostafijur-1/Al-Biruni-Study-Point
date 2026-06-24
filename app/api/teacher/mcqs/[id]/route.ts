@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { ReportedQuestion } from "@/lib/db/models/ReportedQuestion";
+import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 const editMcqSchema = z.object({
   question: z.string().min(1, "Question is required"),
@@ -48,7 +49,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 
       const levelAllowed = allowedLevels.includes(question.level);
-      const subjectAllowed = domain?.subjects?.includes(question.subject);
+      // domain.subjects stores English names; question.subject is Bengali
+      let subjectAllowed = false;
+      if (domain?.subjects && domain.subjects.length > 0) {
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[question.level as "ssc" | "hsc"] || {};
+        subjectAllowed = domain.subjects.some((engSub) => {
+          const bengaliNames = mapping[engSub];
+          return Array.isArray(bengaliNames) && bengaliNames.includes(question.subject);
+        });
+        if (!subjectAllowed) subjectAllowed = domain.subjects.includes(question.subject);
+      }
       if (levelAllowed && subjectAllowed) {
         allowed = true;
       }
@@ -120,7 +130,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 
       const levelAllowed = allowedLevels.includes(question.level);
-      const subjectAllowed = domain?.subjects?.includes(question.subject);
+      // domain.subjects stores English names; question.subject is Bengali
+      let subjectAllowed = false;
+      if (domain?.subjects && domain.subjects.length > 0) {
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[question.level as "ssc" | "hsc"] || {};
+        subjectAllowed = domain.subjects.some((engSub) => {
+          const bengaliNames = mapping[engSub];
+          return Array.isArray(bengaliNames) && bengaliNames.includes(question.subject);
+        });
+        if (!subjectAllowed) subjectAllowed = domain.subjects.includes(question.subject);
+      }
       if (levelAllowed && subjectAllowed) {
         allowed = true;
       }

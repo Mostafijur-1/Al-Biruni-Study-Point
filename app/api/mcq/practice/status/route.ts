@@ -9,7 +9,7 @@ import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
-import { getSchoolLevel, getSyllabusChapters } from "@/lib/content/syllabus";
+import { getSchoolLevel, getSyllabusChapters, COURSE_TO_MCQ_SUBJECT_MAP, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 
 /** Subjects shown for SSC students */
@@ -103,10 +103,19 @@ export async function GET(request: NextRequest) {
     const results = userId ? await PracticeResult.find(resultsQuery).lean() : [];
     const resultsMap = new Map(results.map((r) => [r.subject, r]));
 
+    // Expand targetSubjects to include their English equivalents so they match old database questions
+    const querySubjects: string[] = [...targetSubjects];
+    for (const sub of targetSubjects) {
+      const eng = BENGALI_TO_ENGLISH_SUBJECT_MAP[sub];
+      if (eng) {
+        querySubjects.push(eng);
+      }
+    }
+
     // Batch query active questions for this level and target subjects
     const activeQuestionsQuery: any = {
       level: levelKey,
-      subject: { $in: targetSubjects },
+      subject: { $in: querySubjects },
     };
 
     if (mode === "teacher") {
@@ -128,17 +137,24 @@ export async function GET(request: NextRequest) {
     const statusList = [];
 
     for (const subject of targetSubjects) {
+      const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
       let syllabusChapters = getSyllabusChapters(levelKey, subject);
       if (syllabusChapters.length === 0) {
         // Retrieve chapters dynamically from the activeQuestions (populatedSet)
         const activeChaps = Array.from(populatedSet)
-          .filter(key => key.startsWith(`${subject}_`))
-          .map(key => key.substring(subject.length + 1));
+          .filter(key => key.startsWith(`${subject}_`) || key.startsWith(`${englishSubject}_`))
+          .map(key => {
+            if (key.startsWith(`${subject}_`)) {
+              return key.substring(subject.length + 1);
+            } else {
+              return key.substring(englishSubject.length + 1);
+            }
+          });
         syllabusChapters = activeChaps;
       }
       const chapters = syllabusChapters.map((ch: string) => ({
         name: ch,
-        hasMcqs: populatedSet.has(`${subject}_${ch}`),
+        hasMcqs: populatedSet.has(`${subject}_${ch}`) || populatedSet.has(`${englishSubject}_${ch}`),
       }));
 
       // If there are no chapters at all in syllabus, continue
@@ -147,9 +163,17 @@ export async function GET(request: NextRequest) {
       const lastResult = resultsMap.get(subject) || null;
 
       // Find the teacher assigned for this subject
-      const teacherForSubject = assignedTeachers.find(
-        (t) => t.teacherDomain?.isAll || t.teacherDomain?.subjects?.includes(subject)
-      );
+      const teacherForSubject = assignedTeachers.find((t) => {
+        if (t.teacherDomain?.isAll) return true;
+        if (!t.teacherDomain?.subjects) return false;
+
+        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[levelKey] || {};
+        const subjectAllowed = t.teacherDomain.subjects.some((engSub: string) => {
+          const bengaliNames = mapping[engSub];
+          return Array.isArray(bengaliNames) && bengaliNames.includes(subject);
+        });
+        return subjectAllowed || t.teacherDomain.subjects.includes(subject);
+      });
 
       statusList.push({
         subject,

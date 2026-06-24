@@ -352,18 +352,13 @@ export function ProfilePanel() {
                 {getTeacherPaymentMessage(teacherUsage.chargeDueAt, teacherUsage.isChargeExpired)}
               </dd>
             </div>
-            <div className="rounded-lg border border-border bg-background p-4">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Image Requests This Month</dt>
-              <dd className="mt-1 font-semibold text-foreground">
-                {teacherUsage.imageQuestionUploadCount}
-              </dd>
-            </div>
+          
             <div className="rounded-lg border border-border bg-background p-4">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted">Monthly Charge</dt>
               <dd className="mt-1 font-semibold text-foreground">
-                {teacherUsage.monthlyChargeTk} tk
+                {teacherUsage.monthlyChargeTk.toLocaleString('bn-BD')} টাকা
               </dd>
-              <p className="mt-1 text-xs text-muted">100 tk + 3 tk per image request</p>
+            
             </div>
             <div className="rounded-lg border border-border bg-background p-4">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing Start</dt>

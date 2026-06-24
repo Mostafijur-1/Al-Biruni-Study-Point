@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
     const query: any = { isTeacherSet: true };
 
     if (level) query.level = level;
-    if (subject) query.subject = subject;
+    if (subject) {
+      const { BENGALI_TO_ENGLISH_SUBJECT_MAP } = await import("@/lib/content/syllabus");
+      const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
+      query.subject = { $in: [subject, englishSubject] };
+    }
     if (chapter) query.chapter = chapter;
 
     if (scope === "me") {
