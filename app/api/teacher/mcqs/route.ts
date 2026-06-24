@@ -119,10 +119,9 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const { ids } = bulkDeleteSchema.parse(body);
 
-    // Only allow teachers to delete questions they created that are still pending approval (isTeacherSet: true)
+    // Only allow teachers to delete questions they created
     const result = await PracticeQuestion.deleteMany({
       _id: { $in: ids },
-      isTeacherSet: true,
       createdBy: user._id,
     });
 

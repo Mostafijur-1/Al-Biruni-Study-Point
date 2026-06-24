@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return fail("Access denied to this question's subject/level", 403);
     }
 
-    const isCreator = question.isTeacherSet && String(question.createdBy) === String(user._id);
+    const isCreator = question.createdBy && String(question.createdBy) === String(user._id);
     const isReported = await ReportedQuestion.exists({ questionId: question._id });
 
     if (!isCreator && !isReported) {
@@ -83,6 +83,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     question.correctIndex = parsed.correctIndex;
     question.explanation = parsed.explanation;
     question.imageUrl = parsed.imageUrl || undefined;
+
+    // Send back for admin approval if updated
+    question.isTeacherSet = true;
+    question.approvedByAdmin = false;
 
     await question.save();
 
@@ -149,7 +153,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return fail("Access denied to this question's subject/level", 403);
     }
 
-    const isCreator = question.isTeacherSet && String(question.createdBy) === String(user._id);
+    const isCreator = question.createdBy && String(question.createdBy) === String(user._id);
     const isReported = await ReportedQuestion.exists({ questionId: question._id });
 
     if (!isCreator && !isReported) {

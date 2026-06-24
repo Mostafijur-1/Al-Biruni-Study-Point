@@ -217,6 +217,48 @@ export function AdminTeacherMcqReview() {
     }
   }
 
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (
+      !confirm(
+        locale === "bn"
+          ? `আপনি কি নিশ্চিত যে আপনি ${selectedIds.length}টি প্রশ্ন বাতিল/মুছে ফেলতে চান?`
+          : `Are you sure you want to delete ${selectedIds.length} selected questions?`
+      )
+    )
+      return;
+
+    setBulkDeleting(true);
+    setError("");
+    setSuccess("");
+    try {
+      const { ok, payload } = await apiFetch<{ deletedCount: number }>("/api/admin/teacher-mcqs", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      if (ok && isApiSuccess(payload)) {
+        setSuccess(
+          locale === "bn"
+            ? `সফলভাবে ${selectedIds.length}টি প্রশ্ন বাতিল/মুছে ফেলা হয়েছে!`
+            : `Successfully deleted ${selectedIds.length} questions!`
+        );
+        const deletedSet = new Set(selectedIds);
+        setQuestions((prev) => prev.filter((q) => !deletedSet.has(q.id)));
+        setSelectedIds([]);
+        setTimeout(() => setSuccess(""), 4000);
+      } else {
+        setError(getApiErrorMessage(payload, "Failed to delete selected questions."));
+      }
+    } catch {
+      setError("Could not connect to the server.");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   // Edit MCQ Handlers
   const handleOpenEdit = (q: PendingMCQ) => {
     setEditingMcq(q);
@@ -468,14 +510,27 @@ export function AdminTeacherMcqReview() {
                     {locale === "bn" ? `সব নির্বাচন করুন (${filteredQuestions.length})` : `Select All (${filteredQuestions.length})`}
                   </label>
                 </div>
-                <Button
-                  onClick={handleBulkApprove}
-                  disabled={selectedIds.length === 0 || bulkApproving}
-                  loading={bulkApproving}
-                  className="rounded-xl font-bold py-2 px-5"
-                >
-                  {locale === "bn" ? `নির্বাচিতগুলো অনুমোদন করুন (${selectedIds.length})` : `Approve Selected (${selectedIds.length})`}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleBulkDelete}
+                    disabled={selectedIds.length === 0 || bulkDeleting || bulkApproving}
+                    loading={bulkDeleting}
+                    className="rounded-xl font-bold py-2 px-5 text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
+                  >
+                    <Trash2 className="size-4 mr-1.5" />
+                    {locale === "bn" ? `নির্বাচিতগুলো বাতিল করুন (${selectedIds.length})` : `Delete Selected (${selectedIds.length})`}
+                  </Button>
+                  <Button
+                    onClick={handleBulkApprove}
+                    disabled={selectedIds.length === 0 || bulkApproving || bulkDeleting}
+                    loading={bulkApproving}
+                    className="rounded-xl font-bold py-2 px-5"
+                  >
+                    <Check className="size-4 mr-1.5" />
+                    {locale === "bn" ? `নির্বাচিতগুলো অনুমোদন করুন (${selectedIds.length})` : `Approve Selected (${selectedIds.length})`}
+                  </Button>
+                </div>
               </div>
 
               {/* Questions list */}

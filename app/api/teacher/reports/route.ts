@@ -101,33 +101,36 @@ export async function PUT(request: NextRequest) {
 
     const question = report.questionId as any;
     if (question) {
-      const domain = user.teacherDomain;
-      let allowed = false;
-      if (domain?.isAll) {
-        allowed = true;
-      } else {
-        const allowedLevels: string[] = [];
-        if (domain?.classes?.some(c => c === "class-9" || c === "class-10")) allowedLevels.push("ssc");
-        if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
-
-        const levelAllowed = allowedLevels.includes(question.level);
-        // domain.subjects stores English names; question.subject is Bengali
-        let subjectAllowed = false;
-        if (domain?.subjects && domain.subjects.length > 0) {
-          const mapping = COURSE_TO_MCQ_SUBJECT_MAP[question.level as "ssc" | "hsc"] || {};
-          subjectAllowed = domain.subjects.some((engSub) => {
-            const bengaliNames = mapping[engSub];
-            return Array.isArray(bengaliNames) && bengaliNames.includes(question.subject);
-          });
-          if (!subjectAllowed) subjectAllowed = domain.subjects.includes(question.subject);
-        }
-        if (levelAllowed && subjectAllowed) {
+      const isCreator = question.createdBy && String(question.createdBy) === String(user._id);
+      if (!isCreator) {
+        const domain = user.teacherDomain;
+        let allowed = false;
+        if (domain?.isAll) {
           allowed = true;
-        }
-      }
+        } else {
+          const allowedLevels: string[] = [];
+          if (domain?.classes?.some(c => c === "class-9" || c === "class-10")) allowedLevels.push("ssc");
+          if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 
-      if (!allowed) {
-        return fail("Access denied to this question's subject/level", 403);
+          const levelAllowed = allowedLevels.includes(question.level);
+          // domain.subjects stores English names; question.subject is Bengali
+          let subjectAllowed = false;
+          if (domain?.subjects && domain.subjects.length > 0) {
+            const mapping = COURSE_TO_MCQ_SUBJECT_MAP[question.level as "ssc" | "hsc"] || {};
+            subjectAllowed = domain.subjects.some((engSub) => {
+              const bengaliNames = mapping[engSub];
+              return Array.isArray(bengaliNames) && bengaliNames.includes(question.subject);
+            });
+            if (!subjectAllowed) subjectAllowed = domain.subjects.includes(question.subject);
+          }
+          if (levelAllowed && subjectAllowed) {
+            allowed = true;
+          }
+        }
+
+        if (!allowed) {
+          return fail("Access denied to this question's subject/level", 403);
+        }
       }
     }
 
