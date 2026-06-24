@@ -439,7 +439,7 @@ export function TeacherMcqReview() {
       {/* Header */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
         <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
-          {"এমসিকিউ রিভিউ প্যানেল"}
+          {"MCQ রিভিউ প্যানেল"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {"আপনার সিলেক্ট করা বিষয়ের প্রশ্নগুলো দেখুন, এডিট বা ডিলিট করুন এবং রিপোর্ট চেক করুন।"}
@@ -839,7 +839,7 @@ export function TeacherMcqReview() {
                           className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                         >
                           <Trash2 className="size-3.5 mr-1" />
-                          {"মুছুন"}
+                          {"ডিলিট"}
                         </Button>
                       </div>
                     </div>
@@ -902,7 +902,7 @@ export function TeacherMcqReview() {
               </div>
               <div>
                 <h2 className="font-display text-lg font-bold text-primary">
-                  {"এমসিকিউ প্রশ্ন আপলোড"}
+                  {"MCQ প্রশ্ন আপলোড"}
                 </h2>
                 <p className="text-xs text-muted">
                   {"আপনার বিষয়ের জন্য JSON ফাইল আপলোড করুন। ফাইলের নাম অধ্যায়ের নামের সাথে মিলতে হবে।"}
@@ -1109,7 +1109,7 @@ export function TeacherMcqReview() {
                   className="rounded-xl px-6"
                 >
                   {uploading ? (
-                    "এমসিকিউ আপলোড হচ্ছে..."
+                    "MCQ আপলোড হচ্ছে..."
                   ) : (
                     "আপলোড করুন"
                   )}
@@ -1126,7 +1126,7 @@ export function TeacherMcqReview() {
           <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="font-display text-lg font-bold text-primary">
-                {"এমসিকিউ এডিট করুন"}
+                {"MCQ এডিট করুন"}
               </h3>
               <button
                 type="button"

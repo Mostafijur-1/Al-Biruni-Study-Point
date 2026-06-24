@@ -200,7 +200,7 @@ export function AdminTeacherMcqReview() {
       if (ok && isApiSuccess(payload)) {
         setSuccess(
           locale === "bn"
-            ? `সফলভাবে ${selectedIds.length}টি প্রশ্ন অনুমোদন করা হয়েছে!`
+            ? `সফলভাবে ${selectedIds.length}টি প্রশ্ন এপ্রুভ করা হয়েছে!`
             : `Successfully approved ${selectedIds.length} questions!`
         );
         const approvedSet = new Set(selectedIds);
@@ -519,7 +519,7 @@ export function AdminTeacherMcqReview() {
                     className="rounded-xl font-bold py-2 px-5 text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                   >
                     <Trash2 className="size-4 mr-1.5" />
-                    {locale === "bn" ? `নির্বাচিতগুলো বাতিল করুন (${selectedIds.length})` : `Delete Selected (${selectedIds.length})`}
+                    {`Delete (${selectedIds.length})`}
                   </Button>
                   <Button
                     onClick={handleBulkApprove}
@@ -528,7 +528,7 @@ export function AdminTeacherMcqReview() {
                     className="rounded-xl font-bold py-2 px-5"
                   >
                     <Check className="size-4 mr-1.5" />
-                    {locale === "bn" ? `নির্বাচিতগুলো অনুমোদন করুন (${selectedIds.length})` : `Approve Selected (${selectedIds.length})`}
+                    {`Approve (${selectedIds.length}`}
                   </Button>
                 </div>
               </div>
@@ -646,7 +646,7 @@ export function AdminTeacherMcqReview() {
                       disabled={actionId !== null}
                     >
                       <Check className="size-4 mr-1.5" />
-                      {"অনুমোদন করুন"}
+                      {"এপ্রুভ করুন"}
                     </Button>
                   </div>
                 </div>

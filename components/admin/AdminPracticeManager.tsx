@@ -472,7 +472,7 @@ export function AdminPracticeManager() {
 
     if (contentType !== "text" && selectedFiles.length === 0) {
       setErrorMessage(
-        locale === "bn" ? "অনুগ্রহ করে একটি ফাইল নির্বাচন করুন।" : "Please select at least one image to upload."
+        locale === "bn" ? "অনুগ্রহ করে একটি ফাইল সিলেক্ট করুন।" : "Please select at least one image to upload."
       );
       return;
     }
@@ -835,7 +835,7 @@ export function AdminPracticeManager() {
                     <Upload className="size-4" />
                     {selectedFiles.length > 0
                       ? `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} selected`
-                      : locale === "bn" ? "ফাইল নির্বাচন করুন" : "Choose Images"}
+                      : locale === "bn" ? "ফাইল সিলেক্ট করুন" : "Choose Images"}
                   </button>
                   {selectedFiles.length > 0 && (
                     <span className="text-xs text-muted">
@@ -1052,7 +1052,7 @@ export function AdminPracticeManager() {
             </div>
           ) : !filterChapter ? (
             <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-              {locale === "bn" ? "প্রশ্ন দেখতে বিষয় এবং অধ্যায় নির্বাচন করুন।" : "Please select subject and chapter to view questions."}
+              {locale === "bn" ? "প্রশ্ন দেখতে বিষয় এবং অধ্যায় সিলেক্ট করুন।" : "Please select subject and chapter to view questions."}
             </div>
           ) : uploadedQuestions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
@@ -1078,11 +1078,11 @@ export function AdminPracticeManager() {
                     }}
                     className="rounded border-border text-primary focus:ring-primary size-4"
                   />
-                  <span>{locale === "bn" ? "সব নির্বাচন করুন" : "Select All"}</span>
+                  <span>{locale === "bn" ? "সব সিলেক্ট করুন" : "Select All"}</span>
                 </label>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground font-semibold">
-                    {selectedUploadedIds.length} {locale === "bn" ? "টি নির্বাচিত" : "selected"}
+                    {selectedUploadedIds.length} {locale === "bn" ? "টি সিলেক্টেড" : "selected"}
                   </span>
                   <Button
                     type="button"
@@ -1154,7 +1154,7 @@ export function AdminPracticeManager() {
                           className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                         >
                           <Trash2 className="size-3.5 mr-1" />
-                          {locale === "bn" ? "মুছুন" : "Delete"}
+                          {locale === "bn" ? "ডিলিট" : "Delete"}
                         </Button>
                       </div>
                     </div>
