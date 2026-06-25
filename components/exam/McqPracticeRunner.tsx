@@ -8,6 +8,7 @@ import type { CourseSubject } from "@/types";
 import { useRouter } from "next/navigation";
 import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
+import { useAppStore } from "@/stores/useAppStore";
 import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
@@ -285,8 +286,22 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   const practiceListHref = path(`/student/practice${isGuest ? guestLevelQuery(level) : ""}`);
 
   // States
+  const { practiceStatusCache, setPracticeStatusCache } = useAppStore();
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
   const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>([]);
+  
+  // Countdown and tab switching warning states
+  const [countdownSeconds, setCountdownSeconds] = useState(3);
+  const [loadingDone, setLoadingDone] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
+  const tabSwitchCountRef = useRef(0);
+  const isAwayRef = useRef(false);
+  const phaseRef = useRef(phase);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -359,9 +374,31 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   useEffect(() => {
     if (checking) return;
 
+    const cacheKey = `practice_status_${mode}_${isGuest ? level : "user"}`;
+    const cachedData = practiceStatusCache[cacheKey];
+    const cachedList = Array.isArray(cachedData) ? cachedData : cachedData?.status;
+    const cachedSettings = Array.isArray(cachedData) ? null : cachedData?.settings;
+    const matchingSubject = cachedList?.find((s: any) => s.subject === subject);
+
+    if (matchingSubject && !configLoaded) {
+      setAvailableChapters(matchingSubject.chapters);
+      const enabledChapters = matchingSubject.chapters
+        .filter((c: any) => c.hasMcqs)
+        .map((c: any) => c.name);
+      setSelectedChapters(enabledChapters);
+      if (cachedSettings) {
+        setSecondsPerQuestion(cachedSettings.secondsPerQuestion);
+        setPassMarkPercent(cachedSettings.passMarkPercent);
+      }
+      setLoadingConfig(false);
+      setConfigLoaded(true);
+    }
+
     async function loadConfig() {
       try {
-        setLoadingConfig(true);
+        if (!matchingSubject) {
+          setLoadingConfig(true);
+        }
         const url = isGuest
           ? `/api/mcq/practice/status?scope=guest&level=${level}&subject=${encodeURIComponent(subject)}`        
           : `/api/mcq/practice/status?subject=${encodeURIComponent(subject)}&mode=${mode}`;
@@ -370,34 +407,47 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
           settings?: { secondsPerQuestion: number; passMarkPercent: number };
         }>(url);
         if (ok && isApiSuccess(payload)) {
-          const matchingSubject = payload.data.status.find((s) => s.subject === subject);
-          if (matchingSubject) {
-            setAvailableChapters(matchingSubject.chapters);
-            // Check only chapters that have MCQs by default!
-            const enabledChapters = matchingSubject.chapters
+          const matching = payload.data.status.find((s) => s.subject === subject);
+          if (matching) {
+            setAvailableChapters(matching.chapters);
+            const enabledChapters = matching.chapters
               .filter((c) => c.hasMcqs)
               .map((c) => c.name);
-            setSelectedChapters(enabledChapters);
+            // Only overwrite selected chapters if they haven't been modified by user yet
+            setSelectedChapters((prev) => prev.length === 0 ? enabledChapters : prev);
             if (payload.data.settings) {
               setSecondsPerQuestion(payload.data.settings.secondsPerQuestion);
               setPassMarkPercent(payload.data.settings.passMarkPercent);
             }
             setConfigLoaded(true);
+
+            // Also update the global cache so the dashboard is kept fresh!
+            if (cachedData) {
+              const updatedList = cachedList.map((s: any) => s.subject === subject ? matching : s);
+              const newCacheVal = Array.isArray(cachedData) ? updatedList : { ...cachedData, status: updatedList };
+              setPracticeStatusCache(cacheKey, newCacheVal);
+            }
           } else {
-            setErrorMessage("এই বিষয়ে কোন অধ্যায় পাওয়া যায়নি।");
+            if (!matchingSubject) {
+              setErrorMessage("এই বিষয়ে কোন অধ্যায় পাওয়া যায়নি।");
+            }
           }
         } else {
-          setErrorMessage(getApiErrorMessage(payload, "Could not load practice chapters."));
+          if (!matchingSubject) {
+            setErrorMessage(getApiErrorMessage(payload, "Could not load practice chapters."));
+          }
         }
       } catch (error: any) {
         console.error("[Practice Load Config Catch Technical Details]:", error);
-        setErrorMessage("An unexpected error occurred while loading settings.");
+        if (!matchingSubject) {
+          setErrorMessage("An unexpected error occurred while loading settings.");
+        }
       } finally {
         setLoadingConfig(false);
       }
     }
     loadConfig();
-  }, [subject, locale, checking, isGuest, level, mode]);
+  }, [subject, locale, checking, isGuest, level, mode, configLoaded, practiceStatusCache, setPracticeStatusCache]);
 
   // Toggle chapter selection
   const toggleChapter = useCallback((chapterName: string) => {
@@ -418,6 +468,22 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     }
   }, [availableChapters, selectedChapters]);
 
+  // Countdown timer for starting practice
+  useEffect(() => {
+    if (phase !== "loading") return;
+    if (countdownSeconds <= 0) {
+      if (loadingDone) {
+        setStartTime(Date.now());
+        setPhase("running");
+      }
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdownSeconds((s) => s - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [phase, countdownSeconds, loadingDone]);
+
   // Start practice session
   const startPractice = useCallback(async () => {
     if (selectedChapters.length === 0) return;
@@ -428,6 +494,11 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       return;
     }
 
+    setCountdownSeconds(3);
+    setLoadingDone(false);
+    tabSwitchCountRef.current = 0;
+    setTabSwitchCount(0);
+    setShowTabSwitchWarning(false);
     setPhase("loading");
     setErrorMessage("");
 
@@ -451,7 +522,6 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       const data = payload.data;
       setQuestions(data.questions);
       setTotalDurationSeconds(data.durationSeconds);
-      setStartTime(Date.now());
       setSecondsPerQuestion(data.secondsPerQuestion);
       setPassMarkPercent(data.passMarkPercent);
       // Try to restore saved answers from localStorage if any exist
@@ -475,7 +545,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       setAnswers(loadedAnswers);
       setResult(null);
       setIsTimeUp(false);
-      setPhase("running");
+      setLoadingDone(true);
     } catch (error: any) {
       console.error("[Start Practice Catch Technical Details]:", error);
       setErrorMessage("Could not connect to server to fetch practice questions.");
@@ -498,7 +568,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   }, [questions, answers]);
 
   // Submit practice attempt
-  const submitPractice = useCallback(async () => {
+  const submitPractice = useCallback(async (isCancelled = false) => {
     if (isSubmitting || questions.length === 0) return;
 
     setIsSubmitting(true);
@@ -520,6 +590,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
             timeTaken: elapsedSeconds,
             answers: buildSubmitAnswers(),
             mode,
+            isCancelled,
           }),
         }
       );
@@ -578,13 +649,32 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
 
     // 2. Auto-submit on window blur or tab change (visibility loss)
     const handleTabLeave = () => {
-      setWasAutoSubmittedDueToTabLeave(true);
-      submitPractice();
+      if (phaseRef.current !== "running" || isAwayRef.current) return;
+      isAwayRef.current = true;
+
+      tabSwitchCountRef.current += 1;
+      setTabSwitchCount(tabSwitchCountRef.current);
+
+      if (tabSwitchCountRef.current >= 2) {
+        setWasAutoSubmittedDueToTabLeave(true);
+        submitPractice(true); // Submit as cancelled!
+      }
+    };
+
+    const handleTabReturn = () => {
+      if (phaseRef.current !== "running" || !isAwayRef.current) return;
+      isAwayRef.current = false;
+
+      if (tabSwitchCountRef.current === 1) {
+        setShowTabSwitchWarning(true);
+      }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         handleTabLeave();
+      } else if (document.visibilityState === "visible") {
+        handleTabReturn();
       }
     };
 
@@ -622,6 +712,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("blur", handleTabLeave);
+    window.addEventListener("focus", handleTabReturn);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("click", handleAnchorClick, true);
     window.addEventListener("popstate", handlePopState);
@@ -629,6 +720,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("blur", handleTabLeave);
+      window.removeEventListener("focus", handleTabReturn);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("click", handleAnchorClick, true);
       window.removeEventListener("popstate", handlePopState);
@@ -901,33 +993,32 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   // --- PHASE: LOADING QUESTIONS ---
   if (phase === "loading") {
     return (
-      <section className="space-y-5 animate-pulse">
-        {/* Header Skeleton */}
-        <div className="rounded-xl border border-border bg-card/40 p-4 shadow-[var(--shadow-sm)] sm:p-5">       
-          <div className="space-y-3">
-            <div className="h-5 w-20 rounded-full bg-secondary" />
-            <div className="h-7 w-1/3 rounded bg-secondary" />
-            <div className="h-4 w-1/2 rounded bg-secondary" />
+      <div className="max-w-md mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-[var(--shadow-md)] flex flex-col items-center justify-center space-y-6 py-16 animate-in fade-in duration-300">
+        <div className="relative flex items-center justify-center size-24">
+          <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+          <div className="size-20 rounded-full border-4 border-primary/20 border-t-primary flex items-center justify-center bg-background shadow-inner">
+            <span className="font-display text-4xl font-black text-primary animate-in zoom-in duration-200">
+              {countdownSeconds > 0 ? countdownSeconds : "✓"}
+            </span>
           </div>
         </div>
-
-        {/* Question Cards Skeleton */}
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-border bg-card/40 p-4 space-y-4 shadow-[var(--shadow-sm)] sm:p-5">
-              <div className="flex items-start gap-3">
-                <div className="size-8 rounded-lg bg-secondary shrink-0" />
-                <div className="h-5 w-2/3 rounded bg-secondary" />
-              </div>
-              <div className="grid gap-2.5 sm:gap-3 pl-11">
-                {[1, 2, 3, 4].map((j) => (
-                  <div key={j} className="h-10 rounded-lg border border-border/40 bg-secondary/10" />
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="space-y-2">
+          <h2 className="font-display text-xl font-bold text-primary">
+            {locale === "bn" 
+              ? (countdownSeconds > 0 ? "পরীক্ষা শুরু হচ্ছে" : "পরীক্ষা প্রস্তুত")
+              : (countdownSeconds > 0 ? "Starting Your Test" : "Test Ready")}
+          </h2>
+          <p className="text-xs text-muted font-semibold leading-relaxed">
+            {locale === "bn"
+              ? (countdownSeconds > 0 
+                  ? `${countdownSeconds} সেকেন্ডের মধ্যে আপনার পরীক্ষাটি শুরু হতে যাচ্ছে...` 
+                  : "পরীক্ষার প্রশ্ন লোড করা সম্পন্ন হয়েছে।")
+              : (countdownSeconds > 0
+                  ? `Your test is going to start in ${countdownSeconds} seconds...`
+                  : "Questions loaded successfully.")}
+          </p>
         </div>
-      </section>
+      </div>
     );
   }
 
@@ -1186,6 +1277,36 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
             </div>
           </div>
         )}
+
+        {/* --- TAB SWITCHING WARNING MODAL --- */}
+        {showTabSwitchWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="size-12 rounded-full bg-yellow-50 flex items-center justify-center border border-yellow-100 shrink-0">
+                  <AlertTriangle className="size-6 text-brand-yellow animate-bounce" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-display text-lg font-bold text-primary">
+                    {locale === "bn" ? "ট্যাব পরিবর্তনের সতর্কতা!" : "Tab Change Warning!"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed font-semibold text-red-600">
+                    {locale === "bn"
+                      ? "আপনি উইন্ডো বা ট্যাব পরিবর্তন করেছেন! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে আপনার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"
+                      : "You changed tabs or windows! If you change it again, your test will be cancelled and automatically submitted."}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full rounded-xl py-2.5 font-bold"
+                  onClick={() => setShowTabSwitchWarning(false)}
+                >
+                  {locale === "bn" ? "পরীক্ষায় ফিরে যান" : "Return to Test"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     );
   }
@@ -1199,12 +1320,12 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {locale === "bn" ? "স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে" : "Automatically Submitted"}
+                {locale === "bn" ? "পরীক্ষা বাতিল করা হয়েছে" : "Test Cancelled"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
                 {locale === "bn"
-                  ? "পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করার কারণে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"
-                  : "Your exam was automatically submitted because you changed windows or switched tabs during the test."}
+                  ? "পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে আপনার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"
+                  : "Your test was cancelled and automatically submitted because you changed windows or switched tabs multiple times."}
               </p>
             </div>
           </div>

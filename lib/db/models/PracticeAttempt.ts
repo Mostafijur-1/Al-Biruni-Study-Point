@@ -24,6 +24,7 @@ export interface IPracticeAttempt extends Document {
   deletedByTeacher?: boolean;
   isTeacherSet?: boolean;
   teacherId?: Types.ObjectId;
+  isCancelled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +44,7 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
     deletedByTeacher: { type: Boolean, default: false },
     isTeacherSet: { type: Boolean, default: false },
     teacherId: { type: Schema.Types.ObjectId, ref: "User" },
+    isCancelled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

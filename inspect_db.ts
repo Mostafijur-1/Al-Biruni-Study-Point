@@ -8,8 +8,9 @@ async function run() {
   try {
     console.log("Connecting to DB...");
     await mongoose.connect(MONGODB_URI, { dbName: 'absp' });
-    console.log("Connected.");
-
+    if (!mongoose.connection.db) {
+      throw new Error("Database connection not established.");
+    }
     const pqCollection = mongoose.connection.db.collection('practicequestions');
 
     // Run startPracticeExam 100 times and count how many questions from each chapter we get!

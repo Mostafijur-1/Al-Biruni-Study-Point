@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { createLocalizedPath } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/useAppStore";
 
 type StudentExam = {
   _id: string;
@@ -36,24 +37,31 @@ type StudentExamsPanelProps = {
   };
 
 export function StudentExamsPanel({}: StudentExamsPanelProps) {
-  
-  const [exams, setExams] = useState<StudentExam[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { examsCache, setExamsCache } = useAppStore();
+  const [exams, setExams] = useState<StudentExam[]>(() => examsCache || []);
+  const [loading, setLoading] = useState(() => !examsCache);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"available" | "completed">("available");
 
   const fetchExams = async () => {
     try {
-      setLoading(true);
+      if (!examsCache) {
+        setLoading(true);
+      }
       setError("");
       const { ok, payload } = await apiFetch<{ exams: StudentExam[] }>("/api/mcq/exams");
       if (ok && isApiSuccess(payload)) {
         setExams(payload.data.exams);
+        setExamsCache(payload.data.exams);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to load exams."));
+        if (!examsCache) {
+          setError(getApiErrorMessage(payload, "Failed to load exams."));
+        }
       }
     } catch {
-      setError("An error occurred connecting to the server.");
+      if (!examsCache) {
+        setError("An error occurred connecting to the server.");
+      }
     } finally {
       setLoading(false);
     }

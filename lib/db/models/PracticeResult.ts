@@ -13,6 +13,7 @@ export interface IPracticeResult extends Document {
   submittedAt: Date;
   isTeacherSet?: boolean;
   teacherId?: Types.ObjectId;
+  isCancelled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ const PracticeResultSchema = new Schema<IPracticeResult>(
     submittedAt: { type: Date, default: Date.now },
     isTeacherSet: { type: Boolean, default: false },
     teacherId: { type: Schema.Types.ObjectId, ref: "User" },
+    isCancelled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -17,6 +17,7 @@ export interface IMcqExamAttempt extends Document {
   attemptNo: number;
   teacherComment?: string;
   commentedBy?: Types.ObjectId;
+  isCancelled?: boolean;
   submittedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +35,7 @@ const McqExamAttemptSchema = new Schema<IMcqExamAttempt>(
     attemptNo: { type: Number, default: 1 },
     teacherComment: { type: String, default: "" },
     commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    isCancelled: { type: Boolean, default: false },
     submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

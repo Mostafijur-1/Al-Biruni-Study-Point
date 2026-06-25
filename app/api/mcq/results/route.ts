@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         subject: pr.subject,
         teacherComment: pr.teacherComment ?? "",
         commentedBy: pr.commentedBy,
+        isCancelled: pr.isCancelled || false,
         exam: {
           _id: `practice-${pr.subject}`,
           title: `${pr.subject} MCQ Test`,
@@ -81,6 +82,7 @@ export async function GET(request: NextRequest) {
         subject: ea.exam.subject,
         teacherComment: ea.teacherComment ?? "",
         commentedBy: ea.commentedBy,
+        isCancelled: ea.isCancelled || false,
         exam: {
           _id: ea.exam._id.toString(),
           title: ea.exam.title,
@@ -138,6 +140,7 @@ export async function GET(request: NextRequest) {
             teacherComment: ea.teacherComment ?? "",
             commentedBy: ea.commentedBy,
             wrongAnswers,
+            isCancelled: ea.isCancelled || false,
             exam: {
               _id: ea.exam._id.toString(),
               title: ea.exam.title,

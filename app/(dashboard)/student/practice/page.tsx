@@ -25,6 +25,7 @@ import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/hooks/use-session";
+import { useAppStore } from "@/stores/useAppStore";
 
 type SubjectStatus = {
   subject: string;
@@ -234,8 +235,15 @@ function StudentPracticeDashboard() {
   const level = useGuestLevel();
 
   const [mode, setMode] = useState<"general" | "teacher">("general");
-  const [statusList, setStatusList] = useState<SubjectStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { practiceStatusCache, setPracticeStatusCache } = useAppStore();
+  const cacheKey = `practice_status_${mode}_${isGuest ? level : "user"}`;
+
+  const [statusList, setStatusList] = useState<SubjectStatus[]>(() => {
+    return practiceStatusCache[cacheKey] || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    return !practiceStatusCache[cacheKey];
+  });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -243,7 +251,9 @@ function StudentPracticeDashboard() {
 
     async function loadStatus() {
       try {
-        setLoading(true);
+        if (!practiceStatusCache[cacheKey]) {
+          setLoading(true);
+        }
         setError("");
         const url = isGuest
           ? `/api/mcq/practice/status?scope=guest&level=${level}`
@@ -251,17 +261,22 @@ function StudentPracticeDashboard() {
         const { ok, payload } = await apiFetch<{ status: SubjectStatus[] }>(url);
         if (ok && isApiSuccess(payload)) {
           setStatusList(payload.data.status);
+          setPracticeStatusCache(cacheKey, payload.data.status);
         } else {
-          setError(getApiErrorMessage(payload, "Could not load practice data."));
+          if (!practiceStatusCache[cacheKey]) {
+            setError(getApiErrorMessage(payload, "Could not load practice data."));
+          }
         }
       } catch (err) {
-        setError("An error occurred while connecting to the server.");
+        if (!practiceStatusCache[cacheKey]) {
+          setError("An error occurred while connecting to the server.");
+        }
       } finally {
         setLoading(false);
       }
     }
     loadStatus();
-  }, [checking, isGuest, level, mode]);
+  }, [checking, isGuest, level, mode, cacheKey, practiceStatusCache, setPracticeStatusCache]);
 
   return (
     <section className="space-y-6">

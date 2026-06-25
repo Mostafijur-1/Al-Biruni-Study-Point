@@ -60,6 +60,7 @@ export type McqResultStudent = {
   commentedBy?: { _id: string; name: string };
   isPractice?: boolean;
   subject?: string;
+  isCancelled?: boolean;
 };
 
 export type WrongAnswer = {
@@ -83,6 +84,7 @@ export type McqResultTeacherRow = {
   teacherComment?: string;
   deletedByTeacher?: boolean;
   wrongAnswers?: WrongAnswer[];
+  isCancelled?: boolean;
 };
 
 export type McqSubmitResultData = {

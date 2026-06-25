@@ -16,6 +16,7 @@ const submitExamSchema = z.object({
     })
   ),
   timeTaken: z.number().min(0), // in seconds
+  isCancelled: z.boolean().optional(),
 });
 
 type Context = {
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest, context: Context) {
       isPassed,
       timeTaken: parsed.timeTaken,
       attemptNo: 1,
+      isCancelled: parsed.isCancelled || false,
       submittedAt: new Date(),
     });
 

@@ -152,13 +152,13 @@ const ExamQuestionCard = React.memo(function ExamQuestionCard({
 
 type McqExamRunnerProps = {
   examId: string;
-  };
+};
 
 export function McqExamRunner({ examId }: McqExamRunnerProps) {
   const locale = "bn";
-      const router = useRouter();
-  
-  const [phase, setPhase] = useState<"instructions" | "loading" | "running" | "submitting" | "completed">("instructions");
+  const router = useRouter();
+
+  const [phase, setPhase] = useState<"instructions" | "loading" | "running" | "submitting" | "completed">("loading");
   const [exam, setExam] = useState<ExamData | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -171,6 +171,14 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   const [wasAutoSubmittedDueToTabLeave, setWasAutoSubmittedDueToTabLeave] = useState(false);
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  // Countdown and tab switching warning states
+  const [countdownSeconds, setCountdownSeconds] = useState(3);
+  const [loadingDone, setLoadingDone] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
+  const tabSwitchCountRef = useRef(0);
+  const isAwayRef = useRef(false);
 
   // New UI/UX modal states
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -221,11 +229,25 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     };
   }, []);
 
+  // Countdown timer for starting exam
+  useEffect(() => {
+    if (phase !== "loading") return;
+    if (countdownSeconds <= 0) {
+      if (loadingDone) {
+        setPhase("instructions");
+      }
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdownSeconds((s) => s - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [phase, countdownSeconds, loadingDone]);
+
   // Load Exam Data on mount
   useEffect(() => {
     const loadExam = async () => {
       try {
-        setPhase("loading");
         const { ok, payload } = await apiFetch<{ exam: ExamData; questions: ExamQuestion[] }>(
           `/api/mcq/exams/${examId}/start`
         );
@@ -251,7 +273,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             console.error("Failed to restore exam progress:", e);
           }
           setAnswers(loadedAnswers);
-          setPhase("instructions");
+          setLoadingDone(true);
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Failed to initialize exam."));
         }
@@ -282,7 +304,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   }, []);
 
   // Submit Exam API call
-  const submitExam = useCallback(async (timeTakenSec: number, currentAnswers: Record<string, number>) => {
+  const submitExam = useCallback(async (timeTakenSec: number, currentAnswers: Record<string, number>, isCancelled = false) => {
     if (phaseRef.current === "submitting" || phaseRef.current === "completed") return;
     setPhase("submitting");
 
@@ -298,6 +320,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         body: JSON.stringify({
           answers: formattedAnswers,
           timeTaken: timeTakenSec,
+          isCancelled,
         }),
       });
 
@@ -344,17 +367,36 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
     // 2. Auto-submit on window blur or tab change (visibility loss)
     const handleTabLeave = () => {
-      setWasAutoSubmittedDueToTabLeave(true);
-      const totalSeconds = examRef.current ? examRef.current.duration * 60 : 0;
-      const elapsedSeconds = startTimeRef.current
-        ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
-        : totalSeconds;
-      submitExam(elapsedSeconds, answersRef.current);
+      if (phaseRef.current !== "running" || isAwayRef.current) return;
+      isAwayRef.current = true;
+
+      tabSwitchCountRef.current += 1;
+      setTabSwitchCount(tabSwitchCountRef.current);
+
+      if (tabSwitchCountRef.current >= 2) {
+        setWasAutoSubmittedDueToTabLeave(true);
+        const totalSeconds = examRef.current ? examRef.current.duration * 60 : 0;
+        const elapsedSeconds = startTimeRef.current
+          ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
+          : totalSeconds;
+        submitExam(elapsedSeconds, answersRef.current, true);
+      }
+    };
+
+    const handleTabReturn = () => {
+      if (phaseRef.current !== "running" || !isAwayRef.current) return;
+      isAwayRef.current = false;
+
+      if (tabSwitchCountRef.current === 1) {
+        setShowTabSwitchWarning(true);
+      }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         handleTabLeave();
+      } else if (document.visibilityState === "visible") {
+        handleTabReturn();
       }
     };
 
@@ -388,6 +430,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("blur", handleTabLeave);
+    window.addEventListener("focus", handleTabReturn);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("click", handleAnchorClick, true);
     window.addEventListener("popstate", handlePopState);
@@ -395,6 +438,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("blur", handleTabLeave);
+      window.removeEventListener("focus", handleTabReturn);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("click", handleAnchorClick, true);
       window.removeEventListener("popstate", handlePopState);
@@ -411,11 +455,25 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   // UI state rendering
   if (phase === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-3">
-        <RefreshCw className="size-10 animate-spin text-primary" />
-        <p className="text-sm font-semibold text-muted">
-          {"পরীক্ষা লোড হচ্ছে..."}
-        </p>
+      <div className="max-w-md mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-[var(--shadow-md)] flex flex-col items-center justify-center space-y-6 py-16 animate-in fade-in duration-300">
+        <div className="relative flex items-center justify-center size-24">
+          <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+          <div className="size-20 rounded-full border-4 border-primary/20 border-t-primary flex items-center justify-center bg-background shadow-inner">
+            <span className="font-display text-4xl font-black text-primary animate-in zoom-in duration-200">
+              {countdownSeconds > 0 ? countdownSeconds : "✓"}
+            </span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-display text-xl font-bold text-primary">
+            {countdownSeconds > 0 ? "আপনার পরীক্ষা শুরু হচ্ছে" : "পরীক্ষা প্রস্তুত"}
+          </h2>
+          <p className="text-xs text-muted font-semibold leading-relaxed">
+            {countdownSeconds > 0 
+              ? `${countdownSeconds} সেকেন্ডের মধ্যে পরীক্ষা শুরু হতে যাচ্ছে...` 
+              : "পরীক্ষার প্রশ্ন লোড করা সম্পন্ন হয়েছে।"}
+          </p>
+        </div>
       </div>
     );
   }
@@ -480,9 +538,12 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
         <div className="border-t border-border pt-5 space-y-3.5">
           <h3 className="font-bold text-primary text-sm">
-            {"গুরুত্বপূর্ণ নির্দেশনাবলী:"}
+            {"গুরুত্বपूर्ण নির্দেশনাবলী:"}
           </h3>
           <ul className="text-xs text-muted space-y-2.5 list-disc pl-5 font-semibold leading-relaxed">
+            <li className="text-brand-red font-bold">
+              {"পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করবেন না। একাধিকবার পরিবর্তন করলে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে বাতিল হয়ে যাবে।"}
+            </li>
             <li>
               {"পরীক্ষা চলাকালীন পেজ রিফ্রেশ বা ব্যাক করবেন না।"}
             </li>
@@ -537,7 +598,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 {"আপনি এখন অফলাইন আছেন"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
-                {"আপনার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"}
+                {"আপনার internet connection বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"}
               </p>
             </div>
           </div>
@@ -687,7 +748,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       const elapsedSeconds = startTimeRef.current
                         ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
                         : totalSeconds;
-                      submitExam(elapsedSeconds, answers);
+                      submitExam(elapsedSeconds, answers, false);
                     }}
                   >
                     {"জমা দিন"}
@@ -763,7 +824,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       const elapsedSeconds = startTimeRef.current
                         ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
                         : totalSeconds;
-                      await submitExam(elapsedSeconds, answersRef.current);
+                      await submitExam(elapsedSeconds, answersRef.current, false);
                       if (pendingNavigationUrl) {
                         window.location.href = pendingNavigationUrl;
                       } else {
@@ -778,6 +839,34 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             </div>
           </div>
         )}
+
+        {/* --- TAB SWITCHING WARNING MODAL --- */}
+        {showTabSwitchWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="size-12 rounded-full bg-yellow-50 flex items-center justify-center border border-yellow-100 shrink-0">
+                  <AlertTriangle className="size-6 text-brand-yellow animate-bounce" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-display text-lg font-bold text-primary">
+                    {"ট্যাব পরিবর্তনের সতর্কতা!"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed font-semibold text-red-600">
+                    {"আপনি উইন্ডো বা ট্যাব পরিবর্তন করেছেন! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে আপনার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full rounded-xl py-2.5 font-bold"
+                  onClick={() => setShowTabSwitchWarning(false)}
+                >
+                  {"পরীক্ষায় ফিরে যান"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     );
   }
@@ -787,14 +876,14 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     return (
       <div className="max-w-md mx-auto rounded-2xl border border-border bg-card p-6 md:p-8 text-center shadow-[var(--shadow-md)] space-y-5">
         {wasAutoSubmittedDueToTabLeave ? (
-          <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300 text-left mb-2">
-            <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-brand-red bg-red-50/90 p-5 shadow-sm flex items-start gap-3 animate-in fade-in duration-300 text-left mb-2">
+            <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-pulse" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {"স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে"}
+                {"পরীক্ষা বাতিল করা হয়েছে"}
               </h3>
-              <p className="text-xs leading-5 text-red-700">
-                {"পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করার কারণে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"}
+              <p className="text-xs leading-5 text-red-700 font-semibold">
+                {"পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে আপনার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"}
               </p>
             </div>
           </div>
@@ -805,10 +894,12 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         )}
 
         <h2 className="font-display text-xl font-bold text-primary">
-          {"পরীক্ষা সফলভাবে সম্পন্ন হয়েছে!"}
+          {wasAutoSubmittedDueToTabLeave ? "পরীক্ষা সম্পন্ন করা যায়নি" : "পরীক্ষা সফলভাবে সম্পন্ন হয়েছে!"}
         </h2>
         <p className="text-xs text-muted leading-relaxed font-semibold">
-          {"আপনার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। আপনার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"}
+          {wasAutoSubmittedDueToTabLeave 
+            ? "নীতিমালা লঙ্ঘন করার কারণে আপনার পরীক্ষা বাতিল হয়েছে। আপনার বর্তমান উত্তরগুলো আপনার শিক্ষকের নিকট পাঠানো হয়েছে।"
+            : "আপনার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। আপনার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"}
         </p>
         <div className="pt-4 border-t border-border">
           <Button

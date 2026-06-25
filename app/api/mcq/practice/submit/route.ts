@@ -24,6 +24,7 @@ const submitPracticeSchema = z.object({
   ),
   timeTaken: z.number().min(0),
   mode: z.enum(["general", "teacher"]).optional(),
+  isCancelled: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
       timeTaken: parsed.timeTaken,
       isTeacherSet: isTeacher,
       teacherId: teacherId || undefined,
+      isCancelled: parsed.isCancelled || false,
     });
 
     // Save only the summary result (existing behavior)
@@ -131,6 +133,7 @@ export async function POST(request: NextRequest) {
       submittedAt: new Date(),
       isTeacherSet: isTeacher,
       teacherId: teacherId || undefined,
+      isCancelled: parsed.isCancelled || false,
     });
 
     return success({

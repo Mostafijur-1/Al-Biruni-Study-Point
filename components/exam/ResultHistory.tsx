@@ -331,7 +331,11 @@ export function ResultHistory() {
                 key={result._id}
                 className={cn(
                   "flex flex-col justify-between rounded-2xl border bg-card p-5 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-primary/20 transition duration-200 relative overflow-hidden",
-                  result.isPassed ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-brand-red"
+                  result.isCancelled 
+                    ? "border-l-4 border-l-slate-400 bg-slate-50/10" 
+                    : result.isPassed 
+                    ? "border-l-4 border-l-emerald-500" 
+                    : "border-l-4 border-l-brand-red"
                 )}
               >
                 <div className="space-y-4">
@@ -386,7 +390,7 @@ export function ResultHistory() {
                     <div className="space-y-1">
                       <div className="flex justify-between items-center text-[10px] font-bold text-muted">
                         <span>Accuracy</span>
-                        <span className={result.isPassed ? "text-emerald-600" : "text-brand-red"}>
+                        <span className={result.isCancelled ? "text-slate-500" : result.isPassed ? "text-emerald-600" : "text-brand-red"}>
                           {scorePercent}%
                         </span>
                       </div>
@@ -395,7 +399,7 @@ export function ResultHistory() {
                           style={{ width: `${scorePercent}%` }}
                           className={cn(
                             "h-full rounded-full transition-all duration-300",
-                            result.isPassed ? "bg-emerald-500" : "bg-brand-red"
+                            result.isCancelled ? "bg-slate-400" : result.isPassed ? "bg-emerald-500" : "bg-brand-red"
                           )}
                         />
                       </div>
@@ -406,13 +410,13 @@ export function ResultHistory() {
                       <CheckCircle2
                         className={cn(
                           "size-3.5 shrink-0",
-                          result.isPassed ? "text-emerald-500" : "text-brand-red"
+                          result.isCancelled ? "text-slate-500" : result.isPassed ? "text-emerald-500" : "text-brand-red"
                         )}
                       />
                       <span>
                         Status:{" "}
-                        <strong className={result.isPassed ? "text-emerald-700" : "text-brand-red"}>
-                          {result.isPassed ? "Passed" : "Failed"}
+                        <strong className={result.isCancelled ? "text-slate-600 font-bold" : result.isPassed ? "text-emerald-700" : "text-brand-red"}>
+                          {result.isCancelled ? "Cancelled" : result.isPassed ? "Passed" : "Failed"}
                         </strong>
                       </span>
                     </div>
