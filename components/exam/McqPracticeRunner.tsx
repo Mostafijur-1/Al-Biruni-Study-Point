@@ -507,7 +507,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     setErrorMessage("");
 
     try {
-      const chaptersQuery = selectedChapters.map((c) => encodeURIComponent(c)).join(",");
+      const chaptersQuery = encodeURIComponent(selectedChapters.join("|||"));
       const { ok, payload } = await apiFetch<{
         questions: PracticeQuestion[];
         subject: string;

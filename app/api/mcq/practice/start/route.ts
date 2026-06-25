@@ -9,7 +9,7 @@ import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 import { startPracticeExam } from "@/lib/mcq/practice-service";
-import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
+import { COURSE_TO_MCQ_SUBJECT_MAP, getSchoolLevel, getSyllabusChapters } from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,8 +25,15 @@ export async function GET(request: NextRequest) {
       return fail("Subject parameter is required.", 400);
     }
 
+    const level = getSchoolLevel(studentClass);
+    const syllabusChapters = getSyllabusChapters(level, subject);
+
     const selectedChapters = chaptersParam
-      ? chaptersParam.split(",").map((c) => decodeURIComponent(c.trim()))
+      ? (chaptersParam.includes("|||")
+        ? chaptersParam.split("|||").map((c) => decodeURIComponent(c.trim()))
+        : (syllabusChapters.includes(decodeURIComponent(chaptersParam.trim()))
+          ? [decodeURIComponent(chaptersParam.trim())]
+          : chaptersParam.split(",").map((c) => decodeURIComponent(c.trim()))))
       : undefined;
 
     // Fetch admin-configurable settings
