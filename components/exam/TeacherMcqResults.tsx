@@ -160,10 +160,10 @@ function McqResultRow({
             className={cn(
               "rounded-full px-2 py-0.5 text-xs font-semibold",
               row.isCancelled
-                ? "bg-slate-100 text-slate-800 border border-slate-200"
+                ? "bg-red-100 text-red-800 border border-red-200"
                 : row.isPassed
                 ? "bg-emerald-100 text-emerald-800"
-                : "bg-red-100 text-red-800"
+                : "bg-orange-100 text-orange-800 border border-orange-200"
             )}
           >
             {row.isCancelled ? "Cancelled" : row.isPassed ? "Passed" : "Failed"}
@@ -355,12 +355,13 @@ function McqResultMobileCard({
         <span
           className={cn(
             "rounded-full px-2.5 py-0.5 text-3xs font-bold uppercase tracking-wider",
+            row.isCancelled ? "bg-red-50 text-red-700 border border-red-200" :
             row.isPassed
               ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-              : "bg-red-50 text-red-700 border border-red-100"
+              : "bg-orange-50 text-orange-700 border border-orange-100"
           )}
         >
-          {row.isPassed ? "Passed" : "Failed"}
+          {row.isCancelled ? "Cancelled" : row.isPassed ? "Passed" : "Failed"}
         </span>
       </div>
 

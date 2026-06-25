@@ -41,6 +41,7 @@ type PracticeSubmitResult = {
     totalQuestions: number;
     percentage: number;
     isPassed: boolean;
+    isCancelled?: boolean;
     timeTaken: number;
     submittedAt: string;
   };
@@ -1378,7 +1379,11 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
         <div
           className={cn(
             "rounded-xl border-2 p-5 shadow-[var(--shadow-md)] sm:p-6",
-            result.result.isPassed ? "border-emerald-400 bg-emerald-50" : "border-brand-yellow/30 bg-secondary" 
+            result.result.isCancelled 
+              ? "border-red-400 bg-red-50" 
+              : result.result.isPassed 
+                ? "border-emerald-400 bg-emerald-50" 
+                : "border-orange-400 bg-orange-50" 
           )}
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1391,10 +1396,14 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
                 {result.result.percentage}% ·{" "}
                 <span
                   className={
-                    result.result.isPassed ? "font-semibold text-emerald-700" : "font-semibold text-brand-red"  
+                    result.result.isCancelled 
+                      ? "font-semibold text-red-700"
+                      : result.result.isPassed 
+                        ? "font-semibold text-emerald-700" 
+                        : "font-semibold text-orange-700"  
                   }
                 >
-                  {result.result.isPassed ? "Passed" : "Needs improvement"}
+                  {result.result.isCancelled ? "Cancelled" : result.result.isPassed ? "Passed" : "Needs improvement"}
                 </span>
                 {" "}· Pass mark: {passMarkPercent}%
               </p>

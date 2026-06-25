@@ -46,6 +46,7 @@ type StudentResult = {
   totalQuestions: number;
   percentage: number;
   isPassed: boolean;
+  isCancelled?: boolean;
   timeTaken: number;
   submittedAt: string;
   teacherComment?: string;
@@ -207,7 +208,11 @@ function ResultRow({
     <div
       className={cn(
         "rounded-xl border-2 bg-card transition-all duration-200",
-        result.isPassed ? "border-emerald-200" : "border-red-200/60"
+        result.isCancelled
+          ? "border-red-200/60 bg-red-50/10"
+          : result.isPassed
+          ? "border-emerald-200 bg-emerald-50/5"
+          : "border-orange-200/60 bg-orange-50/10"
       )}
     >
       {/* Summary row */}
@@ -240,15 +245,21 @@ function ResultRow({
                 <span
                   className={cn(
                     "text-base font-extrabold",
-                    result.isPassed ? "text-emerald-600" : "text-brand-red"
+                    result.isCancelled
+                      ? "text-brand-red"
+                      : result.isPassed
+                      ? "text-emerald-600"
+                      : "text-orange-500"
                   )}
                 >
                   {result.score}/{result.totalQuestions}
                 </span>
-                {result.isPassed ? (
+                {result.isCancelled ? (
+                  <XCircle className="size-4 text-brand-red" />
+                ) : result.isPassed ? (
                   <TrendingUp className="size-4 text-emerald-500" />
                 ) : (
-                  <TrendingDown className="size-4 text-brand-red" />
+                  <TrendingDown className="size-4 text-orange-500" />
                 )}
               </div>
             </div>
@@ -283,7 +294,11 @@ function ResultRow({
             <p
               className={cn(
                 "text-lg font-bold tabular-nums",
-                result.isPassed ? "text-emerald-600" : "text-brand-red"
+                result.isCancelled
+                  ? "text-brand-red"
+                  : result.isPassed
+                  ? "text-emerald-600"
+                  : "text-orange-500"
               )}
             >
               {result.score}/{result.totalQuestions}
@@ -291,10 +306,12 @@ function ResultRow({
             <p className="text-xs text-muted">{result.percentage}%</p>
           </div>
 
-          {result.isPassed ? (
+          {result.isCancelled ? (
+            <XCircle className="size-5 text-brand-red shrink-0" />
+          ) : result.isPassed ? (
             <TrendingUp className="size-5 text-emerald-500 shrink-0" />
           ) : (
-            <TrendingDown className="size-5 text-brand-red shrink-0" />
+            <TrendingDown className="size-5 text-orange-500 shrink-0" />
           )}
 
           {/* Inline header buttons: Comment & Delete */}
@@ -744,10 +761,10 @@ export function TeacherResultsDashboard() {
             },
             {
               label: "Needs Work",
-              value: filtered.filter((r) => !r.isPassed).length,
+              value: filtered.filter((r) => !r.isPassed && !r.isCancelled).length,
               icon: TrendingDown,
-              color: "text-brand-red",
-              bg: "bg-red-100",
+              color: "text-orange-500",
+              bg: "bg-orange-100",
             },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
