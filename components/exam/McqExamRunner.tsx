@@ -46,23 +46,26 @@ const ExamTimer = React.memo(
   function ExamTimer({ durationSeconds, onTimeUp }: ExamTimerProps) {
     const [secondsLeft, setSecondsLeft] = useState(durationSeconds);
     const onTimeUpRef = useRef(onTimeUp);
+    const endTimeRef = useRef(Date.now() + durationSeconds * 1000);
 
     useEffect(() => {
       onTimeUpRef.current = onTimeUp;
     }, [onTimeUp]);
 
     useEffect(() => {
-      if (secondsLeft <= 0) {
-        onTimeUpRef.current();
-        return;
-      }
-
       const interval = window.setInterval(() => {
-        setSecondsLeft((current) => Math.max(0, current - 1));
+        setSecondsLeft((prev) => {
+          if (prev <= 0) return 0;
+          const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000));
+          if (remaining <= 0) {
+            onTimeUpRef.current();
+          }
+          return remaining;
+        });
       }, 1000);
 
       return () => window.clearInterval(interval);
-    }, [secondsLeft]);
+    }, []);
 
     const minutes = Math.floor(secondsLeft / 60);
     const seconds = String(secondsLeft % 60).padStart(2, "0");
@@ -447,10 +450,22 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
   // Scroll to top when phase changes
   useEffect(() => {
-    if (phase === "running" || phase === "completed") {
+    if (phase === "loading" || phase === "running" || phase === "completed") {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
   }, [phase]);
+
+  // Auto-retry submission if locked out and reconnects
+  useEffect(() => {
+    if (!isOffline && wasAutoSubmittedDueToTabLeave && phase === "running" && submitError) {
+      setSubmitError(null);
+      const totalSeconds = examRef.current ? examRef.current.duration * 60 : 0;
+      const elapsedSeconds = startTimeRef.current
+        ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
+        : totalSeconds;
+      submitExam(elapsedSeconds, answersRef.current, true);
+    }
+  }, [isOffline, wasAutoSubmittedDueToTabLeave, phase, submitError, submitExam]);
 
   // UI state rendering
   if (phase === "loading") {
@@ -590,7 +605,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     return (
       <section className="space-y-5">
         {/* Offline Banner */}
-        {isOffline && (
+        {isOffline && !wasAutoSubmittedDueToTabLeave && (
           <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300">
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-bounce" />
             <div className="space-y-1">
@@ -598,7 +613,24 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 {"আপনি এখন অফলাইন আছেন"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
-                {"আপনার internet connection বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"}
+                {"আপনার internet connection বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন পরীক্ষটি আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Locked Banner */}
+        {wasAutoSubmittedDueToTabLeave && (
+          <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300">
+            <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-red-800">
+                {"পরীক্ষা বাতিল করা হয়েছে"}
+              </h3>
+              <p className="text-xs leading-5 text-red-700">
+                {isOffline 
+                  ? "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।" 
+                  : "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..."}
               </p>
             </div>
           </div>
@@ -645,7 +677,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 question={question}
                 index={index}
                 selectedIndex={selectedIndex}
-                disabled={phase === "submitting" || isTimeUp}
+                disabled={phase === "submitting" || isTimeUp || wasAutoSubmittedDueToTabLeave}
                 onSelectOption={handleSelectOption}
               />
             );
@@ -658,6 +690,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
           className="w-full rounded-xl"
           onClick={handleSubmitClick}
           loading={phase === "submitting"}
+          disabled={wasAutoSubmittedDueToTabLeave}
         >
           {phase === "submitting"
             ? "Submitting..."

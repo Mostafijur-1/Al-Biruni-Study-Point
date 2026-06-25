@@ -92,23 +92,26 @@ const PracticeTimer = React.memo(
   function PracticeTimer({ durationSeconds, onTimeUp }: PracticeTimerProps) {
     const [secondsLeft, setSecondsLeft] = useState(durationSeconds);
     const onTimeUpRef = useRef(onTimeUp);
+    const endTimeRef = useRef(Date.now() + durationSeconds * 1000);
 
     useEffect(() => {
       onTimeUpRef.current = onTimeUp;
     }, [onTimeUp]);
 
     useEffect(() => {
-      if (secondsLeft <= 0) {
-        onTimeUpRef.current();
-        return;
-      }
-
       const interval = window.setInterval(() => {
-        setSecondsLeft((current) => Math.max(0, current - 1));
+        setSecondsLeft((prev) => {
+          if (prev <= 0) return 0;
+          const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000));
+          if (remaining <= 0) {
+            onTimeUpRef.current();
+          }
+          return remaining;
+        });
       }, 1000);
 
       return () => window.clearInterval(interval);
-    }, [secondsLeft]);
+    }, []);
 
     const minutes = Math.floor(secondsLeft / 60);
     const seconds = String(secondsLeft % 60).padStart(2, "0");
@@ -629,12 +632,20 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     submitPractice();
   }, [submitPractice]);
 
-  // Scroll to top when phase changes to running or result
+  // Scroll to top when phase changes to loading, running or result
   useEffect(() => {
-    if (phase === "running" || phase === "result") {
+    if (phase === "loading" || phase === "running" || phase === "result") {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
   }, [phase]);
+
+  // Auto-retry submission if locked out and reconnects
+  useEffect(() => {
+    if (!isOffline && wasAutoSubmittedDueToTabLeave && phase === "running" && submitError) {
+      setSubmitError(null);
+      submitPractice(true);
+    }
+  }, [isOffline, wasAutoSubmittedDueToTabLeave, phase, submitError, submitPractice]);
 
   // Handle prevention of page navigation, window/tab switching, and reload/close in test mode
   useEffect(() => {
@@ -1026,7 +1037,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     return (
       <section className="space-y-5">
         {/* Offline Banner */}
-        {isOffline && (
+        {isOffline && !wasAutoSubmittedDueToTabLeave && (
           <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300">
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-bounce" />
             <div className="space-y-1">
@@ -1037,6 +1048,23 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
                 {locale === "bn"
                   ? "আপনার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"
                   : "Your internet connection is currently disconnected. Please do not close or refresh this page. Your selected answers are saved locally, and you can submit them once your connection is restored."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Locked Banner */}
+        {wasAutoSubmittedDueToTabLeave && (
+          <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 shadow-sm flex items-start gap-3 animate-in fade-in duration-300">
+            <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-red-800">
+                {locale === "bn" ? "পরীক্ষা বাতিল করা হয়েছে" : "Test Cancelled"}
+              </h3>
+              <p className="text-xs leading-5 text-red-700">
+                {isOffline 
+                  ? (locale === "bn" ? "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।" : "Your test was cancelled due to multiple tab switches. It will be automatically submitted when internet connection is restored.") 
+                  : (locale === "bn" ? "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..." : "Your test was cancelled and is being submitted...")}
               </p>
             </div>
           </div>
@@ -1088,7 +1116,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
                 question={question}
                 index={index}
                 selectedIndex={selectedIndex}
-                disabled={isTimeUp}
+                disabled={isTimeUp || wasAutoSubmittedDueToTabLeave}
                 onSelectOption={handleSelectOption}
               />
             );
@@ -1101,6 +1129,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
           className="w-full rounded-xl"
           onClick={() => setShowSubmitConfirm(true)}
           loading={isSubmitting}
+          disabled={wasAutoSubmittedDueToTabLeave}
         >
           {isSubmitting
             ?  "Submitting..."
