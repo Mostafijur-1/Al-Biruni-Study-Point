@@ -98,7 +98,7 @@ Crucial Rules:
    - Keep the extracted \`explanation\` short and straight to the point (no unnecessary fluff or long paragraphs).
    - If a mathematical, logical, or scientific shortcut/tip/trick is possible to solve the question quickly in exams, prioritize providing that shortcut as the explanation (e.g., "শর্টকাট: সূত্র...").
    - If no shortcut exists, provide a simple,very short explanation but no unnecessary things.
-   - The explanation MUST be in Bengali (Bangla).
+   - The explanation MUST be in Bengali (Bangla) but the numbers can be in English and the corresponding units can be in English as well (e.g., "শর্টকাট: সূত্র F=ma ব্যবহার করো।").
    - Keep the explanation as short as possible.
 
 11. Answer Detection Failure Solution:
