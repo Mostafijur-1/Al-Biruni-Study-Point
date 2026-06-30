@@ -107,6 +107,8 @@ Crucial Rules:
 12. Spelling mistakes, OCR errors, and formatting issues:
    - Do not attempt to correct spelling mistakes, OCR errors, or formatting issues in the input source. Extract the questions as they are, but ensure that the output is valid JSON and follows the schema above.  
   
+13. Multiple Image Uploads:
+   - If multiple images are uploaded, parse all of them together in order, and extract all questions from them. The output JSON array should contain all questions from all images combined, in the order they appear across the images.   
       
 
 
