@@ -97,8 +97,17 @@ Crucial Rules:
 10. Keep Explanations Concise and Actionable (explanation):
    - Keep the extracted \`explanation\` short and straight to the point (no unnecessary fluff or long paragraphs).
    - If a mathematical, logical, or scientific shortcut/tip/trick is possible to solve the question quickly in exams, prioritize providing that shortcut as the explanation (e.g., "শর্টকাট: সূত্র...").
-   - If no shortcut exists, provide a simple, brief general explanation.
+   - If no shortcut exists, provide a simple,very short explanation but no unnecessary things.
    - The explanation MUST be in Bengali (Bangla).
+   - Keep the explanation as short as possible.
+
+11. Answer Detection Failure Solution:
+   - If the correct answer cannot be determined from the input source, you MUST still generate a plausible correct answer based on standard knowledge of the subject. Do not leave the \`correctIndex\` field empty or invalid.
+
+12. Spelling mistakes, OCR errors, and formatting issues:
+   - Do not attempt to correct spelling mistakes, OCR errors, or formatting issues in the input source. Extract the questions as they are, but ensure that the output is valid JSON and follows the schema above.  
+  
+      
 
 
 
