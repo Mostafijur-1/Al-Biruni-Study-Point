@@ -57,8 +57,6 @@ type SubjectInfo = {
 type TeacherMcqReviewProps = {
   };
 
-const MAX_IMAGE_UPLOADS = 3;
-
 export function TeacherMcqReview() {
   const locale = "bn";
       const [activeTab, setActiveTab] = useState<"upload" | "reports" | "uploaded">("upload");
@@ -70,7 +68,7 @@ export function TeacherMcqReview() {
   const [availableChaptersForUpload, setAvailableChaptersForUpload] = useState<string[]>([]);
   const [uploadContentType, setUploadContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
-  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
@@ -147,12 +145,8 @@ export function TeacherMcqReview() {
       setUploadError("টেক্সট পেস্ট করুন।");
       return;
     }
-    if (uploadContentType === "image" && uploadFiles.length === 0) {
-      setUploadError("অনুগ্রহ করে ফাইল নির্বাচন করুন।");
-      return;
-    }
-    if (uploadContentType === "image" && uploadFiles.length > MAX_IMAGE_UPLOADS) {
-      setUploadError(`You can upload a maximum of ${MAX_IMAGE_UPLOADS} images at a time.`);
+    if (uploadContentType === "image" && !uploadFile) {
+      setUploadError("অনুগ্রহ করে একটি ছবি নির্বাচন করুন।");
       return;
     }
 
@@ -169,8 +163,8 @@ export function TeacherMcqReview() {
 
       if (uploadContentType === "text") {
         formData.append("text", pastedText);
-      } else {
-        uploadFiles.forEach((file) => formData.append("files", file));
+      } else if (uploadFile) {
+        formData.append("files", uploadFile);
       }
 
       const response = await fetch("/api/teacher/mcqs/upload", {
@@ -188,11 +182,11 @@ export function TeacherMcqReview() {
             : ` Skipped ${payload.data.skippedCount} files: ${payload.data.skippedFiles.join(", ")}`;
         }
         setUploadSuccess(msg);
-        setUploadFiles([]);
+        setUploadFile(null);
         setPastedText("");
       } else {
         setUploadError(
-          getApiErrorMessage(payload, "আপলোড ব্যর্থ হয়েছে।")
+          payload?.error?.message || getApiErrorMessage(payload, "আপলোড ব্যর্থ হয়েছে।")
         );
       }
     } catch (error) {
@@ -990,14 +984,14 @@ export function TeacherMcqReview() {
                 <div className="flex flex-wrap gap-2 bg-secondary/60 p-1 rounded-xl w-fit">
                   <button
                     type="button"
-                    onClick={() => { setUploadContentType("text"); setUploadFiles([]); }}
+                    onClick={() => { setUploadContentType("text"); setUploadFile(null); }}
                     className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "text" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                   >
                     Paste Text
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setUploadContentType("image"); setUploadFiles([]); }}
+                    onClick={() => { setUploadContentType("image"); setUploadFile(null); }}
                     className={cn("rounded-lg px-4 py-1.5 text-xs font-bold transition cursor-pointer", uploadContentType === "image" ? "bg-primary text-white shadow-sm" : "text-muted hover:text-primary")}
                   >
                     Upload Image
@@ -1024,23 +1018,23 @@ export function TeacherMcqReview() {
               {uploadContentType === "image" && (
                 <div className="space-y-2">
                   <Label className="font-bold">
-                    Select Image
+                    ছবি নির্বাচন করুন (একটি)
                   </Label>
                   <div className="flex items-center gap-3">
                     <input
                       id="mcq-single-file-input"
                       type="file"
                       accept="image/*"
-                      multiple
                       onChange={(e) => {
-                        const selected = Array.from(e.target.files || []);
-                        const limited = selected.slice(0, MAX_IMAGE_UPLOADS);
-                        setUploadFiles(limited);
-                        setUploadError(
-                          selected.length > MAX_IMAGE_UPLOADS
-                            ? `Only the first ${MAX_IMAGE_UPLOADS} images were selected.`
-                            : "",
-                        );
+                        const file = e.target.files?.[0] || null;
+                        if (file && file.size > 4 * 1024 * 1024) {
+                          setUploadError("ছবির আকার ৪ MB এর কম হতে হবে।");
+                          setUploadFile(null);
+                          e.target.value = "";
+                          return;
+                        }
+                        setUploadError("");
+                        setUploadFile(file);
                       }}
                       className="hidden"
                     />
@@ -1050,41 +1044,27 @@ export function TeacherMcqReview() {
                       className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3 py-2 text-xs font-bold text-muted hover:border-primary/30 hover:bg-secondary/40 transition cursor-pointer"
                     >
                       <Upload className="size-4" />
-                      {uploadFiles.length > 0
-                        ? `${uploadFiles.length} image${uploadFiles.length > 1 ? "s" : ""} selected`
-                        : "ফাইল নির্বাচন করুন"}
+                      {uploadFile ? uploadFile.name : "ফাইল নির্বাচন করুন"}
                     </button>
-                    {uploadFiles.length > 0 && (
-                      <span className="text-2xs text-muted font-bold font-sans">
-                        Max {MAX_IMAGE_UPLOADS} images
-                      </span>
+                    {uploadFile && (
+                      <button
+                        type="button"
+                        aria-label="Remove selected image"
+                        onClick={() => {
+                          setUploadFile(null);
+                          const input = document.getElementById("mcq-single-file-input") as HTMLInputElement | null;
+                          if (input) input.value = "";
+                        }}
+                        className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
+                      >
+                        <X className="size-4" />
+                      </button>
                     )}
                   </div>
-                  {uploadFiles.length > 0 && (
-                    <ul className="space-y-1 text-[11px] font-semibold text-muted">
-                      {uploadFiles.map((file, index) => (
-                        <li
-                          key={`${file.name}-${file.size}`}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
-                        >
-                          <span className="min-w-0 break-all">
-                            {file.name} ({Math.round(file.size / 1024)} KB)
-                          </span>
-                          <button
-                            type="button"
-                            aria-label={`Remove ${file.name}`}
-                            onClick={() => {
-                              setUploadFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
-                              const input = document.getElementById("mcq-single-file-input") as HTMLInputElement | null;
-                              if (input) input.value = "";
-                            }}
-                            className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
-                          >
-                            <X className="size-3.5" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                  {uploadFile && (
+                    <p className="text-[11px] font-semibold text-muted">
+                      {uploadFile.name} ({Math.round(uploadFile.size / 1024)} KB)
+                    </p>
                   )}
                 </div>
               )}
@@ -1104,7 +1084,7 @@ export function TeacherMcqReview() {
                   disabled={
                     uploading ||
                     (uploadContentType === "text" && !pastedText.trim()) ||
-                    (uploadContentType === "image" && uploadFiles.length === 0)
+                    (uploadContentType === "image" && !uploadFile)
                   }
                   className="rounded-xl px-6"
                 >

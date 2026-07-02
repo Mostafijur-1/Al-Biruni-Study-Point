@@ -87,7 +87,6 @@ const HSC_SUBJECTS: CourseSubject[] = [
 ];
 
 const OPTION_BADGES = ["A", "B", "C", "D"];
-const MAX_IMAGE_UPLOADS = 3;
 
 export function AdminPracticeManager() {
   const locale = "bn";
@@ -104,7 +103,7 @@ export function AdminPracticeManager() {
   // Content upload states
   const [contentType, setContentType] = useState<"text" | "image">("text");
   const [pastedText, setPastedText] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Status/Response states
   const [submitting, setSubmitting] = useState(false);
@@ -470,14 +469,10 @@ export function AdminPracticeManager() {
       return;
     }
 
-    if (contentType !== "text" && selectedFiles.length === 0) {
+    if (contentType !== "text" && !selectedFile) {
       setErrorMessage(
-        locale === "bn" ? "অনুগ্রহ করে একটি ফাইল সিলেক্ট করুন।" : "Please select at least one image to upload."
+        locale === "bn" ? "অনুগ্রহ করে একটি ছবি সিলেক্ট করুন।" : "Please select an image to upload."
       );
-      return;
-    }
-    if (contentType !== "text" && selectedFiles.length > MAX_IMAGE_UPLOADS) {
-      setErrorMessage(`You can upload a maximum of ${MAX_IMAGE_UPLOADS} images at a time.`);
       return;
     }
 
@@ -492,8 +487,8 @@ export function AdminPracticeManager() {
 
       if (contentType === "text") {
         formData.append("text", pastedText);
-      } else {
-        selectedFiles.forEach((file) => formData.append("files", file));
+      } else if (selectedFile) {
+        formData.append("files", selectedFile);
       }
 
       const response = await fetch("/api/admin/practice-mcqs/upload", {
@@ -505,14 +500,15 @@ export function AdminPracticeManager() {
 
       if (!response.ok || !payload.success) {
         setErrorMessage(
-          getApiErrorMessage(payload, locale === "bn" ? "কনভার্ট করা ব্যর্থ হয়েছে।" : "Conversion failed.")
+          payload?.error?.message ||
+            getApiErrorMessage(payload, locale === "bn" ? "কনভার্ট করা ব্যর্থ হয়েছে।" : "Conversion failed.")
         );
         return;
       }
 
       setSuccessData(payload.data);
       setPastedText("");
-      setSelectedFiles([]);
+      setSelectedFile(null);
     } catch {
       setErrorMessage(
         locale === "bn"
@@ -757,7 +753,7 @@ export function AdminPracticeManager() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => { setContentType("text"); setSelectedFiles([]); }}
+                  onClick={() => { setContentType("text"); setSelectedFile(null); }}
                   className={cn(
                     "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
                     contentType === "text"
@@ -771,7 +767,7 @@ export function AdminPracticeManager() {
 
                 <button
                   type="button"
-                  onClick={() => { setContentType("image"); setSelectedFiles([]); }}
+                  onClick={() => { setContentType("image"); setSelectedFile(null); }}
                   className={cn(
                     "flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-bold transition",
                     contentType === "image"
@@ -806,24 +802,26 @@ export function AdminPracticeManager() {
               <div className="space-y-1.5">
                 <Label htmlFor="file-input">
                   {locale === "bn"
-                    ? "এমসিকিউ প্রশ্ন সম্বলিত ছবি (.png, .jpg)"
-                    : "Upload Question Image (.png, .jpg)"}
+                    ? "এমসিকিউ প্রশ্ন সম্বলিত ছবি (একটি, সর্বোচ্চ ৪ MB)"
+                    : "Upload Question Image (one file, max 4 MB)"}
                 </Label>
                 <div className="flex items-center gap-3">
                   <input
                     id="file-input"
                     type="file"
                     accept="image/*"
-                    multiple
                     onChange={(e) => {
-                      const selected = Array.from(e.target.files || []);
-                      const limited = selected.slice(0, MAX_IMAGE_UPLOADS);
-                      setSelectedFiles(limited);
-                      setErrorMessage(
-                        selected.length > MAX_IMAGE_UPLOADS
-                          ? `Only the first ${MAX_IMAGE_UPLOADS} images were selected.`
-                          : "",
-                      );
+                      const file = e.target.files?.[0] || null;
+                      if (file && file.size > 4 * 1024 * 1024) {
+                        setErrorMessage(
+                          locale === "bn" ? "ছবির আকার ৪ MB এর কম হতে হবে।" : "Image must be under 4 MB."
+                        );
+                        setSelectedFile(null);
+                        e.target.value = "";
+                        return;
+                      }
+                      setErrorMessage("");
+                      setSelectedFile(file);
                     }}
                     className="hidden"
                   />
@@ -833,41 +831,29 @@ export function AdminPracticeManager() {
                     className="flex items-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-3 text-sm font-semibold text-muted hover:border-primary/30 hover:bg-secondary/40 transition"
                   >
                     <Upload className="size-4" />
-                    {selectedFiles.length > 0
-                      ? `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} selected`
-                      : locale === "bn" ? "ফাইল সিলেক্ট করুন" : "Choose Images"}
+                    {selectedFile
+                      ? selectedFile.name
+                      : locale === "bn" ? "ফাইল সিলেক্ট করুন" : "Choose Image"}
                   </button>
-                  {selectedFiles.length > 0 && (
-                    <span className="text-xs text-muted">
-                      Max {MAX_IMAGE_UPLOADS} images
-                    </span>
+                  {selectedFile && (
+                    <button
+                      type="button"
+                      aria-label="Remove selected image"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        const input = document.getElementById("file-input") as HTMLInputElement | null;
+                        if (input) input.value = "";
+                      }}
+                      className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
+                    >
+                      <X className="size-4" />
+                    </button>
                   )}
                 </div>
-                {selectedFiles.length > 0 && (
-                  <ul className="space-y-1 text-[11px] font-semibold text-muted">
-                    {selectedFiles.map((file, index) => (
-                      <li
-                        key={`${file.name}-${file.size}`}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
-                      >
-                        <span className="min-w-0 break-all">
-                          {file.name} ({Math.round(file.size / 1024)} KB)
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={`Remove ${file.name}`}
-                          onClick={() => {
-                            setSelectedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
-                            const input = document.getElementById("file-input") as HTMLInputElement | null;
-                            if (input) input.value = "";
-                          }}
-                          className="shrink-0 rounded-md p-1 text-muted hover:bg-red-50 hover:text-brand-red"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                {selectedFile && (
+                  <p className="text-xs text-muted">
+                    {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
+                  </p>
                 )}
               </div>
             )}
