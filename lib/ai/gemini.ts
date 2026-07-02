@@ -1,13 +1,19 @@
 /**
  * Gemini API utility for text-based MCQ parsing.
  * Uses the Google Generative Language REST API with rotating API keys.
- * Falls back to the next key on 429 (rate limit) or 500 errors.
  */
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
-/** Round-robin index – survives across requests within the same serverless instance. */
 let keyIndex = 0;
+
+export type GeminiPart =
+  | { text: string }
+  | { inline_data: { mime_type: string; data: string } };
+
+export type GeminiResult =
+  | { ok: true; text: string }
+  | { ok: false; error: string; status: number };
 
 function getGeminiKeys(): string[] {
   const raw = process.env.GEMINI_API_KEYS?.trim();
@@ -15,24 +21,34 @@ function getGeminiKeys(): string[] {
   return raw.split(",").map((k) => k.trim()).filter(Boolean);
 }
 
-export type GeminiTextResult =
-  | { ok: true; text: string }
-  | { ok: false; error: string; status: number };
+function getTextModel(): string {
+  return process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+}
 
-/**
- * Send a text prompt to the Gemini API and return the generated text.
- * Automatically rotates through available API keys on rate-limit / server errors.
- */
-export async function callGeminiText(
-  prompt: string,
-  rawText: string,
-): Promise<GeminiTextResult> {
+function parseGeminiError(status: number, errText: string): string {
+  try {
+    const parsed = JSON.parse(errText);
+    const message = parsed?.error?.message || parsed?.message;
+    if (message) return `Gemini API failed: ${message}`;
+  } catch {
+    if (errText.length < 300) return `Gemini API failed: ${errText}`;
+  }
+  return `Gemini API failed: ${status}`;
+}
+
+async function callGemini(
+  parts: GeminiPart[],
+  model: string,
+): Promise<GeminiResult> {
   const keys = getGeminiKeys();
   if (keys.length === 0) {
-    return { ok: false, error: "GEMINI_API_KEYS is not configured in .env.local", status: 500 };
+    return {
+      ok: false,
+      error: "GEMINI_API_KEYS is not configured in .env.local",
+      status: 500,
+    };
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
   const maxAttempts = keys.length;
   let lastError = "";
   let lastStatus = 502;
@@ -48,17 +64,9 @@ export async function callGeminiText(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { text: `Raw Text:\n${rawText}` },
-              ],
-            },
-          ],
+          contents: [{ parts }],
           generationConfig: {
             responseMimeType: "application/json",
-            maxOutputTokens: 8192,
           },
         }),
       });
@@ -67,33 +75,42 @@ export async function callGeminiText(
         const errText = await response.text();
         console.error(`Gemini API error (key ${attempt + 1}/${maxAttempts}):`, response.status, errText);
 
-        // Retry with the next key on rate limit or server error
         if (response.status === 429 || response.status >= 500) {
-          lastError = `Gemini API failed: ${response.statusText}`;
+          lastError = parseGeminiError(response.status, errText);
           lastStatus = 502;
           continue;
         }
 
-        // Non-retryable error (e.g. 400 bad request)
-        return { ok: false, error: `Gemini API failed: ${response.statusText}`, status: 502 };
+        return { ok: false, error: parseGeminiError(response.status, errText), status: 502 };
       }
 
       const data = await response.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
       if (!text) {
-        console.error("Gemini returned empty response. Full data:", JSON.stringify(data));
-        return { ok: false, error: "Gemini returned empty response.", status: 502 };
+        console.error("Gemini returned empty response:", JSON.stringify(data));
+        return { ok: false, error: "Gemini returned an empty response.", status: 502 };
       }
 
       return { ok: true, text };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       console.error(`Gemini API exception (key ${attempt + 1}/${maxAttempts}):`, err);
-      lastError = `Gemini API error: ${err.message || err}`;
+      lastError = `Gemini API error: ${message}`;
       lastStatus = 502;
-      continue;
     }
   }
 
   return { ok: false, error: lastError || "All Gemini API keys exhausted.", status: lastStatus };
+}
+
+/** Parse MCQs from pasted / uploaded text. */
+export async function callGeminiText(prompt: string, rawText: string): Promise<GeminiResult> {
+  return callGemini(
+    [
+      { text: prompt },
+      { text: `Extract all MCQs from this text:\n\n${rawText}` },
+    ],
+    getTextModel(),
+  );
 }

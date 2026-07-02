@@ -1,7 +1,10 @@
 /**
- * Shared MCQ extraction via OpenRouter (text + image).
+ * Shared MCQ extraction: Gemini for text, OpenRouter for images.
  * Used by teacher, admin, and exam question upload routes.
  */
+
+import { callGeminiText } from "@/lib/ai/gemini";
+import { callOpenRouterVision } from "@/lib/ai/openrouter";
 
 export const MAX_IMAGE_UPLOADS = 1;
 
@@ -12,7 +15,7 @@ export type ParsedMcq = {
   explanation?: string;
 };
 
-export type OpenRouterMcqResult =
+export type McqParseResult =
   | { ok: true; questions: ParsedMcq[]; rawOutput: string }
   | { ok: false; error: string; status: number };
 
@@ -104,70 +107,8 @@ Crucial Rules:
 13. SPELLING: Keep source spelling as-is for question/option text. Only fix math/LaTeX formatting per rule 5.
 `.trim();
 
-function getOpenRouterConfig() {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  const model = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
-  return { apiKey, model };
-}
-
-async function callOpenRouter(
-  content: Array<{ type: string; text?: string; image_url?: { url: string } }>,
-): Promise<{ ok: true; text: string } | { ok: false; error: string; status: number }> {
-  const { apiKey, model } = getOpenRouterConfig();
-  if (!apiKey) {
-    return { ok: false, error: "OPENROUTER_API_KEY is not configured.", status: 500 };
-  }
-
-  try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/Mostafijur-1/Al-Biruni-Study-Point",
-        "X-OpenRouter-Title": "Al-Biruni Study Point",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content }],
-        response_format: { type: "json_object" },
-        max_tokens: 8192,
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("OpenRouter API error:", response.status, errText);
-      let detail = response.statusText;
-      try {
-        const parsed = JSON.parse(errText);
-        detail = parsed?.error?.message || parsed?.message || detail;
-      } catch {
-        if (errText.length < 200) detail = errText;
-      }
-      return { ok: false, error: `AI parsing failed: ${detail}`, status: 502 };
-    }
-
-    const data = await response.json();
-    const text = data?.choices?.[0]?.message?.content || "";
-    if (!text) {
-      console.error("OpenRouter empty response:", JSON.stringify(data));
-      return { ok: false, error: "AI returned an empty response. Please try again.", status: 502 };
-    }
-
-    return { ok: true, text };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("OpenRouter exception:", err);
-    return { ok: false, error: `AI parsing error: ${message}`, status: 502 };
-  }
-}
-
-export async function parseMcqsFromText(rawText: string): Promise<OpenRouterMcqResult> {
-  const result = await callOpenRouter([
-    { type: "text", text: MCQ_EXTRACTION_PROMPT },
-    { type: "text", text: `Extract all MCQs from this text:\n\n${rawText}` },
-  ]);
+export async function parseMcqsFromText(rawText: string): Promise<McqParseResult> {
+  const result = await callGeminiText(MCQ_EXTRACTION_PROMPT, rawText);
 
   if (!result.ok) {
     return result;
@@ -181,7 +122,7 @@ export async function parseMcqsFromText(rawText: string): Promise<OpenRouterMcqR
   return { ok: true, questions, rawOutput: result.text };
 }
 
-export async function parseMcqsFromImages(files: File[]): Promise<OpenRouterMcqResult> {
+export async function parseMcqsFromImages(files: File[]): Promise<McqParseResult> {
   if (files.length === 0) {
     return { ok: false, error: "No image file was uploaded.", status: 400 };
   }
@@ -193,26 +134,17 @@ export async function parseMcqsFromImages(files: File[]): Promise<OpenRouterMcqR
     };
   }
 
-  const imageParts = await Promise.all(
+  const images = await Promise.all(
     files.map(async (file) => {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const base64Data = buffer.toString("base64");
-      const mimeType = file.type || "image/jpeg";
       return {
-        type: "image_url" as const,
-        image_url: { url: `data:${mimeType};base64,${base64Data}` },
+        mimeType: file.type || "image/jpeg",
+        base64: buffer.toString("base64"),
       };
     }),
   );
 
-  const result = await callOpenRouter([
-    { type: "text", text: MCQ_EXTRACTION_PROMPT },
-    {
-      type: "text",
-      text: "Extract ALL multiple-choice questions visible in this uploaded exam-page image. Read every column and section carefully.",
-    },
-    ...imageParts,
-  ]);
+  const result = await callOpenRouterVision(MCQ_EXTRACTION_PROMPT, images);
 
   if (!result.ok) {
     return result;
