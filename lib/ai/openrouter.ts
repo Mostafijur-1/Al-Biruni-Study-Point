@@ -9,7 +9,9 @@ export type OpenRouterResult =
 function getOpenRouterConfig() {
   const apiKey = process.env.OPENROUTER_API_KEY?.trim();
   const model = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
-  return { apiKey, model };
+  // OpenRouter free credits cap affordable output tokens. Without this, it defaults to ~65535 and fails.
+  const maxTokens = Number(process.env.OPENROUTER_MAX_TOKENS) || 3800;
+  return { apiKey, model, maxTokens };
 }
 
 /** Parse MCQs from exam-page images via OpenRouter vision model. */
@@ -17,7 +19,7 @@ export async function callOpenRouterVision(
   prompt: string,
   images: Array<{ mimeType: string; base64: string }>,
 ): Promise<OpenRouterResult> {
-  const { apiKey, model } = getOpenRouterConfig();
+  const { apiKey, model, maxTokens } = getOpenRouterConfig();
 
   if (!apiKey) {
     return { ok: false, error: "OPENROUTER_API_KEY is not configured in .env.local", status: 500 };
@@ -53,6 +55,7 @@ export async function callOpenRouterVision(
           },
         ],
         response_format: { type: "json_object" },
+        max_tokens: maxTokens,
       }),
     });
 

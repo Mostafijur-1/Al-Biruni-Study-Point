@@ -1,9 +1,9 @@
 /**
- * Shared MCQ extraction: Gemini for text, OpenRouter for images.
+ * Shared MCQ extraction: Groq/Gemini for text, OpenRouter for images.
  * Used by teacher, admin, and exam question upload routes.
  */
 
-import { callGeminiText } from "@/lib/ai/gemini";
+import { callTextMcqParser } from "@/lib/ai/text-mcq-parser";
 import { callOpenRouterVision } from "@/lib/ai/openrouter";
 
 export const MAX_IMAGE_UPLOADS = 1;
@@ -108,7 +108,7 @@ Crucial Rules:
 `.trim();
 
 export async function parseMcqsFromText(rawText: string): Promise<McqParseResult> {
-  const result = await callGeminiText(MCQ_EXTRACTION_PROMPT, rawText);
+  const result = await callTextMcqParser(MCQ_EXTRACTION_PROMPT, rawText);
 
   if (!result.ok) {
     return result;

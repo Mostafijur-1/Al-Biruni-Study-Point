@@ -104,7 +104,11 @@ async function callGemini(
   return { ok: false, error: lastError || "All Gemini API keys exhausted.", status: lastStatus };
 }
 
-/** Parse MCQs from pasted / uploaded text. */
+export function hasGeminiKeys(): boolean {
+  return getGeminiKeys().length > 0;
+}
+
+/** Parse MCQs from pasted / uploaded text via Gemini. */
 export async function callGeminiText(prompt: string, rawText: string): Promise<GeminiResult> {
   return callGemini(
     [
