@@ -1,15 +1,16 @@
 /**
  * Gemini API utility for text-based MCQ parsing.
- * Uses the Google Generative Language REST API with rotating API keys.
+ * Uses the same extraction rules and message structure as Groq.
  */
+
+import {
+  MCQ_TEXT_EXTRACTION_PROMPT,
+  buildTextMcqUserMessage,
+} from "@/lib/mcq/extraction-prompt";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 let keyIndex = 0;
-
-export type GeminiPart =
-  | { text: string }
-  | { inline_data: { mime_type: string; data: string } };
 
 export type GeminiResult =
   | { ok: true; text: string }
@@ -36,10 +37,7 @@ function parseGeminiError(status: number, errText: string): string {
   return `Gemini API failed: ${status}`;
 }
 
-async function callGemini(
-  parts: GeminiPart[],
-  model: string,
-): Promise<GeminiResult> {
+async function callGemini(prompt: string, rawText: string): Promise<GeminiResult> {
   const keys = getGeminiKeys();
   if (keys.length === 0) {
     return {
@@ -49,6 +47,7 @@ async function callGemini(
     };
   }
 
+  const model = getTextModel();
   const maxAttempts = keys.length;
   let lastError = "";
   let lastStatus = 502;
@@ -64,7 +63,14 @@ async function callGemini(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts }],
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                { text: buildTextMcqUserMessage(rawText) },
+              ],
+            },
+          ],
           generationConfig: {
             responseMimeType: "application/json",
           },
@@ -108,13 +114,10 @@ export function hasGeminiKeys(): boolean {
   return getGeminiKeys().length > 0;
 }
 
-/** Parse MCQs from pasted / uploaded text via Gemini. */
-export async function callGeminiText(prompt: string, rawText: string): Promise<GeminiResult> {
-  return callGemini(
-    [
-      { text: prompt },
-      { text: `Extract all MCQs from this text:\n\n${rawText}` },
-    ],
-    getTextModel(),
-  );
+/** Parse MCQs from pasted / uploaded text via Gemini (same rules as Groq). */
+export async function callGeminiText(
+  prompt: string = MCQ_TEXT_EXTRACTION_PROMPT,
+  rawText: string,
+): Promise<GeminiResult> {
+  return callGemini(prompt, rawText);
 }

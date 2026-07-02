@@ -1,7 +1,12 @@
 /**
  * Groq API utility for text-based MCQ parsing.
- * OpenAI-compatible chat completions with rotating API keys.
+ * Uses the same extraction rules and message structure as Gemini.
  */
+
+import {
+  MCQ_TEXT_EXTRACTION_PROMPT,
+  buildTextMcqUserMessage,
+} from "@/lib/mcq/extraction-prompt";
 
 const GROQ_API_BASE = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -32,8 +37,11 @@ function parseGroqError(status: number, errText: string): string {
   return `Groq API failed: ${status}`;
 }
 
-/** Parse MCQs from pasted / uploaded text via Groq. */
-export async function callGroqText(prompt: string, rawText: string): Promise<GroqResult> {
+/** Parse MCQs from pasted / uploaded text via Groq (same rules as Gemini). */
+export async function callGroqText(
+  prompt: string = MCQ_TEXT_EXTRACTION_PROMPT,
+  rawText: string,
+): Promise<GroqResult> {
   const keys = getGroqKeys();
   if (keys.length === 0) {
     return { ok: false, error: "GROQ_API_KEYS is not configured.", status: 500 };
@@ -58,10 +66,8 @@ export async function callGroqText(prompt: string, rawText: string): Promise<Gro
         body: JSON.stringify({
           model,
           messages: [
-            {
-              role: "user",
-              content: `${prompt}\n\nExtract all MCQs from this text:\n\n${rawText}`,
-            },
+            { role: "system", content: prompt },
+            { role: "user", content: buildTextMcqUserMessage(rawText) },
           ],
           response_format: { type: "json_object" },
         }),

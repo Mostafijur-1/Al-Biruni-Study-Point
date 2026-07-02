@@ -1,16 +1,19 @@
 /**
  * Text MCQ parsing with Groq + Gemini fallback.
+ * Both providers use identical extraction rules from lib/mcq/extraction-prompt.ts.
  */
 
 import { callGroqText, hasGroqKeys } from "@/lib/ai/groq";
 import { callGeminiText, hasGeminiKeys } from "@/lib/ai/gemini";
+import { MCQ_TEXT_EXTRACTION_PROMPT } from "@/lib/mcq/extraction-prompt";
 
 export type TextParseResult =
   | { ok: true; text: string; provider: "groq" | "gemini" }
   | { ok: false; error: string; status: number };
 
-/** Try Groq first, then fall back to Gemini. */
-export async function callTextMcqParser(prompt: string, rawText: string): Promise<TextParseResult> {
+/** Try Groq first, then fall back to Gemini. Same rules for both. */
+export async function callTextMcqParser(rawText: string): Promise<TextParseResult> {
+  const prompt = MCQ_TEXT_EXTRACTION_PROMPT;
   const errors: string[] = [];
 
   if (hasGroqKeys()) {

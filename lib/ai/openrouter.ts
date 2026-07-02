@@ -1,6 +1,4 @@
-/**
- * OpenRouter API utility for image-based MCQ parsing (vision).
- */
+import { MCQ_IMAGE_EXTRACTION_PROMPT, MCQ_IMAGE_USER_INSTRUCTION } from "@/lib/mcq/extraction-prompt";
 
 export type OpenRouterResult =
   | { ok: true; text: string }
@@ -16,7 +14,7 @@ function getOpenRouterConfig() {
 
 /** Parse MCQs from exam-page images via OpenRouter vision model. */
 export async function callOpenRouterVision(
-  prompt: string,
+  prompt: string = MCQ_IMAGE_EXTRACTION_PROMPT,
   images: Array<{ mimeType: string; base64: string }>,
 ): Promise<OpenRouterResult> {
   const { apiKey, model, maxTokens } = getOpenRouterConfig();
@@ -46,10 +44,7 @@ export async function callOpenRouterVision(
             role: "user",
             content: [
               { type: "text", text: prompt },
-              {
-                type: "text",
-                text: "Extract ALL multiple-choice questions visible in this uploaded exam-page image. Read every column and section carefully.",
-              },
+              { type: "text", text: MCQ_IMAGE_USER_INSTRUCTION },
               ...imageParts,
             ],
           },
