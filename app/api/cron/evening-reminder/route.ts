@@ -7,11 +7,14 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PushSubscription } from "@/lib/db/models/PushSubscription";
 import { User } from "@/lib/db/models/User";
 
-webpush.setVapidDetails(
-  "mailto:admin@albirunistudypoint.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-  process.env.VAPID_PRIVATE_KEY || ""
-);
+// Set up VAPID details conditionally (prevents errors during Next.js build phase if keys are missing)
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    "mailto:admin@albirunistudypoint.com",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 // Support both GET and POST to make cron triggering flexible (e.g., via simple webhook or GET cron request)
 export async function GET(request: NextRequest) {

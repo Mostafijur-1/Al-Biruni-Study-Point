@@ -8,12 +8,14 @@ import { connectDB } from "@/lib/db/connect";
 import { PushSubscription, type IPushSubscription } from "@/lib/db/models/PushSubscription";
 import { User } from "@/lib/db/models/User";
 
-// Set up VAPID details
-webpush.setVapidDetails(
-  "mailto:admin@albirunistudypoint.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-  process.env.VAPID_PRIVATE_KEY || ""
-);
+// Set up VAPID details conditionally (prevents errors during Next.js build phase if keys are missing)
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    "mailto:admin@albirunistudypoint.com",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
