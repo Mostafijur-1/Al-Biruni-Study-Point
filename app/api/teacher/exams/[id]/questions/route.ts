@@ -133,7 +133,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const savedQuestions = await McqQuestion.insertMany(docs);
     if (contentType === "image") {
-      await incrementTeacherImageQuestionUpload(user.id);
+      try {
+        await incrementTeacherImageQuestionUpload(user.id);
+      } catch (error) {
+        // The questions are already saved. A nonessential usage metric must not
+        // report the upload as failed and encourage a duplicate retry.
+        console.error("Failed to increment teacher image upload usage:", error);
+      }
     }
 
     return success({

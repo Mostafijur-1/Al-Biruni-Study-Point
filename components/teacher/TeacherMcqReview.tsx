@@ -1024,7 +1024,7 @@ export function TeacherMcqReview() {
                     <input
                       id="mcq-single-file-input"
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         if (file && file.size > 4 * 1024 * 1024) {

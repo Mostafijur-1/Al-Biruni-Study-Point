@@ -197,7 +197,13 @@ export async function POST(request: NextRequest) {
 
     const saved = await PracticeQuestion.insertMany(docs);
     if (uploadContentType === "image") {
-      await incrementTeacherImageQuestionUpload(sessionUser.id);
+      try {
+        await incrementTeacherImageQuestionUpload(sessionUser.id);
+      } catch (error) {
+        // The questions are already saved. A nonessential usage metric must not
+        // report the upload as failed and encourage a duplicate retry.
+        console.error("Failed to increment teacher image upload usage:", error);
+      }
     }
 
     return success({

@@ -4,6 +4,15 @@
   </a>
 </p>
 
+## SonarQube analysis
+
+The repository runs SonarQube analysis on pushes to `main`, pull requests, and manual workflow runs. Configure these GitHub repository settings before enabling the workflow:
+
+- Secret `SONAR_TOKEN`: a project analysis token from SonarQube.
+- Variable `SONAR_HOST_URL`: the base URL of the SonarQube Server instance.
+
+The project key and analysis scope are defined in `sonar-project.properties`.
+
 <h1 align="center">Al-Biruni Study Point (ABSP)</h1>
 
 <p align="center">
