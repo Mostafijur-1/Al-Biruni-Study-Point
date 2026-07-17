@@ -5,13 +5,9 @@ import Link from "next/link";
 import {
   AlertTriangle,
   Award,
-  BookOpen,
   CheckCircle2,
   Clock,
   FileJson,
-  FileText,
-  Image as ImageIcon,
-  Plus,
   RefreshCw,
   Trash2,
   Upload,
@@ -23,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath } from "@/lib/i18n";
 import { TeacherMcqResults } from "@/components/exam/TeacherMcqResults";
 import { cn } from "@/lib/utils";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
@@ -36,6 +31,13 @@ type MCQQuestion = {
   options: string[];
   correctIndex: number;
   explanation?: string;
+};
+
+type DatabaseQuestion = MCQQuestion & { _id: string };
+
+type TeacherSubject = {
+  subject: string;
+  chapters: string[];
 };
 
 type ExamDetail = {
@@ -76,7 +78,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
   // Add from database state
   const [dbChapters, setDbChapters] = useState<string[]>([]);
   const [selectedDbChapter, setSelectedDbChapter] = useState("");
-  const [dbQuestions, setDbQuestions] = useState<any[]>([]);
+  const [dbQuestions, setDbQuestions] = useState<DatabaseQuestion[]>([]);
   const [loadingDbQuestions, setLoadingDbQuestions] = useState(false);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [addingFromDb, setAddingFromDb] = useState(false);
@@ -186,7 +188,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
     async function loadDbChapters() {
       if (!exam) return;
       try {
-        const { ok, payload } = await apiFetch<{ subjects: any[] }>("/api/teacher/subjects");
+        const { ok, payload } = await apiFetch<{ subjects: TeacherSubject[] }>("/api/teacher/subjects");
         if (ok && isApiSuccess(payload)) {
           const matching = payload.data.subjects.find(s => s.subject === exam.subject);
           if (matching) {
@@ -213,7 +215,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
       const level = isHsc ? "hsc" : "ssc";
 
       const url = `/api/teacher/mcqs?level=${level}&subject=${encodeURIComponent(exam.subject)}&chapter=${encodeURIComponent(chapter)}&scope=${scope}`;
-      const { ok, payload } = await apiFetch<{ questions: any[] }>(url);
+      const { ok, payload } = await apiFetch<{ questions: DatabaseQuestion[] }>(url);
       if (ok && isApiSuccess(payload)) {
         setDbQuestions(payload.data.questions);
       } else {
@@ -228,7 +230,10 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
 
   useEffect(() => {
     if (selectedDbChapter) {
-      fetchDbQuestions(selectedDbChapter, dbSourceScope);
+      const timer = window.setTimeout(() => {
+        void fetchDbQuestions(selectedDbChapter, dbSourceScope);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [selectedDbChapter, dbSourceScope, fetchDbQuestions]);
 
@@ -457,7 +462,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         <div className="space-y-4">
           {questions.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-muted">
-              No questions added yet. Switch to the "Upload Questions" tab to add some.
+              No questions added yet. Switch to the &ldquo;Upload Questions&rdquo; tab to add some.
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">

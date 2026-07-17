@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       ...examData,
       passMarkPercent: settings.passMarkPercent,
     });
-  } catch (error: any) {
+  } catch (error) {
     return handleApiError(error);
   }
 }

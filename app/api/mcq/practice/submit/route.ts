@@ -13,6 +13,7 @@ import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { User } from "@/lib/db/models/User";
 import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
+import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const submitPracticeSchema = z.object({
   subject: z.string(),
@@ -31,6 +32,11 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
     const user = await requireAuth(request, ["student"]);
+    const rateLimit = await consumeRateLimit("student:practice-submit", user.id, {
+      limit: 20,
+      windowMs: 5 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
     const studentClass = requireStudentClass(user);
 
     const parsed = submitPracticeSchema.parse(await request.json());
@@ -44,6 +50,9 @@ export async function POST(request: NextRequest) {
       parsed.answers,
       settings.passMarkPercent
     );
+    if (scoring.invalidQuestionIds.length > 0) {
+      return fail("The submission contains invalid questions for this subject or class.", 400);
+    }
 
     const isTeacher = parsed.mode === "teacher";
     
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest) {
           correctIndex: sol.correctIndex,
           explanation: sol.explanation,
           imageUrl: full?.imageUrl,
-        } as any;
+        };
       })
     );
 

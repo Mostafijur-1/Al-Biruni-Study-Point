@@ -1,4 +1,3 @@
-import fs from "fs/promises";
 import path from "path";
 import mongoose from "mongoose";
 
@@ -6,6 +5,7 @@ import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { getSchoolLevel, getSyllabusChapters, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
+import { dedupeSubmittedAnswers } from "@/lib/mcq/answer-scoring";
 
 export interface JSONPracticeQuestion {
   id: string;
@@ -117,7 +117,7 @@ export async function loadPracticeQuestionsData(
       result[chapterName] = [];
     }
     result[chapterName].push({
-      id: (q as any)._id.toString(),
+      id: q._id.toString(),
       question: q.question,
       options: q.options,
       correctIndex: q.correctIndex,
@@ -164,7 +164,7 @@ export async function startPracticeExam(
 
   // Optimize: Query only a random sample of maxQuestions matching the selected chapters in MongoDB
   const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
-  const matchQuery: any = {
+  const matchQuery: Record<string, unknown> = {
     level,
     subject: { $in: [subject, englishSubject] },
     chapter: { $in: chaptersToUse },
@@ -230,7 +230,7 @@ export async function loadFullQuestionById(
     if (found) {
       return { question: found.question, options: found.options, imageUrl: found.imageUrl };
     }
-  } catch (err) {
+  } catch {
     // Ignore casting errors if questionId is not a valid ObjectId
   }
   return null;
@@ -249,15 +249,19 @@ export async function scorePracticeAttempt(
 ) {
   await connectDB();
 
-  // Extract only the IDs of questions answered by the student
-  const questionIds = answers.map((ans) => ans.questionId);
+  const uniqueAnswers = dedupeSubmittedAnswers(answers);
+  const questionIds = uniqueAnswers.map((answer) => answer.questionId);
+  const level = getSchoolLevel(studentClass);
+  const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
 
   // Optimize: query only the specific answered questions from MongoDB
   const dbQuestions = await PracticeQuestion.find({
     _id: { $in: questionIds },
+    level,
+    subject: { $in: [subject, englishSubject] },
   }).lean();
 
-  const allQuestionsMap = new Map<string, any>();
+  const allQuestionsMap = new Map<string, (typeof dbQuestions)[number]>();
   for (const q of dbQuestions) {
     allQuestionsMap.set(q._id.toString(), q);
   }
@@ -265,7 +269,7 @@ export async function scorePracticeAttempt(
   let correctCount = 0;
   const solutions: { questionId: string; correctIndex: number; explanation?: string }[] = [];
 
-  for (const ans of answers) {
+  for (const ans of uniqueAnswers) {
     const question = allQuestionsMap.get(ans.questionId);
     if (!question) continue;
 
@@ -282,7 +286,10 @@ export async function scorePracticeAttempt(
     });
   }
 
-  const totalQuestions = answers.length;
+  const invalidQuestionIds = uniqueAnswers
+    .filter((answer) => !allQuestionsMap.has(answer.questionId))
+    .map((answer) => answer.questionId);
+  const totalQuestions = uniqueAnswers.length;
   const score = correctCount;
   const percentage =
     totalQuestions > 0 ? Number(((score / totalQuestions) * 100).toFixed(2)) : 0;
@@ -295,5 +302,6 @@ export async function scorePracticeAttempt(
     isPassed,
     passMarkPercent,
     solutions,
+    invalidQuestionIds,
   };
 }

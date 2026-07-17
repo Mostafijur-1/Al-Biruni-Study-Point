@@ -1,15 +1,48 @@
 import { NextRequest } from "next/server";
+import type { Types } from "mongoose";
 
-import { fail, handleApiError, success } from "@/lib/api/response";
+import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
-import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
-import { McqExam } from "@/lib/db/models/McqExam";
+import {
+  McqExamAttempt,
+  type IMcqExamAnswer,
+} from "@/lib/db/models/McqExamAttempt";
+import type { IMcqExam } from "@/lib/db/models/McqExam";
+import "@/lib/db/models/McqExam";
 import { connectDB } from "@/lib/db/connect";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 
-// Prevent tree-shaking of McqExam model
-const _ = McqExam;
+type PopulatedPerson = {
+  _id: Types.ObjectId;
+  name: string;
+  phone?: string;
+  studentClass?: string;
+  schoolCollege?: string;
+};
+
+type PopulatedExam = Pick<
+  IMcqExam,
+  "title" | "subject" | "totalMarks" | "passMark" | "duration"
+> & { _id: Types.ObjectId };
+
+type ResultAttempt = {
+  _id: Types.ObjectId;
+  student: Types.ObjectId | PopulatedPerson;
+  exam: PopulatedExam | null;
+  answers: IMcqExamAnswer[];
+  score: number;
+  percentage: number;
+  isPassed: boolean;
+  timeTaken: number;
+  attemptNo: number;
+  submittedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  teacherComment?: string;
+  commentedBy?: PopulatedPerson | Types.ObjectId;
+  isCancelled?: boolean;
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,12 +95,14 @@ export async function GET(request: NextRequest) {
         })
         .populate("commentedBy", "name")
         .sort({ submittedAt: -1 })
-        .lean();
+        .lean<ResultAttempt[]>();
 
       // Filter out attempts where the exam results are not published (populated match is null)
-      const publishedExamAttempts = examAttempts.filter((ea) => ea.exam != null);
+      const publishedExamAttempts = examAttempts.filter(
+        (attempt): attempt is ResultAttempt & { exam: PopulatedExam } => attempt.exam !== null
+      );
 
-      const formattedExams = publishedExamAttempts.map((ea: any) => ({
+      const formattedExams = publishedExamAttempts.map((ea) => ({
         _id: ea._id,
         student: { _id: user.id, name: user.name },
         score: ea.score,
@@ -108,21 +143,21 @@ export async function GET(request: NextRequest) {
           .populate("commentedBy", "name")
           .populate("exam")
           .sort({ submittedAt: -1 })
-          .lean();
+          .lean<Array<ResultAttempt & { exam: PopulatedExam; student: PopulatedPerson }>>();
 
         // Load all questions for this exam once to map questions by ID
         const examQuestions = await McqQuestion.find({ exam: examId }).select("+correctIndex").lean();
         const questionMap = new Map(examQuestions.map((q) => [q._id.toString(), q]));
 
-        const formatted = attempts.map((ea: any) => {
+        const formatted = attempts.map((ea) => {
           const wrongAnswers = (ea.answers || [])
-            .filter((ans: any) => !ans.isCorrect)
-            .map((ans: any) => {
-              const q = questionMap.get(ans.questionId.toString());
+            .filter((answer) => !answer.isCorrect)
+            .map((answer) => {
+              const q = questionMap.get(answer.questionId.toString());
               return {
                 question: q?.question ?? "Unknown Question",
                 options: q?.options ?? ["", "", "", ""],
-                selectedIndex: ans.selectedIndex,
+                selectedIndex: answer.selectedIndex,
                 correctIndex: q?.correctIndex ?? 0,
                 explanation: q?.explanation ?? null,
               };

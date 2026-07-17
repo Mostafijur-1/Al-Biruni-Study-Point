@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
+import type { QueryFilter } from "mongoose";
 
 import { serializeAdminUser } from "@/lib/admin/serialize-user";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
-import { User } from "@/lib/db/models/User";
+import { User, type IUser } from "@/lib/db/models/User";
 import { deactivateExpiredTeacherCharges } from "@/lib/teacher-charges";
 import type { UserRole } from "@/types";
 
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       await deactivateExpiredTeacherCharges();
     }
 
-    const query: any = { role };
+    const query: QueryFilter<IUser> = { role };
     if (role === "student" && reference) {
       query.reference = { $regex: reference, $options: "i" };
     }

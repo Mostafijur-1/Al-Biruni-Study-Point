@@ -1,7 +1,6 @@
 "use client";
 
 import { STUDENT_CLASSES, getClassLabel } from "@/lib/content/classes";
-import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { StudentClass } from "@/types";
 

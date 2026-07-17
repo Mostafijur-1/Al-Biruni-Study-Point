@@ -7,6 +7,8 @@ import { connectDB } from "@/lib/db/connect";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
+import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { scoreSubmittedAnswers } from "@/lib/mcq/answer-scoring";
 
 const submitExamSchema = z.object({
   answers: z.array(
@@ -27,6 +29,11 @@ export async function POST(request: NextRequest, context: Context) {
   try {
     await connectDB();
     const user = await requireAuth(request, ["student"]);
+    const rateLimit = await consumeRateLimit("student:exam-submit", user.id, {
+      limit: 10,
+      windowMs: 5 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
     const { id } = await context.params;
 
     const exam = await McqExam.findById(id).lean();
@@ -54,26 +61,24 @@ export async function POST(request: NextRequest, context: Context) {
     // Fetch all questions for this exam to grade
     const dbQuestions = await McqQuestion.find({ exam: id }).lean();
     const questionsMap = new Map(dbQuestions.map((q) => [q._id.toString(), q]));
-
-    let score = 0;
-    const answersDoc = [];
-
-    for (const ans of parsed.answers) {
-      const q = questionsMap.get(ans.questionId);
-      if (!q) continue;
-
-      const isCorrect =
-        ans.selectedIndex !== null && ans.selectedIndex === q.correctIndex;
-      if (isCorrect) {
-        score += q.marks || 1;
-      }
-
-      answersDoc.push({
-        questionId: q._id,
-        selectedIndex: ans.selectedIndex,
-        isCorrect,
-      });
+    const scoring = scoreSubmittedAnswers(
+      parsed.answers,
+      dbQuestions.map((q) => ({
+        id: q._id.toString(),
+        correctIndex: q.correctIndex,
+        marks: q.marks,
+      })),
+    );
+    if (scoring.invalidQuestionIds.length > 0) {
+      return fail("The submission contains questions that do not belong to this exam.", 400);
     }
+
+    const score = scoring.score;
+    const answersDoc = scoring.records.map((answer) => ({
+      questionId: questionsMap.get(answer.questionId)!._id,
+      selectedIndex: answer.selectedIndex,
+      isCorrect: answer.isCorrect,
+    }));
 
     const totalMarks = exam.totalMarks;
     const percentage = totalMarks > 0 ? Number(((score / totalMarks) * 100).toFixed(2)) : 0;

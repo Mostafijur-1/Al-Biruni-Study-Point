@@ -22,14 +22,14 @@ import {
 } from "lucide-react";
 
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
+import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/hooks/use-session";
 import { useAppStore } from "@/stores/useAppStore";
 
 type SubjectStatus = {
   subject: string;
-  chapters: string[];
+  chapters: Array<{ name: string; hasMcqs: boolean }>;
   lastResult: {
     score: number;
     totalQuestions: number;
@@ -234,12 +234,13 @@ function StudentPracticeDashboard() {
   const isGuest = !user;
   const level = useGuestLevel();
 
-  const [mode, setMode] = useState<"general" | "teacher">("general");
+  const [mode] = useState<"general" | "teacher">("general");
   const { practiceStatusCache, setPracticeStatusCache } = useAppStore();
   const cacheKey = `practice_status_${mode}_${isGuest ? level : "user"}`;
 
   const [statusList, setStatusList] = useState<SubjectStatus[]>(() => {
-    return practiceStatusCache[cacheKey] || [];
+    const cachedStatus = practiceStatusCache[cacheKey];
+    return Array.isArray(cachedStatus) ? cachedStatus : cachedStatus?.status || [];
   });
   const [loading, setLoading] = useState(() => {
     return !practiceStatusCache[cacheKey];
@@ -267,7 +268,7 @@ function StudentPracticeDashboard() {
             setError(getApiErrorMessage(payload, "Could not load practice data."));
           }
         }
-      } catch (err) {
+      } catch {
         if (!practiceStatusCache[cacheKey]) {
           setError("An error occurred while connecting to the server.");
         }

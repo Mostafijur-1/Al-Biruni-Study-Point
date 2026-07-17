@@ -13,6 +13,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { incrementTeacherImageQuestionUpload } from "@/lib/teacher-charges";
 import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
+import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -20,6 +21,12 @@ export async function POST(request: NextRequest) {
   try {
     const sessionUser = await requireAuth(request, ["teacher"]);
     await connectDB();
+
+    const rateLimit = await consumeRateLimit("teacher:mcq-ingest", sessionUser.id, {
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
     const user = await User.findById(sessionUser.id).lean();
     if (!user) {

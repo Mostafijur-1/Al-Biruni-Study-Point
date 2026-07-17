@@ -1,10 +1,37 @@
 import { NextRequest } from "next/server";
+import type { Types } from "mongoose";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
-import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
+import {
+  PracticeAttempt,
+  type IPracticeAnswer,
+} from "@/lib/db/models/PracticeAttempt";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/connect";
 import { getSchoolLevel, COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
+import type { StudentClass } from "@/types";
+
+type PopulatedStudent = {
+  _id: Types.ObjectId;
+  name?: string;
+  phone?: string;
+  studentClass?: StudentClass;
+  schoolCollege?: string;
+};
+
+type TeacherResultAttempt = {
+  _id: Types.ObjectId;
+  student: PopulatedStudent;
+  subject: string;
+  answers: IPracticeAnswer[];
+  totalQuestions: number;
+  score: number;
+  percentage: number;
+  isPassed: boolean;
+  timeTaken: number;
+  teacherComment?: string;
+  createdAt: Date;
+};
 const getDayRange = (rangeType: string) => {
   const now = new Date();
   // Bangladesh timezone is UTC+6
@@ -121,7 +148,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine student IDs we are allowed to see
-    let allowedStudentIds: any[] | null = null;
+    let allowedStudentIds: Types.ObjectId[] | null = null;
     if (!domain?.isAll) {
       allowedStudentIds = domain?.students || [];
       if (allowedStudentIds.length === 0) {
@@ -160,17 +187,17 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .lean();
+      .lean<TeacherResultAttempt[]>();
 
     // Shape data for teacher view — include wrong answers only
-    const results = attempts.map((attempt: any) => {
+    const results = attempts.map((attempt) => {
       const student = attempt.student;
-      const wrongAnswers = attempt.answers.filter((a: any) => !a.isCorrect);
+      const wrongAnswers = attempt.answers.filter((answer) => !answer.isCorrect);
 
       return {
         id: attempt._id.toString(),
         student: {
-          id: student?._id?.toString() ?? attempt.student?.toString() ?? "",
+          id: student._id.toString(),
           name: student?.name ?? "Unknown",
           phone: student?.phone ?? null,
           class: student?.studentClass ?? null,
@@ -185,12 +212,12 @@ export async function GET(request: NextRequest) {
         timeTaken: attempt.timeTaken,
         submittedAt: attempt.createdAt,
         teacherComment: attempt.teacherComment ?? "",
-        wrongAnswers: wrongAnswers.map((a: any) => ({
-          question: a.question,
-          options: a.options,
-          selectedIndex: a.selectedIndex,
-          correctIndex: a.correctIndex,
-          explanation: a.explanation ?? null,
+        wrongAnswers: wrongAnswers.map((answer) => ({
+          question: answer.question,
+          options: answer.options,
+          selectedIndex: answer.selectedIndex,
+          correctIndex: answer.correctIndex,
+          explanation: answer.explanation ?? null,
         })),
       };
     });
@@ -199,10 +226,8 @@ export async function GET(request: NextRequest) {
       ? {
           isAll: !!domain.isAll,
           classes: domain.classes || [],
-          subjects: (domain.subjects || []).map((s: any) =>
-            Array.isArray(s) ? String(s[0]) : String(s)
-          ),
-          students: (domain.students || []).map((s: any) => String(s)),
+          subjects: (domain.subjects || []).map(String),
+          students: (domain.students || []).map(String),
         }
       : { isAll: false, classes: [], subjects: [], students: [] };
 

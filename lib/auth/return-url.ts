@@ -1,7 +1,6 @@
 import { getLocalizedPath, parseLocalizedPath } from "@/lib/i18n";
+import { isReturnPathAllowedForRole, sanitizeLocalReturnUrl } from "@/lib/auth/safe-return-url";
 import type { UserRole } from "@/types";
-
-const AUTH_PATH_SEGMENTS = ["/login", "/register"];
 
 function getSaferPostAuthUrl(value: string) {
   const { pathWithoutLocale } = parseLocalizedPath(value);
@@ -14,17 +13,8 @@ function getSaferPostAuthUrl(value: string) {
 }
 
 export function getSafeReturnUrl(value: string | null | undefined): string | null {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return null;
-  }
-
-  const pathOnly = value.split("?")[0] ?? value;
-
-  if (AUTH_PATH_SEGMENTS.some((segment) => pathOnly.includes(segment))) {
-    return null;
-  }
-
-  return getSaferPostAuthUrl(value);
+  const safe = sanitizeLocalReturnUrl(value);
+  return safe ? getSaferPostAuthUrl(safe) : null;
 }
 
 export function resolvePostAuthRedirect(role: UserRole, returnUrl: string | null | undefined) {
@@ -36,15 +26,7 @@ export function resolvePostAuthRedirect(role: UserRole, returnUrl: string | null
 
   const { pathWithoutLocale } = parseLocalizedPath(safe);
 
-  if (role === "student" && (pathWithoutLocale.startsWith("/student") || pathWithoutLocale.startsWith("/explore"))) {
-    return safe;
-  }
-
-  if (role === "teacher" && pathWithoutLocale.startsWith("/teacher")) {
-    return safe;
-  }
-
-  if (role === "admin" && pathWithoutLocale.startsWith("/admin")) {
+  if (isReturnPathAllowedForRole(role, pathWithoutLocale)) {
     return safe;
   }
 
@@ -83,4 +65,3 @@ export function buildRegisterUrl(returnUrl?: string | null) {
 
   return getLocalizedPath(`/register`) + (query ? `?${query}` : "");
 }
-

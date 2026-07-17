@@ -4,7 +4,7 @@ import { z } from "zod";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
-import { McqExam } from "@/lib/db/models/McqExam";
+import { McqExam, type IMcqExam } from "@/lib/db/models/McqExam";
 
 const togglePublishSchema = z.object({
   type: z.enum(["exam", "results"]),
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, context: Context) {
     const body = await request.json();
     const parsed = togglePublishSchema.parse(body);
 
-    const updateObj: any = {};
+    const updateObj: Partial<Pick<IMcqExam, "isPublished" | "resultsPublished">> = {};
     if (parsed.type === "exam") {
       updateObj.isPublished = parsed.value;
     } else {

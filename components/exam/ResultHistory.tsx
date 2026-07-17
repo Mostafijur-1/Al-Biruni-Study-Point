@@ -133,7 +133,7 @@ export function ResultHistory() {
         <div>
           <h3 className="text-base font-bold text-primary">No results found</h3>
           <p className="text-xs text-muted mt-1 font-semibold leading-relaxed">
-            You haven't completed any MCQ exams or practice sessions yet. Once you complete a test, your results will appear here!
+            You haven&apos;t completed any MCQ exams or practice sessions yet. Once you complete a test, your results will appear here!
           </p>
         </div>
       </div>
@@ -165,11 +165,11 @@ export function ResultHistory() {
 
   // Unique Subjects for dropdown
   const subjects = Array.from(
-    new Set(results.map((r: any) => r.subject).filter(Boolean))
+    new Set(results.map((result) => result.subject).filter(Boolean))
   ) as string[];
 
   // Filter Logic
-  const filteredResults = results.filter((result: any) => {
+  const filteredResults = results.filter((result) => {
     // 1. Category Tab
     if (categoryTab === "exams" && result.isPractice) return false;
     if (categoryTab === "practice" && !result.isPractice) return false;
@@ -323,7 +323,7 @@ export function ResultHistory() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {filteredResults.map((result: any) => {
+          {filteredResults.map((result) => {
             const isPractice = result.isPractice ?? false;
             const scorePercent = result.percentage || 0;
             return (
@@ -382,7 +382,7 @@ export function ResultHistory() {
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Clock className="size-3.5 text-primary" />
-                        Time: {Math.floor(result.timeTaken / 60)}m {result.timeTaken % 60}s
+                        Time: {Math.floor((result.timeTaken ?? 0) / 60)}m {(result.timeTaken ?? 0) % 60}s
                       </span>
                     </div>
 
@@ -430,7 +430,7 @@ export function ResultHistory() {
                         Feedback from {result.commentedBy?.name || "Teacher"}
                       </span>
                       <p className="text-xs text-amber-900 font-medium italic">
-                        "{result.teacherComment}"
+                        &ldquo;{result.teacherComment}&rdquo;
                       </p>
                     </div>
                   )}
@@ -512,15 +512,20 @@ export function ResultHistory() {
                 {/* Solutions Category Filters */}
                 {!modalLoading && !modalError && solutions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 bg-secondary/20 p-1 rounded-xl border border-border/30">
-                    {[
+                    {([
                       { id: "all", label: "All Questions", count: modalTotal },
                       { id: "correct", label: "Correct", count: modalCorrect, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
                       { id: "incorrect", label: "Incorrect", count: modalIncorrect, color: "text-brand-red bg-red-50 border-red-100" },
                       { id: "unanswered", label: "Unanswered", count: modalUnanswered, color: "text-amber-600 bg-amber-50 border-amber-100" },
-                    ].map((item) => (
+                    ] satisfies Array<{
+                      id: typeof solutionsTab;
+                      label: string;
+                      count: number;
+                      color?: string;
+                    }>).map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => setSolutionsTab(item.id as any)}
+                        onClick={() => setSolutionsTab(item.id)}
                         className={cn(
                           "flex items-center gap-1.5 px-2.5 py-1.5 text-3xs font-extrabold rounded-lg transition-all border border-transparent cursor-pointer",
                           solutionsTab === item.id

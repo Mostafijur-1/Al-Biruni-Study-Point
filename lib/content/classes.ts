@@ -15,6 +15,7 @@ export const CLASS_LABELS: Record<StudentClass, string> = {
 };
 
 export function getClassLabel(studentClass: StudentClass, locale?: string) {
+  void locale;
   return CLASS_LABELS[studentClass];
 }
 

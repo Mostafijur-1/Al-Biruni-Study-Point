@@ -9,13 +9,11 @@ import {
   FileQuestion,
   GraduationCap,
   Play,
-  RefreshCw,
   User,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -33,43 +31,48 @@ type StudentExam = {
   createdAt: string;
 };
 
-type StudentExamsPanelProps = {
-  };
-
-export function StudentExamsPanel({}: StudentExamsPanelProps) {
+export function StudentExamsPanel() {
   const { examsCache, setExamsCache } = useAppStore();
   const [exams, setExams] = useState<StudentExam[]>(() => examsCache || []);
   const [loading, setLoading] = useState(() => !examsCache);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"available" | "completed">("available");
 
-  const fetchExams = async () => {
-    try {
-      if (!examsCache) {
-        setLoading(true);
-      }
-      setError("");
-      const { ok, payload } = await apiFetch<{ exams: StudentExam[] }>("/api/mcq/exams");
-      if (ok && isApiSuccess(payload)) {
-        setExams(payload.data.exams);
-        setExamsCache(payload.data.exams);
-      } else {
-        if (!examsCache) {
+  useEffect(() => {
+    let active = true;
+
+    async function fetchExams() {
+      const cachedExams = useAppStore.getState().examsCache;
+      try {
+        if (!cachedExams) {
+          setLoading(true);
+        }
+        setError("");
+        const { ok, payload } = await apiFetch<{ exams: StudentExam[] }>("/api/mcq/exams");
+        if (!active) return;
+
+        if (ok && isApiSuccess(payload)) {
+          setExams(payload.data.exams);
+          setExamsCache(payload.data.exams);
+        } else if (!cachedExams) {
           setError(getApiErrorMessage(payload, "Failed to load exams."));
         }
+      } catch {
+        if (active && !cachedExams) {
+          setError("An error occurred connecting to the server.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    } catch {
-      if (!examsCache) {
-        setError("An error occurred connecting to the server.");
-      }
-    } finally {
-      setLoading(false);
     }
-  };
 
-  useEffect(() => {
-    fetchExams();
-  }, []);
+    void fetchExams();
+    return () => {
+      active = false;
+    };
+  }, [setExamsCache]);
 
   const availableExams = exams.filter((e) => !e.hasSubmitted);
   const completedExams = exams.filter((e) => e.hasSubmitted);

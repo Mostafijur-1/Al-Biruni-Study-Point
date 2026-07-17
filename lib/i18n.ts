@@ -5,6 +5,7 @@ export function getLocalizedPath(path: string) {
 }
 
 export function createLocalizedPath(locale?: string) {
+  void locale;
   return (path: string) => path.startsWith("/") ? path : `/${path}`;
 }
 
@@ -25,4 +26,3 @@ export function parseLocalizedPath(urlOrPath: string): { pathWithoutLocale: stri
     pathWithoutLocale: cleanPath + queryAndHash,
   };
 }
-

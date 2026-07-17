@@ -5,11 +5,13 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { ReportedQuestion } from "@/lib/db/models/ReportedQuestion";
-import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import type { IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import "@/lib/db/models/PracticeQuestion";
 import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
-// Prevent tree-shaking of PracticeQuestion model
-const _ = PracticeQuestion;
+type PopulatedReport = {
+  questionId: IPracticeQuestion | null;
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,10 +44,10 @@ export async function GET(request: NextRequest) {
         select: "name email"
       })
       .sort({ createdAt: -1 })
-      .lean();
+      .lean<PopulatedReport[]>();
 
     // Filter reports to match teacher's domain classes and subjects
-    const filteredReports = reports.filter((report: any) => {
+    const filteredReports = reports.filter((report) => {
       const q = report.questionId;
       if (!q) return false;
 
@@ -99,7 +101,7 @@ export async function PUT(request: NextRequest) {
       return fail("Report not found", 404);
     }
 
-    const question = report.questionId as any;
+    const question = report.questionId as unknown as IPracticeQuestion | null;
     if (question) {
       const isCreator = question.createdBy && String(question.createdBy) === String(user._id);
       if (!isCreator) {

@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server";
 import mongoose from "mongoose";
+import type { QueryFilter } from "mongoose";
 
 import { requireStudentClass } from "@/lib/content/student-access";
-import { fail, handleApiError, success } from "@/lib/api/response";
+import { handleApiError, success } from "@/lib/api/response";
 import { getPracticeSettings } from "@/lib/db/models/PracticeSettings";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
-import { PracticeResult } from "@/lib/db/models/PracticeResult";
-import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { PracticeResult, type IPracticeResult } from "@/lib/db/models/PracticeResult";
+import { PracticeQuestion, type IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
 import { getSchoolLevel, getSyllabusChapters, COURSE_TO_MCQ_SUBJECT_MAP, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
@@ -80,20 +81,21 @@ export async function GET(request: NextRequest) {
       : SUBJECTS) as CourseSubject[];
 
     // Fetch assigned teachers for the student if in teacher mode
-    let assignedTeachers: any[] = [];
-    if (userId && mode === "teacher") {
-      const studentIdObj = new mongoose.Types.ObjectId(userId);
-      assignedTeachers = await User.find({
-        role: "teacher",
-        $or: [
-          { "teacherDomain.students": studentIdObj },
-          { "teacherDomain.isAll": true }
-        ]
-      }).lean();
-    }
+    const assignedTeachers = userId && mode === "teacher"
+      ? await User.find({
+          role: "teacher",
+          $or: [
+            { "teacherDomain.students": new mongoose.Types.ObjectId(userId) },
+            { "teacherDomain.isAll": true },
+          ],
+        }).lean()
+      : [];
 
     // Fetch student's practice results for target subjects (only if authenticated)
-    let resultsQuery: any = { student: userId, subject: { $in: targetSubjects } };
+    const resultsQuery: QueryFilter<IPracticeResult> = {
+      student: userId,
+      subject: { $in: targetSubjects },
+    };
     if (mode === "teacher") {
       resultsQuery.isTeacherSet = true;
     } else {
@@ -113,7 +115,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Batch query active questions for this level and target subjects
-    const activeQuestionsQuery: any = {
+    const activeQuestionsQuery: QueryFilter<IPracticeQuestion> = {
       level: levelKey,
       subject: { $in: querySubjects },
     };

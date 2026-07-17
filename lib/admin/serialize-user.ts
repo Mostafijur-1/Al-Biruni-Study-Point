@@ -20,10 +20,10 @@ export function serializeAdminUser(user: IUser | Record<string, unknown>) {
       ? {
           isAll: !!doc.teacherDomain.isAll,
           classes: doc.teacherDomain.classes || [],
-          subjects: (doc.teacherDomain.subjects || []).map((s: any) =>
+          subjects: (doc.teacherDomain.subjects || []).map((s: unknown) =>
             Array.isArray(s) ? String(s[0]) : String(s)
           ),
-          students: (doc.teacherDomain.students || []).map((s: any) => String(s)),
+          students: (doc.teacherDomain.students || []).map((s: unknown) => String(s)),
         }
       : { isAll: false, classes: [], subjects: [], students: [] },
     createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : String(doc.createdAt),

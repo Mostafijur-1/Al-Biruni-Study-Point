@@ -2,7 +2,6 @@
 
 import { formatClassList } from "@/lib/content/classes";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
-import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { StudentClass } from "@/types";
 

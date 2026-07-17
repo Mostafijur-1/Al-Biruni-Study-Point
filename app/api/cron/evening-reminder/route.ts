@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 
-import { success, fail, handleApiError } from "@/lib/api/response";
+import { success, handleApiError } from "@/lib/api/response";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PushSubscription } from "@/lib/db/models/PushSubscription";

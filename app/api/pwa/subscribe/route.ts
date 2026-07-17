@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       try {
         const payload = verifyAccessToken(token);
         userId = payload.userId;
-      } catch (err) {
+      } catch {
         // Session invalid/expired, register anonymously
       }
     }

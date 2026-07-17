@@ -10,10 +10,17 @@ import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { isTeacherChargeExpired } from "@/lib/teacher-charges";
 import { loginSchema, normalizePhone } from "@/lib/validations/auth.schema";
+import { consumeRateLimit, getClientIdentifier, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
+
+    const rateLimit = await consumeRateLimit("auth:login", getClientIdentifier(request), {
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
     const parsed = loginSchema.parse(await request.json());
     const identifier = parsed.identifier.trim();

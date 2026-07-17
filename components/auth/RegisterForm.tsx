@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import { AuthReturnNotice } from "@/components/auth/AuthReturnNotice";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { buildLoginUrl } from "@/lib/auth/return-url";
 import { parseGuestClassParam } from "@/lib/content/guest-scope";
-import type { Locale } from "@/lib/i18n";
 import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import {
@@ -46,7 +45,7 @@ function RegisterFooter({ auth,
     auth: Dictionary["auth"];
   kind: "student" | "teacher";
   isSubmitting: boolean;
-  copy: any;
+  copy: { submit: string; submitting: string };
   returnUrl?: string | null;
 }) {
   return (
@@ -86,7 +85,6 @@ function StudentRegisterForm({ auth,
   initialClass,
 }: Omit<RegisterFormProps, "kind">) {
   const copy = auth.register.student;
-  const optionalLabel = "optional";
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
 
@@ -95,7 +93,7 @@ function StudentRegisterForm({ auth,
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<StudentRegisterFormInput & { returnUrl?: string }>({
     resolver: zodResolver(studentRegisterBodySchema),
@@ -111,7 +109,11 @@ function StudentRegisterForm({ auth,
     },
   });
 
-  const selectedClass = watch("studentClass", defaultClass);
+  const selectedClass = useWatch({
+    control,
+    name: "studentClass",
+    defaultValue: defaultClass,
+  });
   const isSchool = selectedClass === "class-9" || selectedClass === "class-10";
   const schoolCollegeLabel = isSchool
     ? ("স্কুল")

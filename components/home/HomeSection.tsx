@@ -7,26 +7,13 @@ import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical,
 
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { subjectsForLevel } from "@/lib/data/subjects";
-import { createLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
-import type { CourseSubject } from "@/types";
 
 type HomeSectionProps = {
     dict: Dictionary["home"];
   brand: Dictionary["brand"];
 };
-
-function subjectLabel(dict: Dictionary["home"], subject: CourseSubject) {
-  return dict.subjects[subject as keyof typeof dict.subjects] ?? subject;
-}
-
-const featureColors = [
-  "bg-brand-red/10 text-brand-red",
-  "bg-brand-blue/15 text-brand-blue",
-  "bg-brand-yellow/25 text-accent-foreground",
-];
 
 export function HomeSection({ dict, brand }: HomeSectionProps) {
     const [videoLoaded, setVideoLoaded] = useState(false);

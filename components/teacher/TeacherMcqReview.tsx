@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   AlertTriangle,
   Brain,
@@ -54,9 +55,6 @@ type SubjectInfo = {
   chapters: string[];
 };
 
-type TeacherMcqReviewProps = {
-  };
-
 export function TeacherMcqReview() {
   const locale = "bn";
       const [activeTab, setActiveTab] = useState<"upload" | "reports" | "uploaded">("upload");
@@ -85,7 +83,7 @@ export function TeacherMcqReview() {
 
   // Domain subjects/chapters
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const [, setLoadingSubjects] = useState(true);
 
   // Reported MCQ states
   const [reports, setReports] = useState<ReportedQuestion[]>([]);
@@ -119,7 +117,7 @@ export function TeacherMcqReview() {
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Failed to load subjects."));
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("[Teacher Review Fetch Subjects Catch Error]:", error);
         setErrorMessage("An error occurred fetching subjects.");
       } finally {
@@ -189,7 +187,7 @@ export function TeacherMcqReview() {
           payload?.error?.message || getApiErrorMessage(payload, "আপলোড ব্যর্থ হয়েছে।")
         );
       }
-    } catch (error) {
+    } catch {
       setUploadError("সার্ভারের সাথে সংযোগ করা যায়নি।");
     } finally {
       setUploading(false);
@@ -208,7 +206,7 @@ export function TeacherMcqReview() {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to load reported questions."));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Teacher Review Fetch Reports Catch Error]:", error);
       setErrorMessage("An error occurred fetching reports.");
     } finally {
@@ -218,7 +216,8 @@ export function TeacherMcqReview() {
 
   useEffect(() => {
     if (activeTab === "reports") {
-      fetchReports();
+      const timer = window.setTimeout(() => void fetchReports(), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [activeTab, fetchReports]);
 
@@ -248,7 +247,10 @@ export function TeacherMcqReview() {
   // Fetch when filter selections change
   useEffect(() => {
     if (activeTab === "uploaded" && filterLevel && filterSubject && filterChapter) {
-      fetchUploadedQuestions(filterLevel, filterSubject, filterChapter);
+      const timer = window.setTimeout(() => {
+        void fetchUploadedQuestions(filterLevel, filterSubject, filterChapter);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [activeTab, filterLevel, filterSubject, filterChapter, fetchUploadedQuestions]);
 
@@ -301,7 +303,7 @@ export function TeacherMcqReview() {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to delete question."));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Teacher Review Delete MCQ Catch Error]:", error);
       setErrorMessage("An error occurred deleting the question.");
     }
@@ -346,7 +348,7 @@ export function TeacherMcqReview() {
         console.error("[Image Upload Failure Technical Details]:", result);
         setImageError("Failed to upload image. Please ensure the file is a valid image.");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Image Upload Catch Technical Details]:", error);
       setImageError("Connection issue while uploading image. Please check your network and try again.");
     } finally {
@@ -396,7 +398,7 @@ export function TeacherMcqReview() {
       } else {
         setEditError(getApiErrorMessage(payload, "Failed to update question."));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Teacher Review Save MCQ Catch Error]:", error);
       setEditError("An error occurred updating the question.");
     } finally {
@@ -420,7 +422,7 @@ export function TeacherMcqReview() {
       } else {
         setErrorMessage(getApiErrorMessage(payload, "Failed to resolve report."));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Teacher Review Resolve Report Catch Error]:", error);
       setErrorMessage("An error occurred resolving the report.");
     }
@@ -614,10 +616,12 @@ export function TeacherMcqReview() {
                       <h4 className="text-base font-bold text-foreground">{q.question}</h4>
 
                       {q.imageUrl && (
-                        <img
+                        <Image
                           src={q.imageUrl}
                           alt="MCQ image"
-                          className="max-w-full max-h-48 rounded object-contain border bg-secondary/10"
+                          width={768}
+                          height={512}
+                          className="h-auto max-h-48 max-w-full rounded border bg-secondary/10 object-contain"
                         />
                       )}
 
@@ -842,10 +846,12 @@ export function TeacherMcqReview() {
                       <h4 className="text-base font-bold text-foreground">{q.question}</h4>
 
                       {q.imageUrl && (
-                        <img
+                        <Image
                           src={q.imageUrl}
                           alt="MCQ image"
-                          className="max-w-full max-h-48 rounded object-contain border bg-secondary/10"
+                          width={768}
+                          height={512}
+                          className="h-auto max-h-48 max-w-full rounded border bg-secondary/10 object-contain"
                         />
                       )}
 
@@ -1168,12 +1174,12 @@ export function TeacherMcqReview() {
                       </label>
                     </div>
                     {imageError && <p className="text-[10px] text-brand-red font-semibold">{imageError}</p>}
-                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, GIF. Hosted securely on Cloudinary.</p>
+                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, WebP. Hosted securely on Cloudinary.</p>
                   </div>
 
                   {editForm.imageUrl && (
                     <div className="relative size-20 rounded-lg border border-border bg-secondary/10 overflow-hidden shrink-0 group">
-                      <img src={editForm.imageUrl} alt="Preview" className="size-full object-contain" />
+                      <Image src={editForm.imageUrl} alt="Preview" fill sizes="80px" className="object-contain" />
                       <button
                         type="button"
                         onClick={() => setEditForm((prev) => ({ ...prev, imageUrl: "" }))}

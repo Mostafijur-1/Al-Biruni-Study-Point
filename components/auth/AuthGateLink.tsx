@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 
 import { useSession } from "@/lib/hooks/use-session";
 import { buildLoginUrl, buildRegisterUrl } from "@/lib/auth/return-url";
-import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type AuthGateLinkProps = {

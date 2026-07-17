@@ -1,19 +1,72 @@
 import { create } from "zustand";
+import type { StudentClass } from "@/types";
+
+export type CachedPracticeStatus = {
+  subject: string;
+  chapters: Array<{ name: string; hasMcqs: boolean }>;
+  lastResult: {
+    score: number;
+    totalQuestions: number;
+    percentage: number;
+    isPassed: boolean;
+    timeTaken: number;
+    submittedAt: string;
+  } | null;
+  teacherName?: string | null;
+};
+
+type PracticeStatusCacheValue =
+  | CachedPracticeStatus[]
+  | {
+      status: CachedPracticeStatus[];
+      settings?: { secondsPerQuestion: number; passMarkPercent: number };
+    };
+
+type CachedCourse = {
+  _id: string;
+  title: string;
+  titleBn?: string;
+  subject: string;
+  level: string;
+  targetClasses: StudentClass[];
+};
+
+type CachedVideo = {
+  _id: string;
+  title: string;
+  description?: string;
+  videoUrl: string;
+  targetClasses: StudentClass[];
+};
+
+type CachedStudentExam = {
+  _id: string;
+  title: string;
+  subject: string;
+  duration: number;
+  totalMarks: number;
+  passMark: number;
+  questionCount: number;
+  hasSubmitted: boolean;
+  teacherName: string;
+  resultsPublished: boolean;
+  createdAt: string;
+};
 
 interface AppState {
   // Practice Status Cache
-  practiceStatusCache: Record<string, any>;
-  setPracticeStatusCache: (key: string, data: any) => void;
+  practiceStatusCache: Record<string, PracticeStatusCacheValue>;
+  setPracticeStatusCache: (key: string, data: PracticeStatusCacheValue) => void;
 
   // Classroom Courses & Videos Cache
-  coursesCache: Record<string, any>;
-  videosCache: Record<string, any>;
-  setCoursesCache: (key: string, data: any) => void;
-  setVideosCache: (key: string, data: any) => void;
+  coursesCache: Record<string, CachedCourse[]>;
+  videosCache: Record<string, CachedVideo[]>;
+  setCoursesCache: (key: string, data: CachedCourse[]) => void;
+  setVideosCache: (key: string, data: CachedVideo[]) => void;
 
   // Classroom Exams Cache
-  examsCache: any;
-  setExamsCache: (data: any) => void;
+  examsCache: CachedStudentExam[] | null;
+  setExamsCache: (data: CachedStudentExam[]) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({

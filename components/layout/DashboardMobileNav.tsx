@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import {
-  BarChart3,
-  BookOpen,
   Brain,
   FileQuestion,
   GraduationCap,

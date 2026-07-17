@@ -12,7 +12,7 @@ export const accessCookieOptions: Partial<ResponseCookie> = {
   sameSite: "lax",
   secure: isProduction,
   path: "/",
-  maxAge: 60 * 60 * 24 * 365,
+  maxAge: 60 * 15,
 };
 
 export const refreshCookieOptions: Partial<ResponseCookie> = {
@@ -20,7 +20,7 @@ export const refreshCookieOptions: Partial<ResponseCookie> = {
   sameSite: "lax",
   secure: isProduction,
   path: "/",
-  maxAge: 60 * 60 * 24 * 3650,
+  maxAge: 60 * 60 * 24 * 30,
 };
 
 export const roleCookieOptions: Partial<ResponseCookie> = {
@@ -28,7 +28,7 @@ export const roleCookieOptions: Partial<ResponseCookie> = {
   sameSite: "lax",
   secure: isProduction,
   path: "/",
-  maxAge: 60 * 60 * 24 * 3650,
+  maxAge: 60 * 60 * 24 * 30,
 };
 
 export function clearAuthCookies(response: NextResponse) {

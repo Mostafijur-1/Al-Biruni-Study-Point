@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
 import { ensureSchemaPaths } from "@/lib/db/ensure-schema-path";
 import type { CourseLevel, CourseSubject, StudentClass } from "@/types";

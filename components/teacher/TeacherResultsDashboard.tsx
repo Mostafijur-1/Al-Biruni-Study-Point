@@ -5,7 +5,6 @@ import {
   AlertCircle,
   BookOpen,
   ChevronDown,
-  ChevronRight,
   GraduationCap,
   LineChart,
   MessageSquare,
@@ -59,6 +58,13 @@ type ResultsResponse = {
   total: number;
   page: number;
   limit: number;
+};
+
+type TeacherDomain = {
+  isAll: boolean;
+  classes: string[];
+  subjects: string[];
+  students?: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -160,10 +166,6 @@ function ResultRow({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const hasWrong = result.wrongAnswers.length > 0;
-
-  useEffect(() => {
-    setCommentText(result.teacherComment || "");
-  }, [result.teacherComment]);
 
   async function handleSaveComment() {
     setCommentSaving(true);
@@ -425,7 +427,7 @@ function ResultRow({
       {/* Comment panel (visible if expanded or commentOpen is true) */}
       {(expanded || commentOpen) && (
         <div className="border-t border-border px-4 pb-4 pt-3 bg-secondary/10 rounded-b-xl space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-primary">শিক্ষক মন্তব্য (Teacher's Comment)</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">শিক্ষক মন্তব্য (Teacher&apos;s Comment)</p>
           
           <div className="flex flex-col sm:flex-row gap-2" onClick={(e) => e.stopPropagation()}>
             <input
@@ -508,11 +510,7 @@ export function TeacherResultsDashboard() {
   const [searchName, setSearchName] = useState("");
 
   // Teacher domain configuration
-  const [teacherDomain, setTeacherDomain] = useState<{
-    isAll: boolean;
-    classes: string[];
-    subjects: string[];
-  } | null>(null);
+  const [teacherDomain, setTeacherDomain] = useState<TeacherDomain | null>(null);
 
   const limit = 20;
 
@@ -536,7 +534,7 @@ export function TeacherResultsDashboard() {
       if (filterSubject) params.set("subject", filterSubject);
       if (filterDate) params.set("date", filterDate);
 
-      const { ok, payload } = await apiFetch<ResultsResponse & { domain?: any }>(
+      const { ok, payload } = await apiFetch<ResultsResponse & { domain?: TeacherDomain }>(
         `/api/teacher/results?${params}`
       );
       if (ok && isApiSuccess(payload)) {
@@ -557,7 +555,8 @@ export function TeacherResultsDashboard() {
   }, [page, filterClass, filterSubject, filterDate]);
 
   useEffect(() => {
-    fetchResults();
+    const timer = window.setTimeout(() => void fetchResults(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetchResults]);
 
   // Client-side name search filter

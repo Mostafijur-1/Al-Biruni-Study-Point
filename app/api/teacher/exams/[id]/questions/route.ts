@@ -11,6 +11,7 @@ import {
   parseMcqsFromText,
   readImageFilesFromFormData,
 } from "@/lib/mcq/upload-parser";
+import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -24,6 +25,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!exam) {
       return fail("Exam not found or you do not have permission to manage questions for it.", 404);
     }
+
+    const rateLimit = await consumeRateLimit("teacher:exam-question-ingest", user.id, {
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
     const contentTypeHeader = request.headers.get("content-type") || "";
 

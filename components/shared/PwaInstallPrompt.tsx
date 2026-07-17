@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
 import { Bell, Download, X, Smartphone, Compass, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/hooks/use-session";
@@ -66,26 +65,20 @@ export function PwaInstallPrompt() {
     const mobileDevice =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
       window.matchMedia("(max-width: 768px)").matches;
-    setIsMobile(mobileDevice);
 
-    const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const browserWindow = window as Window & { opera?: string };
+    const ua = navigator.userAgent || navigator.vendor || browserWindow.opera || "";
     
     // Detect In-App browser (Facebook, Messenger, Instagram)
     const isFb = /FBAN|FBAV|Messenger|Instagram|FB_IAB/i.test(ua);
-    setIsInAppBrowser(isFb);
 
     // Detect iOS device
     const iosDevice = /iPhone|iPad|iPod/i.test(ua);
-    setIsIos(iosDevice);
 
     // Detect Android Firefox
     const firefoxAndroid = /Android/i.test(ua) && /Firefox/i.test(ua);
-    setIsFirefoxAndroid(firefoxAndroid);
 
     const fbDismissed = sessionStorage.getItem("absp_pwa_fb_dismissed");
-    if (isFb && !fbDismissed) {
-      setIsFbPromptVisible(true);
-    }
 
     // Generate or retrieve unique deviceId
     let deviceId = localStorage.getItem("absp_pwa_device_id");
@@ -97,16 +90,25 @@ export function PwaInstallPrompt() {
     // 1. Check if app is already running in standalone mode (already installed/PWA)
     const isPwa =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone ||
+      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone) ||
       document.referrer.includes("android-app://");
-    setIsStandalone(isPwa);
 
     // If it's iOS or Firefox on Android, and not running in standalone mode,
     // we can show the manual installation guide if not dismissed in this session.
     const dismissed = sessionStorage.getItem("absp_pwa_dismissed");
-    if ((iosDevice || firefoxAndroid) && !isPwa && !dismissed) {
-      setIsVisible(true);
-    }
+    const initializationTimer = window.setTimeout(() => {
+      setIsMobile(mobileDevice);
+      setIsInAppBrowser(isFb);
+      setIsIos(iosDevice);
+      setIsFirefoxAndroid(firefoxAndroid);
+      setIsStandalone(isPwa);
+      if (isFb && !fbDismissed) {
+        setIsFbPromptVisible(true);
+      }
+      if ((iosDevice || firefoxAndroid) && !isPwa && !dismissed) {
+        setIsVisible(true);
+      }
+    }, 0);
 
     // Track standalone launch
     if (isPwa) {
@@ -165,23 +167,11 @@ export function PwaInstallPrompt() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
+      window.clearTimeout(initializationTimer);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
-
-  // Check notification permission and subscribe once the session has finished loading and if not a teacher
-  React.useEffect(() => {
-    if (checking) return;
-    if (user?.role === "teacher") return;
-
-    if ("Notification" in window) {
-      setNotificationPermission(Notification.permission);
-      if (Notification.permission === "granted") {
-        subscribeToPushNotifications();
-      }
-    }
-  }, [checking, user]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -208,7 +198,7 @@ export function PwaInstallPrompt() {
     sessionStorage.setItem("absp_pwa_fb_dismissed", "true");
   };
 
-  const subscribeToPushNotifications = async () => {
+  const subscribeToPushNotifications = React.useCallback(async () => {
     if (checking || user?.role === "teacher") {
       return;
     }
@@ -242,7 +232,7 @@ export function PwaInstallPrompt() {
 
       const deviceId = localStorage.getItem("absp_pwa_device_id");
       const isInstalled = window.matchMedia("(display-mode: standalone)").matches ||
-        (window.navigator as any).standalone;
+        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
 
       await fetch("/api/pwa/subscribe", {
         method: "POST",
@@ -256,7 +246,22 @@ export function PwaInstallPrompt() {
     } catch (err) {
       console.error("Error subscribing to push notifications:", err);
     }
-  };
+  }, [checking, user?.role]);
+
+  // Check notification permission and subscribe once session loading is complete.
+  React.useEffect(() => {
+    if (checking || user?.role === "teacher" || !("Notification" in window)) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === "granted") {
+        void subscribeToPushNotifications();
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [checking, user?.role, subscribeToPushNotifications]);
 
   const requestNotificationPermission = async () => {
     if (checking || user?.role === "teacher") {

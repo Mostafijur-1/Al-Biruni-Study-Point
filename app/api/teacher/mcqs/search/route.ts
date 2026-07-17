@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
+import type { QueryFilter } from "mongoose";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
-import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { PracticeQuestion, type IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
@@ -26,12 +27,12 @@ export async function GET(request: NextRequest) {
 
     // Verify teacher domain permission & filter query
     const domain = user.teacherDomain;
-    let queryConditions: any = {
+    const queryConditions: QueryFilter<IPracticeQuestion> = {
       question: { $regex: query, $options: "i" },
     };
 
     if (!domain?.isAll) {
-      const allowedLevels: string[] = [];
+      const allowedLevels: Array<"ssc" | "hsc"> = [];
       if (domain?.classes?.some(c => c === "class-9" || c === "class-10")) allowedLevels.push("ssc");
       if (domain?.classes?.some(c => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
 

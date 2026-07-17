@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { getClassLabel } from "@/lib/content/classes";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
-import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { ApprovalStatus, StudentClass, UserRole } from "@/types";
 
@@ -45,7 +44,7 @@ type AdminUsersPanelProps = {
     role: Extract<UserRole, "student" | "teacher">;
 };
 
-function formatTeacherBillingDate(value: string | undefined, locale: Locale) {
+function formatTeacherBillingDate(value: string | undefined) {
   if (!value) return "Not set";
   return new Date(value).toLocaleDateString("bn-BD", {
     year: "numeric",
@@ -150,7 +149,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
           : current,
       );
     },
-    [locale, setData],
+    [setData],
   );
 
   // ── Domain modal helpers ────────────────────────────────────────────────
@@ -347,7 +346,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                             : "border-amber-200 bg-amber-50 text-amber-800",
                         )}
                       >
-                        Start: {formatTeacherBillingDate(user.teacherUsage.chargeCycleStartedAt, locale)}
+                        Start: {formatTeacherBillingDate(user.teacherUsage.chargeCycleStartedAt)}
                       </span>
                       <span
                         className={cn(
@@ -357,7 +356,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                             : "border-amber-200 bg-amber-50 text-amber-800",
                         )}
                       >
-                        End: {formatTeacherBillingDate(user.teacherUsage.chargeDueAt, locale)}
+                        End: {formatTeacherBillingDate(user.teacherUsage.chargeDueAt)}
                       </span>
                     </div>
                   )}

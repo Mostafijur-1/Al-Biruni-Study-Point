@@ -9,10 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { formatClassList } from "@/lib/content/classes";
-import type { Locale } from "@/lib/i18n";
 import type { StudentClass } from "@/types";
-
-type TeacherClassUploadPanelProps = Record<string, never>;
 
 type VideoRow = {
   _id: string;

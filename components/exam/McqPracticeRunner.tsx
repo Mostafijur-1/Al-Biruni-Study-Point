@@ -2,9 +2,8 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { AlertTriangle, ArrowLeft, BookOpen, Brain, CheckCircle2 } from "lucide-react";
-import type { CourseSubject } from "@/types";
-
 import { useRouter } from "next/navigation";
 import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
@@ -12,8 +11,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { getOptionLabel, McqOption } from "@/components/exam/McqOption";
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath, getLocalizedPath, type Locale } from "@/lib/i18n";
-import { getTranslatedChapter, SYLLABUS, getSchoolLevel } from "@/lib/content/syllabus";
+import { createLocalizedPath, getLocalizedPath } from "@/lib/i18n";
+import { getTranslatedChapter } from "@/lib/content/syllabus";
 import { cn } from "@/lib/utils";
 
 type ChapterStatus = {
@@ -24,6 +23,7 @@ type ChapterStatus = {
     totalQuestions: number;
     percentage: number;
     isPassed: boolean;
+    timeTaken: number;
     submittedAt: string;
   } | null;
 };
@@ -93,13 +93,14 @@ const PracticeTimer = React.memo(
   function PracticeTimer({ durationSeconds, onTimeUp }: PracticeTimerProps) {
     const [secondsLeft, setSecondsLeft] = useState(durationSeconds);
     const onTimeUpRef = useRef(onTimeUp);
-    const endTimeRef = useRef(Date.now() + durationSeconds * 1000);
+    const endTimeRef = useRef(0);
 
     useEffect(() => {
       onTimeUpRef.current = onTimeUp;
     }, [onTimeUp]);
 
     useEffect(() => {
+      endTimeRef.current = Date.now() + durationSeconds * 1000;
       const interval = window.setInterval(() => {
         setSecondsLeft((prev) => {
           if (prev <= 0) return 0;
@@ -112,7 +113,7 @@ const PracticeTimer = React.memo(
       }, 1000);
 
       return () => window.clearInterval(interval);
-    }, []);
+    }, [durationSeconds]);
 
     const minutes = Math.floor(secondsLeft / 60);
     const seconds = String(secondsLeft % 60).padStart(2, "0");
@@ -178,10 +179,12 @@ const PracticeQuestionCard = React.memo(function PracticeQuestionCard({
               {question.question}
             </h2>
             {question.imageUrl && (
-              <img
+              <Image
                 src={question.imageUrl}
                 alt="Question illustration"
-                className="mt-3 max-w-full max-h-64 w-auto rounded-lg object-contain border border-border/60 bg-muted/20"
+                width={768}
+                height={512}
+                className="mt-3 h-auto max-h-64 max-w-full rounded-lg border border-border/60 bg-muted/20 object-contain"
               />
             )}
           </div>
@@ -297,7 +300,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   // Countdown and tab switching warning states
   const [countdownSeconds, setCountdownSeconds] = useState(3);
   const [loadingDone, setLoadingDone] = useState(false);
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [, setTabSwitchCount] = useState(0);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
   const tabSwitchCountRef = useRef(0);
   const isAwayRef = useRef(false);
@@ -336,10 +339,11 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsMounted(true);
-    if (typeof window !== "undefined") {
+    const timer = window.setTimeout(() => {
+      setIsMounted(true);
       setIsOffline(!window.navigator.onLine);
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Monitor network connection status
@@ -382,21 +386,23 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     const cachedData = practiceStatusCache[cacheKey];
     const cachedList = Array.isArray(cachedData) ? cachedData : cachedData?.status;
     const cachedSettings = Array.isArray(cachedData) ? null : cachedData?.settings;
-    const matchingSubject = cachedList?.find((s: any) => s.subject === subject);
+    const matchingSubject = cachedList?.find((status) => status.subject === subject);
 
-    if (matchingSubject && !configLoaded) {
-      setAvailableChapters(matchingSubject.chapters);
-      const enabledChapters = matchingSubject.chapters
-        .filter((c: any) => c.hasMcqs)
-        .map((c: any) => c.name);
-      setSelectedChapters(enabledChapters);
-      if (cachedSettings) {
-        setSecondsPerQuestion(cachedSettings.secondsPerQuestion);
-        setPassMarkPercent(cachedSettings.passMarkPercent);
-      }
-      setLoadingConfig(false);
-      setConfigLoaded(true);
-    }
+    const cacheTimer = matchingSubject && !configLoaded
+      ? window.setTimeout(() => {
+          setAvailableChapters(matchingSubject.chapters);
+          const enabledChapters = matchingSubject.chapters
+            .filter((chapter) => chapter.hasMcqs)
+            .map((chapter) => chapter.name);
+          setSelectedChapters(enabledChapters);
+          if (cachedSettings) {
+            setSecondsPerQuestion(cachedSettings.secondsPerQuestion);
+            setPassMarkPercent(cachedSettings.passMarkPercent);
+          }
+          setLoadingConfig(false);
+          setConfigLoaded(true);
+        }, 0)
+      : undefined;
 
     async function loadConfig() {
       try {
@@ -427,7 +433,9 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
 
             // Also update the global cache so the dashboard is kept fresh!
             if (cachedData) {
-              const updatedList = cachedList.map((s: any) => s.subject === subject ? matching : s);
+              const updatedList = cachedList.map((status) =>
+                status.subject === subject ? matching : status
+              );
               const newCacheVal = Array.isArray(cachedData) ? updatedList : { ...cachedData, status: updatedList };
               setPracticeStatusCache(cacheKey, newCacheVal);
             }
@@ -441,7 +449,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
             setErrorMessage(getApiErrorMessage(payload, "Could not load practice chapters."));
           }
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("[Practice Load Config Catch Technical Details]:", error);
         if (!matchingSubject) {
           setErrorMessage("An unexpected error occurred while loading settings.");
@@ -450,7 +458,10 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
         setLoadingConfig(false);
       }
     }
-    loadConfig();
+    void loadConfig();
+    return () => {
+      if (cacheTimer) window.clearTimeout(cacheTimer);
+    };
   }, [subject, locale, checking, isGuest, level, mode, configLoaded, practiceStatusCache, setPracticeStatusCache]);
 
   // Toggle chapter selection
@@ -477,8 +488,11 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     if (phase !== "loading") return;
     if (countdownSeconds <= 0) {
       if (loadingDone) {
-        setStartTime(Date.now());
-        setPhase("running");
+        const timer = window.setTimeout(() => {
+          setStartTime(Date.now());
+          setPhase("running");
+        }, 0);
+        return () => window.clearTimeout(timer);
       }
       return;
     }
@@ -529,7 +543,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       setSecondsPerQuestion(data.secondsPerQuestion);
       setPassMarkPercent(data.passMarkPercent);
       // Try to restore saved answers from localStorage if any exist
-      let loadedAnswers: Record<string, number> = {};
+      const loadedAnswers: Record<string, number> = {};
       const storageKey = user ? `absp_practice_${user.id}_${subject}_${mode}` : `absp_practice_guest_${subject}_${mode}`;
       try {
         const saved = localStorage.getItem(storageKey);
@@ -550,12 +564,12 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       setResult(null);
       setIsTimeUp(false);
       setLoadingDone(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Start Practice Catch Technical Details]:", error);
       setErrorMessage("Could not connect to server to fetch practice questions.");
       setPhase("configuring");
     }
-  }, [selectedChapters, isGuest, locale, router, subject, selectedQuestionCount, user, mode]);
+  }, [selectedChapters, isGuest, router, subject, selectedQuestionCount, user, mode]);
 
   const handleSelectOption = useCallback((questionId: string, optionIndex: number) => {
     setAnswers((current) => ({
@@ -616,7 +630,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       setResult(payload.data);
       setPhase("result");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Submit Practice Catch Technical Details]:", error);
       setSubmitError(
         locale === "bn"
@@ -643,8 +657,11 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   // Auto-retry submission if locked out and reconnects
   useEffect(() => {
     if (!isOffline && wasAutoSubmittedDueToTabLeave && phase === "running" && submitError) {
-      setSubmitError(null);
-      submitPractice(true);
+      const timer = window.setTimeout(() => {
+        setSubmitError(null);
+        void submitPractice(true);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOffline, wasAutoSubmittedDueToTabLeave, phase, submitError, submitPractice]);
 
@@ -763,7 +780,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       } else {
         setReportError(getApiErrorMessage(payload, "Failed to submit report."));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Submit Question Report Catch Technical Details]:", error);
       setReportError("An error occurred while submitting report.");
     } finally {
@@ -1439,10 +1456,12 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
                         {question.question}
                       </h2>
                       {question.imageUrl && (
-                        <img
+                        <Image
                           src={question.imageUrl}
                           alt="Question illustration"
-                          className="mt-3 max-w-full max-h-64 w-auto rounded-lg object-contain border border-border/60 bg-muted/20"
+                          width={768}
+                          height={512}
+                          className="mt-3 h-auto max-h-64 max-w-full rounded-lg border border-border/60 bg-muted/20 object-contain"
                         />
                       )}
                     </div>

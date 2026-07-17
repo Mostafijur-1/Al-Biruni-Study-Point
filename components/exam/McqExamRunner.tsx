@@ -9,12 +9,10 @@ import {
   CheckCircle2,
   Clock,
   Play,
-  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { createLocalizedPath } from "@/lib/i18n";
 import { McqOption, getOptionLabel } from "@/components/exam/McqOption";
 import { cn } from "@/lib/utils";
 
@@ -46,13 +44,14 @@ const ExamTimer = React.memo(
   function ExamTimer({ durationSeconds, onTimeUp }: ExamTimerProps) {
     const [secondsLeft, setSecondsLeft] = useState(durationSeconds);
     const onTimeUpRef = useRef(onTimeUp);
-    const endTimeRef = useRef(Date.now() + durationSeconds * 1000);
+    const endTimeRef = useRef(0);
 
     useEffect(() => {
       onTimeUpRef.current = onTimeUp;
     }, [onTimeUp]);
 
     useEffect(() => {
+      endTimeRef.current = Date.now() + durationSeconds * 1000;
       const interval = window.setInterval(() => {
         setSecondsLeft((prev) => {
           if (prev <= 0) return 0;
@@ -65,7 +64,7 @@ const ExamTimer = React.memo(
       }, 1000);
 
       return () => window.clearInterval(interval);
-    }, []);
+    }, [durationSeconds]);
 
     const minutes = Math.floor(secondsLeft / 60);
     const seconds = String(secondsLeft % 60).padStart(2, "0");
@@ -178,7 +177,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   // Countdown and tab switching warning states
   const [countdownSeconds, setCountdownSeconds] = useState(3);
   const [loadingDone, setLoadingDone] = useState(false);
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [, setTabSwitchCount] = useState(0);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
   const tabSwitchCountRef = useRef(0);
   const isAwayRef = useRef(false);
@@ -211,10 +210,11 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
   // Handle mounting & online/offline checking
   useEffect(() => {
-    setIsMounted(true);
-    if (typeof window !== "undefined") {
+    const timer = window.setTimeout(() => {
+      setIsMounted(true);
       setIsOffline(!window.navigator.onLine);
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -237,7 +237,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     if (phase !== "loading") return;
     if (countdownSeconds <= 0) {
       if (loadingDone) {
-        setPhase("instructions");
+        const timer = window.setTimeout(() => setPhase("instructions"), 0);
+        return () => window.clearTimeout(timer);
       }
       return;
     }
@@ -259,7 +260,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
           setQuestions(payload.data.questions);
 
           // Restore saved progress from localStorage if exists
-          let loadedAnswers: Record<string, number> = {};
+          const loadedAnswers: Record<string, number> = {};
           const storageKey = `absp_exam_${examId}`;
           try {
             const saved = localStorage.getItem(storageKey);
@@ -458,12 +459,15 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   // Auto-retry submission if locked out and reconnects
   useEffect(() => {
     if (!isOffline && wasAutoSubmittedDueToTabLeave && phase === "running" && submitError) {
-      setSubmitError(null);
-      const totalSeconds = examRef.current ? examRef.current.duration * 60 : 0;
-      const elapsedSeconds = startTimeRef.current
-        ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
-        : totalSeconds;
-      submitExam(elapsedSeconds, answersRef.current, true);
+      const timer = window.setTimeout(() => {
+        setSubmitError(null);
+        const totalSeconds = examRef.current ? examRef.current.duration * 60 : 0;
+        const elapsedSeconds = startTimeRef.current
+          ? Math.min(totalSeconds, Math.round((Date.now() - startTimeRef.current) / 1000))
+          : totalSeconds;
+        void submitExam(elapsedSeconds, answersRef.current, true);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOffline, wasAutoSubmittedDueToTabLeave, phase, submitError, submitExam]);
 

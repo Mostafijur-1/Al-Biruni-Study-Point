@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { cn } from "@/lib/utils";
 
-type AdminOverviewProps = {};
-
 type OverviewStats = {
   studentsTotal: number;
   studentsActive: number;

@@ -1,15 +1,14 @@
 import { NextRequest } from "next/server";
+import { Types } from "mongoose";
 import { z } from "zod";
 
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
-import { McqExam } from "@/lib/db/models/McqExam";
+import type { IMcqExam } from "@/lib/db/models/McqExam";
+import "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
-
-// Prevent tree-shaking of McqExam model
-const _ = McqExam;
 
 const commentSchema = z.object({
   teacherComment: z.string().trim().default(""),
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest, context: Context) {
       return fail("You are not authorized to view this result.", 403);
     }
 
-    const exam = attempt.exam as any;
+    const exam = attempt.exam as unknown as IMcqExam;
 
     // Enforce results publishing check for students
     if (user.role === "student" && !exam.resultsPublished) {
@@ -106,13 +105,15 @@ export async function PUT(request: NextRequest, context: Context) {
     }
 
     // Verify teacher owns the exam linked to this attempt
-    const exam = await attempt.populate("exam").then((a) => a.exam as any);
+    const exam = await attempt
+      .populate("exam")
+      .then((populatedAttempt) => populatedAttempt.exam as unknown as IMcqExam);
     if (user.role === "teacher" && String(exam.teacher) !== user.id) {
       return fail("You do not have permission to comment on this exam result.", 403);
     }
 
     attempt.teacherComment = teacherComment;
-    attempt.commentedBy = user.id as any;
+    attempt.commentedBy = new Types.ObjectId(user.id);
     await attempt.save();
 
     return success({ message: "Comment saved successfully.", attempt });
@@ -133,7 +134,9 @@ export async function DELETE(request: NextRequest, context: Context) {
     }
 
     // Verify teacher owns the exam
-    const exam = await attempt.populate("exam").then((a) => a.exam as any);
+    const exam = await attempt
+      .populate("exam")
+      .then((populatedAttempt) => populatedAttempt.exam as unknown as IMcqExam);
     if (user.role === "teacher" && String(exam.teacher) !== user.id) {
       return fail("You do not have permission to delete this student's result.", 403);
     }

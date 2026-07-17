@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Types } from "mongoose";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
@@ -127,7 +128,7 @@ export async function PUT(request: NextRequest, context: Context) {
     }
 
     attempt.teacherComment = teacherComment ?? "";
-    attempt.commentedBy = user.id as any;
+    attempt.commentedBy = new Types.ObjectId(user.id);
     await attempt.save();
 
     // Sync to PracticeResult (student dashboard summary)

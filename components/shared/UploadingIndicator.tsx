@@ -21,17 +21,19 @@ export function UploadingIndicator({
   isUploading,
   className,
 }: UploadingIndicatorProps) {
+  if (!isUploading) {
+    return null;
+  }
+
+  return <ActiveUploadingIndicator className={className} />;
+}
+
+function ActiveUploadingIndicator({ className }: { className?: string }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [progress, setProgress] = useState(5);
   const steps = STEPS_BN;
 
   useEffect(() => {
-    if (!isUploading) {
-      setProgress(5);
-      setStepIndex(0);
-      return;
-    }
-
     // Cycle through messages every 6 seconds
     const messageInterval = setInterval(() => {
       setStepIndex((prev) => {
@@ -60,14 +62,15 @@ export function UploadingIndicator({
       clearInterval(messageInterval);
       clearInterval(progressInterval);
     };
-  }, [isUploading, steps.length]);
-
-  if (!isUploading) return null;
+  }, [steps.length]);
 
   const CurrentIcon = steps[stepIndex].icon;
 
   return (
     <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className={cn(
         "relative overflow-hidden rounded-2xl border border-primary/20 bg-card/70 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 space-y-4",
         className

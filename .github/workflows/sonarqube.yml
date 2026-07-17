@@ -31,10 +31,22 @@ jobs:
         run: npm ci
 
       - name: Check TypeScript
-        run: npx tsc --noEmit --pretty false
+        run: npm run typecheck
+
+      - name: Lint application
+        run: npm run lint
+
+      - name: Run regression tests
+        run: npm test
+
+      - name: Build production application
+        run: npm run build
 
       - name: Scan with SonarQube
         uses: SonarSource/sonarqube-scan-action@v8.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true

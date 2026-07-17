@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import type { Metadata } from "next";
 
 import {
   DashboardMobileNav,
@@ -7,6 +8,10 @@ import {
 
 type DashboardLayoutProps = {
   children: ReactNode;
+};
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
 };
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -24,4 +29,3 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     </>
   );
 }
-

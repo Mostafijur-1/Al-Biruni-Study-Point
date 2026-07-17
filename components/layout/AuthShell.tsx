@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/brand/Logo";
-import type { Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type AuthShellProps = {

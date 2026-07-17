@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import mongoose from "mongoose";
+import type { QueryFilter } from "mongoose";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
-import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { PracticeQuestion, type IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { COURSE_TO_MCQ_SUBJECT_MAP, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by scope
     const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
-    const query: any = {
+    const query: QueryFilter<IPracticeQuestion> = {
       level,
       subject: { $in: [subject, englishSubject] },
       chapter,

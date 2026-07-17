@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import mongoose from "mongoose";
+import type { QueryFilter, Types } from "mongoose";
 import { connectDB } from "@/lib/db/connect";
-import { User } from "@/lib/db/models/User"; // Need to import User model for populate to find it
-import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import "@/lib/db/models/User";
+import { PracticeQuestion, type IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
 
@@ -12,9 +13,6 @@ export async function GET(request: NextRequest) {
     const sessionUser = await requireAuth(request, ["admin"]);
     await connectDB();
 
-    // Ensure User model is loaded
-    const _dummy = User.modelName;
-
     const { searchParams } = request.nextUrl;
     const level = searchParams.get("level");
     const subject = searchParams.get("subject");
@@ -22,9 +20,14 @@ export async function GET(request: NextRequest) {
     const teacherId = searchParams.get("teacherId");
     const scope = searchParams.get("scope"); // "me" | "teachers" | "all"
 
-    const query: any = { isTeacherSet: true };
+    const query: QueryFilter<IPracticeQuestion> = { isTeacherSet: true };
 
-    if (level) query.level = level;
+    if (level) {
+      if (level !== "ssc" && level !== "hsc") {
+        return fail("level must be ssc or hsc.", 400);
+      }
+      query.level = level;
+    }
     if (subject) {
       const { BENGALI_TO_ENGLISH_SUBJECT_MAP } = await import("@/lib/content/syllabus");
       const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
@@ -40,13 +43,18 @@ export async function GET(request: NextRequest) {
       query.createdBy = new mongoose.Types.ObjectId(teacherId);
     }
 
+    type PopulatedQuestion = IPracticeQuestion & {
+      _id: Types.ObjectId;
+      createdBy?: { _id: Types.ObjectId; name: string };
+    };
+
     const questions = await PracticeQuestion.find(query)
       .populate("createdBy", "name")
       .sort({ createdAt: -1 })
-      .lean();
+      .lean<PopulatedQuestion[]>();
 
     return success({
-      questions: questions.map((q: any) => ({
+      questions: questions.map((q) => ({
         id: String(q._id),
         level: q.level,
         subject: q.subject,

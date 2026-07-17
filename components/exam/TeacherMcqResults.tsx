@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { MessageSquare, Trash2, XCircle } from "lucide-react";
 
@@ -88,10 +88,6 @@ function McqResultRow({
   const [commentSaving, setCommentSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    setCommentText(row.teacherComment || "");
-  }, [row.teacherComment]);
 
   async function handleSaveComment() {
     setCommentSaving(true);
@@ -245,7 +241,7 @@ function McqResultRow({
 
               {/* Teacher Comment Section */}
               <div className="border-t border-border/50 pt-4 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-primary">শিক্ষক মন্তব্য (Teacher's Comment)</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-primary">শিক্ষক মন্তব্য (Teacher&apos;s Comment)</p>
                 
                 {/* Comment edit input */}
                 <div className="flex flex-col sm:flex-row gap-2 max-w-3xl" onClick={(e) => e.stopPropagation()}>
@@ -289,10 +285,6 @@ function McqResultMobileCard({
   const [commentSaving, setCommentSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    setCommentText(row.teacherComment || "");
-  }, [row.teacherComment]);
 
   async function handleSaveComment() {
     setCommentSaving(true);

@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { buildRegisterUrl } from "@/lib/auth/return-url";
-import type { Locale } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth.schema";
 import type { SessionUser } from "@/types";

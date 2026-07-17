@@ -19,8 +19,6 @@ export async function GET(request: NextRequest) {
       .limit(100)
       .lean();
 
-    const courseIds = courses.map((c) => c._id);
-
     // 1. Fetch practice question counts per (level, subject) in a single aggregation query
     const practiceCounts = await PracticeQuestion.aggregate([
       { $group: { _id: { level: "$level", subject: "$subject" }, count: { $sum: 1 } } },

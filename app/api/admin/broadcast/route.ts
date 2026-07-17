@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
+import type { QueryFilter } from "mongoose";
 import webpush from "web-push";
 
 import { success, fail, handleApiError } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
-import { PushSubscription } from "@/lib/db/models/PushSubscription";
+import { PushSubscription, type IPushSubscription } from "@/lib/db/models/PushSubscription";
 import { User } from "@/lib/db/models/User";
 
 // Set up VAPID details
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       return fail("Message content is required", 400);
     }
 
-    const query: Record<string, any> = {};
+    const query: QueryFilter<IPushSubscription> = {};
 
     // Filter by PWA-installed only
     if (targetAudience === "pwa-only") {

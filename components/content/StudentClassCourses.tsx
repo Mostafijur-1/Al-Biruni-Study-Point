@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { formatClassList } from "@/lib/content/classes";
 import { useSession } from "@/lib/hooks/use-session";
 import { AuthGateLink } from "@/components/auth/AuthGateLink";
-import type { Locale } from "@/lib/i18n";
 import type { StudentClass } from "@/types";
 import { useAppStore } from "@/stores/useAppStore";
 import { apiFetch, isApiSuccess } from "@/lib/api/client";

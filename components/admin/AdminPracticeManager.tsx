@@ -1,25 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import {
   AlertTriangle,
-  Atom,
-  Beaker,
-  BookOpen,
-  Brain,
-  Calculator,
   Check,
   CheckCircle2,
-  Cpu,
-  Database,
   Edit,
   FileImage,
-  FileJson,
-  FileText,
-  GraduationCap,
   Image as ImageIcon,
   Loader2,
-  RefreshCw,
   Save,
   Server,
   Settings,
@@ -34,7 +24,6 @@ import { Label } from "@/components/ui/label";
 import { AdminTeacherMcqReview } from "./AdminTeacherMcqReview";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { getSyllabusChapters, type SchoolLevel } from "@/lib/content/syllabus";
-import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
 import type { CourseSubject } from "@/types";
@@ -51,6 +40,18 @@ type PracticeTestSettings = {
   maxQuestionsPerTest: number;
   secondsPerQuestion: number;
   passMarkPercent: number;
+};
+
+type UploadedQuestion = {
+  id: string;
+  level: SchoolLevel;
+  subject: CourseSubject;
+  chapter: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+  imageUrl?: string;
 };
 
 /** SSC subjects for upload */
@@ -98,7 +99,9 @@ export function AdminPracticeManager() {
 
   // Chapter list from static syllabus
   const chapters = getSyllabusChapters(selectedLevel, selectedSubject);
-  const [selectedChapter, setSelectedChapter] = useState("");
+  const [selectedChapter, setSelectedChapter] = useState(
+    () => getSyllabusChapters("ssc", "à¦ªà¦¦à¦¾à¦°à§à¦¥à¦¬à¦¿à¦œà§à¦žà¦¾à¦¨")[0] || ""
+  );
 
   // Content upload states
   const [contentType, setContentType] = useState<"text" | "image">("text");
@@ -130,15 +133,17 @@ export function AdminPracticeManager() {
   // Admin's own uploaded pending MCQs states
   const [filterLevel, setFilterLevel] = useState<SchoolLevel>("ssc");
   const [filterSubject, setFilterSubject] = useState<CourseSubject>("পদার্থবিজ্ঞান");
-  const [filterChapter, setFilterChapter] = useState("");
-  const [uploadedQuestions, setUploadedQuestions] = useState<any[]>([]);
+  const [filterChapter, setFilterChapter] = useState(
+    () => getSyllabusChapters("ssc", "à¦ªà¦¦à¦¾à¦°à§à¦¥à¦¬à¦¿à¦œà§à¦žà¦¾à¦¨")[0] || ""
+  );
+  const [uploadedQuestions, setUploadedQuestions] = useState<UploadedQuestion[]>([]);
   const [loadingUploaded, setLoadingUploaded] = useState(false);
   const [selectedUploadedIds, setSelectedUploadedIds] = useState<string[]>([]);
   const [syncingUploaded, setSyncingUploaded] = useState(false);
   const [deletingUploaded, setDeletingUploaded] = useState(false);
 
   // Edit MCQ modal states
-  const [editingMcq, setEditingMcq] = useState<any | null>(null);
+  const [editingMcq, setEditingMcq] = useState<UploadedQuestion | null>(null);
   const [editForm, setEditForm] = useState({
     question: "",
     options: ["", "", "", ""],
@@ -157,25 +162,6 @@ export function AdminPracticeManager() {
   const filterSubjects = filterLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
   const filterChapters = getSyllabusChapters(filterLevel, filterSubject);
 
-  // Reset selected filter subject when filter level changes
-  useEffect(() => {
-    const subjects = filterLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
-    if (!subjects.includes(filterSubject)) {
-      setFilterSubject(subjects[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterLevel]);
-
-  // Set filter chapter to first chapter of selected subject
-  useEffect(() => {
-    const list = getSyllabusChapters(filterLevel, filterSubject);
-    if (list.length > 0) {
-      setFilterChapter(list[0]);
-    } else {
-      setFilterChapter("");
-    }
-  }, [filterLevel, filterSubject]);
-
   // Fetch admin's own uploaded pending questions
   const fetchUploadedQuestions = useCallback(async (level: SchoolLevel, subject: CourseSubject, chapter: string) => {
     if (!level || !subject || !chapter) return;
@@ -183,7 +169,7 @@ export function AdminPracticeManager() {
       setLoadingUploaded(true);
       setErrorMessage("");
       setSelectedUploadedIds([]);
-      const { ok, payload } = await apiFetch<{ questions: any[] }>(
+      const { ok, payload } = await apiFetch<{ questions: UploadedQuestion[] }>(
         `/api/admin/teacher-mcqs?level=${level}&subject=${subject}&chapter=${chapter}&scope=me`
       );
       if (ok && isApiSuccess(payload)) {
@@ -202,7 +188,10 @@ export function AdminPracticeManager() {
   // Fetch when filters or tab changes
   useEffect(() => {
     if (activeMcqTab === "uploaded" && filterLevel && filterSubject && filterChapter) {
-      fetchUploadedQuestions(filterLevel, filterSubject, filterChapter);
+      const timer = window.setTimeout(() => {
+        void fetchUploadedQuestions(filterLevel, filterSubject, filterChapter);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [activeMcqTab, filterLevel, filterSubject, filterChapter, fetchUploadedQuestions]);
 
@@ -283,7 +272,7 @@ export function AdminPracticeManager() {
   };
 
   // Open edit modal
-  const handleOpenEdit = (q: any) => {
+  const handleOpenEdit = (q: UploadedQuestion) => {
     setEditingMcq(q);
     setEditForm({
       question: q.question,
@@ -350,7 +339,7 @@ export function AdminPracticeManager() {
     setSavingEdit(true);
     setEditError("");
     try {
-      const { ok, payload } = await apiFetch<{ question: any }>(
+      const { ok, payload } = await apiFetch<{ question: UploadedQuestion }>(
         `/api/admin/teacher-mcqs/${editingMcq.id}`,
         {
           method: "PUT",
@@ -387,25 +376,6 @@ export function AdminPracticeManager() {
       setSavingEdit(false);
     }
   };
-
-  // Reset selected chapter when level or subject changes
-  useEffect(() => {
-    const subjects = selectedLevel === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
-    // If the currently selected subject is not valid for this level, reset it
-    if (!subjects.includes(selectedSubject)) {
-      setSelectedSubject(subjects[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLevel]);
-
-  useEffect(() => {
-    const list = getSyllabusChapters(selectedLevel, selectedSubject);
-    if (list.length > 0) {
-      setSelectedChapter(list[0]);
-    } else {
-      setSelectedChapter("");
-    }
-  }, [selectedLevel, selectedSubject]);
 
   // Load test settings on mount
   useEffect(() => {
@@ -699,7 +669,14 @@ export function AdminPracticeManager() {
                 <select
                   id="level-select"
                   value={selectedLevel}
-                  onChange={(e) => setSelectedLevel(e.target.value as SchoolLevel)}
+                  onChange={(e) => {
+                    const level = e.target.value as SchoolLevel;
+                    const subjects = level === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+                    const subject = subjects.includes(selectedSubject) ? selectedSubject : subjects[0];
+                    setSelectedLevel(level);
+                    setSelectedSubject(subject);
+                    setSelectedChapter(getSyllabusChapters(level, subject)[0] || "");
+                  }}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 >
                   <option value="ssc">SSC (Class 9-10)</option>
@@ -712,7 +689,11 @@ export function AdminPracticeManager() {
                 <select
                   id="subject-select"
                   value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value as CourseSubject)}
+                  onChange={(e) => {
+                    const subject = e.target.value as CourseSubject;
+                    setSelectedSubject(subject);
+                    setSelectedChapter(getSyllabusChapters(selectedLevel, subject)[0] || "");
+                  }}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 >
                   {SUBJECTS.map((sub) => (
@@ -973,7 +954,14 @@ export function AdminPracticeManager() {
                 <select
                   id="filter-level"
                   value={filterLevel}
-                  onChange={(e) => setFilterLevel(e.target.value as SchoolLevel)}
+                  onChange={(e) => {
+                    const level = e.target.value as SchoolLevel;
+                    const subjects = level === "hsc" ? HSC_SUBJECTS : SSC_SUBJECTS;
+                    const subject = subjects.includes(filterSubject) ? filterSubject : subjects[0];
+                    setFilterLevel(level);
+                    setFilterSubject(subject);
+                    setFilterChapter(getSyllabusChapters(level, subject)[0] || "");
+                  }}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 >
                   <option value="ssc">SSC (Class 9-10)</option>
@@ -987,7 +975,11 @@ export function AdminPracticeManager() {
                 <select
                   id="filter-subject"
                   value={filterSubject}
-                  onChange={(e) => setFilterSubject(e.target.value as CourseSubject)}
+                  onChange={(e) => {
+                    const subject = e.target.value as CourseSubject;
+                    setFilterSubject(subject);
+                    setFilterChapter(getSyllabusChapters(filterLevel, subject)[0] || "");
+                  }}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
                 >
                   {filterSubjects.map((sub) => (
@@ -1149,10 +1141,12 @@ export function AdminPracticeManager() {
                       <h4 className="text-base font-bold text-foreground">{q.question}</h4>
 
                       {q.imageUrl && (
-                        <img
+                        <Image
                           src={q.imageUrl}
                           alt="MCQ image"
-                          className="max-w-full max-h-48 rounded object-contain border bg-secondary/10"
+                          width={768}
+                          height={512}
+                          className="h-auto max-h-48 max-w-full rounded border bg-secondary/10 object-contain"
                         />
                       )}
 
@@ -1266,12 +1260,12 @@ export function AdminPracticeManager() {
                       </label>
                     </div>
                     {imageError && <p className="text-[10px] text-brand-red font-semibold">{imageError}</p>}
-                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, GIF. Hosted securely on Cloudinary.</p>
+                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, WebP. Hosted securely on Cloudinary.</p>
                   </div>
 
                   {editForm.imageUrl && (
                     <div className="relative size-20 rounded-lg border border-border bg-secondary/10 overflow-hidden shrink-0 group">
-                      <img src={editForm.imageUrl} alt="Preview" className="size-full object-contain" />
+                      <Image src={editForm.imageUrl} alt="Preview" fill sizes="80px" className="object-contain" />
                       <button
                         type="button"
                         onClick={() => setEditForm((prev) => ({ ...prev, imageUrl: "" }))}

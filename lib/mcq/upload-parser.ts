@@ -5,12 +5,12 @@
 
 import { callTextMcqParser } from "@/lib/ai/text-mcq-parser";
 import { callOpenRouterVision } from "@/lib/ai/openrouter";
+import { MAX_IMAGE_SIZE_BYTES, validateImageFile } from "@/lib/image-validation";
+import { parseCorrectIndex } from "@/lib/mcq/correct-index";
 import { MCQ_IMAGE_EXTRACTION_PROMPT } from "@/lib/mcq/extraction-prompt";
 
 export const MAX_IMAGE_UPLOADS = 1;
-export const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
-
-const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+export { MAX_IMAGE_SIZE_BYTES };
 
 export type ParsedMcq = {
   question: string;
@@ -51,30 +51,8 @@ export async function parseMcqsFromImages(files: File[]): Promise<McqParseResult
   }
 
   for (const file of files) {
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      return {
-        ok: false,
-        error: "The image must be 4 MB or smaller.",
-        status: 413,
-      };
-    }
-
-    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-      return {
-        ok: false,
-        error: "Unsupported image type. Please upload a JPEG, PNG, or WebP image.",
-        status: 415,
-      };
-    }
-
-    const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
-    if (!hasValidImageSignature(file.type, header)) {
-      return {
-        ok: false,
-        error: "The uploaded file is not a valid image.",
-        status: 415,
-      };
-    }
+    const validation = await validateImageFile(file);
+    if (!validation.ok) return validation;
   }
 
   const images = await Promise.all(
@@ -172,19 +150,8 @@ function normalizeQuestion(q: unknown): ParsedMcq | null {
 
   if (options.length !== 4) return null;
 
-  let correctIndex: number;
-  if (
-    typeof item.correctIndex === "number" &&
-    Number.isInteger(item.correctIndex) &&
-    item.correctIndex >= 0 &&
-    item.correctIndex <= 3
-  ) {
-    correctIndex = item.correctIndex;
-  } else if (typeof item.correctIndex === "string" && /^[0-3]$/.test(item.correctIndex.trim())) {
-    correctIndex = Number(item.correctIndex.trim());
-  } else {
-    return null;
-  }
+  const correctIndex = parseCorrectIndex(item.correctIndex);
+  if (correctIndex === null) return null;
 
   const explanation = typeof item.explanation === "string" ? item.explanation.trim() : "";
 
@@ -249,25 +216,4 @@ export async function readImageFilesFromFormData(formData: FormData): Promise<Fi
   }
 
   return files;
-}
-
-function hasValidImageSignature(mimeType: string, bytes: Uint8Array): boolean {
-  if (mimeType === "image/jpeg") {
-    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  }
-
-  if (mimeType === "image/png") {
-    const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    return bytes.length >= png.length && png.every((value, index) => bytes[index] === value);
-  }
-
-  if (mimeType === "image/webp") {
-    return (
-      bytes.length >= 12 &&
-      String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
-      String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
-    );
-  }
-
-  return false;
 }

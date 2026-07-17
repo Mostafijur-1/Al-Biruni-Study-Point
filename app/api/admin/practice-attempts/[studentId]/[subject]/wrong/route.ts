@@ -7,7 +7,7 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ studentId: string; subject: string }> }) {
   try {
     await connectDB();
-    const admin = await requireAuth(request, ["admin"]);
+    await requireAuth(request, ["admin"]);
     const { studentId, subject } = await params;
 
     // Find the latest attempt for this student and subject

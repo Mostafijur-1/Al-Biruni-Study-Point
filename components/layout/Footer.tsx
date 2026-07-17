@@ -3,7 +3,6 @@ import { Mail, MapPin, Phone } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
-import { createLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type FooterProps = {
@@ -102,7 +101,7 @@ export function Footer({ brand, footer, navigation, contact }: FooterProps) {
               rel="noopener noreferrer"
               className="font-semibold text-brand-yellow hover:underline"
             >
-              Mostafij CSE'21 IUT
+              Mostafij CSE&apos;21 IUT
             </a>
           </p>
         </div>

@@ -55,7 +55,7 @@ export function BroadcastPanel() {
           text: getApiErrorMessage(payload, "Could not send broadcast notification."),
         });
       }
-    } catch (err) {
+    } catch {
       setStatus({
         type: "error",
         text: "An unexpected error occurred while sending the broadcast.",
@@ -73,7 +73,7 @@ export function BroadcastPanel() {
         </div>
         <div>
           <h2 className="font-display text-lg font-bold text-primary">Push Broadcast Announcements</h2>
-          <p className="text-xs text-muted">Send real-time alerts directly to students' devices via Web Push.</p>
+          <p className="text-xs text-muted">Send real-time alerts directly to students&apos; devices via Web Push.</p>
         </div>
       </div>
 

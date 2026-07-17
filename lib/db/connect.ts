@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getRequiredEnv } from "@/lib/env";
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -21,11 +22,7 @@ export async function connectDB() {
     return globalCache.conn;
   }
 
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    throw new Error("MONGODB_URI is not configured.");
-  }
+  const uri = getRequiredEnv("MONGODB_URI");
 
   if (!globalCache.promise) {
     globalCache.promise = mongoose.connect(uri, {

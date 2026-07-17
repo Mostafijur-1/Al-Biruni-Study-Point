@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Edit, Lock, Save, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,15 @@ import { Label } from "@/components/ui/label";
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import type { MeResponseData } from "@/types/api";
+import type { SessionUser, StudentClass } from "@/types";
+
+type ProfileUpdatePayload = {
+  name: string;
+  email: string;
+  studentClass?: StudentClass;
+  schoolCollege?: string;
+  reference?: string;
+};
 
 const classLabels: Record<string, string> = {
   "class-9": "Class 9",
@@ -65,16 +74,6 @@ export function ProfilePanel() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (user) {
-      setName(user.name || "");
-      setEmail(user.email || "");
-      setStudentClass(user.studentClass || "class-9");
-      setSchoolCollege(user.schoolCollege || "");
-      setReference(user.reference || "");
-    }
-  }, [user]);
-
   if (isLoading) {
     return (
       <section className="animate-pulse rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)] space-y-6">
@@ -118,18 +117,18 @@ export function ProfilePanel() {
     setError("");
 
     try {
-      const payloadBody: any = {
+      const payloadBody: ProfileUpdatePayload = {
         name,
         email: email || "",
       };
 
       if (user.role === "student") {
-        payloadBody.studentClass = studentClass;
+        payloadBody.studentClass = studentClass as StudentClass;
         payloadBody.schoolCollege = schoolCollege || "";
         payloadBody.reference = reference || "";
       }
 
-      const { ok, payload } = await apiFetch<{ user: any }>("/api/auth/me", {
+      const { ok, payload } = await apiFetch<{ user: SessionUser }>("/api/auth/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payloadBody),
@@ -142,7 +141,7 @@ export function ProfilePanel() {
       } else {
         setError(getApiErrorMessage(payload, "Failed to update profile."));
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred while connecting to the server.");
     } finally {
       setUpdating(false);
@@ -238,7 +237,7 @@ export function ProfilePanel() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-reference">Reference (Teacher's name)</Label>
+                <Label htmlFor="edit-reference">Reference (Teacher&apos;s name)</Label>
                 <Input
                   id="edit-reference"
                   value={reference}
@@ -292,6 +291,11 @@ export function ProfilePanel() {
             size="sm"
             onClick={() => {
               setError("");
+              setName(user.name || "");
+              setEmail(user.email || "");
+              setStudentClass(user.studentClass || "class-9");
+              setSchoolCollege(user.schoolCollege || "");
+              setReference(user.reference || "");
               setIsEditing(true);
             }}
             className="flex items-center gap-1.5"

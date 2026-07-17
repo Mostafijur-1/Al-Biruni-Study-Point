@@ -2,7 +2,6 @@
 
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 import { formatClassList } from "@/lib/content/classes";
-import type { Locale } from "@/lib/i18n";
 import type { StudentClass } from "@/types";
 
 type AssignmentRow = {

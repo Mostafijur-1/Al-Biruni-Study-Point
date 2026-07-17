@@ -23,13 +23,13 @@ export function handleApiError(error: unknown) {
     return fail("Validation failed.", 400, error.flatten());
   }
 
+  console.error("Unhandled API error", error);
+
   if (error instanceof Error) {
     if (error.message.includes("MONGODB_URI")) {
       return fail("Database is not configured.", 500);
     }
-
-    return fail(error.message || "Something went wrong.", 500);
   }
 
-  return fail("Something went wrong.", 500);
+  return fail("Internal server error.", 500);
 }

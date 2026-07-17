@@ -25,12 +25,12 @@ export function Navbar({ navigation, auth }: NavbarProps) {
       <div className="mx-auto flex h-[var(--header-height)] max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 lg:h-[4.75rem] lg:px-8 lg:py-2 xl:px-10">
         <Logo size="md" className="min-w-0 flex-1 sm:flex-none" />
 
-        <nav className="hidden items-center gap-0.5 lg:flex">
+        <nav aria-label="Primary navigation" className="hidden items-center gap-0.5 lg:flex">
           {publicNavPaths.map(({ key, path }) => (
             <Link
               key={path}
               href={getLocalizedPath(path)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
             >
               {navigation[key]}
             </Link>

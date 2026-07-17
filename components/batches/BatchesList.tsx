@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Calendar, Users, Video, MapPin, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { createLocalizedPath } from "@/lib/i18n";
 
 type Batch = {
   name: string;

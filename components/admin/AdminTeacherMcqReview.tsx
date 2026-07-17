@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { AlertCircle, Check, Loader2, Trash2, User, Edit, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -37,16 +38,6 @@ export function AdminTeacherMcqReview() {
   const [filterSubject, setFilterSubject] = useState<string>("all");
   const [filterChapter, setFilterChapter] = useState<string>("all");
   const [filterTeacherId, setFilterTeacherId] = useState<string>("all");
-
-  // Reset selected ids when filter changes
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [filterLevel, filterSubject, filterChapter, filterTeacherId]);
-
-  // Reset chapter filter when subject filter changes
-  useEffect(() => {
-    setFilterChapter("all");
-  }, [filterSubject]);
 
   // Bulk Actions State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -88,7 +79,8 @@ export function AdminTeacherMcqReview() {
   }
 
   useEffect(() => {
-    fetchPendingQuestions();
+    const timer = window.setTimeout(() => void fetchPendingQuestions(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Extract unique filter options from pending questions list
@@ -327,7 +319,7 @@ export function AdminTeacherMcqReview() {
     setSavingEdit(true);
     setEditError("");
     try {
-      const { ok, payload } = await apiFetch<{ question: any }>(
+      const { ok, payload } = await apiFetch<{ question: PendingMCQ }>(
         `/api/admin/teacher-mcqs/${editingMcq.id}`,
         {
           method: "PUT",
@@ -424,7 +416,10 @@ export function AdminTeacherMcqReview() {
               <select
                 id="filter-review-level"
                 value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value)}
+                onChange={(e) => {
+                  setFilterLevel(e.target.value);
+                  setSelectedIds([]);
+                }}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
                 <option value="all">{"সকল স্তর"}</option>
@@ -441,7 +436,11 @@ export function AdminTeacherMcqReview() {
               <select
                 id="filter-review-subject"
                 value={filterSubject}
-                onChange={(e) => setFilterSubject(e.target.value)}
+                onChange={(e) => {
+                  setFilterSubject(e.target.value);
+                  setFilterChapter("all");
+                  setSelectedIds([]);
+                }}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
                 <option value="all">{"সকল বিষয়"}</option>
@@ -459,7 +458,10 @@ export function AdminTeacherMcqReview() {
               <select
                 id="filter-review-chapter"
                 value={filterChapter}
-                onChange={(e) => setFilterChapter(e.target.value)}
+                onChange={(e) => {
+                  setFilterChapter(e.target.value);
+                  setSelectedIds([]);
+                }}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
                 <option value="all">{"সকল অধ্যায়"}</option>
@@ -479,7 +481,10 @@ export function AdminTeacherMcqReview() {
               <select
                 id="filter-review-teacher"
                 value={filterTeacherId}
-                onChange={(e) => setFilterTeacherId(e.target.value)}
+                onChange={(e) => {
+                  setFilterTeacherId(e.target.value);
+                  setSelectedIds([]);
+                }}
                 className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary outline-none focus:border-primary"
               >
                 <option value="all">{"সকল শিক্ষক"}</option>
@@ -578,10 +583,12 @@ export function AdminTeacherMcqReview() {
 
                 {/* Question Image */}
                 {q.imageUrl && (
-                  <img
+                  <Image
                     src={q.imageUrl}
                     alt="Illustration"
-                    className="max-w-full max-h-48 rounded object-contain border border-border/60 bg-muted/20"
+                    width={768}
+                    height={512}
+                    className="h-auto max-h-48 max-w-full rounded border border-border/60 bg-muted/20 object-contain"
                   />
                 )}
 
@@ -770,7 +777,7 @@ export function AdminTeacherMcqReview() {
 
                   {editForm.imageUrl && (
                     <div className="relative size-20 rounded-lg border border-border bg-secondary/10 overflow-hidden shrink-0 group">
-                      <img src={editForm.imageUrl} alt="Preview" className="size-full object-contain" />
+                      <Image src={editForm.imageUrl} alt="Preview" fill sizes="80px" className="object-contain" />
                       <button
                         type="button"
                         onClick={() => setEditForm((prev) => ({ ...prev, imageUrl: "" }))}

@@ -89,7 +89,7 @@ self.addEventListener("push", (event) => {
   if (event.data) {
     try {
       data = event.data.json();
-    } catch (e) {
+    } catch {
       data = { title: "ABSP - Al-Biruni Study Point", body: event.data.text() };
     }
   }

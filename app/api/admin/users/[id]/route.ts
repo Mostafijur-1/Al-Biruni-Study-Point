@@ -72,16 +72,10 @@ export async function PATCH(request: NextRequest, context: AdminUserRouteContext
       user.teacherDomain = {
         isAll: parsed.teacherDomain.isAll,
         classes: parsed.teacherDomain.classes as StudentClass[],
-        subjects: parsed.teacherDomain.subjects.map((s: any) =>
-          Array.isArray(s) ? String(s[0]) : String(s)
+        subjects: parsed.teacherDomain.subjects.map(String),
+        students: (parsed.teacherDomain.students || []).map(
+          (studentId) => new mongoose.Types.ObjectId(studentId)
         ),
-        students: (parsed.teacherDomain.students || []).map((stId: string) => {
-          try {
-            return new mongoose.Types.ObjectId(stId);
-          } catch (e) {
-            return stId as any;
-          }
-        }),
       };
     }
 

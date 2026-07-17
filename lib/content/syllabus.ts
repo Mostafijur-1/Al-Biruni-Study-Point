@@ -374,6 +374,7 @@ export const CHAPTER_TRANSLATIONS: Record<string, string> = {
 };
 
 export function getTranslatedChapter(chapter: string, locale?: string): string {
+  void locale;
   return CHAPTER_TRANSLATIONS[chapter] ?? chapter;
 }
 

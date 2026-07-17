@@ -9,7 +9,6 @@ import {
   EyeOff,
   FileQuestion,
   Plus,
-  RefreshCw,
   Trash2,
   Users,
 } from "lucide-react";
@@ -34,9 +33,6 @@ type ExamInfo = {
   questionCount: number;
   createdAt: string;
 };
-
-type TeacherExamsPanelProps = {
-  };
 
 export function TeacherExamsPanel() {
     
@@ -75,8 +71,6 @@ export function TeacherExamsPanel() {
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchExams();
-
     async function loadAllowedSubjects() {
       try {
         const { ok, payload } = await apiFetch<{ subjects: { subject: string }[] }>("/api/teacher/subjects");
@@ -88,7 +82,11 @@ export function TeacherExamsPanel() {
         console.error("Failed to load allowed subjects:", err);
       }
     }
-    loadAllowedSubjects();
+    const timer = window.setTimeout(() => {
+      void fetchExams();
+      void loadAllowedSubjects();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleTogglePublish = async (id: string, type: "exam" | "results", currentValue: boolean) => {

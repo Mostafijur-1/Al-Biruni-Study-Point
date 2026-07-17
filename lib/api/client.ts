@@ -13,14 +13,15 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<Fetc
     const response = await fetch(url, { ...defaultInit, ...init });
     const payload = (await response.json()) as ApiEnvelope<T>;
     return { ok: response.ok, status: response.status, payload };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Log the actual network / parse failure details to console
     console.error("[API Network/Fetch Failure Technical Details]:", error);
 
+    const message = error instanceof Error ? error.message : "Failed to fetch resource";
     const failedPayload: ApiEnvelope<T> = {
       success: false,
       error: {
-        message: error?.message || "Failed to fetch resource",
+        message,
         code: "NETWORK_ERROR",
       },
     };

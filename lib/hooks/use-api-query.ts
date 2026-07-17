@@ -12,8 +12,10 @@ type UseApiQueryOptions = {
 
 export function useApiQuery<T>(url: string, options?: UseApiQueryOptions) {
   const enabled = options?.enabled ?? true;
+  const loadingMessage = options?.loadingMessage;
+  const errorMessage = options?.errorMessage;
   const [data, setData] = useState<T | null>(null);
-  const [message, setMessage] = useState(options?.loadingMessage ?? "Loading...");
+  const [message, setMessage] = useState(loadingMessage ?? "Loading...");
   const [isLoading, setIsLoading] = useState(enabled);
 
   useEffect(() => {
@@ -25,8 +27,8 @@ export function useApiQuery<T>(url: string, options?: UseApiQueryOptions) {
 
     async function load() {
       setIsLoading(true);
-      if (options?.loadingMessage) {
-        setMessage(options.loadingMessage);
+      if (loadingMessage) {
+        setMessage(loadingMessage);
       }
 
       try {
@@ -38,7 +40,7 @@ export function useApiQuery<T>(url: string, options?: UseApiQueryOptions) {
 
         if (!ok || !isApiSuccess(payload)) {
           setData(null);
-          setMessage(getApiErrorMessage(payload, options?.errorMessage ?? "Request failed."));
+          setMessage(getApiErrorMessage(payload, errorMessage ?? "Request failed."));
           return;
         }
 
@@ -47,7 +49,7 @@ export function useApiQuery<T>(url: string, options?: UseApiQueryOptions) {
       } catch {
         if (active) {
           setData(null);
-          setMessage(options?.errorMessage ?? "Request failed.");
+          setMessage(errorMessage ?? "Request failed.");
         }
       } finally {
         if (active) {
@@ -61,7 +63,7 @@ export function useApiQuery<T>(url: string, options?: UseApiQueryOptions) {
     return () => {
       active = false;
     };
-  }, [url, enabled]);
+  }, [url, enabled, loadingMessage, errorMessage]);
 
   return { data, message, isLoading, setData, setMessage };
 }

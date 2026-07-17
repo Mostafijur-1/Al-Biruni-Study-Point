@@ -6,10 +6,17 @@ import { serializeUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { normalizePhone, teacherRegisterSchema } from "@/lib/validations/auth.schema";
+import { consumeRateLimit, getClientIdentifier, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
+
+    const rateLimit = await consumeRateLimit("auth:register-teacher", getClientIdentifier(request), {
+      limit: 3,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
     const parsed = teacherRegisterSchema.parse(await request.json());
     const phone = normalizePhone(parsed.phone);
