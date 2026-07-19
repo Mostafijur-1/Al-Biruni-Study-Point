@@ -22,7 +22,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AdminTeacherMcqReview } from "./AdminTeacherMcqReview";
-import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import {
+  apiFetch,
+  authenticatedFetch,
+  getApiErrorMessage,
+  isApiSuccess,
+} from "@/lib/api/client";
 import { getSyllabusChapters, type SchoolLevel } from "@/lib/content/syllabus";
 import { cn } from "@/lib/utils";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
@@ -299,7 +304,7 @@ export function AdminPracticeManager() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload", {
+      const response = await authenticatedFetch("/api/upload", {
         method: "POST",
         body: formData,
       });
@@ -461,7 +466,7 @@ export function AdminPracticeManager() {
         formData.append("files", selectedFile);
       }
 
-      const response = await fetch("/api/admin/practice-mcqs/upload", {
+      const response = await authenticatedFetch("/api/admin/practice-mcqs/upload", {
         method: "POST",
         body: formData,
       });

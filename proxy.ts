@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { ACCESS_COOKIE, ROLE_COOKIE } from "@/lib/auth/cookies";
+import { ACCESS_COOKIE, REFRESH_COOKIE, ROLE_COOKIE } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
 import type { UserRole } from "@/types";
 
@@ -35,6 +35,7 @@ export function proxy(request: NextRequest) {
 
   // 3. Authenticate and authorize protected paths
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
   const role = request.cookies.get(ROLE_COOKIE)?.value as UserRole | undefined;
 
   const redirectToLogin = () => {
@@ -43,6 +44,12 @@ export function proxy(request: NextRequest) {
     loginUrl.searchParams.set("next", returnPath);
     loginUrl.searchParams.set("reason", "access");
     return NextResponse.redirect(loginUrl);
+  };
+
+  const refreshAndReturn = () => {
+    const refreshUrl = new URL("/api/auth/refresh", request.url);
+    refreshUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(refreshUrl);
   };
 
   // Student guest access allowance logic
@@ -57,8 +64,12 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if (!accessToken || role !== matchedRole) {
+  if (role !== matchedRole) {
     return redirectToLogin();
+  }
+
+  if (!accessToken) {
+    return refreshToken ? refreshAndReturn() : redirectToLogin();
   }
 
   try {
@@ -68,7 +79,7 @@ export function proxy(request: NextRequest) {
       return redirectToLogin();
     }
   } catch {
-    return redirectToLogin();
+    return refreshToken ? refreshAndReturn() : redirectToLogin();
   }
 
   return NextResponse.next();

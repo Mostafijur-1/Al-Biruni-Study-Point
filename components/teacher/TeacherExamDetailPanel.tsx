@@ -18,7 +18,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import {
+  apiFetch,
+  authenticatedFetch,
+  getApiErrorMessage,
+  isApiSuccess,
+} from "@/lib/api/client";
 import { TeacherMcqResults } from "@/components/exam/TeacherMcqResults";
 import { cn } from "@/lib/utils";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
@@ -316,7 +321,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         formData.append("files", selectedFile);
       }
 
-      const response = await fetch(`/api/teacher/exams/${examId}/questions`, {
+      const response = await authenticatedFetch(`/api/teacher/exams/${examId}/questions`, {
         method: "POST",
         body: formData,
       });

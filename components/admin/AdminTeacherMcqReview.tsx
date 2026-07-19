@@ -5,7 +5,12 @@ import Image from "next/image";
 import { AlertCircle, Check, Loader2, Trash2, User, Edit, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import {
+  apiFetch,
+  authenticatedFetch,
+  getApiErrorMessage,
+  isApiSuccess,
+} from "@/lib/api/client";
 import { getTranslatedChapter } from "@/lib/content/syllabus";
 import { cn } from "@/lib/utils";
 
@@ -279,7 +284,7 @@ export function AdminTeacherMcqReview() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload", {
+      const response = await authenticatedFetch("/api/upload", {
         method: "POST",
         body: formData,
       });

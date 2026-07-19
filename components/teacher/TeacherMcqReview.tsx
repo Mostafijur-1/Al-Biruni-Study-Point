@@ -18,7 +18,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { UploadingIndicator } from "@/components/shared/UploadingIndicator";
-import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import {
+  apiFetch,
+  authenticatedFetch,
+  getApiErrorMessage,
+  isApiSuccess,
+} from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { getTranslatedChapter } from "@/lib/content/syllabus";
 
@@ -165,7 +170,7 @@ export function TeacherMcqReview() {
         formData.append("files", uploadFile);
       }
 
-      const response = await fetch("/api/teacher/mcqs/upload", {
+      const response = await authenticatedFetch("/api/teacher/mcqs/upload", {
         method: "POST",
         body: formData,
       });
@@ -337,7 +342,7 @@ export function TeacherMcqReview() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload", {
+      const response = await authenticatedFetch("/api/upload", {
         method: "POST",
         body: formData,
       });

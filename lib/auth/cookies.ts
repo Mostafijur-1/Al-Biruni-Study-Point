@@ -7,12 +7,33 @@ export const ROLE_COOKIE = "absp_role";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+function durationInSeconds(value: string | undefined, fallback: number) {
+  if (!value) return fallback;
+
+  const match = /^(\d+)(s|m|h|d|y)$/i.exec(value.trim());
+  if (!match) return fallback;
+
+  const amount = Number(match[1]);
+  const unitSeconds = {
+    s: 1,
+    m: 60,
+    h: 60 * 60,
+    d: 60 * 60 * 24,
+    y: 60 * 60 * 24 * 365,
+  } as const;
+
+  return amount * unitSeconds[match[2].toLowerCase() as keyof typeof unitSeconds];
+}
+
+const accessMaxAge = durationInSeconds(process.env.JWT_ACCESS_EXPIRES, 60 * 15);
+const refreshMaxAge = durationInSeconds(process.env.JWT_REFRESH_EXPIRES, 60 * 60 * 24 * 30);
+
 export const accessCookieOptions: Partial<ResponseCookie> = {
   httpOnly: true,
   sameSite: "lax",
   secure: isProduction,
   path: "/",
-  maxAge: 60 * 15,
+  maxAge: accessMaxAge,
 };
 
 export const refreshCookieOptions: Partial<ResponseCookie> = {
@@ -20,7 +41,7 @@ export const refreshCookieOptions: Partial<ResponseCookie> = {
   sameSite: "lax",
   secure: isProduction,
   path: "/",
-  maxAge: 60 * 60 * 24 * 30,
+  maxAge: refreshMaxAge,
 };
 
 export const roleCookieOptions: Partial<ResponseCookie> = {
@@ -28,7 +49,7 @@ export const roleCookieOptions: Partial<ResponseCookie> = {
   sameSite: "lax",
   secure: isProduction,
   path: "/",
-  maxAge: 60 * 60 * 24 * 30,
+  maxAge: refreshMaxAge,
 };
 
 export function clearAuthCookies(response: NextResponse) {

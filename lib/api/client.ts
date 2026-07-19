@@ -7,12 +7,54 @@ type FetchResult<T> = {
 };
 
 const defaultInit: RequestInit = { cache: "no-store" };
+let refreshPromise: Promise<boolean> | null = null;
+
+function canRefresh(url: string) {
+  return ![
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/logout",
+    "/api/auth/refresh",
+  ].some((authUrl) => url === authUrl || url.startsWith(`${authUrl}?`));
+}
+
+async function refreshSession() {
+  if (!refreshPromise) {
+    refreshPromise = fetch("/api/auth/refresh", {
+      method: "POST",
+      cache: "no-store",
+    })
+      .then((response) => response.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
+export async function authenticatedFetch(url: string, init?: RequestInit) {
+  const response = await fetch(url, { ...defaultInit, ...init });
+
+  if (response.status === 401 && canRefresh(url) && (await refreshSession())) {
+    return fetch(url, { ...defaultInit, ...init });
+  }
+
+  return response;
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<FetchResult<T>> {
+  const response = await authenticatedFetch(url, init);
+  const payload = (await response.json()) as ApiEnvelope<T>;
+  return { ok: response.ok, status: response.status, payload };
+}
 
 export async function apiFetch<T>(url: string, init?: RequestInit): Promise<FetchResult<T>> {
   try {
-    const response = await fetch(url, { ...defaultInit, ...init });
-    const payload = (await response.json()) as ApiEnvelope<T>;
-    return { ok: response.ok, status: response.status, payload };
+    const result = await fetchJson<T>(url, init);
+
+    return result;
   } catch (error: unknown) {
     // Log the actual network / parse failure details to console
     console.error("[API Network/Fetch Failure Technical Details]:", error);
