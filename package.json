@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --no-warnings --experimental-strip-types --test scripts/*.test.ts",
-    "typecheck": "tsc --noEmit --pretty false"
+    "typecheck": "tsc --noEmit --pretty false",
+    "load:seed": "node --env-file=.env.local scripts/load/seed-exam.mjs",
+    "load:exam": "node scripts/load/exam-load.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
