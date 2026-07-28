@@ -163,6 +163,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   const [phase, setPhase] = useState<"instructions" | "loading" | "running" | "submitting" | "completed">("loading");
   const [exam, setExam] = useState<ExamData | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
+  const [attemptSessionId, setAttemptSessionId] = useState<string | null>(null);
+  const [examTimerSeconds, setExamTimerSeconds] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [startTime, setStartTime] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -185,6 +187,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   // New UI/UX modal states
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
 
   // Refs for event listeners to avoid dependency array recreation overhead
   const answersRef = useRef(answers);
@@ -252,12 +255,22 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   useEffect(() => {
     const loadExam = async () => {
       try {
-        const { ok, payload } = await apiFetch<{ exam: ExamData; questions: ExamQuestion[] }>(
+        const { ok, payload } = await apiFetch<{
+          exam: ExamData;
+          questions: ExamQuestion[];
+          attemptSession: {
+            id: string;
+            status: "ready" | "started";
+            remainingSeconds: number;
+            startedAt?: string;
+          };
+        }>(
           `/api/mcq/exams/${examId}/start`
         );
         if (ok && isApiSuccess(payload)) {
           setExam(payload.data.exam);
           setQuestions(payload.data.questions);
+          setAttemptSessionId(payload.data.attemptSession.id);
 
           // Restore saved progress from localStorage if exists
           const loadedAnswers: Record<string, number> = {};
@@ -277,7 +290,16 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             console.error("Failed to restore exam progress:", e);
           }
           setAnswers(loadedAnswers);
-          setLoadingDone(true);
+          if (payload.data.attemptSession.status === "started") {
+            const remainingSeconds = payload.data.attemptSession.remainingSeconds;
+            setExamTimerSeconds(remainingSeconds);
+            setStartTime(
+              Date.now() - (payload.data.exam.duration * 60 - remainingSeconds) * 1000,
+            );
+            setPhase("running");
+          } else {
+            setLoadingDone(true);
+          }
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Failed to initialize exam."));
         }
@@ -307,9 +329,37 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     }));
   }, []);
 
+  const beginExam = useCallback(async () => {
+    if (!attemptSessionId || isStarting) return;
+    setIsStarting(true);
+    setSubmitError(null);
+    const { ok, payload } = await apiFetch<{
+      remainingSeconds: number;
+      startedAt: string;
+    }>(`/api/mcq/exams/${examId}/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ attemptSessionId }),
+    });
+    setIsStarting(false);
+
+    if (!ok || !isApiSuccess(payload)) {
+      setErrorMessage(getApiErrorMessage(payload, "Could not begin exam."));
+      return;
+    }
+
+    setExamTimerSeconds(payload.data.remainingSeconds);
+    setStartTime(Date.now());
+    setPhase("running");
+  }, [attemptSessionId, examId, isStarting]);
+
   // Submit Exam API call
   const submitExam = useCallback(async (timeTakenSec: number, currentAnswers: Record<string, number>, isCancelled = false) => {
-    if (phaseRef.current === "submitting" || phaseRef.current === "completed") return;
+    if (
+      phaseRef.current === "submitting" ||
+      phaseRef.current === "completed" ||
+      !attemptSessionId
+    ) return;
     setPhase("submitting");
 
     try {
@@ -322,6 +372,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          attemptSessionId,
           answers: formattedAnswers,
           timeTaken: timeTakenSec,
           isCancelled,
@@ -344,7 +395,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
       setSubmitError("Network error submitting exam. Please check your connection.");
       setPhase("running");
     }
-  }, [examId, questions]);
+  }, [attemptSessionId, examId, questions]);
 
   // Handle manual submit click
   const handleSubmitClick = () => {
@@ -587,10 +638,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             {"বাতিল"}
           </Button>
           <Button
-            onClick={() => {
-              setStartTime(Date.now());
-              setPhase("running");
-            }}
+            onClick={() => void beginExam()}
+            loading={isStarting}
             className="rounded-xl font-bold flex items-center gap-1.5 px-6"
           >
             <Play className="size-3.5 fill-current" />
@@ -653,7 +702,10 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 {answeredCount}/{questions.length} answered · total marks {exam.totalMarks} · pass mark {exam.passMark}
               </p>
             </div>
-            <ExamTimer durationSeconds={exam.duration * 60} onTimeUp={handleTimeUp} />
+            <ExamTimer
+              durationSeconds={examTimerSeconds ?? exam.duration * 60}
+              onTimeUp={handleTimeUp}
+            />
           </div>
 
           <div className="mt-4">

@@ -3,7 +3,17 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AlertTriangle, ArrowLeft, BookOpen, Brain, CheckCircle2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  BookOpen,
+  Brain,
+  CheckCircle2,
+  Flame,
+  Sparkles,
+  Star,
+  Trophy,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { guestLevelQuery, useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
@@ -51,6 +61,27 @@ type PracticeSubmitResult = {
     correctIndex: number;
     explanation?: string;
   }[];
+  gamification?: {
+    xpEarned: number;
+    xpBreakdown: {
+      correctAnswers: number;
+      completion: number;
+      accuracy: number;
+    };
+    profile: {
+      totalXp: number;
+      level: number;
+      currentStreak: number;
+      longestStreak: number;
+      dailyProgress: number;
+      dailyGoalTarget: number;
+    };
+    newAchievements: Array<{
+      code: string;
+      title: string;
+      description: string;
+    }>;
+  };
 };
 
 type McqPracticeRunnerProps = {
@@ -311,6 +342,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   }, [phase]);
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
+  const [attemptSessionId, setAttemptSessionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [startTime, setStartTime] = useState<number | null>(null);
   const [totalDurationSeconds, setTotalDurationSeconds] = useState<number>(0);
@@ -487,10 +519,26 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   useEffect(() => {
     if (phase !== "loading") return;
     if (countdownSeconds <= 0) {
-      if (loadingDone) {
+      if (loadingDone && attemptSessionId) {
         const timer = window.setTimeout(() => {
-          setStartTime(Date.now());
-          setPhase("running");
+          void (async () => {
+            const { ok, payload } = await apiFetch<{
+              remainingSeconds: number;
+              startedAt: string;
+            }>("/api/mcq/practice/start", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ attemptSessionId }),
+            });
+            if (!ok || !isApiSuccess(payload)) {
+              setErrorMessage(getApiErrorMessage(payload, "Could not begin practice test."));
+              setPhase("configuring");
+              return;
+            }
+            setTotalDurationSeconds(payload.data.remainingSeconds);
+            setStartTime(Date.now());
+            setPhase("running");
+          })();
         }, 0);
         return () => window.clearTimeout(timer);
       }
@@ -500,7 +548,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
       setCountdownSeconds((s) => s - 1);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [phase, countdownSeconds, loadingDone]);
+  }, [phase, countdownSeconds, loadingDone, attemptSessionId]);
 
   // Start practice session
   const startPractice = useCallback(async () => {
@@ -529,6 +577,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
         totalQuestions: number;
         secondsPerQuestion: number;
         passMarkPercent: number;
+        attemptSessionId: string;
       }>(`/api/mcq/practice/start?subject=${encodeURIComponent(subject)}&chapters=${chaptersQuery}&limit=${selectedQuestionCount}&mode=${mode}`);
 
       if (!ok || !isApiSuccess(payload)) {
@@ -539,6 +588,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
 
       const data = payload.data;
       setQuestions(data.questions);
+      setAttemptSessionId(data.attemptSessionId);
       setTotalDurationSeconds(data.durationSeconds);
       setSecondsPerQuestion(data.secondsPerQuestion);
       setPassMarkPercent(data.passMarkPercent);
@@ -587,7 +637,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
 
   // Submit practice attempt
   const submitPractice = useCallback(async (isCancelled = false) => {
-    if (isSubmitting || questions.length === 0) return;
+    if (isSubmitting || questions.length === 0 || !attemptSessionId) return;
 
     setIsSubmitting(true);
     setErrorMessage("");
@@ -604,6 +654,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            attemptSessionId,
             subject,
             timeTaken: elapsedSeconds,
             answers: buildSubmitAnswers(),
@@ -640,7 +691,7 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
     } finally {
       setIsSubmitting(false);
     }
-  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, subject, user, locale, mode]);
+  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, attemptSessionId, subject, user, locale, mode]);
 
   const handleTimeUp = useCallback(() => {
     setIsTimeUp(true);
@@ -1432,6 +1483,63 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
             </Link>
           </div>
         </div>
+
+        {result.gamification && !result.result.isCancelled && (
+          <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-amber-50 p-5 shadow-[var(--shadow-sm)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-700">
+                  <Sparkles className="size-4" />
+                  Practice reward
+                </div>
+                <p className="mt-2 text-3xl font-black text-primary">
+                  +{result.gamification.xpEarned} XP
+                </p>
+                <p className="mt-1 text-xs font-semibold text-muted">
+                  Correct answers {result.gamification.xpBreakdown.correctAnswers} ·
+                  Completion {result.gamification.xpBreakdown.completion} ·
+                  Accuracy {result.gamification.xpBreakdown.accuracy}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-violet-100 bg-white/80 px-4 py-3 text-center">
+                  <Trophy className="mx-auto size-5 text-amber-500" />
+                  <p className="mt-1 text-lg font-black text-primary">
+                    {result.gamification.profile.level}
+                  </p>
+                  <p className="text-2xs font-bold text-muted">Level</p>
+                </div>
+                <div className="rounded-xl border border-orange-100 bg-white/80 px-4 py-3 text-center">
+                  <Flame className="mx-auto size-5 text-orange-500" />
+                  <p className="mt-1 text-lg font-black text-primary">
+                    {result.gamification.profile.currentStreak}
+                  </p>
+                  <p className="text-2xs font-bold text-muted">Day streak</p>
+                </div>
+              </div>
+            </div>
+
+            {result.gamification.newAchievements.length > 0 && (
+              <div className="mt-4 border-t border-violet-100 pt-4">
+                <p className="text-xs font-black uppercase tracking-wider text-muted">
+                  New achievement
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {result.gamification.newAchievements.map((achievement) => (
+                    <span
+                      key={achievement.code}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800"
+                      title={achievement.description}
+                    >
+                      <Star className="size-4 fill-amber-400 text-amber-500" />
+                      {achievement.title}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-4">
           {questions.map((question, index) => {

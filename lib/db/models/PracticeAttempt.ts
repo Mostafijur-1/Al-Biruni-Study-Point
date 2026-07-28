@@ -11,6 +11,7 @@ export interface IPracticeAnswer {
 }
 
 export interface IPracticeAttempt extends Document {
+  attemptSession?: Types.ObjectId;
   student: Types.ObjectId;
   subject: string;
   answers: IPracticeAnswer[];
@@ -25,12 +26,14 @@ export interface IPracticeAttempt extends Document {
   isTeacherSet?: boolean;
   teacherId?: Types.ObjectId;
   isCancelled?: boolean;
+  passMarkPercent?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
   {
+    attemptSession: { type: Schema.Types.ObjectId, ref: "AttemptSession" },
     student: { type: Schema.Types.ObjectId, ref: "User", required: true },
     subject: { type: String, required: true },
     answers: { type: [Object], default: [] },
@@ -45,11 +48,13 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
     isTeacherSet: { type: Boolean, default: false },
     teacherId: { type: Schema.Types.ObjectId, ref: "User" },
     isCancelled: { type: Boolean, default: false },
+    passMarkPercent: { type: Number, min: 1, max: 100 },
   },
   { timestamps: true }
 );
 
 PracticeAttemptSchema.index({ student: 1, subject: 1, createdAt: -1 });
+PracticeAttemptSchema.index({ attemptSession: 1 }, { unique: true, sparse: true });
 
 if (process.env.NODE_ENV !== "production" && mongoose.models.PracticeAttempt) {
   mongoose.deleteModel("PracticeAttempt");

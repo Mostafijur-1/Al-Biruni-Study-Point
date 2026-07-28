@@ -81,7 +81,9 @@ export async function GET(request: NextRequest) {
           _id: `practice-${pr.subject}`,
           title: `${pr.subject} MCQ Test`,
           totalMarks: pr.totalQuestions,
-          passMark: Math.ceil(pr.totalQuestions * 0.5),
+          passMark: Math.ceil(
+            pr.totalQuestions * ((pr.passMarkPercent ?? 60) / 100),
+          ),
           duration: pr.totalQuestions,
         },
       }));

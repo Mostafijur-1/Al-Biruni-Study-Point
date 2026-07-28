@@ -102,8 +102,13 @@ export async function GET(request: NextRequest) {
       resultsQuery.isTeacherSet = { $ne: true };
     }
 
-    const results = userId ? await PracticeResult.find(resultsQuery).lean() : [];
-    const resultsMap = new Map(results.map((r) => [r.subject, r]));
+    const results = userId
+      ? await PracticeResult.find(resultsQuery).sort({ submittedAt: -1 }).lean()
+      : [];
+    const resultsMap = new Map<string, (typeof results)[number]>();
+    for (const result of results) {
+      if (!resultsMap.has(result.subject)) resultsMap.set(result.subject, result);
+    }
 
     // Expand targetSubjects to include their English equivalents so they match old database questions
     const querySubjects: string[] = [...targetSubjects];

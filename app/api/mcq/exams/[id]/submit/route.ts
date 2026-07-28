@@ -9,15 +9,20 @@ import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { scoreSubmittedAnswers } from "@/lib/mcq/answer-scoring";
+import {
+  loadSubmissionSession,
+  markAttemptSessionSubmitted,
+} from "@/lib/mcq/attempt-session";
 
 const submitExamSchema = z.object({
+  attemptSessionId: z.string().min(1),
   answers: z.array(
     z.object({
       questionId: z.string(),
       selectedIndex: z.number().int().min(0).max(3).nullable(),
     })
   ),
-  timeTaken: z.number().min(0), // in seconds
+  timeTaken: z.number().min(0).optional(),
   isCancelled: z.boolean().optional(),
 });
 
@@ -57,6 +62,19 @@ export async function POST(request: NextRequest, context: Context) {
     }
 
     const parsed = submitExamSchema.parse(await request.json());
+    const submissionSession = await loadSubmissionSession({
+      sessionId: parsed.attemptSessionId,
+      studentId: user.id,
+      kind: "exam",
+      examId: id,
+      submittedQuestionIds: parsed.answers.map((answer) => answer.questionId),
+    });
+    if (!submissionSession.ok) {
+      const message = submissionSession.reason === "expired"
+        ? "The exam submission window has expired."
+        : "Exam attempt session validation failed.";
+      return fail(message, 400);
+    }
 
     // Fetch all questions for this exam to grade
     const dbQuestions = await McqQuestion.find({ exam: id }).lean();
@@ -85,17 +103,22 @@ export async function POST(request: NextRequest, context: Context) {
     const isPassed = score >= exam.passMark;
 
     await McqExamAttempt.create({
+      attemptSession: submissionSession.session._id,
       student: user.id,
       exam: id,
       answers: answersDoc,
       score,
       percentage,
       isPassed,
-      timeTaken: parsed.timeTaken,
+      timeTaken: submissionSession.timeTaken,
       attemptNo: 1,
       isCancelled: parsed.isCancelled || false,
-      submittedAt: new Date(),
+      submittedAt: submissionSession.submittedAt,
     });
+    await markAttemptSessionSubmitted(
+      submissionSession.session._id.toString(),
+      submissionSession.submittedAt,
+    );
 
     // Do NOT return solutions or correct index to the student immediately!
     return success({
