@@ -101,6 +101,16 @@ export const ACHIEVEMENTS = {
     title: "ফোকাস সেঞ্চুরি",
     description: "এক সপ্তাহে ১০০ মিনিট মনোযোগ দিয়ে পড়ুন।",
   },
+  GOAL_GETTER: {
+    code: "GOAL_GETTER",
+    title: "লক্ষ্যজয়ী",
+    description: "নিজের প্রথম সাপ্তাহিক লক্ষ্য সম্পন্ন করুন।",
+  },
+  GOAL_CHAMPION: {
+    code: "GOAL_CHAMPION",
+    title: "লক্ষ্য চ্যাম্পিয়ন",
+    description: "একটি কঠিন সাপ্তাহিক লক্ষ্য সম্পন্ন করুন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;

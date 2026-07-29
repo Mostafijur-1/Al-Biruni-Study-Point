@@ -504,6 +504,14 @@ export function StudentHomeDashboard() {
               tone: "bg-teal-100 text-teal-700",
             },
             {
+              href: "/student/goals",
+              action: "weekly_goals",
+              title: "সাপ্তাহিক লক্ষ্য",
+              description: "নিজের লক্ষ্য বেছে নিন এবং স্বয়ংক্রিয় অগ্রগতি দেখুন",
+              icon: Target,
+              tone: "bg-rose-100 text-rose-700",
+            },
+            {
               href: "/student/community",
               action: "community",
               title: "ক্লাস কমিউনিটি",
