@@ -86,6 +86,21 @@ export const ACHIEVEMENTS = {
     title: "সাত দিনের চ্যালেঞ্জ",
     description: "টানা সাত দিন দৈনিক চ্যালেঞ্জ সম্পন্ন করুন।",
   },
+  FOCUS_STARTER: {
+    code: "FOCUS_STARTER",
+    title: "ফোকাস শুরু",
+    description: "প্রথম ফোকাস সেশন সম্পন্ন করুন।",
+  },
+  DEEP_FOCUS: {
+    code: "DEEP_FOCUS",
+    title: "ডিপ ফোকাস",
+    description: "একটি ৪৫ মিনিটের ফোকাস সেশন সম্পন্ন করুন।",
+  },
+  FOCUS_CENTURY: {
+    code: "FOCUS_CENTURY",
+    title: "ফোকাস সেঞ্চুরি",
+    description: "এক সপ্তাহে ১০০ মিনিট মনোযোগ দিয়ে পড়ুন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;

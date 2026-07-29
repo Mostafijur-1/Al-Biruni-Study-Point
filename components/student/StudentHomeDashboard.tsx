@@ -16,6 +16,7 @@ import {
   PlayCircle,
   Sparkles,
   Target,
+  TimerReset,
   Trophy,
   UsersRound,
   Swords,
@@ -493,6 +494,14 @@ export function StudentHomeDashboard() {
               description: "৯০ সেকেন্ডে ৫ প্রশ্ন—দ্রুত খেলুন ও সমাধান শিখুন",
               icon: Swords,
               tone: "bg-orange-100 text-orange-700",
+            },
+            {
+              href: "/student/focus",
+              action: "focus_studio",
+              title: "ফোকাস স্টুডিও",
+              description: "১৫/২৫/৪৫ মিনিটের মনোযোগী পড়ার সেশন",
+              icon: TimerReset,
+              tone: "bg-teal-100 text-teal-700",
             },
             {
               href: "/student/community",
