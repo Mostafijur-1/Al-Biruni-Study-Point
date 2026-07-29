@@ -1,0 +1,223 @@
+export type FormulaLevel = "SSC" | "HSC";
+
+export type FormulaCard = {
+  id: string;
+  levels: readonly FormulaLevel[];
+  subject: "পদার্থবিজ্ঞান" | "রসায়ন" | "গণিত" | "উচ্চতর গণিত";
+  topic: string;
+  prompt: string;
+  formula: string;
+  explanation: string;
+  example: string;
+};
+
+export const FORMULA_CARDS: readonly FormulaCard[] = [
+  {
+    id: "motion-speed",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "গতি",
+    prompt: "সমবেগে চলা বস্তুর অতিক্রান্ত দূরত্ব কীভাবে বের করবেন?",
+    formula: "দূরত্ব, s = vt",
+    explanation: "বেগ v এবং সময় t-এর গুণফলই অতিক্রান্ত দূরত্ব s।",
+    example: "12 m/s বেগে 5 s চললে s = 12 × 5 = 60 m।",
+  },
+  {
+    id: "motion-acceleration",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "ত্বরণ",
+    prompt: "আদি ও শেষ বেগ জানা থাকলে ত্বরণের সূত্র কী?",
+    formula: "ত্বরণ, a = (v − u) ÷ t",
+    explanation: "বেগের পরিবর্তনকে সময় দিয়ে ভাগ করলে ত্বরণ পাওয়া যায়।",
+    example: "বেগ 4 থেকে 14 m/s হতে 5 s লাগলে a = 2 m/s²।",
+  },
+  {
+    id: "motion-first-equation",
+    levels: ["HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "গতির সমীকরণ",
+    prompt: "সমত্বরণে t সময় পরে শেষ বেগের সমীকরণটি মনে করুন।",
+    formula: "v = u + at",
+    explanation: "শেষ বেগ হলো আদি বেগের সঙ্গে ত্বরণজনিত বেগের পরিবর্তনের যোগফল।",
+    example: "u = 5, a = 2, t = 4 হলে v = 13 m/s।",
+  },
+  {
+    id: "motion-second-equation",
+    levels: ["HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "গতির সমীকরণ",
+    prompt: "সমত্বরণে সরণের দ্বিতীয় সমীকরণটি কী?",
+    formula: "s = ut + ½at²",
+    explanation: "আদি বেগের সরণ এবং ত্বরণজনিত অতিরিক্ত সরণ যোগ হয়।",
+    example: "u = 2, a = 3, t = 4 হলে s = 32 m।",
+  },
+  {
+    id: "force-newton",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "বল",
+    prompt: "নিউটনের দ্বিতীয় সূত্রে বল, ভর ও ত্বরণের সম্পর্ক কী?",
+    formula: "বল, F = ma",
+    explanation: "বস্তুর ভর ও উৎপন্ন ত্বরণের গুণফলই প্রয়োগকৃত নিট বল।",
+    example: "3 kg ভরে 4 m/s² ত্বরণ দিতে F = 12 N।",
+  },
+  {
+    id: "work-force-distance",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "কাজ",
+    prompt: "বল ও সরণ একই দিকে হলে কাজের সূত্র কী?",
+    formula: "কাজ, W = Fs",
+    explanation: "বলের দিকে সরণ হলে বল ও সরণের গুণফলই সম্পন্ন কাজ।",
+    example: "10 N বল দিয়ে 3 m সরালে W = 30 J।",
+  },
+  {
+    id: "power-work-time",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "ক্ষমতা",
+    prompt: "কাজ করার হার বা ক্ষমতার সূত্রটি কী?",
+    formula: "ক্ষমতা, P = W ÷ t",
+    explanation: "মোট কাজকে প্রয়োজনীয় সময় দিয়ে ভাগ করলে গড় ক্ষমতা পাওয়া যায়।",
+    example: "200 J কাজ 10 s-এ করলে P = 20 W।",
+  },
+  {
+    id: "density-mass-volume",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "ঘনত্ব",
+    prompt: "ভর ও আয়তন থেকে ঘনত্ব কীভাবে বের করবেন?",
+    formula: "ঘনত্ব, ρ = m ÷ V",
+    explanation: "একক আয়তনে পদার্থের ভরই তার ঘনত্ব।",
+    example: "200 g ভর ও 50 cm³ আয়তনে ρ = 4 g/cm³।",
+  },
+  {
+    id: "ohms-law",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "বিদ্যুৎ",
+    prompt: "ওহমের সূত্রে বিভব পার্থক্য, কারেন্ট ও রোধের সম্পর্ক কী?",
+    formula: "V = IR",
+    explanation: "রোধ অপরিবর্তিত থাকলে বিভব পার্থক্য কারেন্টের সমানুপাতিক।",
+    example: "I = 2 A ও R = 6 Ω হলে V = 12 V।",
+  },
+  {
+    id: "electric-power",
+    levels: ["SSC", "HSC"],
+    subject: "পদার্থবিজ্ঞান",
+    topic: "বিদ্যুৎ",
+    prompt: "ভোল্টেজ ও কারেন্ট থেকে বৈদ্যুতিক ক্ষমতার সূত্র কী?",
+    formula: "P = VI",
+    explanation: "বিভব পার্থক্য ও প্রবাহিত কারেন্টের গুণফল বৈদ্যুতিক ক্ষমতা।",
+    example: "12 V-এ 2 A কারেন্ট হলে P = 24 W।",
+  },
+  {
+    id: "chemistry-moles",
+    levels: ["SSC", "HSC"],
+    subject: "রসায়ন",
+    topic: "মোল",
+    prompt: "ভর ও মোলার ভর থেকে মোল সংখ্যা কীভাবে বের করবেন?",
+    formula: "মোল, n = m ÷ M",
+    explanation: "পদার্থের ভরকে তার মোলার ভর দিয়ে ভাগ করলে মোল সংখ্যা পাওয়া যায়।",
+    example: "36 g পানির জন্য n = 36 ÷ 18 = 2 mol।",
+  },
+  {
+    id: "chemistry-molarity",
+    levels: ["HSC"],
+    subject: "রসায়ন",
+    topic: "ঘনমাত্রা",
+    prompt: "দ্রবণের মোলার ঘনমাত্রার সূত্র কী?",
+    formula: "মোলারিটি, C = n ÷ V",
+    explanation: "দ্রবের মোল সংখ্যাকে লিটারে দ্রবণের আয়তন দিয়ে ভাগ করতে হয়।",
+    example: "0.5 mol দ্রব 0.25 L-এ থাকলে C = 2 mol/L।",
+  },
+  {
+    id: "chemistry-ideal-gas",
+    levels: ["HSC"],
+    subject: "রসায়ন",
+    topic: "গ্যাস",
+    prompt: "আদর্শ গ্যাসের চাপ, আয়তন, মোল ও তাপমাত্রার সমীকরণ কী?",
+    formula: "PV = nRT",
+    explanation: "আদর্শ গ্যাসে চাপ ও আয়তনের গুণফল nRT-এর সমান।",
+    example: "একক সামঞ্জস্য রেখে P, V, n ও T-এর অজানা মান নির্ণয় করা যায়।",
+  },
+  {
+    id: "math-quadratic",
+    levels: ["SSC", "HSC"],
+    subject: "গণিত",
+    topic: "দ্বিঘাত সমীকরণ",
+    prompt: "ax² + bx + c = 0 সমীকরণের মূলের সাধারণ সূত্র কী?",
+    formula: "x = (−b ± √(b² − 4ac)) ÷ 2a",
+    explanation: "বিচারক b² − 4ac মূলের প্রকৃতি নির্ধারণ করে।",
+    example: "x² − 5x + 6 = 0 হলে মূল 2 ও 3।",
+  },
+  {
+    id: "math-slope",
+    levels: ["SSC", "HSC"],
+    subject: "গণিত",
+    topic: "স্থানাঙ্ক জ্যামিতি",
+    prompt: "দুটি বিন্দুর মধ্য দিয়ে সরলরেখার ঢালের সূত্র কী?",
+    formula: "m = (y₂ − y₁) ÷ (x₂ − x₁)",
+    explanation: "y-এর পরিবর্তনকে x-এর পরিবর্তন দিয়ে ভাগ করলে ঢাল পাওয়া যায়।",
+    example: "(1, 2) ও (3, 6)-এর জন্য m = 4 ÷ 2 = 2।",
+  },
+  {
+    id: "math-distance",
+    levels: ["SSC", "HSC"],
+    subject: "গণিত",
+    topic: "স্থানাঙ্ক জ্যামিতি",
+    prompt: "দুটি বিন্দুর মধ্যকার দূরত্বের সূত্রটি কী?",
+    formula: "d = √((x₂ − x₁)² + (y₂ − y₁)²)",
+    explanation: "x ও y দিকের পার্থক্য দিয়ে পিথাগোরাসের উপপাদ্য প্রয়োগ করা হয়।",
+    example: "(0, 0) ও (3, 4)-এর দূরত্ব 5 একক।",
+  },
+  {
+    id: "math-trig-identity",
+    levels: ["SSC", "HSC"],
+    subject: "উচ্চতর গণিত",
+    topic: "ত্রিকোণমিতি",
+    prompt: "sin ও cos-এর মৌলিক পিথাগোরীয় অভেদটি কী?",
+    formula: "sin²θ + cos²θ = 1",
+    explanation: "যেকোনো θ-এর জন্য sin ও cos-এর বর্গের যোগফল এক।",
+    example: "sin θ = 3/5 হলে cos θ = 4/5 (সূক্ষ্মকোণে)।",
+  },
+  {
+    id: "calculus-power-derivative",
+    levels: ["HSC"],
+    subject: "উচ্চতর গণিত",
+    topic: "অন্তরীকরণ",
+    prompt: "x-এর ঘাতের অন্তরজের সাধারণ সূত্র কী?",
+    formula: "d(xⁿ)/dx = nxⁿ⁻¹",
+    explanation: "ঘাতটি সামনে গুণক হয় এবং নতুন ঘাত এক কমে যায়।",
+    example: "d(x⁴)/dx = 4x³।",
+  },
+  {
+    id: "calculus-power-integral",
+    levels: ["HSC"],
+    subject: "উচ্চতর গণিত",
+    topic: "সমাকলন",
+    prompt: "x-এর ঘাতের অনির্দিষ্ট সমাকলনের সাধারণ সূত্র কী?",
+    formula: "∫xⁿ dx = xⁿ⁺¹ ÷ (n + 1) + C",
+    explanation: "ঘাত এক বাড়িয়ে সেই নতুন ঘাত দিয়ে ভাগ করতে হয়; n ≠ −1।",
+    example: "∫x² dx = x³/3 + C।",
+  },
+  {
+    id: "circle-standard",
+    levels: ["HSC"],
+    subject: "উচ্চতর গণিত",
+    topic: "বৃত্ত",
+    prompt: "কেন্দ্র (h, k) ও ব্যাসার্ধ r হলে বৃত্তের সমীকরণ কী?",
+    formula: "(x − h)² + (y − k)² = r²",
+    explanation: "বৃত্তের প্রতিটি বিন্দু কেন্দ্র থেকে r দূরত্বে থাকে।",
+    example: "কেন্দ্র (2, 3), ব্যাসার্ধ 4 হলে (x−2)²+(y−3)²=16।",
+  },
+] as const;
+
+export function formulaCardsForLevel(level: FormulaLevel) {
+  return FORMULA_CARDS.filter((card) => card.levels.includes(level));
+}
+
+export function formulaCardById(cardId: string) {
+  return FORMULA_CARDS.find((card) => card.id === cardId);
+}

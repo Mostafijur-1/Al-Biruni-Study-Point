@@ -26,6 +26,9 @@ export const STUDENT_EVENT_NAMES = [
   "student_science_lab_viewed",
   "student_science_lab_opened",
   "student_science_lab_completed",
+  "student_formula_sprint_viewed",
+  "student_formula_sprint_started",
+  "student_formula_sprint_completed",
 ] as const;
 
 export type StudentEventName = (typeof STUDENT_EVENT_NAMES)[number];

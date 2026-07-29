@@ -15,6 +15,7 @@ import {
   GraduationCap,
   LineChart,
   PlayCircle,
+  Sigma,
   Sparkles,
   Target,
   TimerReset,
@@ -519,6 +520,14 @@ export function StudentHomeDashboard() {
               description: "গতি, সার্কিট ও মোলের সূত্র হাতে-কলমে পরীক্ষা করুন",
               icon: FlaskConical,
               tone: "bg-cyan-100 text-cyan-700",
+            },
+            {
+              href: "/student/formulas",
+              action: "formula_sprint",
+              title: "ফর্মুলা স্প্রিন্ট",
+              description: "প্রতিদিন ৫টি সূত্র কার্ডে দ্রুত স্মৃতি ঝালাই করুন",
+              icon: Sigma,
+              tone: "bg-indigo-100 text-indigo-700",
             },
             {
               href: "/student/community",

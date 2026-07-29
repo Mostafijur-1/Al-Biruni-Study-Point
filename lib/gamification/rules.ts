@@ -121,6 +121,16 @@ export const ACHIEVEMENTS = {
     title: "ল্যাব মাস্টার",
     description: "সব ইন্টার‌্যাক্টিভ সায়েন্স ল্যাব সম্পন্ন করুন।",
   },
+  FORMULA_STARTER: {
+    code: "FORMULA_STARTER",
+    title: "সূত্রের শুরু",
+    description: "প্রথম দৈনিক ফর্মুলা স্প্রিন্ট সম্পন্ন করুন।",
+  },
+  FORMULA_WEEK: {
+    code: "FORMULA_WEEK",
+    title: "সূত্রসাধক",
+    description: "টানা সাত দিন ফর্মুলা স্প্রিন্ট সম্পন্ন করুন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;
