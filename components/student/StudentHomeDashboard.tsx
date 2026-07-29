@@ -9,6 +9,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardList,
+  Compass,
   Flame,
   FlaskConical,
   Gamepad2,
@@ -464,6 +465,14 @@ export function StudentHomeDashboard() {
               description: data.videos[0]?.title || "ভিডিও ক্লাস ও শেখার উপকরণ",
               icon: BookOpen,
               tone: "bg-sky-100 text-sky-700",
+            },
+            {
+              href: "/student/coach",
+              action: "study_coach",
+              title: "স্মার্ট স্টাডি কোচ",
+              description: "সময় ও অগ্রগতি অনুযায়ী পরের সেরা কাজটি বেছে নিন",
+              icon: Compass,
+              tone: "bg-blue-100 text-blue-700",
             },
             {
               href: "/student/assignments",

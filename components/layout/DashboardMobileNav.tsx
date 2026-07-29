@@ -8,6 +8,7 @@ import {
   BookOpen,
   Brain,
   ClipboardList,
+  Compass,
   FileQuestion,
   FlaskConical,
   Gamepad2,
@@ -141,6 +142,7 @@ export function DashboardSidebar() {
   const allLinks: Record<UserRole, NavItem[]> = {
     student: [
       { href: "/student", label: "শিক্ষার্থী হোম", icon: Home },
+      { href: "/student/coach", label: "স্টাডি কোচ", icon: Compass },
       { href: "/student/learning", label: "শেখার প্ল্যান", icon: Map },
       { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
       { href: "/student/game", label: "গেম হাব", icon: Gamepad2 },
