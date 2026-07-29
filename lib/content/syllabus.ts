@@ -389,8 +389,49 @@ export const BENGALI_TO_ENGLISH_SUBJECT_MAP: Record<string, string> = {
   "উচ্চতর গণিত": "Higher Math",
   "উচ্চতর গণিত ১ম পত্র": "Higher Math 1st Paper",
   "উচ্চতর গণিত ২য় পত্র": "Higher Math 2nd Paper",
+  "জীববিজ্ঞান": "Biology",
+  "জীববিজ্ঞান ১ম পত্র": "Biology 1st Paper",
+  "জীববিজ্ঞান ২য় পত্র": "Biology 2nd Paper",
   "তথ্য ও যোগাযোগ প্রযুক্তি": "ICT",
+  "বাংলা ১ম পত্র": "Bangla 1st Paper",
+  "বাংলা ২য় পত্র": "Bangla 2nd Paper",
+  "ইংরেজি ১ম পত্র": "English 1st Paper",
+  "ইংরেজি ২য় পত্র": "English 2nd Paper",
+  "ইসলাম ও নৈতিক শিক্ষা": "Islam and Moral Education",
+  "বাংলাদেশ ও বিশ্বপরিচয়": "Bangladesh and Global Studies",
 };
+
+export const ENGLISH_TO_BENGALI_SUBJECT_MAP: Record<string, string> =
+  Object.fromEntries(
+    Object.entries(BENGALI_TO_ENGLISH_SUBJECT_MAP).map(
+      ([bengali, english]) => [english, bengali],
+    ),
+  );
+
+export function getCanonicalSubjectName(subject: string) {
+  const normalized = subject.trim();
+  return ENGLISH_TO_BENGALI_SUBJECT_MAP[normalized] ?? normalized;
+}
+
+export function getSubjectAliases(subject: string) {
+  const canonical = getCanonicalSubjectName(subject);
+  const english = BENGALI_TO_ENGLISH_SUBJECT_MAP[canonical];
+  return [...new Set([canonical, english, subject.trim()].filter(Boolean))];
+}
+
+export function getUniqueSubjectNames(subjects: string[]) {
+  return [
+    ...new Set(
+      subjects
+        .map(getCanonicalSubjectName)
+        .filter((subject) => subject.length > 0),
+    ),
+  ];
+}
+
+export function isSameSubject(left: string, right: string) {
+  return getCanonicalSubjectName(left) === getCanonicalSubjectName(right);
+}
 
 export function getSyllabusChapters(level: SchoolLevel, subject: string): string[] {
   const canonicalSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;

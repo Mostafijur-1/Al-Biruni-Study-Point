@@ -1,6 +1,9 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-import type { ScienceLabId } from "@/lib/labs/rules";
+import {
+  SCIENCE_LAB_IDS,
+  type ScienceLabId,
+} from "@/lib/labs/rules";
 
 export interface IStudentLabCompletion extends Document {
   student: Types.ObjectId;
@@ -21,7 +24,7 @@ const StudentLabCompletionSchema = new Schema<IStudentLabCompletion>(
     },
     labId: {
       type: String,
-      enum: ["motion", "circuit", "mole"],
+      enum: SCIENCE_LAB_IDS,
       required: true,
     },
     result: { type: Number, required: true, min: 0 },

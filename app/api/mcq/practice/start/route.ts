@@ -95,7 +95,8 @@ export async function GET(request: NextRequest) {
       selectedChapters,
       limit,
       settings.secondsPerQuestion,
-      teacherId
+      teacherId,
+      user.id,
     );
     const attemptSession = await createAttemptSession({
       studentId: user.id,

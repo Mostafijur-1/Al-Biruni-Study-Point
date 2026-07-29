@@ -68,7 +68,10 @@ async function getCoachSignals(input: {
     getDailyChallengeStatus(input),
     getFormulaSprintStatus(input),
     getWeeklyGoalBoard(input),
-    getScienceLabHub(input.studentId),
+    getScienceLabHub({
+      studentId: input.studentId,
+      studentClass: input.studentClass,
+    }),
     getStudentMastery(input.studentId, input.studentClass),
   ]);
   const weeklyGoal =

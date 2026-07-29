@@ -7,6 +7,10 @@ import "@/lib/db/models/User";
 import { PracticeQuestion, type IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
+import {
+  getCanonicalSubjectName,
+  getSubjectAliases,
+} from "@/lib/content/syllabus";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,9 +33,7 @@ export async function GET(request: NextRequest) {
       query.level = level;
     }
     if (subject) {
-      const { BENGALI_TO_ENGLISH_SUBJECT_MAP } = await import("@/lib/content/syllabus");
-      const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
-      query.subject = { $in: [subject, englishSubject] };
+      query.subject = { $in: getSubjectAliases(subject) };
     }
     if (chapter) query.chapter = chapter;
 
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
       questions: questions.map((q) => ({
         id: String(q._id),
         level: q.level,
-        subject: q.subject,
+        subject: getCanonicalSubjectName(q.subject),
         chapter: q.chapter,
         question: q.question,
         options: q.options,

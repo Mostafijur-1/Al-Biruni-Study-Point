@@ -5,18 +5,27 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
+  type ComponentType,
 } from "react";
 import {
   Atom,
   BatteryCharging,
   Beaker,
+  Binary,
+  BookOpen,
   CheckCircle2,
+  CircuitBoard,
+  Cpu,
   FlaskConical,
   Gauge,
+  Lightbulb,
+  Microscope,
+  Network,
+  NotebookPen,
   Play,
   RotateCcw,
   Sparkles,
+  Target,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -28,25 +37,43 @@ import {
   isApiSuccess,
 } from "@/lib/api/client";
 import { trackStudentEvent } from "@/lib/analytics/client";
+import { getTranslatedChapter } from "@/lib/content/syllabus";
+import {
+  calculateLabResult,
+  getInitialLabValues,
+  validateLabMastery,
+  type LabControl,
+  type LabInputValues,
+  type ScienceLabId,
+} from "@/lib/labs/rules";
 import { cn } from "@/lib/utils";
 
-type LabId = "motion" | "circuit" | "mole";
+type LabFamily = "physics" | "chemistry" | "math" | "ict";
+type Prediction = "less" | "equal" | "more";
 
 type LabSummary = {
-  id: LabId;
+  id: ScienceLabId;
   title: string;
+  family: LabFamily;
   subject: string;
+  chapter: string;
   description: string;
   challenge: string;
+  formula: string;
+  insight: string;
   target: number;
+  tolerance: number;
   unit: string;
+  resultLabel: string;
   xp: number;
+  controls: LabControl[];
   completed: boolean;
   completedAt: string | null;
   xpEarned: number;
 };
 
 type LabHub = {
+  level: "ssc" | "hsc";
   labs: LabSummary[];
   progress: {
     completed: number;
@@ -63,46 +90,83 @@ type CompletionResponse = {
   hub: LabHub;
 };
 
-const labIcons = {
-  motion: Gauge,
-  circuit: BatteryCharging,
-  mole: Beaker,
-} satisfies Record<LabId, typeof Gauge>;
-
-const labTones = {
-  motion: {
-    selected: "border-sky-500 bg-sky-50 ring-sky-500/15",
-    icon: "bg-sky-100 text-sky-700",
+const familyTheme = {
+  physics: {
+    label: "পদার্থবিজ্ঞান",
+    icon: Gauge,
+    card: "border-sky-200 bg-sky-50/60",
+    active: "border-sky-500 bg-sky-50 ring-sky-500/15",
+    iconStyle: "bg-sky-100 text-sky-700",
     accent: "text-sky-700",
     button: "bg-sky-700 hover:bg-sky-800",
+    stage: "from-sky-950 via-blue-900 to-cyan-950",
   },
-  circuit: {
-    selected: "border-amber-500 bg-amber-50 ring-amber-500/15",
-    icon: "bg-amber-100 text-amber-700",
-    accent: "text-amber-700",
-    button: "bg-amber-600 hover:bg-amber-700",
-  },
-  mole: {
-    selected: "border-violet-500 bg-violet-50 ring-violet-500/15",
-    icon: "bg-violet-100 text-violet-700",
+  chemistry: {
+    label: "রসায়ন",
+    icon: FlaskConical,
+    card: "border-violet-200 bg-violet-50/60",
+    active: "border-violet-500 bg-violet-50 ring-violet-500/15",
+    iconStyle: "bg-violet-100 text-violet-700",
     accent: "text-violet-700",
     button: "bg-violet-700 hover:bg-violet-800",
+    stage: "from-violet-950 via-fuchsia-900 to-indigo-950",
+  },
+  math: {
+    label: "গণিত",
+    icon: Target,
+    card: "border-emerald-200 bg-emerald-50/60",
+    active: "border-emerald-500 bg-emerald-50 ring-emerald-500/15",
+    iconStyle: "bg-emerald-100 text-emerald-700",
+    accent: "text-emerald-700",
+    button: "bg-emerald-700 hover:bg-emerald-800",
+    stage: "from-emerald-950 via-teal-900 to-cyan-950",
+  },
+  ict: {
+    label: "আইসিটি",
+    icon: Cpu,
+    card: "border-amber-200 bg-amber-50/60",
+    active: "border-amber-500 bg-amber-50 ring-amber-500/15",
+    iconStyle: "bg-amber-100 text-amber-700",
+    accent: "text-amber-700",
+    button: "bg-amber-600 hover:bg-amber-700",
+    stage: "from-slate-950 via-indigo-950 to-amber-950",
   },
 } satisfies Record<
-  LabId,
-  { selected: string; icon: string; accent: string; button: string }
+  LabFamily,
+  {
+    label: string;
+    icon: ComponentType<{ className?: string }>;
+    card: string;
+    active: string;
+    iconStyle: string;
+    accent: string;
+    button: string;
+    stage: string;
+  }
 >;
+
+const predictionLabels: Array<{ value: Prediction; label: string }> = [
+  { value: "less", label: "লক্ষ্যের কম" },
+  { value: "equal", label: "লক্ষ্যের সমান" },
+  { value: "more", label: "লক্ষ্যের বেশি" },
+];
 
 export function InteractiveScienceLab() {
   const [hub, setHub] = useState<LabHub | null>(null);
-  const [activeLab, setActiveLab] = useState<LabId>("motion");
+  const [activeLabId, setActiveLabId] = useState<ScienceLabId>("motion");
+  const [values, setValues] = useState<LabInputValues>(
+    getInitialLabValues("motion"),
+  );
+  const [selectedSubject, setSelectedSubject] = useState("all");
+  const [selectedChapter, setSelectedChapter] = useState("all");
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [hasRun, setHasRun] = useState(false);
+  const [runVersion, setRunVersion] = useState(0);
+  const [observations, setObservations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [motion, setMotion] = useState({ velocity: 10, time: 4 });
-  const [circuit, setCircuit] = useState({ voltage: 9, resistance: 6 });
-  const [mole, setMole] = useState({ moles: 1, molarMass: 18 });
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -111,7 +175,14 @@ export function InteractiveScienceLab() {
       const result = await apiFetch<LabHub>("/api/labs");
       if (!active) return;
       if (result.ok && isApiSuccess(result.payload)) {
-        setHub(result.payload.data);
+        const data = result.payload.data;
+        setHub(data);
+        const firstIncomplete =
+          data.labs.find((lab) => !lab.completed) ?? data.labs[0];
+        if (firstIncomplete) {
+          setActiveLabId(firstIncomplete.id);
+          setValues(getInitialLabValues(firstIncomplete.id));
+        }
       } else {
         setError(
           getApiErrorMessage(
@@ -132,28 +203,56 @@ export function InteractiveScienceLab() {
       viewTracked.current = true;
       trackStudentEvent("student_science_lab_viewed", "science_lab", {
         completed_labs: hub?.progress.completed ?? 0,
+        available_labs: hub?.progress.total ?? 0,
       });
     }
   }, [hub, loading]);
 
-  const selected = hub?.labs.find((lab) => lab.id === activeLab);
-  const experimentResult = useMemo(() => {
-    if (activeLab === "motion") {
-      return motion.velocity * motion.time;
-    }
-    if (activeLab === "circuit") {
-      return circuit.voltage / circuit.resistance;
-    }
-    return mole.moles * mole.molarMass;
-  }, [activeLab, circuit, mole, motion]);
+  const selected = hub?.labs.find((lab) => lab.id === activeLabId) ?? null;
+  const subjects = useMemo(
+    () => [...new Set(hub?.labs.map((lab) => lab.subject) ?? [])],
+    [hub],
+  );
+  const chapters = useMemo(
+    () => [
+      ...new Set(
+        (hub?.labs ?? [])
+          .filter(
+            (lab) =>
+              selectedSubject === "all" || lab.subject === selectedSubject,
+          )
+          .map((lab) => lab.chapter),
+      ),
+    ],
+    [hub, selectedSubject],
+  );
+  const filteredLabs = useMemo(
+    () =>
+      (hub?.labs ?? []).filter(
+        (lab) =>
+          (selectedSubject === "all" || lab.subject === selectedSubject) &&
+          (selectedChapter === "all" || lab.chapter === selectedChapter),
+      ),
+    [hub, selectedChapter, selectedSubject],
+  );
+  const result = selected ? calculateLabResult(selected.id, values) : 0;
+  const mastery = selected
+    ? validateLabMastery(selected.id, values)
+    : { valid: false, result: 0 };
+  const relation: Prediction = !selected
+    ? "less"
+    : result < selected.target - selected.tolerance
+      ? "less"
+      : result > selected.target + selected.tolerance
+        ? "more"
+        : "equal";
 
-  const meetsTarget = selected
-    ? Math.abs(experimentResult - selected.target) < 0.001 &&
-      (activeLab !== "mole" || mole.molarMass === 18)
-    : false;
-
-  function selectLab(labId: LabId) {
-    setActiveLab(labId);
+  function selectLab(labId: ScienceLabId) {
+    setActiveLabId(labId);
+    setValues(getInitialLabValues(labId));
+    setPrediction(null);
+    setHasRun(false);
+    setObservations([]);
     setError("");
     setMessage("");
     trackStudentEvent("student_science_lab_opened", "science_lab", {
@@ -161,50 +260,81 @@ export function InteractiveScienceLab() {
     });
   }
 
+  function chooseSubject(subject: string) {
+    setSelectedSubject(subject);
+    setSelectedChapter("all");
+    const first = hub?.labs.find(
+      (lab) => subject === "all" || lab.subject === subject,
+    );
+    if (first) selectLab(first.id);
+  }
+
+  function chooseChapter(chapter: string) {
+    setSelectedChapter(chapter);
+    const first = hub?.labs.find(
+      (lab) =>
+        (selectedSubject === "all" || lab.subject === selectedSubject) &&
+        (chapter === "all" || lab.chapter === chapter),
+    );
+    if (first) selectLab(first.id);
+  }
+
+  function changeValue(key: string, value: number) {
+    setValues((current) => ({ ...current, [key]: value }));
+    setHasRun(false);
+    setMessage("");
+    setError("");
+  }
+
+  function runExperiment() {
+    setHasRun(true);
+    setRunVersion((version) => version + 1);
+    setError("");
+    setMessage("");
+  }
+
+  function recordObservation() {
+    if (!selected) return;
+    const note = `${selected.formula} → ${selected.resultLabel}: ${formatResult(result)} ${selected.unit}`.trim();
+    setObservations((current) => [note, ...current].slice(0, 4));
+  }
+
   async function completeLab() {
     if (!selected) return;
-    if (!meetsTarget) {
-      setError(
-        activeLab === "mole"
-          ? "পানি বেছে নিয়ে মোলের মান বদলান—লক্ষ্য ৩৬ গ্রাম।"
-          : `আরও একটু পরীক্ষা করুন—লক্ষ্য ${selected.target} ${selected.unit}।`,
-      );
+    if (!mastery.valid) {
+      setError(`মিশনটি এখনো সম্পন্ন হয়নি—${selected.challenge}`);
       setMessage("");
       return;
     }
 
-    const values =
-      activeLab === "motion"
-        ? motion
-        : activeLab === "circuit"
-          ? circuit
-          : mole;
     setWorking(true);
     setError("");
     setMessage("");
-    const result = await apiFetch<CompletionResponse>("/api/labs/complete", {
+    const response = await apiFetch<CompletionResponse>("/api/labs/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ labId: activeLab, values }),
+      body: JSON.stringify({ labId: selected.id, values }),
     });
-    if (result.ok && isApiSuccess(result.payload)) {
-      const data = result.payload.data;
+    if (response.ok && isApiSuccess(response.payload)) {
+      const data = response.payload.data;
       setHub(data.hub);
       setMessage(
         data.alreadyCompleted
-          ? "এই ল্যাবের মাস্টারি আগেই সম্পন্ন হয়েছে—নতুন মান নিয়ে আরও পরীক্ষা করুন।"
-          : `মাস্টারি সম্পন্ন! আপনার অ্যাকাউন্টে +${data.reward.xp} XP যোগ হয়েছে।`,
+          ? "এই অধ্যায়ের মাস্টারি আগেই সম্পন্ন হয়েছে—নতুন মান দিয়ে আরও পরীক্ষা করুন।"
+          : `চমৎকার! অধ্যায় মাস্টারি সম্পন্ন হয়েছে এবং +${data.reward.xp} XP যোগ হয়েছে।`,
       );
       trackStudentEvent("student_science_lab_completed", "science_lab", {
-        lab_id: activeLab,
-        result: Number(experimentResult.toFixed(2)),
+        lab_id: selected.id,
+        subject: selected.subject,
+        chapter: selected.chapter,
+        result: Number(result.toFixed(2)),
         xp_earned: data.reward.xp,
       });
     } else {
       setError(
         getApiErrorMessage(
-          result.payload,
-          "পরীক্ষার ফলটি এখনো লক্ষ্য পূরণ করেনি। আবার চেষ্টা করুন।",
+          response.payload,
+          "ফলাফলটি মাস্টারি মিশনের শর্ত পূরণ করেনি।",
         ),
       );
     }
@@ -213,64 +343,65 @@ export function InteractiveScienceLab() {
 
   if (loading) {
     return (
-      <div className="space-y-5" aria-label="ইন্টার‌্যাক্টিভ ল্যাব লোড হচ্ছে">
-        <div className="h-52 animate-pulse rounded-3xl bg-cyan-100" />
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[1, 2, 3].map((item) => (
+      <div className="space-y-5" aria-label="স্টেম ল্যাব লোড হচ্ছে">
+        <div className="h-56 animate-pulse rounded-3xl bg-cyan-100" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((item) => (
             <div
               key={item}
-              className="h-36 animate-pulse rounded-2xl bg-secondary/70"
+              className="h-32 animate-pulse rounded-2xl bg-secondary/70"
             />
           ))}
         </div>
-        <div className="h-96 animate-pulse rounded-3xl bg-secondary/70" />
+        <div className="h-[520px] animate-pulse rounded-3xl bg-secondary/70" />
       </div>
     );
   }
 
   if (!hub || !selected) {
     return (
-      <section className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
-        <FlaskConical className="mx-auto size-9 text-red-600" />
+      <section className="rounded-3xl border border-red-200 bg-red-50 p-7 text-center">
+        <FlaskConical className="mx-auto size-10 text-red-600" />
         <h1 className="mt-3 text-xl font-black text-primary">
-          সায়েন্স ল্যাব খোলা যায়নি
+          স্টেম ল্যাব খোলা যায়নি
         </h1>
         <p className="mt-2 text-sm text-red-800">{error}</p>
       </section>
     );
   }
 
-  const ActiveIcon = labIcons[activeLab];
-  const activeTone = labTones[activeLab];
+  const theme = familyTheme[selected.family];
+  const ActiveIcon = theme.icon;
 
   return (
     <section className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-800 via-blue-800 to-indigo-900 px-5 py-7 text-white shadow-lg sm:px-8 sm:py-9">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-900 via-blue-900 to-indigo-950 px-5 py-7 text-white shadow-xl sm:px-8 sm:py-9">
         <div
           aria-hidden
-          className="absolute -right-14 -top-20 size-56 rounded-full bg-cyan-300/10"
+          className="absolute -right-16 -top-24 size-64 rounded-full bg-cyan-300/10 blur-sm"
         />
         <div
           aria-hidden
-          className="absolute -bottom-24 right-1/3 size-52 rounded-full bg-violet-300/10"
+          className="absolute -bottom-28 left-1/3 size-60 rounded-full bg-violet-300/10"
         />
         <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
-              <FlaskConical className="size-4" />
-              ইন্টার‌্যাক্টিভ সায়েন্স ল্যাব
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-200">
+              <Microscope className="size-4" />
+              ইন্টার‌্যাক্টিভ স্টেম ল্যাব · {hub.level.toUpperCase()}
             </div>
-            <h1 className="mt-3 text-2xl font-black sm:text-4xl">
-              সূত্র শুধু পড়বেন না—পরীক্ষা করে দেখুন
+            <h1 className="mt-3 text-3xl font-black sm:text-5xl">
+              অধ্যায় খুলুন, পরীক্ষা চালান, আবিষ্কার করুন
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-              মান বদলান, ফলাফল দেখুন এবং মাস্টারি চ্যালেঞ্জ সমাধান করে XP
-              অর্জন করুন।
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
+              পদার্থবিজ্ঞান, রসায়ন, উচ্চতর গণিত ও আইসিটির প্রতিটি নির্বাচিত
+              অধ্যায়ে পূর্বানুমান, লাইভ সিমুলেশন, পর্যবেক্ষণ নোট এবং মাস্টারি
+              মিশন একসাথে।
             </p>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+          <div className="min-w-64 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
             <div className="flex items-center gap-4">
-              <div className="grid size-16 place-items-center rounded-full bg-cyan-300 text-2xl font-black text-blue-950">
+              <div className="grid size-16 place-items-center rounded-2xl bg-cyan-300 text-xl font-black text-blue-950">
                 {hub.progress.completed}/{hub.progress.total}
               </div>
               <div>
@@ -280,15 +411,18 @@ export function InteractiveScienceLab() {
                 </p>
               </div>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/20">
+            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-black/25">
               <div
-                className="h-full rounded-full bg-cyan-300"
+                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-[width]"
                 style={{ width: `${hub.progress.percent}%` }}
               />
             </div>
+            <p className="mt-2 text-right text-2xs font-black text-cyan-100">
+              {hub.progress.percent}% সম্পন্ন
+            </p>
           </div>
         </div>
-      </div>
+      </header>
 
       {message && (
         <div
@@ -308,23 +442,69 @@ export function InteractiveScienceLab() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-3" role="tablist" aria-label="সায়েন্স ল্যাব">
-        {hub.labs.map((lab) => {
-          const Icon = labIcons[lab.id];
-          const selectedLab = lab.id === activeLab;
-          const tone = labTones[lab.id];
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-wider text-muted">
+              বিষয়
+            </span>
+            <select
+              value={selectedSubject}
+              onChange={(event) => chooseSubject(event.target.value)}
+              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500"
+            >
+              <option value="all">সব স্টেম বিষয়</option>
+              {subjects.map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-wider text-muted">
+              অধ্যায়
+            </span>
+            <select
+              value={selectedChapter}
+              onChange={(event) => chooseChapter(event.target.value)}
+              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500"
+            >
+              <option value="all">সব ল্যাব অধ্যায়</option>
+              {chapters.map((chapter) => (
+                <option key={chapter} value={chapter}>
+                  {getTranslatedChapter(chapter)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="rounded-xl bg-cyan-50 px-4 py-3 text-center text-sm font-black text-cyan-900">
+            {filteredLabs.length}টি ইন্টার‌্যাক্টিভ ল্যাব
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        role="tablist"
+        aria-label="অধ্যায়ভিত্তিক স্টেম ল্যাব"
+      >
+        {filteredLabs.map((lab) => {
+          const labTheme = familyTheme[lab.family];
+          const Icon = labTheme.icon;
+          const isSelected = lab.id === activeLabId;
           return (
             <button
               key={lab.id}
               type="button"
               role="tab"
-              aria-selected={selectedLab}
+              aria-selected={isSelected}
               onClick={() => selectLab(lab.id)}
               className={cn(
-                "relative min-h-32 rounded-2xl border bg-card p-4 text-left transition",
-                selectedLab
-                  ? cn("ring-2", tone.selected)
-                  : "border-border hover:border-cyan-300 hover:bg-cyan-50/30",
+                "relative min-h-40 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md",
+                isSelected
+                  ? cn("ring-2", labTheme.active)
+                  : cn("bg-card", labTheme.card),
               )}
             >
               {lab.completed && (
@@ -333,7 +513,7 @@ export function InteractiveScienceLab() {
               <span
                 className={cn(
                   "grid size-10 place-items-center rounded-xl",
-                  tone.icon,
+                  labTheme.iconStyle,
                 )}
               >
                 <Icon className="size-5" />
@@ -341,17 +521,29 @@ export function InteractiveScienceLab() {
               <span className="mt-3 block text-sm font-black text-primary">
                 {lab.title}
               </span>
-              <span className="mt-1 block text-xs font-semibold text-muted">
-                {lab.subject} · +{lab.xp} XP
+              <span className="mt-1 line-clamp-2 block text-xs font-semibold leading-5 text-muted">
+                {getTranslatedChapter(lab.chapter)}
+              </span>
+              <span className="mt-2 inline-flex rounded-full bg-white/70 px-2 py-1 text-2xs font-black text-primary">
+                +{lab.xp} XP
               </span>
             </button>
           );
         })}
       </div>
 
+      {filteredLabs.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+          <BookOpen className="mx-auto size-9 text-muted" />
+          <p className="mt-3 text-sm font-black text-primary">
+            এই ফিল্টারে কোনো ল্যাব নেই
+          </p>
+        </div>
+      )}
+
       <article
         role="tabpanel"
-        className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-sm)]"
+        className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-md)]"
       >
         <div className="border-b border-border px-5 py-5 sm:px-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -359,7 +551,7 @@ export function InteractiveScienceLab() {
               <span
                 className={cn(
                   "grid size-12 shrink-0 place-items-center rounded-xl",
-                  activeTone.icon,
+                  theme.iconStyle,
                 )}
               >
                 <ActiveIcon className="size-6" />
@@ -368,15 +560,18 @@ export function InteractiveScienceLab() {
                 <p
                   className={cn(
                     "text-xs font-black uppercase tracking-widest",
-                    activeTone.accent,
+                    theme.accent,
                   )}
                 >
                   {selected.subject}
                 </p>
-                <h2 className="mt-1 text-xl font-black text-primary">
+                <h2 className="mt-1 text-xl font-black text-primary sm:text-2xl">
                   {selected.title}
                 </h2>
-                <p className="mt-1 text-sm text-muted">
+                <p className="mt-1 text-xs font-bold text-muted">
+                  {getTranslatedChapter(selected.chapter)}
+                </p>
+                <p className="mt-2 max-w-2xl text-sm text-muted">
                   {selected.description}
                 </p>
               </div>
@@ -389,73 +584,187 @@ export function InteractiveScienceLab() {
           </div>
         </div>
 
-        <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="min-h-[360px] bg-secondary/30 p-5 sm:p-7">
-            {activeLab === "motion" ? (
-              <MotionExperiment
-                velocity={motion.velocity}
-                time={motion.time}
-                onChange={setMotion}
-              />
-            ) : activeLab === "circuit" ? (
-              <CircuitExperiment
-                voltage={circuit.voltage}
-                resistance={circuit.resistance}
-                onChange={setCircuit}
-              />
-            ) : (
-              <MoleExperiment
-                moles={mole.moles}
-                molarMass={mole.molarMass}
-                onChange={setMole}
-              />
-            )}
+        <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="bg-secondary/25 p-5 sm:p-7">
+            <SimulationStage
+              key={`${selected.id}-${runVersion}`}
+              lab={selected}
+              values={values}
+              result={result}
+            />
+
+            <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-muted">
+                    আগে অনুমান করুন
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-primary">
+                    ফলাফল লক্ষ্য থেকে কোথায় থাকবে?
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {predictionLabels.map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => {
+                        setPrediction(item.value);
+                        setHasRun(false);
+                      }}
+                      className={cn(
+                        "rounded-lg border px-3 py-2 text-xs font-black transition",
+                        prediction === item.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-surface text-muted hover:text-primary",
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4 w-full rounded-xl"
+                onClick={runExperiment}
+              >
+                <Play className="size-4" /> পরীক্ষা চালান
+              </Button>
+              {hasRun && prediction && (
+                <div
+                  className={cn(
+                    "mt-3 rounded-xl p-3 text-center text-sm font-black",
+                    prediction === relation
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-amber-100 text-amber-900",
+                  )}
+                >
+                  {prediction === relation
+                    ? "দারুণ—আপনার পূর্বানুমান সঠিক!"
+                    : `ফলাফল ছিল “${predictionLabels.find((item) => item.value === relation)?.label}”—মান বদলে আবার দেখুন।`}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {selected.controls.map((item) => (
+                <LabControlField
+                  key={item.key}
+                  control={item}
+                  value={values[item.key] ?? item.initial}
+                  onChange={(value) => changeValue(item.key, value)}
+                />
+              ))}
+            </div>
           </div>
 
-          <div className="border-t border-border p-5 sm:p-7 lg:border-l lg:border-t-0">
-            <p className="text-xs font-black uppercase tracking-widest text-fuchsia-700">
-              মাস্টারি চ্যালেঞ্জ
-            </p>
-            <h3 className="mt-2 text-lg font-black text-primary">
-              {selected.challenge}
-            </h3>
+          <aside className="border-t border-border p-5 sm:p-7 lg:border-l lg:border-t-0">
+            <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
+              <p className="text-xs font-black uppercase tracking-widest text-white/65">
+                মাস্টারি মিশন
+              </p>
+              <h3 className="mt-2 text-lg font-black">{selected.challenge}</h3>
+              <div className="mt-4 rounded-xl bg-white/10 p-4 text-center">
+                <p className="text-xs font-bold text-white/60">
+                  {selected.resultLabel}
+                </p>
+                <p className="mt-1 text-4xl font-black">
+                  {formatResult(result)}
+                  {selected.unit && (
+                    <span className="ml-1 text-base text-white/60">
+                      {selected.unit}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-2 text-xs font-bold text-cyan-200">
+                  সূত্র: {selected.formula}
+                </p>
+              </div>
+            </div>
+
             <div
               className={cn(
-                "mt-5 rounded-2xl border p-5 text-center",
-                meetsTarget
+                "mt-4 rounded-2xl border p-4",
+                mastery.valid
                   ? "border-emerald-300 bg-emerald-50"
-                  : "border-border bg-secondary/60",
+                  : "border-border bg-secondary/50",
               )}
             >
-              <p className="text-xs font-bold text-muted">আপনার ফলাফল</p>
-              <p
-                className={cn(
-                  "mt-1 text-4xl font-black",
-                  meetsTarget ? "text-emerald-700" : "text-primary",
-                )}
-              >
-                {Number(experimentResult.toFixed(2))}
-                <span className="ml-1 text-base text-muted">
-                  {selected.unit}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-black text-muted">লক্ষ্য</span>
+                <span className="text-lg font-black text-primary">
+                  {selected.target} {selected.unit}
                 </span>
-              </p>
-              {meetsTarget && (
-                <p className="mt-2 text-xs font-black text-emerald-800">
-                  লক্ষ্য মিলেছে!
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-[width] duration-500",
+                    mastery.valid ? "bg-emerald-500" : "bg-cyan-500",
+                  )}
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.max(4, (result / selected.target) * 100),
+                    )}%`,
+                  }}
+                />
+              </div>
+              {mastery.valid && (
+                <p className="mt-2 text-center text-xs font-black text-emerald-800">
+                  লক্ষ্য মিলেছে—মাস্টারি সংগ্রহ করুন!
                 </p>
               )}
             </div>
 
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-amber-50 p-3 text-sm font-black text-amber-900">
+            <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="mt-0.5 size-5 shrink-0 text-cyan-700" />
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-cyan-800">
+                    কেন এমন হলো?
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-cyan-950">
+                    {selected.insight}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full rounded-xl"
+                onClick={recordObservation}
+              >
+                <NotebookPen className="size-4" /> পর্যবেক্ষণ নোট করুন
+              </Button>
+              {observations.length > 0 && (
+                <div className="mt-3 space-y-2 rounded-xl border border-border bg-surface p-3">
+                  {observations.map((observation, index) => (
+                    <p
+                      key={`${observation}-${index}`}
+                      className="text-xs font-semibold leading-5 text-muted"
+                    >
+                      {index + 1}. {observation}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex items-center justify-between rounded-xl bg-amber-50 p-3 text-sm font-black text-amber-900">
               <span className="inline-flex items-center gap-2">
                 <Sparkles className="size-4 text-amber-600" />
                 এককালীন পুরস্কার
               </span>
               <span>+{selected.xp} XP</span>
             </div>
-
             <Button
-              className={cn("mt-5 min-h-12 w-full rounded-xl", activeTone.button)}
+              className={cn("mt-4 min-h-12 w-full rounded-xl", theme.button)}
               loading={working}
               disabled={selected.completed}
               onClick={completeLab}
@@ -470,410 +779,524 @@ export function InteractiveScienceLab() {
                 </>
               )}
             </Button>
-            <p className="mt-3 text-center text-xs leading-5 text-muted">
-              মান যতবার ইচ্ছা বদলে পরীক্ষা করতে পারেন। XP প্রতিটি ল্যাবে একবারই
-              পাওয়া যাবে।
-            </p>
-          </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 w-full"
+              onClick={() => {
+                setValues(getInitialLabValues(selected.id));
+                setPrediction(null);
+                setHasRun(false);
+                setObservations([]);
+                setError("");
+                setMessage("");
+              }}
+            >
+              <RotateCcw className="size-4" /> ল্যাব রিসেট
+            </Button>
+          </aside>
         </div>
       </article>
     </section>
   );
 }
 
-function LabValue({
-  label,
+function LabControlField({
+  control,
   value,
-  unit,
-}: {
-  label: string;
-  value: string | number;
-  unit: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-3 text-center">
-      <p className="text-2xs font-black uppercase tracking-wider text-muted">
-        {label}
-      </p>
-      <p className="mt-1 text-xl font-black text-primary">
-        {value} <span className="text-xs text-muted">{unit}</span>
-      </p>
-    </div>
-  );
-}
-
-function RangeControl({
-  id,
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  unit,
   onChange,
 }: {
-  id: string;
-  label: string;
+  control: LabControl;
   value: number;
-  min: number;
-  max: number;
-  step?: number;
-  unit: string;
   onChange: (value: number) => void;
 }) {
+  if (
+    control.choices?.length === 2 &&
+    control.choices.every((choice) => choice.value === 0 || choice.value === 1)
+  ) {
+    return (
+      <button
+        type="button"
+        onClick={() => onChange(value === 1 ? 0 : 1)}
+        className={cn(
+          "flex min-h-20 items-center justify-between rounded-2xl border p-4 text-left transition",
+          value === 1
+            ? "border-emerald-400 bg-emerald-50"
+            : "border-border bg-card",
+        )}
+      >
+        <span>
+          <span className="block text-sm font-black text-primary">
+            {control.label}
+          </span>
+          <span className="mt-1 block text-xs font-semibold text-muted">
+            চাপ দিয়ে অন/অফ করুন
+          </span>
+        </span>
+        <span
+          className={cn(
+            "grid size-11 place-items-center rounded-xl text-lg font-black",
+            value === 1
+              ? "bg-emerald-600 text-white"
+              : "bg-secondary text-muted",
+          )}
+        >
+          {value}
+        </span>
+      </button>
+    );
+  }
+
+  if (control.choices) {
+    return (
+      <label className="block rounded-2xl border border-border bg-card p-4">
+        <span className="text-sm font-black text-primary">{control.label}</span>
+        <select
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="mt-3 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500"
+        >
+          {control.choices.map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   return (
-    <label htmlFor={id} className="block">
+    <label className="block rounded-2xl border border-border bg-card p-4">
       <span className="flex items-center justify-between gap-3 text-sm font-black text-primary">
-        <span>{label}</span>
+        <span>{control.label}</span>
         <span className="rounded-lg bg-primary px-2.5 py-1 text-xs text-primary-foreground">
-          {value} {unit}
+          {value} {control.unit}
         </span>
       </span>
       <input
-        id={id}
         type="range"
-        min={min}
-        max={max}
-        step={step}
+        min={control.min}
+        max={control.max}
+        step={control.step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-3 w-full accent-primary"
+        className="mt-4 w-full accent-primary"
+        aria-label={control.label}
       />
+      <span className="mt-2 flex justify-between text-2xs font-bold text-muted">
+        <span>{control.min}</span>
+        <span>{control.max}</span>
+      </span>
     </label>
   );
 }
 
-function ExperimentFrame({
-  children,
+function SimulationStage({
+  lab,
   values,
+  result,
 }: {
-  children: ReactNode;
-  values: ReactNode;
+  lab: LabSummary;
+  values: LabInputValues;
+  result: number;
 }) {
+  const theme = familyTheme[lab.family];
+  const intensity = Math.min(
+    1.35,
+    Math.max(0.08, Math.abs(result / (lab.target || 1))),
+  );
+
   return (
-    <div>
-      {children}
-      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">{values}</div>
+    <div
+      className={cn(
+        "relative min-h-80 overflow-hidden rounded-3xl bg-gradient-to-br p-5 text-white shadow-inner",
+        theme.stage,
+      )}
+      style={{ perspective: "900px" }}
+    >
+      <div className="absolute inset-x-0 bottom-0 h-2/3 opacity-35 [background-image:linear-gradient(rgba(255,255,255,.16)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.16)_1px,transparent_1px)] [background-size:32px_32px] [transform:rotateX(62deg)_scale(1.35)] [transform-origin:bottom]" />
+      <div className="relative z-10 flex items-center justify-between gap-3">
+        <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-black backdrop-blur">
+          LIVE · {lab.formula}
+        </span>
+        <span className="rounded-full bg-cyan-300 px-3 py-1.5 text-xs font-black text-cyan-950">
+          {formatResult(result)} {lab.unit}
+        </span>
+      </div>
+
+      <div className="relative z-10 mt-6 grid min-h-56 place-items-center">
+        {lab.family === "physics" && (
+          <PhysicsScene labId={lab.id} values={values} intensity={intensity} />
+        )}
+        {lab.family === "chemistry" && (
+          <ChemistryScene labId={lab.id} values={values} intensity={intensity} />
+        )}
+        {lab.family === "math" && (
+          <MathScene labId={lab.id} values={values} result={result} />
+        )}
+        {lab.family === "ict" && (
+          <IctScene labId={lab.id} values={values} result={result} />
+        )}
+      </div>
     </div>
   );
 }
 
-function MotionExperiment({
-  velocity,
-  time,
-  onChange,
+function PhysicsScene({
+  labId,
+  values,
+  intensity,
 }: {
-  velocity: number;
-  time: number;
-  onChange: (value: { velocity: number; time: number }) => void;
+  labId: ScienceLabId;
+  values: LabInputValues;
+  intensity: number;
 }) {
-  const [ballPosition, setBallPosition] = useState(0);
-  const [running, setRunning] = useState(false);
-  const timers = useRef<number[]>([]);
-  const distance = velocity * time;
-  const finalPosition = Math.min(100, (distance / 200) * 100);
-
-  useEffect(() => {
-    return () => {
-      timers.current.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, []);
-
-  function runExperiment() {
-    timers.current.forEach((timer) => window.clearTimeout(timer));
-    setRunning(false);
-    setBallPosition(0);
-    const startTimer = window.setTimeout(() => {
-      setRunning(true);
-      setBallPosition(finalPosition);
-    }, 30);
-    const stopTimer = window.setTimeout(
-      () => setRunning(false),
-      Math.min(4_000, time * 400) + 80,
-    );
-    timers.current = [startTimer, stopTimer];
-  }
-
-  function resetExperiment() {
-    timers.current.forEach((timer) => window.clearTimeout(timer));
-    setRunning(false);
-    setBallPosition(0);
-  }
-
-  return (
-    <ExperimentFrame
-      values={
-        <>
-          <LabValue label="বেগ" value={velocity} unit="m/s" />
-          <LabValue label="সময়" value={time} unit="s" />
-          <LabValue label="সরণ" value={distance} unit="m" />
-        </>
-      }
-    >
-      <div
-        role="img"
-        aria-label={`বস্তুটি প্রতি সেকেন্ডে ${velocity} মিটার বেগে ${time} সেকেন্ডে ${distance} মিটার যায়`}
-        className="relative h-44 overflow-hidden rounded-2xl border border-sky-200 bg-gradient-to-b from-sky-100 to-sky-50"
-      >
-        <div className="absolute inset-x-0 bottom-7 h-1 bg-slate-500" />
-        {[0, 25, 50, 75, 100].map((position) => (
-          <div
-            key={position}
-            className="absolute bottom-3 h-5 w-px bg-slate-400"
-            style={{ left: `${position}%` }}
-          >
-            <span className="absolute top-5 -translate-x-1/2 text-2xs font-bold text-slate-600">
-              {position * 2}m
-            </span>
-          </div>
-        ))}
+  if (labId === "circuit") {
+    return (
+      <div className="relative size-52 rounded-[42px] border-4 border-cyan-300/60 shadow-[0_0_45px_rgba(34,211,238,.25)] [transform:rotateX(58deg)_rotateZ(-12deg)] [transform-style:preserve-3d]">
         <div
-          className="absolute bottom-8 size-7 -translate-x-1/2 rounded-full border-4 border-sky-900 bg-cyan-400 shadow-lg"
-          style={{
-            left: `${ballPosition}%`,
-            transitionProperty: "left",
-            transitionDuration: running ? `${Math.min(4_000, time * 400)}ms` : "0ms",
-            transitionTimingFunction: "linear",
-          }}
+          className="absolute left-1/2 top-1/2 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-amber-200 bg-amber-300 text-amber-950 shadow-[0_0_55px_rgba(252,211,77,.75)] [transform:translateZ(55px)]"
+          style={{ opacity: 0.45 + intensity * 0.4 }}
         >
-          <span className="absolute inset-1 rounded-full border border-sky-900/30" />
+          <BatteryCharging className="size-10" />
         </div>
-        <div className="absolute left-4 top-4 rounded-lg bg-white/80 px-3 py-1.5 text-xs font-black text-sky-900">
-          d = v × t
-        </div>
-      </div>
-
-      <div className="mt-5 space-y-5">
-        <RangeControl
-          id="motion-velocity"
-          label="বেগ"
-          value={velocity}
-          min={2}
-          max={20}
-          unit="m/s"
-          onChange={(next) => {
-            resetExperiment();
-            onChange({ velocity: next, time });
-          }}
-        />
-        <RangeControl
-          id="motion-time"
-          label="সময়"
-          value={time}
-          min={1}
-          max={10}
-          unit="s"
-          onChange={(next) => {
-            resetExperiment();
-            onChange({ velocity, time: next });
-          }}
-        />
-        <Button
-          variant="outline"
-          className="w-full rounded-xl"
-          onClick={runExperiment}
-        >
-          {running ? (
-            <RotateCcw className="size-4" />
-          ) : (
-            <Play className="size-4 fill-current" />
-          )}
-          {running ? "আবার চালান" : "পরীক্ষা চালান"}
-        </Button>
-      </div>
-    </ExperimentFrame>
-  );
-}
-
-function CircuitExperiment({
-  voltage,
-  resistance,
-  onChange,
-}: {
-  voltage: number;
-  resistance: number;
-  onChange: (value: { voltage: number; resistance: number }) => void;
-}) {
-  const current = voltage / resistance;
-  const power = voltage * current;
-  const glow = Math.min(1, current / 4);
-
-  return (
-    <ExperimentFrame
-      values={
-        <>
-          <LabValue label="ভোল্টেজ" value={voltage} unit="V" />
-          <LabValue label="কারেন্ট" value={current.toFixed(2)} unit="A" />
-          <LabValue label="ক্ষমতা" value={power.toFixed(1)} unit="W" />
-        </>
-      }
-    >
-      <div
-        role="img"
-        aria-label={`${voltage} ভোল্ট এবং ${resistance} ওহমে কারেন্ট ${current.toFixed(2)} অ্যাম্পিয়ার`}
-        className="relative h-52 overflow-hidden rounded-2xl border border-amber-200 bg-slate-900"
-      >
-        <div className="absolute inset-8 rounded-3xl border-4 border-amber-400/70" />
-        <div className="absolute left-4 top-1/2 grid h-20 w-12 -translate-y-1/2 place-items-center rounded-lg border-2 border-slate-300 bg-slate-800 text-center text-xs font-black text-white">
-          <span>
-            +<br />
-            {voltage}V
-            <br />−
-          </span>
-        </div>
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 rounded-lg border-2 border-orange-300 bg-orange-950 px-3 py-7 text-xs font-black text-orange-100">
-          {resistance}Ω
-        </div>
-        <div
-          className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-yellow-200 bg-yellow-300 text-center text-xs font-black text-yellow-950 shadow-[0_0_45px_rgba(250,204,21,0.7)]"
-          style={{ opacity: 0.45 + glow * 0.55 }}
-        >
-          <Zap className="size-8 fill-current" />
-          {current.toFixed(1)}A
-        </div>
-        {[20, 35, 50, 65, 80].map((position) => (
+        {[8, 30, 52, 74].map((position) => (
           <span
             key={position}
-            aria-hidden
-            className="absolute top-[26px] size-2 animate-pulse rounded-full bg-cyan-300"
+            className="absolute size-3 animate-pulse rounded-full bg-cyan-200"
             style={{
               left: `${position}%`,
-              animationDuration: `${Math.max(0.4, 1.8 - current * 0.25)}s`,
+              top: position % 2 === 0 ? "4%" : "88%",
+              animationDuration: `${Math.max(0.35, 1.4 / intensity)}s`,
             }}
           />
         ))}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-black text-amber-100">
-          I = V ÷ R
-        </div>
       </div>
+    );
+  }
 
-      <div className="mt-5 space-y-5">
-        <RangeControl
-          id="circuit-voltage"
-          label="ভোল্টেজ"
-          value={voltage}
-          min={3}
-          max={24}
-          unit="V"
-          onChange={(next) => onChange({ voltage: next, resistance })}
-        />
-        <RangeControl
-          id="circuit-resistance"
-          label="রোধ"
-          value={resistance}
-          min={2}
-          max={20}
-          unit="Ω"
-          onChange={(next) => onChange({ voltage, resistance: next })}
-        />
+  if (labId === "wave" || labId === "trigonometry") {
+    const frequency = values.frequency ?? 3;
+    return (
+      <div className="flex h-48 w-full items-center justify-center gap-1 [transform:rotateX(10deg)]">
+        {Array.from({ length: 24 }, (_, index) => {
+          const height =
+            24 +
+            Math.abs(
+              Math.sin((index / 24) * Math.PI * 2 * frequency),
+            ) *
+              120 *
+              Math.min(1, intensity);
+          return (
+            <span
+              key={index}
+              className="w-2 rounded-full bg-gradient-to-t from-cyan-500 to-white shadow-[0_0_12px_rgba(103,232,249,.6)] transition-[height] duration-300"
+              style={{ height }}
+            />
+          );
+        })}
       </div>
-    </ExperimentFrame>
+    );
+  }
+
+  if (labId === "optics") {
+    return (
+      <div className="relative h-52 w-full">
+        <div className="absolute left-1/2 top-1/2 h-44 w-10 -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-cyan-200 bg-cyan-200/20 shadow-[0_0_36px_rgba(165,243,252,.45)]" />
+        <div className="absolute left-[12%] top-1/2 h-20 w-3 -translate-y-1/2 rounded-t-full bg-amber-300 shadow-lg" />
+        <div
+          className="absolute left-[13%] top-[38%] h-0.5 origin-left bg-red-300 shadow-[0_0_8px_rgba(252,165,165,.8)]"
+          style={{
+            width: "74%",
+            transform: `rotate(${8 + intensity * 5}deg)`,
+          }}
+        />
+        <div
+          className="absolute left-[13%] top-[62%] h-0.5 origin-left bg-cyan-200 shadow-[0_0_8px_rgba(165,243,252,.8)]"
+          style={{
+            width: "74%",
+            transform: `rotate(${-8 - intensity * 5}deg)`,
+          }}
+        />
+        <div className="absolute right-[10%] top-1/2 h-28 w-3 -translate-y-1/2 rotate-180 rounded-t-full bg-emerald-300" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-52 w-full [transform-style:preserve-3d]">
+      <div className="absolute inset-x-8 bottom-8 h-4 rounded-full bg-white/20 [transform:rotateX(60deg)]" />
+      <div
+        className="absolute bottom-16 grid size-24 place-items-center rounded-2xl border border-white/35 bg-gradient-to-br from-cyan-300 to-blue-600 text-blue-950 shadow-2xl transition-[left,transform] duration-700 [transform:rotateY(-18deg)_rotateX(8deg)]"
+        style={{ left: `${Math.min(72, 5 + intensity * 50)}%` }}
+      >
+        <Gauge className="size-10" />
+      </div>
+      <div className="absolute bottom-5 left-6 right-6 flex justify-between text-2xs font-black text-white/55">
+        <span>শুরু</span>
+        <span>লক্ষ্য</span>
+      </div>
+    </div>
   );
 }
 
-function MoleExperiment({
-  moles,
-  molarMass,
-  onChange,
+function ChemistryScene({
+  labId,
+  values,
+  intensity,
 }: {
-  moles: number;
-  molarMass: number;
-  onChange: (value: { moles: number; molarMass: number }) => void;
+  labId: ScienceLabId;
+  values: LabInputValues;
+  intensity: number;
 }) {
-  const mass = moles * molarMass;
-  const fill = Math.min(88, Math.max(12, (mass / 292.5) * 88));
-  const substances = [
-    { value: 18, label: "পানি (H₂O)", color: "bg-sky-400" },
-    { value: 44, label: "কার্বন ডাই-অক্সাইড (CO₂)", color: "bg-violet-400" },
-    { value: 58.5, label: "সোডিয়াম ক্লোরাইড (NaCl)", color: "bg-emerald-400" },
-  ];
-  const selectedSubstance =
-    substances.find((item) => item.value === molarMass) ?? substances[0];
+  if (labId === "atom") {
+    const electrons = Math.max(1, Math.round(values.electrons ?? 1));
+    return (
+      <div className="relative size-56 [transform:rotateX(58deg)_rotateZ(-18deg)] [transform-style:preserve-3d]">
+        {[0, 1, 2].map((ring) => (
+          <div
+            key={ring}
+            className="absolute inset-6 rounded-full border border-cyan-200/55"
+            style={{ transform: `rotateY(${ring * 60}deg)` }}
+          >
+            {Array.from(
+              { length: Math.min(4, Math.ceil(electrons / 3)) },
+              (_, index) => (
+                <span
+                  key={index}
+                  className="absolute size-3 animate-pulse rounded-full bg-cyan-200 shadow-[0_0_12px_rgba(165,243,252,.9)]"
+                  style={{
+                    left: `${10 + index * 26}%`,
+                    top: index % 2 === 0 ? "3%" : "88%",
+                  }}
+                />
+              ),
+            )}
+          </div>
+        ))}
+        <div className="absolute left-1/2 top-1/2 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-br from-fuchsia-300 to-violet-600 shadow-[0_0_55px_rgba(216,180,254,.65)] [transform:translateZ(38px)]">
+          <Atom className="size-11" />
+        </div>
+      </div>
+    );
+  }
+
+  const fill =
+    labId === "ph"
+      ? Math.max(12, Math.min(90, ((14 - (values.phValue ?? 7)) / 13) * 85))
+      : Math.min(90, 22 + intensity * 48);
+  const liquid =
+    labId === "ph"
+      ? (values.phValue ?? 7) < 7
+        ? "from-rose-500 to-orange-300"
+        : (values.phValue ?? 7) > 7
+          ? "from-indigo-500 to-cyan-300"
+          : "from-emerald-500 to-lime-300"
+      : "from-violet-500 to-cyan-300";
 
   return (
-    <ExperimentFrame
-      values={
-        <>
-          <LabValue label="মোল" value={moles} unit="mol" />
-          <LabValue label="মোলার ভর" value={molarMass} unit="g/mol" />
-          <LabValue label="মোট ভর" value={mass} unit="g" />
-        </>
-      }
-    >
-      <div
-        role="img"
-        aria-label={`${moles} মোল ${selectedSubstance.label}-এর ভর ${mass} গ্রাম`}
-        className="relative h-56 overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-b from-violet-50 to-white"
-      >
-        <div className="absolute left-4 top-4 rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-black text-violet-900">
-          m = n × M
-        </div>
-        <Atom className="absolute right-5 top-4 size-9 text-violet-300" />
-        <div className="absolute bottom-5 left-1/2 h-40 w-36 -translate-x-1/2 overflow-hidden rounded-b-[42px] border-x-4 border-b-4 border-slate-400 bg-white/60">
-          <div
-            className={cn(
-              "absolute inset-x-0 bottom-0 transition-[height] duration-500",
-              selectedSubstance.color,
-            )}
-            style={{ height: `${fill}%` }}
-          >
-            {[20, 42, 68].map((position, index) => (
-              <span
-                key={position}
-                aria-hidden
-                className="absolute size-3 rounded-full border border-white/60 bg-white/35"
-                style={{
-                  left: `${position}%`,
-                  bottom: `${22 + index * 18}%`,
-                }}
-              />
-            ))}
-          </div>
-          {[50, 100, 150, 200].map((mark) => (
+    <div className="relative h-60 w-52 [transform:rotateY(-12deg)] [transform-style:preserve-3d]">
+      <div className="absolute inset-x-8 bottom-1 h-52 overflow-hidden rounded-b-[54px] border-x-4 border-b-4 border-white/45 bg-white/10 shadow-2xl">
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 bg-gradient-to-t transition-[height] duration-500",
+            liquid,
+          )}
+          style={{ height: `${fill}%` }}
+        >
+          {Array.from({ length: 12 }, (_, index) => (
             <span
-              key={mark}
-              className="absolute left-2 h-px w-4 bg-slate-500"
-              style={{ bottom: `${(mark / 250) * 100}%` }}
-            >
-              <span className="absolute left-5 -top-2 text-2xs font-bold text-slate-600">
-                {mark}g
-              </span>
-            </span>
+              key={index}
+              className="absolute size-2 animate-pulse rounded-full border border-white/50 bg-white/25"
+              style={{
+                left: `${8 + ((index * 23) % 82)}%`,
+                bottom: `${8 + ((index * 17) % 78)}%`,
+                animationDelay: `${index * 80}ms`,
+              }}
+            />
           ))}
         </div>
       </div>
-
-      <div className="mt-5 space-y-5">
-        <div>
-          <label htmlFor="mole-substance" className="text-sm font-black text-primary">
-            পদার্থ
-          </label>
-          <select
-            id="mole-substance"
-            value={molarMass}
-            onChange={(event) =>
-              onChange({ moles, molarMass: Number(event.target.value) })
-            }
-            className="mt-2 min-h-12 w-full rounded-xl border border-border bg-card px-4 text-sm font-bold text-primary outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-          >
-            {substances.map((substance) => (
-              <option key={substance.value} value={substance.value}>
-                {substance.label} — {substance.value} g/mol
-              </option>
-            ))}
-          </select>
-        </div>
-        <RangeControl
-          id="mole-amount"
-          label="পদার্থের পরিমাণ"
-          value={moles}
-          min={0.5}
-          max={5}
-          step={0.5}
-          unit="mol"
-          onChange={(next) => onChange({ moles: next, molarMass })}
-        />
-      </div>
-    </ExperimentFrame>
+      <div className="absolute left-1/2 top-2 h-8 w-32 -translate-x-1/2 rounded-[50%] border-4 border-white/50 bg-white/10" />
+      <Beaker className="absolute -right-1 top-4 size-9 text-white/35" />
+    </div>
   );
+}
+
+function MathScene({
+  labId,
+  values,
+  result,
+}: {
+  labId: ScienceLabId;
+  values: LabInputValues;
+  result: number;
+}) {
+  if (labId === "probability") {
+    const percent = Math.max(0, Math.min(100, result));
+    return (
+      <div
+        className="relative grid size-52 place-items-center rounded-full border-8 border-white/30 shadow-2xl [transform:rotateX(18deg)]"
+        style={{
+          background: `conic-gradient(#34d399 0 ${percent}%, rgba(255,255,255,.12) ${percent}% 100%)`,
+        }}
+      >
+        <div className="grid size-28 place-items-center rounded-full bg-emerald-950 text-center shadow-inner">
+          <span className="text-3xl font-black">{formatResult(percent)}%</span>
+        </div>
+        <span className="absolute -top-4 left-1/2 size-0 -translate-x-1/2 border-x-[10px] border-t-[22px] border-x-transparent border-t-amber-300" />
+      </div>
+    );
+  }
+
+  if (labId === "vector") {
+    const x = values.x ?? 0;
+    const y = values.y ?? 0;
+    const angle = Math.atan2(y, x) * (180 / Math.PI);
+    const length = Math.min(190, result * 25);
+    return (
+      <div className="relative h-56 w-full">
+        <div className="absolute bottom-8 left-8 h-px w-[82%] bg-white/30" />
+        <div className="absolute bottom-8 left-8 h-[82%] w-px bg-white/30" />
+        <div
+          className="absolute bottom-8 left-8 h-2 origin-left rounded-full bg-gradient-to-r from-emerald-300 to-cyan-200 shadow-[0_0_16px_rgba(110,231,183,.7)] transition-[width,transform] duration-500"
+          style={{ width: length, transform: `rotate(${-angle}deg)` }}
+        >
+          <span className="absolute -right-2 -top-1.5 size-0 border-y-[7px] border-l-[14px] border-y-transparent border-l-cyan-200" />
+        </div>
+        <div className="absolute right-4 top-4 rounded-xl bg-white/10 px-4 py-2 text-sm font-black">
+          ({x}, {y})
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-52 w-full items-end justify-center gap-2">
+      {Array.from({ length: 18 }, (_, index) => {
+        const amplitude = values.amplitude ?? 2;
+        const frequency = values.frequency ?? 2;
+        const height =
+          28 +
+          ((Math.sin(index * frequency * 0.42) + 1) / 2) * amplitude * 24;
+        return (
+          <span
+            key={index}
+            className="w-3 rounded-t-full bg-gradient-to-t from-emerald-600 to-cyan-200 shadow-[0_0_12px_rgba(110,231,183,.4)] transition-[height] duration-300"
+            style={{ height }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function IctScene({
+  labId,
+  values,
+  result,
+}: {
+  labId: ScienceLabId;
+  values: LabInputValues;
+  result: number;
+}) {
+  if (labId === "binary") {
+    return (
+      <div className="grid grid-cols-3 gap-3 [transform:rotateX(12deg)] sm:grid-cols-6">
+        {[32, 16, 8, 4, 2, 1].map((weight) => {
+          const active = values[`bit${weight}`] === 1;
+          return (
+            <div
+              key={weight}
+              className={cn(
+                "grid h-24 w-16 place-items-center rounded-2xl border text-center shadow-xl transition",
+                active
+                  ? "border-cyan-200 bg-cyan-300 text-cyan-950 shadow-cyan-400/30"
+                  : "border-white/15 bg-white/5 text-white/45",
+              )}
+            >
+              <div>
+                <Binary className="mx-auto size-5" />
+                <p className="mt-1 text-xl font-black">{active ? 1 : 0}</p>
+                <p className="text-2xs font-bold">× {weight}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (labId === "logic") {
+    const gate = ["AND", "OR", "XOR"][values.gate ?? 0] ?? "AND";
+    return (
+      <div className="flex items-center gap-4 [transform:rotateX(10deg)]">
+        {["inputA", "inputB"].map((key) => (
+          <div
+            key={key}
+            className={cn(
+              "grid size-16 place-items-center rounded-2xl border text-2xl font-black",
+              values[key] === 1
+                ? "border-emerald-300 bg-emerald-400 text-emerald-950"
+                : "border-white/20 bg-white/5 text-white/50",
+            )}
+          >
+            {values[key] ?? 0}
+          </div>
+        ))}
+        <div className="grid h-24 w-32 place-items-center rounded-[42px] border-2 border-amber-200 bg-amber-300 text-xl font-black text-amber-950 shadow-[0_0_35px_rgba(252,211,77,.4)]">
+          {gate}
+        </div>
+        <div
+          className={cn(
+            "grid size-20 place-items-center rounded-full border-4 text-3xl font-black",
+            result === 1
+              ? "border-cyan-200 bg-cyan-300 text-cyan-950 shadow-[0_0_35px_rgba(103,232,249,.55)]"
+              : "border-white/20 bg-white/5 text-white/50",
+          )}
+        >
+          {result}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-56 w-full">
+      {[
+        { left: "8%", top: "42%", icon: Cpu },
+        { left: "43%", top: "8%", icon: Network },
+        { left: "75%", top: "48%", icon: CircuitBoard },
+      ].map((node, index) => {
+        const Icon = node.icon;
+        return (
+          <div
+            key={index}
+            className="absolute grid size-20 place-items-center rounded-2xl border border-cyan-200/50 bg-cyan-300/15 text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,.18)] backdrop-blur"
+            style={{ left: node.left, top: node.top }}
+          >
+            <Icon className="size-9" />
+          </div>
+        );
+      })}
+      <div className="absolute left-[25%] top-[47%] h-1 w-[30%] rotate-[-26deg] bg-gradient-to-r from-cyan-300 to-transparent" />
+      <div className="absolute left-[55%] top-[42%] h-1 w-[25%] rotate-[28deg] bg-gradient-to-r from-cyan-300 to-transparent" />
+      {Array.from({ length: 6 }, (_, index) => (
+        <span
+          key={index}
+          className="absolute top-1/2 size-2 animate-pulse rounded-full bg-amber-300"
+          style={{
+            left: `${20 + index * 11}%`,
+            animationDelay: `${index * 120}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function formatResult(value: number) {
+  if (!Number.isFinite(value)) return "—";
+  return Number(value.toFixed(2)).toString();
 }

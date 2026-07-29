@@ -12,6 +12,7 @@ import type { IMcqExam } from "@/lib/db/models/McqExam";
 import "@/lib/db/models/McqExam";
 import { connectDB } from "@/lib/db/connect";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
+import { getCanonicalSubjectName } from "@/lib/content/syllabus";
 
 type PopulatedPerson = {
   _id: Types.ObjectId;
@@ -61,7 +62,9 @@ export async function GET(request: NextRequest) {
         .sort({ submittedAt: -1 })
         .lean();
 
-      const formattedPractice = practiceResults.map((pr) => ({
+      const formattedPractice = practiceResults.map((pr) => {
+        const subject = getCanonicalSubjectName(pr.subject);
+        return {
         _id: pr._id,
         student: pr.student,
         score: pr.score,
@@ -73,20 +76,21 @@ export async function GET(request: NextRequest) {
         createdAt: pr.createdAt,
         updatedAt: pr.updatedAt,
         isPractice: true,
-        subject: pr.subject,
+        subject,
         teacherComment: pr.teacherComment ?? "",
         commentedBy: pr.commentedBy,
         isCancelled: pr.isCancelled || false,
         exam: {
-          _id: `practice-${pr.subject}`,
-          title: `${pr.subject} MCQ Test`,
+          _id: `practice-${subject}`,
+          title: `${subject} MCQ Test`,
           totalMarks: pr.totalQuestions,
           passMark: Math.ceil(
             pr.totalQuestions * ((pr.passMarkPercent ?? 60) / 100),
           ),
           duration: pr.totalQuestions,
         },
-      }));
+      };
+      });
 
       // 2. Fetch exam attempts where results have been published by the teacher
       const examAttempts = await McqExamAttempt.find({ student: user.id })
@@ -116,7 +120,7 @@ export async function GET(request: NextRequest) {
         createdAt: ea.createdAt,
         updatedAt: ea.updatedAt,
         isPractice: false,
-        subject: ea.exam.subject,
+        subject: getCanonicalSubjectName(ea.exam.subject),
         teacherComment: ea.teacherComment ?? "",
         commentedBy: ea.commentedBy,
         isCancelled: ea.isCancelled || false,

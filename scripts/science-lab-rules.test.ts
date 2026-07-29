@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  SCIENCE_LAB_IDS,
+  calculateLabResult,
   calculateCircuitValues,
   calculateMolarMass,
   calculateMotionDistance,
+  getScienceLabsForLevel,
   validateLabMastery,
 } from "../lib/labs/rules.ts";
+import { getSyllabusChapters } from "../lib/content/syllabus.ts";
 
 test("science lab formulas return expected physical values", () => {
   assert.equal(calculateMotionDistance(12, 5), 60);
@@ -56,4 +60,57 @@ test("mole mastery requires 36 grams of water", () => {
     validateLabMastery("mole", { moles: 2.25, molarMass: 18 }).valid,
     false,
   );
+});
+
+test("expanded lab missions validate force, atom, binary, and probability", () => {
+  assert.equal(
+    validateLabMastery("force", { mass: 6, acceleration: 4 }).valid,
+    true,
+  );
+  assert.equal(
+    validateLabMastery("atom", { protons: 8, neutrons: 8, electrons: 8 })
+      .valid,
+    true,
+  );
+  assert.equal(
+    validateLabMastery("atom", { protons: 7, neutrons: 9, electrons: 7 })
+      .valid,
+    false,
+  );
+  assert.equal(
+    validateLabMastery("binary", {
+      bit32: 1,
+      bit16: 0,
+      bit8: 1,
+      bit4: 0,
+      bit2: 1,
+      bit1: 0,
+    }).valid,
+    true,
+  );
+  assert.equal(
+    validateLabMastery("probability", { favorable: 8, total: 6 }).valid,
+    false,
+  );
+  assert.equal(
+    calculateLabResult("network", { fileSize: 100, bandwidth: 80 }),
+    10,
+  );
+});
+
+test("every class-aware lab maps to a real syllabus subject and chapter", () => {
+  assert.equal(SCIENCE_LAB_IDS.length, 18);
+
+  for (const level of ["ssc", "hsc"] as const) {
+    const labs = getScienceLabsForLevel(level);
+    assert.equal(new Set(labs.map((lab) => lab.family)).size, 4);
+
+    for (const lab of labs) {
+      assert.equal(
+        getSyllabusChapters(level, lab.subject).includes(lab.chapter),
+        true,
+        `${level}: ${lab.subject} / ${lab.chapter} is missing from syllabus`,
+      );
+    }
+  }
 });

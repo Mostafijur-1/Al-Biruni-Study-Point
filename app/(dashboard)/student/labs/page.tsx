@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { InteractiveScienceLab } from "@/components/labs/InteractiveScienceLab";
 
 export const metadata: Metadata = {
-  title: "ইন্টার‌্যাক্টিভ সায়েন্স ল্যাব | ABSP",
+  title: "ইন্টার‌্যাক্টিভ STEM ল্যাব | ABSP",
   description:
-    "গতি, ওহমের সূত্র এবং মোলের ধারণা হাতে-কলমে পরীক্ষা করুন ও মাস্টারি XP অর্জন করুন।",
+    "বিষয় ও অধ্যায় ধরে 3D-অনুপ্রাণিত পদার্থবিজ্ঞান, রসায়ন, উচ্চতর গণিত ও আইসিটি সিমুলেশন চালিয়ে ব্যবহারিকভাবে শিখুন।",
 };
 
 export default function StudentLabsPage() {

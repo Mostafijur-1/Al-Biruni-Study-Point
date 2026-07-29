@@ -6,6 +6,11 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { MistakeReview } from "@/lib/db/models/MistakeReview";
 import {
+  getCanonicalSubjectName,
+  getSubjectAliases,
+  getUniqueSubjectNames,
+} from "@/lib/content/syllabus";
+import {
   backfillMistakesForStudent,
   recordMistakeReviewAnswer,
 } from "@/lib/learning/mistake-service";
@@ -39,7 +44,7 @@ export async function GET(request: NextRequest) {
       student: user.id,
       status,
     };
-    if (subject) query.subject = subject;
+    if (subject) query.subject = { $in: getSubjectAliases(subject) };
     if (dueOnly) query.nextReviewAt = { $lte: now };
 
     const [mistakes, activeCount, dueCount, masteredCount, subjects] =
@@ -61,7 +66,7 @@ export async function GET(request: NextRequest) {
     return success({
       mistakes: mistakes.map((mistake) => ({
         id: String(mistake._id),
-        subject: mistake.subject,
+        subject: getCanonicalSubjectName(mistake.subject),
         chapter: mistake.chapter,
         question: mistake.questionText,
         options: mistake.options,
@@ -78,7 +83,9 @@ export async function GET(request: NextRequest) {
         due: dueCount,
         mastered: masteredCount,
       },
-      subjects: subjects.sort((a, b) => a.localeCompare(b, "bn")),
+      subjects: getUniqueSubjectNames(subjects).sort((a, b) =>
+        a.localeCompare(b, "bn"),
+      ),
     });
   } catch (error) {
     return handleApiError(error);

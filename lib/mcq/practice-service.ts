@@ -3,9 +3,19 @@ import mongoose from "mongoose";
 
 import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
-import { getSchoolLevel, getSyllabusChapters, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
+import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
+import {
+  BENGALI_TO_ENGLISH_SUBJECT_MAP,
+  getSchoolLevel,
+  getSubjectAliases,
+  getSyllabusChapters,
+} from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 import { dedupeSubmittedAnswers } from "@/lib/mcq/answer-scoring";
+import {
+  selectPracticeQuestions,
+  type PracticeSelectionHistory,
+} from "@/lib/mcq/practice-selection";
 
 export interface JSONPracticeQuestion {
   id: string;
@@ -14,6 +24,24 @@ export interface JSONPracticeQuestion {
   correctIndex: number;
   explanation?: string;
 }
+
+type PracticeQuestionCandidateDocument = {
+  _id: mongoose.Types.ObjectId;
+  chapter: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+  imageUrl?: string;
+};
+
+type PracticeQuestionCandidateBuckets = {
+  unseen: PracticeQuestionCandidateDocument[];
+  weak: PracticeQuestionCandidateDocument[];
+  older: PracticeQuestionCandidateDocument[];
+  recentFallback: PracticeQuestionCandidateDocument[];
+  immediateFallback: PracticeQuestionCandidateDocument[];
+};
 
 /**
  * Maps paper-split HSC subject names to their actual directory on disk.
@@ -146,7 +174,8 @@ export async function startPracticeExam(
   selectedChapters?: string[],
   maxQuestions = 25,
   secondsPerQuestion = 45,
-  teacherId?: string
+  teacherId?: string,
+  studentId?: string,
 ) {
   const level = getSchoolLevel(studentClass);
   await connectDB();
@@ -162,7 +191,6 @@ export async function startPracticeExam(
     throw new Error("No valid chapters selected for practice.");
   }
 
-  // Optimize: Query only a random sample of maxQuestions matching the selected chapters in MongoDB
   const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[subject] || subject;
   const matchQuery: Record<string, unknown> = {
     level,
@@ -177,15 +205,113 @@ export async function startPracticeExam(
     matchQuery.isTeacherSet = { $ne: true };
   }
 
-  const dbQuestions = await PracticeQuestion.aggregate([
+  const emptyHistory: PracticeSelectionHistory = {
+    seenQuestionIds: [],
+    recentQuestionIds: [],
+    immediateQuestionIds: [],
+    incorrectQuestionIds: [],
+  };
+  let history = emptyHistory;
+
+  if (studentId && mongoose.isValidObjectId(studentId)) {
+    const attemptQuery: Record<string, unknown> = {
+      student: new mongoose.Types.ObjectId(studentId),
+      subject: { $in: getSubjectAliases(subject) },
+    };
+    if (teacherId && mongoose.isValidObjectId(teacherId)) {
+      attemptQuery.isTeacherSet = true;
+      attemptQuery.teacherId = new mongoose.Types.ObjectId(teacherId);
+    } else {
+      attemptQuery.isTeacherSet = { $ne: true };
+    }
+
+    const attempts = await PracticeAttempt.find(attemptQuery)
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .select("answers.questionId answers.isCorrect")
+      .lean();
+    const answerIds = (attempt: (typeof attempts)[number]) =>
+      attempt.answers.map((answer) => String(answer.questionId));
+
+    history = {
+      seenQuestionIds: attempts.flatMap(answerIds),
+      recentQuestionIds: attempts.slice(0, 3).flatMap(answerIds),
+      immediateQuestionIds: attempts.slice(0, 1).flatMap(answerIds),
+      incorrectQuestionIds: attempts.flatMap((attempt) =>
+        attempt.answers
+          .filter((answer) => !answer.isCorrect)
+          .map((answer) => String(answer.questionId)),
+      ),
+    };
+  }
+
+  const toObjectIds = (ids: string[]) =>
+    [...new Set(ids)]
+      .filter((id) => mongoose.isValidObjectId(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+  const seenObjectIds = toObjectIds(history.seenQuestionIds);
+  const recentObjectIds = toObjectIds(history.recentQuestionIds);
+  const immediateObjectIds = toObjectIds(history.immediateQuestionIds);
+  const incorrectObjectIds = toObjectIds(history.incorrectQuestionIds);
+  const sampleSize = Math.max(100, maxQuestions * 6);
+  const [candidateBuckets] =
+    await PracticeQuestion.aggregate<PracticeQuestionCandidateBuckets>([
+    { $match: matchQuery },
     {
-      $match: matchQuery,
+      $facet: {
+        unseen: [
+          { $match: { _id: { $nin: seenObjectIds } } },
+          { $sample: { size: sampleSize } },
+        ],
+        weak: [
+          {
+            $match: {
+              _id: { $in: incorrectObjectIds, $nin: recentObjectIds },
+            },
+          },
+          { $sample: { size: sampleSize } },
+        ],
+        older: [
+          {
+            $match: {
+              _id: {
+                $in: seenObjectIds,
+                $nin: [...recentObjectIds, ...incorrectObjectIds],
+              },
+            },
+          },
+          { $sample: { size: sampleSize } },
+        ],
+        recentFallback: [
+          {
+            $match: {
+              _id: { $in: recentObjectIds, $nin: immediateObjectIds },
+            },
+          },
+          { $sample: { size: sampleSize } },
+        ],
+        immediateFallback: [
+          { $match: { _id: { $in: immediateObjectIds } } },
+          { $sample: { size: sampleSize } },
+        ],
+      },
     },
-    { $sample: { size: maxQuestions } },
-  ]);
+    ]);
+  const bucketValues = candidateBuckets
+    ? Object.values(candidateBuckets).flat()
+    : [];
+  const candidateQuestions = bucketValues.map((question) => ({
+    ...question,
+    id: question._id.toString(),
+  }));
+  const dbQuestions = selectPracticeQuestions({
+    candidates: candidateQuestions,
+    history,
+    maxQuestions,
+  });
 
   const finalQuestions = dbQuestions.map((q) => ({
-    id: q._id.toString(),
+    id: q.id,
     question: q.question,
     options: q.options,
     correctIndex: q.correctIndex,

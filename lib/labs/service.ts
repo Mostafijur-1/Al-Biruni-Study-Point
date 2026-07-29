@@ -5,17 +5,23 @@ import { StudentGameProfile } from "@/lib/db/models/StudentGameProfile";
 import { StudentLabCompletion } from "@/lib/db/models/StudentLabCompletion";
 import { calculateLevel } from "@/lib/gamification/rules";
 import { getOrCreateGameProfile } from "@/lib/gamification/service";
+import { getSchoolLevel } from "@/lib/content/syllabus";
 import {
   SCIENCE_LABS,
   SCIENCE_LAB_IDS,
+  getScienceLabsForLevel,
   validateLabMastery,
   type LabInputValues,
   type ScienceLabId,
 } from "@/lib/labs/rules";
+import type { StudentClass } from "@/types";
 
-export async function getScienceLabHub(studentId: string) {
+export async function getScienceLabHub(input: {
+  studentId: string;
+  studentClass: StudentClass;
+}) {
   const completions = await StudentLabCompletion.find({
-    student: studentId,
+    student: input.studentId,
   })
     .select("labId result xpEarned completedAt")
     .lean();
@@ -23,23 +29,32 @@ export async function getScienceLabHub(studentId: string) {
     completions.map((completion) => [completion.labId, completion]),
   );
 
+  const level = getSchoolLevel(input.studentClass);
+  const availableLabs = getScienceLabsForLevel(level);
+  const availableIds = new Set(availableLabs.map((lab) => lab.id));
+  const availableCompletions = completions.filter((completion) =>
+    availableIds.has(completion.labId),
+  );
+
   return {
-    labs: SCIENCE_LAB_IDS.map((labId) => {
+    level,
+    labs: availableLabs.map((lab) => {
+      const labId = lab.id;
       const completion = byLab.get(labId);
       return {
-        ...SCIENCE_LABS[labId],
+        ...lab,
         completed: Boolean(completion),
         completedAt: completion?.completedAt ?? null,
         xpEarned: completion?.xpEarned ?? 0,
       };
     }),
     progress: {
-      completed: completions.length,
-      total: SCIENCE_LAB_IDS.length,
+      completed: availableCompletions.length,
+      total: availableLabs.length,
       percent: Math.round(
-        (completions.length / SCIENCE_LAB_IDS.length) * 100,
+        (availableCompletions.length / availableLabs.length) * 100,
       ),
-      xpEarned: completions.reduce(
+      xpEarned: availableCompletions.reduce(
         (total, completion) => total + completion.xpEarned,
         0,
       ),
@@ -49,6 +64,7 @@ export async function getScienceLabHub(studentId: string) {
 
 export async function completeScienceLab(input: {
   studentId: string;
+  studentClass: StudentClass;
   labId: ScienceLabId;
   values: LabInputValues;
   now?: Date;
@@ -71,7 +87,7 @@ export async function completeScienceLab(input: {
       ok: true as const,
       alreadyCompleted: true,
       reward: { xp: existing.xpEarned },
-      hub: await getScienceLabHub(input.studentId),
+      hub: await getScienceLabHub(input),
     };
   }
 
@@ -157,6 +173,6 @@ export async function completeScienceLab(input: {
     alreadyCompleted,
     reward: { xp: rewardXp },
     profile: profileSnapshot,
-    hub: await getScienceLabHub(input.studentId),
+    hub: await getScienceLabHub(input),
   };
 }
