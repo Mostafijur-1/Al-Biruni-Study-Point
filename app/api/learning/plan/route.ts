@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         type: "chapter_practice",
         title: `${recommendation.subject}: লক্ষ্যভিত্তিক অনুশীলন`,
         description: `${recommendation.chapter} অধ্যায়ে আপনার দক্ষতা ${recommendation.score}%।`,
-        href: `/student/practice/${encodeURIComponent(recommendation.subject)}?chapter=${encodeURIComponent(recommendation.chapter)}&count=10`,
+        href: "/student/practice",
         estimatedMinutes: 10,
       });
     } else {

@@ -90,11 +90,7 @@ async function getCoachSignals(input: {
         subject: mastery.recommendation.subject,
         chapter: mastery.recommendation.chapter,
         score: mastery.recommendation.score,
-        href: `/student/practice/${encodeURIComponent(
-          mastery.recommendation.subject,
-        )}?chapter=${encodeURIComponent(
-          mastery.recommendation.chapter,
-        )}&count=10`,
+        href: "/student/practice",
       }
     : null;
   const nextLab = labs.labs.find((lab) => !lab.completed);

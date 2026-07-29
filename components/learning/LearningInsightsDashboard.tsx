@@ -236,7 +236,7 @@ export function LearningInsightsDashboard() {
                     </div>
                     {chapter.status !== "strong" && chapter.availableQuestions > 0 && (
                       <Link
-                        href={`/student/practice/${encodeURIComponent(chapter.subject)}?chapter=${encodeURIComponent(chapter.chapter)}&count=10`}
+                        href="/student/practice"
                         className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-red hover:underline"
                       >
                         এই অধ্যায় অনুশীলন করুন

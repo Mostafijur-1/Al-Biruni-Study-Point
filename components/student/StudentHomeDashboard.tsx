@@ -235,9 +235,7 @@ export function StudentHomeDashboard() {
       if (!b.dueDate) return -1;
       return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     })[0];
-  const dailyHref = recommendedSubject
-    ? `/student/practice/${encodeURIComponent(recommendedSubject.subject)}?count=10`
-    : "/student/practice";
+  const dailyHref = "/student/practice";
   const studentLevel =
     user?.studentClass === "class-11" || user?.studentClass === "class-12"
       ? "HSC"
