@@ -8,15 +8,11 @@ import {
   type ComponentType,
 } from "react";
 import {
-  BookOpen,
   CheckCircle2,
   Cpu,
   FlaskConical,
   Gauge,
-  Lightbulb,
   Microscope,
-  NotebookPen,
-  Play,
   RotateCcw,
   Sparkles,
   Target,
@@ -44,7 +40,6 @@ import {
 import { cn } from "@/lib/utils";
 
 type LabFamily = "physics" | "chemistry" | "math" | "ict";
-type Prediction = "less" | "equal" | "more";
 
 type LabSummary = {
   id: ScienceLabId;
@@ -89,62 +84,41 @@ const familyTheme = {
   physics: {
     label: "পদার্থবিজ্ঞান",
     icon: Gauge,
-    card: "border-sky-200 bg-sky-50/60",
-    active: "border-sky-500 bg-sky-50 ring-sky-500/15",
     iconStyle: "bg-sky-100 text-sky-700",
     accent: "text-sky-700",
     button: "bg-sky-700 hover:bg-sky-800",
-    stage: "from-sky-950 via-blue-900 to-cyan-950",
   },
   chemistry: {
     label: "রসায়ন",
     icon: FlaskConical,
-    card: "border-violet-200 bg-violet-50/60",
-    active: "border-violet-500 bg-violet-50 ring-violet-500/15",
     iconStyle: "bg-violet-100 text-violet-700",
     accent: "text-violet-700",
     button: "bg-violet-700 hover:bg-violet-800",
-    stage: "from-violet-950 via-fuchsia-900 to-indigo-950",
   },
   math: {
     label: "গণিত",
     icon: Target,
-    card: "border-emerald-200 bg-emerald-50/60",
-    active: "border-emerald-500 bg-emerald-50 ring-emerald-500/15",
     iconStyle: "bg-emerald-100 text-emerald-700",
     accent: "text-emerald-700",
     button: "bg-emerald-700 hover:bg-emerald-800",
-    stage: "from-emerald-950 via-teal-900 to-cyan-950",
   },
   ict: {
     label: "আইসিটি",
     icon: Cpu,
-    card: "border-amber-200 bg-amber-50/60",
-    active: "border-amber-500 bg-amber-50 ring-amber-500/15",
     iconStyle: "bg-amber-100 text-amber-700",
     accent: "text-amber-700",
     button: "bg-amber-600 hover:bg-amber-700",
-    stage: "from-slate-950 via-indigo-950 to-amber-950",
   },
 } satisfies Record<
   LabFamily,
   {
     label: string;
     icon: ComponentType<{ className?: string }>;
-    card: string;
-    active: string;
     iconStyle: string;
     accent: string;
     button: string;
-    stage: string;
   }
 >;
-
-const predictionLabels: Array<{ value: Prediction; label: string }> = [
-  { value: "less", label: "লক্ষ্যের কম" },
-  { value: "equal", label: "লক্ষ্যের সমান" },
-  { value: "more", label: "লক্ষ্যের বেশি" },
-];
 
 export function InteractiveScienceLab() {
   const [hub, setHub] = useState<LabHub | null>(null);
@@ -154,10 +128,6 @@ export function InteractiveScienceLab() {
   );
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedChapter, setSelectedChapter] = useState("all");
-  const [prediction, setPrediction] = useState<Prediction | null>(null);
-  const [hasRun, setHasRun] = useState(false);
-  const [runVersion, setRunVersion] = useState(0);
-  const [observations, setObservations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -234,20 +204,20 @@ export function InteractiveScienceLab() {
   const mastery = selected
     ? validateLabMastery(selected.id, values)
     : { valid: false, result: 0 };
-  const relation: Prediction = !selected
-    ? "less"
-    : result < selected.target - selected.tolerance
-      ? "less"
-      : result > selected.target + selected.tolerance
-        ? "more"
-        : "equal";
+  const masteryProgress =
+    selected && Number.isFinite(result)
+      ? Math.max(
+          4,
+          100 -
+            (Math.abs(result - selected.target) /
+              Math.max(1, Math.abs(selected.target))) *
+              100,
+        )
+      : 4;
 
   function selectLab(labId: ScienceLabId) {
     setActiveLabId(labId);
     setValues(getInitialLabValues(labId));
-    setPrediction(null);
-    setHasRun(false);
-    setObservations([]);
     setError("");
     setMessage("");
     trackStudentEvent("student_science_lab_opened", "science_lab", {
@@ -276,22 +246,8 @@ export function InteractiveScienceLab() {
 
   function changeValue(key: string, value: number) {
     setValues((current) => ({ ...current, [key]: value }));
-    setHasRun(false);
     setMessage("");
     setError("");
-  }
-
-  function runExperiment() {
-    setHasRun(true);
-    setRunVersion((version) => version + 1);
-    setError("");
-    setMessage("");
-  }
-
-  function recordObservation() {
-    if (!selected) return;
-    const note = `${selected.formula} → ${selected.resultLabel}: ${formatResult(result)} ${selected.unit}`.trim();
-    setObservations((current) => [note, ...current].slice(0, 4));
   }
 
   async function completeLab() {
@@ -338,17 +294,10 @@ export function InteractiveScienceLab() {
 
   if (loading) {
     return (
-      <div className="space-y-5" aria-label="স্টেম ল্যাব লোড হচ্ছে">
-        <div className="h-56 animate-pulse rounded-3xl bg-cyan-100" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((item) => (
-            <div
-              key={item}
-              className="h-32 animate-pulse rounded-2xl bg-secondary/70"
-            />
-          ))}
-        </div>
-        <div className="h-[520px] animate-pulse rounded-3xl bg-secondary/70" />
+      <div className="space-y-4 sm:space-y-5" aria-label="স্টেম ল্যাব লোড হচ্ছে">
+        <div className="h-48 animate-pulse rounded-2xl bg-cyan-100 sm:h-56 sm:rounded-3xl" />
+        <div className="h-32 animate-pulse rounded-2xl bg-secondary/70" />
+        <div className="h-[640px] animate-pulse rounded-2xl bg-secondary/70 sm:rounded-3xl" />
       </div>
     );
   }
@@ -369,8 +318,8 @@ export function InteractiveScienceLab() {
   const ActiveIcon = theme.icon;
 
   return (
-    <section className="space-y-6">
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-900 via-blue-900 to-indigo-950 px-5 py-7 text-white shadow-xl sm:px-8 sm:py-9">
+    <section className="space-y-4 sm:space-y-6">
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-900 via-blue-900 to-indigo-950 px-5 py-6 text-white shadow-xl sm:rounded-3xl sm:px-8 sm:py-8">
         <div
           aria-hidden
           className="absolute -right-16 -top-24 size-64 rounded-full bg-cyan-300/10 blur-sm"
@@ -379,24 +328,23 @@ export function InteractiveScienceLab() {
           aria-hidden
           className="absolute -bottom-28 left-1/3 size-60 rounded-full bg-violet-300/10"
         />
-        <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="relative grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-200">
               <Microscope className="size-4" />
               ইন্টার‌্যাক্টিভ স্টেম ল্যাব · {hub.level.toUpperCase()}
             </div>
-            <h1 className="mt-3 text-3xl font-black sm:text-5xl">
-              অধ্যায় খুলুন, পরীক্ষা চালান, আবিষ্কার করুন
+            <h1 className="mt-3 text-2xl font-black leading-tight sm:text-4xl">
+              দেখুন, নিয়ন্ত্রণ করুন, ধারণাটি বুঝুন
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
-              পদার্থবিজ্ঞান, রসায়ন, উচ্চতর গণিত ও আইসিটির প্রতিটি নির্বাচিত
-              অধ্যায়ে পূর্বানুমান, লাইভ সিমুলেশন, পর্যবেক্ষণ নোট এবং মাস্টারি
-              মিশন একসাথে।
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
+              বিষয় ও অধ্যায় বেছে চলক পরিবর্তন করুন। ভেতরের প্রক্রিয়া,
+              কারণ–ফল এবং প্রচলিত ভুল ধারণা একই মডেলে দেখুন।
             </p>
           </div>
-          <div className="min-w-64 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-md sm:min-w-64 sm:p-4">
             <div className="flex items-center gap-4">
-              <div className="grid size-16 place-items-center rounded-2xl bg-cyan-300 text-xl font-black text-blue-950">
+              <div className="grid size-12 place-items-center rounded-xl bg-cyan-300 text-base font-black text-blue-950 sm:size-16 sm:rounded-2xl sm:text-xl">
                 {hub.progress.completed}/{hub.progress.total}
               </div>
               <div>
@@ -437,33 +385,46 @@ export function InteractiveScienceLab() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
-        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+      <nav
+        className="rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-sm)] sm:p-4"
+        aria-label="স্টেম ল্যাব নির্বাচন"
+      >
+        <div
+          className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+          aria-label="বিষয় নির্বাচন"
+        >
+          {["all", ...subjects].map((subject) => {
+            const active = selectedSubject === subject;
+            return (
+              <button
+                key={subject}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => chooseSubject(subject)}
+                className={cn(
+                  "min-h-10 shrink-0 snap-start rounded-full border px-4 text-xs font-black transition",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-surface text-muted hover:border-cyan-400 hover:text-primary",
+                )}
+              >
+                {subject === "all" ? "সব বিষয়" : subject}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="text-xs font-black uppercase tracking-wider text-muted">
-              বিষয়
-            </span>
-            <select
-              value={selectedSubject}
-              onChange={(event) => chooseSubject(event.target.value)}
-              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500"
-            >
-              <option value="all">সব স্টেম বিষয়</option>
-              {subjects.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs font-black uppercase tracking-wider text-muted">
+            <span className="text-2xs font-black uppercase tracking-wider text-muted">
               অধ্যায়
             </span>
             <select
               value={selectedChapter}
               onChange={(event) => chooseChapter(event.target.value)}
-              className="mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500"
+              className="mt-1.5 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
             >
               <option value="all">সব ল্যাব অধ্যায়</option>
               {chapters.map((chapter) => (
@@ -473,101 +434,58 @@ export function InteractiveScienceLab() {
               ))}
             </select>
           </label>
-          <div className="rounded-xl bg-cyan-50 px-4 py-3 text-center text-sm font-black text-cyan-900">
-            {filteredLabs.length}টি ইন্টার‌্যাক্টিভ ল্যাব
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        role="tablist"
-        aria-label="অধ্যায়ভিত্তিক স্টেম ল্যাব"
-      >
-        {filteredLabs.map((lab) => {
-          const labTheme = familyTheme[lab.family];
-          const Icon = labTheme.icon;
-          const isSelected = lab.id === activeLabId;
-          return (
-            <button
-              key={lab.id}
-              type="button"
-              role="tab"
-              aria-selected={isSelected}
-              onClick={() => selectLab(lab.id)}
-              className={cn(
-                "relative min-h-40 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md",
-                isSelected
-                  ? cn("ring-2", labTheme.active)
-                  : cn("bg-card", labTheme.card),
-              )}
+          <label className="block">
+            <span className="flex items-center justify-between gap-2 text-2xs font-black uppercase tracking-wider text-muted">
+              <span>ল্যাব মিশন</span>
+              <span>{filteredLabs.length}টি পাওয়া গেছে</span>
+            </span>
+            <select
+              value={activeLabId}
+              onChange={(event) =>
+                selectLab(event.target.value as ScienceLabId)
+              }
+              className="mt-1.5 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-bold text-primary outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
             >
-              {lab.completed && (
-                <CheckCircle2 className="absolute right-3 top-3 size-5 text-emerald-600" />
-              )}
-              <span
-                className={cn(
-                  "grid size-10 place-items-center rounded-xl",
-                  labTheme.iconStyle,
-                )}
-              >
-                <Icon className="size-5" />
-              </span>
-              <span className="mt-3 block text-sm font-black text-primary">
-                {lab.title}
-              </span>
-              <span className="mt-1 line-clamp-2 block text-xs font-semibold leading-5 text-muted">
-                {getTranslatedChapter(lab.chapter)}
-              </span>
-              <span className="mt-2 inline-flex rounded-full bg-white/70 px-2 py-1 text-2xs font-black text-primary">
-                +{lab.xp} XP
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {filteredLabs.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-          <BookOpen className="mx-auto size-9 text-muted" />
-          <p className="mt-3 text-sm font-black text-primary">
-            এই ফিল্টারে কোনো ল্যাব নেই
-          </p>
+              {filteredLabs.map((lab) => (
+                <option key={lab.id} value={lab.id}>
+                  {lab.completed ? "✓ " : ""}
+                  {lab.title}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      )}
+      </nav>
 
       <article
         role="tabpanel"
-        className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-md)]"
+        className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-md)] sm:rounded-3xl"
       >
-        <div className="border-b border-border px-5 py-5 sm:px-7">
+        <div className="border-b border-border px-4 py-4 sm:px-7 sm:py-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <span
                 className={cn(
-                  "grid size-12 shrink-0 place-items-center rounded-xl",
+                  "grid size-10 shrink-0 place-items-center rounded-xl sm:size-12",
                   theme.iconStyle,
                 )}
               >
-                <ActiveIcon className="size-6" />
+                <ActiveIcon className="size-5 sm:size-6" />
               </span>
-              <div>
+              <div className="min-w-0">
                 <p
                   className={cn(
-                    "text-xs font-black uppercase tracking-widest",
+                    "text-2xs font-black uppercase tracking-widest sm:text-xs",
                     theme.accent,
                   )}
                 >
                   {selected.subject}
                 </p>
-                <h2 className="mt-1 text-xl font-black text-primary sm:text-2xl">
+                <h2 className="mt-1 text-lg font-black text-primary sm:text-2xl">
                   {selected.title}
                 </h2>
-                <p className="mt-1 text-xs font-bold text-muted">
+                <p className="mt-1 line-clamp-2 text-xs font-bold text-muted">
                   {getTranslatedChapter(selected.chapter)}
-                </p>
-                <p className="mt-2 max-w-2xl text-sm text-muted">
-                  {selected.description}
                 </p>
               </div>
             </div>
@@ -579,217 +497,151 @@ export function InteractiveScienceLab() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="bg-secondary/25 p-5 sm:p-7">
+        <div className="grid xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 bg-secondary/25 p-3 sm:p-6">
             <LabConceptVisualizer
-              key={`${selected.id}-${runVersion}`}
+              key={selected.id}
               labId={selected.id}
               values={values}
               result={result}
-              runVersion={runVersion}
             />
 
-            <div className="mt-5 rounded-2xl border border-border bg-card p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <section className="mt-4 rounded-2xl border border-border bg-card p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-muted">
-                    আগে অনুমান করুন
+                  <p className="text-2xs font-black uppercase tracking-wider text-muted">
+                    পরীক্ষার নিয়ন্ত্রণ
                   </p>
-                  <p className="mt-1 text-sm font-bold text-primary">
-                    ফলাফল লক্ষ্য থেকে কোথায় থাকবে?
+                  <p className="mt-1 text-sm font-black text-primary">
+                    মান বদলালেই মডেলটি লাইভ আপডেট হবে
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {predictionLabels.map((item) => (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => {
-                        setPrediction(item.value);
-                        setHasRun(false);
-                      }}
-                      className={cn(
-                        "rounded-lg border px-3 py-2 text-xs font-black transition",
-                        prediction === item.value
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-surface text-muted hover:text-primary",
-                      )}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-4 w-full rounded-xl"
-                onClick={runExperiment}
-              >
-                <Play className="size-4" /> পরীক্ষা চালান
-              </Button>
-              {hasRun && prediction && (
-                <div
-                  className={cn(
-                    "mt-3 rounded-xl p-3 text-center text-sm font-black",
-                    prediction === relation
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-900",
-                  )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 rounded-xl"
+                  onClick={() => {
+                    setValues(getInitialLabValues(selected.id));
+                    setError("");
+                    setMessage("");
+                  }}
                 >
-                  {prediction === relation
-                    ? "দারুণ—আপনার পূর্বানুমান সঠিক!"
-                    : `ফলাফল ছিল “${predictionLabels.find((item) => item.value === relation)?.label}”—মান বদলে আবার দেখুন।`}
-                </div>
-              )}
-            </div>
+                  <RotateCcw className="size-4" />
+                  <span className="hidden sm:inline">রিসেট</span>
+                </Button>
+              </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {selected.controls.map((item) => (
-                <LabControlField
-                  key={item.key}
-                  control={item}
-                  value={values[item.key] ?? item.initial}
-                  onChange={(value) => changeValue(item.key, value)}
-                />
-              ))}
-            </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {selected.controls.map((item) => (
+                  <LabControlField
+                    key={item.key}
+                    control={item}
+                    value={values[item.key] ?? item.initial}
+                    onChange={(value) => changeValue(item.key, value)}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
 
-          <aside className="border-t border-border p-5 sm:p-7 lg:border-l lg:border-t-0">
-            <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
+          <aside className="border-t border-border p-4 sm:p-6 xl:border-l xl:border-t-0">
+            <div className="xl:sticky xl:top-20">
+              <div className="rounded-2xl bg-primary p-4 text-primary-foreground sm:p-5">
               <p className="text-xs font-black uppercase tracking-widest text-white/65">
                 মাস্টারি মিশন
               </p>
               <h3 className="mt-2 text-lg font-black">{selected.challenge}</h3>
-              <div className="mt-4 rounded-xl bg-white/10 p-4 text-center">
-                <p className="text-xs font-bold text-white/60">
-                  {selected.resultLabel}
-                </p>
-                <p className="mt-1 text-4xl font-black">
-                  {formatResult(result)}
-                  {selected.unit && (
-                    <span className="ml-1 text-base text-white/60">
-                      {selected.unit}
-                    </span>
-                  )}
-                </p>
-                <p className="mt-2 text-xs font-bold text-cyan-200">
-                  সূত্র: {selected.formula}
-                </p>
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                "mt-4 rounded-2xl border p-4",
-                mastery.valid
-                  ? "border-emerald-300 bg-emerald-50"
-                  : "border-border bg-secondary/50",
-              )}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-black text-muted">লক্ষ্য</span>
-                <span className="text-lg font-black text-primary">
-                  {selected.target} {selected.unit}
-                </span>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-[width] duration-500",
-                    mastery.valid ? "bg-emerald-500" : "bg-cyan-500",
-                  )}
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.max(4, (result / selected.target) * 100),
-                    )}%`,
-                  }}
-                />
-              </div>
-              {mastery.valid && (
-                <p className="mt-2 text-center text-xs font-black text-emerald-800">
-                  লক্ষ্য মিলেছে—মাস্টারি সংগ্রহ করুন!
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="mt-0.5 size-5 shrink-0 text-cyan-700" />
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-cyan-800">
-                    কেন এমন হলো?
-                  </p>
-                  <p className="mt-1 text-sm font-semibold leading-6 text-cyan-950">
-                    {selected.insight}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full rounded-xl"
-                onClick={recordObservation}
-              >
-                <NotebookPen className="size-4" /> পর্যবেক্ষণ নোট করুন
-              </Button>
-              {observations.length > 0 && (
-                <div className="mt-3 space-y-2 rounded-xl border border-border bg-surface p-3">
-                  {observations.map((observation, index) => (
-                    <p
-                      key={`${observation}-${index}`}
-                      className="text-xs font-semibold leading-5 text-muted"
-                    >
-                      {index + 1}. {observation}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-white/10 p-3 text-center">
+                    <p className="text-2xs font-bold text-white/60">বর্তমান</p>
+                    <p className="mt-1 text-2xl font-black">
+                      {formatResult(result)}
+                      {selected.unit && (
+                        <span className="ml-1 text-xs text-white/60">
+                          {selected.unit}
+                        </span>
+                      )}
                     </p>
-                  ))}
+                  </div>
+                  <div className="rounded-xl bg-white/10 p-3 text-center">
+                    <p className="text-2xs font-bold text-white/60">লক্ষ্য</p>
+                    <p className="mt-1 text-2xl font-black">
+                      {selected.target}
+                      {selected.unit && (
+                        <span className="ml-1 text-xs text-white/60">
+                          {selected.unit}
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+                <p className="mt-3 text-center text-2xs font-bold text-cyan-200">
+                  গাণিতিক সম্পর্ক: {selected.formula}
+                </p>
+              </div>
 
-            <div className="mt-5 flex items-center justify-between rounded-xl bg-amber-50 p-3 text-sm font-black text-amber-900">
-              <span className="inline-flex items-center gap-2">
-                <Sparkles className="size-4 text-amber-600" />
-                এককালীন পুরস্কার
-              </span>
-              <span>+{selected.xp} XP</span>
+              <div
+                className={cn(
+                  "mt-3 rounded-2xl border p-4",
+                  mastery.valid
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-border bg-secondary/50",
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-black text-muted">
+                    লক্ষ্য থেকে মিল
+                  </span>
+                  <span className="text-sm font-black text-primary">
+                    {Math.round(Math.min(100, masteryProgress))}%
+                  </span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-[width] duration-500",
+                      mastery.valid ? "bg-emerald-500" : "bg-cyan-500",
+                    )}
+                    style={{ width: `${Math.min(100, masteryProgress)}%` }}
+                  />
+                </div>
+                <p
+                  className={cn(
+                    "mt-2 text-center text-xs font-black",
+                    mastery.valid ? "text-emerald-800" : "text-muted",
+                  )}
+                >
+                  {mastery.valid
+                    ? "লক্ষ্য মিলেছে—মাস্টারি সংগ্রহ করুন!"
+                    : "চলক বদলে বর্তমান মানকে লক্ষ্যের সঙ্গে মেলান"}
+                </p>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-amber-50 p-3 text-sm font-black text-amber-900">
+                <span className="inline-flex items-center gap-2">
+                  <Sparkles className="size-4 text-amber-600" />
+                  এককালীন পুরস্কার
+                </span>
+                <span>+{selected.xp} XP</span>
+              </div>
+              <Button
+                className={cn("mt-3 min-h-12 w-full rounded-xl", theme.button)}
+                loading={working}
+                disabled={selected.completed}
+                onClick={completeLab}
+              >
+                {selected.completed ? (
+                  <>
+                    <CheckCircle2 className="size-4" /> মাস্টারি সম্পন্ন
+                  </>
+                ) : (
+                  <>
+                    <Zap className="size-4" /> ফলাফল যাচাই করুন
+                  </>
+                )}
+              </Button>
             </div>
-            <Button
-              className={cn("mt-4 min-h-12 w-full rounded-xl", theme.button)}
-              loading={working}
-              disabled={selected.completed}
-              onClick={completeLab}
-            >
-              {selected.completed ? (
-                <>
-                  <CheckCircle2 className="size-4" /> মাস্টারি সম্পন্ন
-                </>
-              ) : (
-                <>
-                  <Zap className="size-4" /> ফলাফল যাচাই করুন
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-2 w-full"
-              onClick={() => {
-                setValues(getInitialLabValues(selected.id));
-                setPrediction(null);
-                setHasRun(false);
-                setObservations([]);
-                setError("");
-                setMessage("");
-              }}
-            >
-              <RotateCcw className="size-4" /> ল্যাব রিসেট
-            </Button>
           </aside>
         </div>
       </article>

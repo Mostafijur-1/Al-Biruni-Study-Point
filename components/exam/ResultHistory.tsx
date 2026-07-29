@@ -461,15 +461,15 @@ export function ResultHistory() {
 
       {/* Solutions Review Modal */}
       {selectedAttemptId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-2xl max-h-[85vh] rounded-2xl border border-border bg-card p-6 shadow-2xl flex flex-col justify-between animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-xs sm:p-4 animate-fade-in">
+          <div role="dialog" aria-modal="true" aria-labelledby="solutions-review-title" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-6 animate-scale-up">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-border/80 pb-3.5">
               <div>
                 <span className="text-3xs font-extrabold uppercase tracking-wider text-muted">
                   Reviewing Solutions
                 </span>
-                <h3 className="font-display text-base md:text-lg font-bold text-primary leading-tight mt-0.5">
+                <h3 id="solutions-review-title" className="font-display mt-0.5 text-base font-bold leading-tight text-primary md:text-lg">
                   {attemptDetail ? attemptDetail.exam.title : "Loading Exam Details..."}
                 </h3>
               </div>
@@ -478,7 +478,8 @@ export function ResultHistory() {
                   setSelectedAttemptId(null);
                   setSolutionsTab("all");
                 }}
-                className="text-muted hover:text-primary transition font-bold cursor-pointer"
+                className="grid size-10 shrink-0 place-items-center rounded-lg font-bold text-muted transition hover:bg-secondary hover:text-primary"
+                aria-label="বন্ধ করুন"
               >
                 ✕
               </button>
@@ -488,7 +489,7 @@ export function ResultHistory() {
             {attemptDetail && (
               <div className="py-3.5 border-b border-border/40 space-y-3.5">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-2.5 text-3xs font-bold text-muted">
+                <div className="grid gap-2 text-3xs font-bold text-muted sm:grid-cols-3 sm:gap-2.5">
                   <div className="bg-secondary/40 border border-border/40 rounded-lg p-2 text-center">
                     <span className="block uppercase tracking-wider text-muted mb-0.5">Score</span>
                     <span className="text-sm font-black text-primary font-display">

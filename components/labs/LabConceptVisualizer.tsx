@@ -15,7 +15,6 @@ type VisualizerProps = {
   labId: ScienceLabId;
   values: LabInputValues;
   result: number;
-  runVersion: number;
 };
 
 type DrawState = VisualizerProps & {
@@ -49,7 +48,6 @@ export function LabConceptVisualizer({
   labId,
   values,
   result,
-  runVersion,
 }: VisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [view, setView] = useState<ConceptView>("mechanism");
@@ -64,6 +62,7 @@ export function LabConceptVisualizer({
     let animationFrame = 0;
     let width = 0;
     let height = 0;
+    let visible = true;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -86,29 +85,39 @@ export function LabConceptVisualizer({
     };
 
     const render = (milliseconds: number) => {
-      resize();
-      drawVisualization(context, {
-        labId,
-        values,
-        result,
-        runVersion,
-        width,
-        height,
-        time: reduceMotion ? runVersion * 0.37 : milliseconds / 1000,
-        view,
-      });
+      if (visible) {
+        resize();
+        drawVisualization(context, {
+          labId,
+          values,
+          result,
+          width,
+          height,
+          time: reduceMotion ? 0.37 : milliseconds / 1000,
+          view,
+        });
+      }
       if (!reduceMotion) animationFrame = requestAnimationFrame(render);
     };
 
     const observer = new ResizeObserver(resize);
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry?.isIntersecting ?? true;
+        if (visible && reduceMotion) render(0);
+      },
+      { rootMargin: "120px" },
+    );
     observer.observe(canvas);
+    visibilityObserver.observe(canvas);
     animationFrame = requestAnimationFrame(render);
 
     return () => {
       cancelAnimationFrame(animationFrame);
       observer.disconnect();
+      visibilityObserver.disconnect();
     };
-  }, [labId, result, runVersion, values, view]);
+  }, [labId, result, values, view]);
 
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-white shadow-inner">
@@ -130,7 +139,7 @@ export function LabConceptVisualizer({
           </span>
         </div>
         <div
-          className="mt-4 grid grid-cols-3 gap-2"
+          className="mt-3 grid grid-cols-3 gap-1.5 sm:mt-4 sm:gap-2"
           role="tablist"
           aria-label="ভিজ্যুয়াল ব্যাখ্যার ধরন"
         >
@@ -144,7 +153,7 @@ export function LabConceptVisualizer({
                 aria-selected={view === item}
                 onClick={() => setView(item)}
                 className={cn(
-                  "flex min-h-12 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[10px] font-black transition sm:text-xs",
+                  "flex min-h-11 items-center justify-center gap-1 rounded-xl border px-1.5 py-2 text-[9px] font-black leading-tight transition sm:min-h-12 sm:gap-1.5 sm:px-2 sm:text-xs",
                   view === item
                     ? "border-cyan-300 bg-cyan-300 text-slate-950"
                     : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10",
@@ -158,14 +167,14 @@ export function LabConceptVisualizer({
         </div>
       </header>
 
-      <div className="relative">
+      <div>
         <canvas
           ref={canvasRef}
-          className="block h-[390px] w-full touch-none sm:h-[430px]"
+          className="block h-[390px] w-full touch-pan-y sm:h-[430px]"
           role="img"
           aria-label={`${concept.curriculumFocus} বিষয়ক চলমান ব্যাখ্যামূলক মডেল`}
         />
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 text-center text-xs font-bold text-slate-200 backdrop-blur">
+        <div className="border-t border-white/10 bg-slate-900 px-4 py-3 text-center text-xs font-bold leading-5 text-slate-200">
           {view === "mechanism"
             ? concept.mechanism
             : view === "relationship"
@@ -174,7 +183,7 @@ export function LabConceptVisualizer({
         </div>
       </div>
 
-      <footer className="grid gap-3 border-t border-white/10 bg-white/[0.03] p-4 md:grid-cols-[0.8fr_1.2fr]">
+      <footer className="grid gap-3 border-t border-white/10 bg-white/[0.03] p-3 sm:p-4 md:grid-cols-[0.8fr_1.2fr]">
         <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3">
           <p className="text-2xs font-black uppercase tracking-wider text-amber-300">
             কোথায় নজর দেবেন
@@ -183,7 +192,7 @@ export function LabConceptVisualizer({
             {concept.watchFor}
           </p>
         </div>
-        <ol className="grid gap-2 sm:grid-cols-3">
+        <ol className="-mx-1 grid auto-cols-[minmax(220px,82%)] grid-flow-col gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:auto-cols-[minmax(220px,48%)] md:mx-0 md:grid-flow-row md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0">
           {concept.steps.map((step, index) => (
             <li
               key={step}
@@ -853,14 +862,14 @@ function drawTrigonometry(context: CanvasRenderingContext2D, state: DrawState) {
 }
 
 function drawProbability(context: CanvasRenderingContext2D, state: DrawState) {
-  const { width, values, time, runVersion, view } = state;
+  const { width, values, time, view } = state;
   const favorable = Math.round(values.favorable ?? 1);
   const total = Math.max(favorable, Math.round(values.total ?? 2));
   const probability = favorable / total;
   const centerX = Math.min(135, width * 0.28);
   const centerY = 180;
   const radius = 92;
-  const rotation = time * 0.8 + runVersion * 1.7;
+  const rotation = time * 0.8;
 
   label(context, "তাত্ত্বিক মান বনাম running frequency", 30, 38, COLORS.ink, 14);
   for (let index = 0; index < total; index += 1) {
@@ -895,7 +904,7 @@ function drawProbability(context: CanvasRenderingContext2D, state: DrawState) {
   let successes = 0;
   const trials = 55;
   for (let index = 1; index <= trials; index += 1) {
-    const random = seededRandom(index * 73 + total * 19 + favorable * 11 + runVersion);
+    const random = seededRandom(index * 73 + total * 19 + favorable * 11);
     if (random < probability) successes += 1;
     const running = successes / index;
     const x = graphX + ((index - 1) / (trials - 1)) * graphWidth;

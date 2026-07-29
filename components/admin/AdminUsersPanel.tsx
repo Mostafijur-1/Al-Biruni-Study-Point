@@ -426,10 +426,10 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
 
       {/* Teacher Domain Configuration Modal */}
       {isModalOpen && selectedTeacher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl rounded-2xl bg-card p-6 shadow-2xl border border-border flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+          <div role="dialog" aria-modal="true" aria-labelledby="teacher-domain-title" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-6 animate-in zoom-in-95 duration-200">
             <div className="border-b border-border pb-4">
-              <h3 className="font-display text-xl font-bold text-primary flex items-center gap-2">
+              <h3 id="teacher-domain-title" className="font-display flex min-w-0 items-center gap-2 text-lg font-bold text-primary sm:text-xl">
                 <span className="rounded-lg bg-primary/10 p-1.5 text-primary">
                   <GraduationCap className="size-5" />
                 </span>

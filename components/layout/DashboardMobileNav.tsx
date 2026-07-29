@@ -1,9 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getLocalizedPath, type Locale } from "@/lib/i18n";
-import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import {
   BookOpen,
   Brain,
@@ -17,6 +16,7 @@ import {
   LayoutDashboard,
   LineChart,
   Map,
+  MoreHorizontal,
   NotebookPen,
   Swords,
   Sigma,
@@ -25,59 +25,136 @@ import {
   UserCircle,
   Users,
   UsersRound,
+  X,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
+import { getLocalizedPath } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
 type NavItem = {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  /** If true, append ?level=<current> when navigating */
+  icon: ComponentType<{ className?: string }>;
   levelAware?: boolean;
+  mobilePrimary?: boolean;
 };
 
-const linksByRole: Record<UserRole, NavItem[]> = {
+const navigationByRole: Record<UserRole, NavItem[]> = {
   student: [
-    { href: "/student", label: "হোম", icon: Home },
-    { href: "/student/courses", label: "ক্লাস", icon: BookOpen, levelAware: true },
-    { href: "/student/practice", label: "প্র্যাকটিস", icon: Brain, levelAware: true },
-    { href: "/student/exams", label: "পরীক্ষা", icon: FileQuestion },
-    { href: "/student/assignments", label: "কাজ", icon: ClipboardList },
+    { href: "/student", label: "শিক্ষার্থী হোম", icon: Home, mobilePrimary: true },
+    { href: "/student/coach", label: "স্টাডি কোচ", icon: Compass },
+    { href: "/student/learning", label: "শেখার প্ল্যান", icon: Map },
+    { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
+    { href: "/student/game", label: "গেম হাব", icon: Gamepad2 },
+    { href: "/student/challenge", label: "ডেইলি চ্যালেঞ্জ", icon: Swords },
+    { href: "/student/focus", label: "ফোকাস স্টুডিও", icon: TimerReset },
+    { href: "/student/goals", label: "সাপ্তাহিক লক্ষ্য", icon: Target },
+    { href: "/student/labs", label: "সায়েন্স ল্যাব", icon: FlaskConical },
+    { href: "/student/formulas", label: "ফর্মুলা স্প্রিন্ট", icon: Sigma },
+    { href: "/student/community", label: "ক্লাস কমিউনিটি", icon: UsersRound },
+    {
+      href: "/student/courses",
+      label: "কোর্স ও ক্লাস",
+      icon: BookOpen,
+      levelAware: true,
+      mobilePrimary: true,
+    },
+    {
+      href: "/student/practice",
+      label: "MCQ প্র্যাকটিস",
+      icon: Brain,
+      levelAware: true,
+      mobilePrimary: true,
+    },
+    {
+      href: "/student/exams",
+      label: "MCQ পরীক্ষা",
+      icon: FileQuestion,
+      mobilePrimary: true,
+    },
+    { href: "/student/assignments", label: "অ্যাসাইনমেন্ট", icon: ClipboardList },
     { href: "/student/results", label: "ফলাফল", icon: GraduationCap },
+    { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle },
   ],
   teacher: [
-    { href: "/teacher/profile", label: "Profile", icon: UserCircle },
-    { href: "/teacher/mcq-review", label: "MCQ Review", icon: Brain },
-    { href: "/teacher/exams", label: "MCQ Exams", icon: FileQuestion },
-    { href: "/teacher/results", label: "Results", icon: LineChart },
+    { href: "/teacher", label: "হোম", icon: Home, mobilePrimary: true },
+    {
+      href: "/teacher/mcq-review",
+      label: "MCQ রিভিউ",
+      icon: Brain,
+      mobilePrimary: true,
+    },
+    {
+      href: "/teacher/exams",
+      label: "MCQ পরীক্ষা",
+      icon: FileQuestion,
+      mobilePrimary: true,
+    },
+    {
+      href: "/teacher/results",
+      label: "ফলাফল",
+      icon: LineChart,
+      mobilePrimary: true,
+    },
+    { href: "/teacher/profile", label: "প্রোফাইল", icon: UserCircle },
   ],
   admin: [
-    { href: "/admin", label: "Home", icon: LayoutDashboard },
-    { href: "/admin/profile", label: "Profile", icon: UserCircle },
-    { href: "/admin/students", label: "Students", icon: Users },
-    { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
-    { href: "/admin/practice-mcqs", label: "Settings", icon: Brain },
+    {
+      href: "/admin",
+      label: "ওভারভিউ",
+      icon: LayoutDashboard,
+      mobilePrimary: true,
+    },
+    {
+      href: "/admin/students",
+      label: "শিক্ষার্থী",
+      icon: Users,
+      mobilePrimary: true,
+    },
+    {
+      href: "/admin/teachers",
+      label: "শিক্ষক",
+      icon: GraduationCap,
+      mobilePrimary: true,
+    },
+    {
+      href: "/admin/practice-mcqs",
+      label: "সেটিংস",
+      icon: Brain,
+      mobilePrimary: true,
+    },
+    { href: "/admin/profile", label: "প্রোফাইল", icon: UserCircle },
   ],
 };
 
 function roleFromPathname(pathname: string): UserRole {
   const segments = pathname.split("/").filter(Boolean);
-
   if (segments.includes("admin")) return "admin";
   if (segments.includes("teacher")) return "teacher";
   return "student";
 }
 
-function buildHref(href: string, locale: Locale, level: "SSC" | "HSC", levelAware?: boolean) {
-  const levelSuffix = levelAware ? `?level=${level}` : "";
-  return getLocalizedPath(`${href}${levelSuffix}`);
+function isNavActive(pathname: string, href: string, role: UserRole) {
+  const localizedBase = getLocalizedPath(href);
+  const isRoleRoot = href === `/${role}`;
+  return (
+    pathname === localizedBase ||
+    (!isRoleRoot && pathname.startsWith(`${localizedBase}/`))
+  );
 }
 
-export function DashboardMobileNav() {
-  const locale = "bn";
+function buildHref(
+  href: string,
+  level: "SSC" | "HSC",
+  levelAware?: boolean,
+) {
+  return getLocalizedPath(`${href}${levelAware ? `?level=${level}` : ""}`);
+}
+
+function useDashboardNavigation() {
   const pathname = usePathname();
   const guestLevel = useGuestLevel();
   const { user } = useSession();
@@ -88,113 +165,183 @@ export function DashboardMobileNav() {
         ? "SSC"
         : guestLevel;
   const role = roleFromPathname(pathname);
-  const links = linksByRole[role];
+
+  return {
+    pathname,
+    level,
+    role,
+    links: navigationByRole[role],
+  };
+}
+
+export function DashboardMobileNav() {
+  const { pathname, level, role, links } = useDashboardNavigation();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const primaryLinks = links.filter((item) => item.mobilePrimary).slice(0, 4);
+  const secondaryLinks = links.filter((item) => !item.mobilePrimary);
+  const secondaryActive = secondaryLinks
+    .some((item) => isNavActive(pathname, item.href, role));
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setMoreOpen(false), 0);
+    return () => window.clearTimeout(timeout);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const trigger = moreButtonRef.current;
+    document.body.style.overflow = "hidden";
+    const focusFrame = window.requestAnimationFrame(() =>
+      closeButtonRef.current?.focus(),
+    );
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [moreOpen]);
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface px-1 py-1 shadow-[0_-4px_20px_rgb(11_37_69_/_0.08)] md:hidden"
-      aria-label="Dashboard navigation"
-    >
-      <ul className="flex items-stretch justify-around gap-0.5">
-        {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
-          const fullHref = buildHref(href, locale as Locale, level, levelAware);
-          const fullHrefBase = getLocalizedPath(href);
-          const isRoleRoot = href === `/${role}`;
-          const active =
-            pathname === fullHrefBase ||
-            (!isRoleRoot && pathname.startsWith(`${fullHrefBase}/`));
-
-          return (
-            <li key={`${href}-${idx}`} className="min-w-0 flex-1">
-              <Link
-                href={fullHref}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px] font-semibold transition",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted hover:bg-secondary hover:text-primary",
-                )}
+    <>
+      {moreOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="মেনু বন্ধ করুন"
+            className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+            onClick={() => setMoreOpen(false)}
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-more-title"
+            className="absolute inset-x-0 bottom-0 max-h-[78dvh] overflow-hidden rounded-t-3xl border-t border-border bg-surface shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div>
+                <p className="text-2xs font-black uppercase tracking-widest text-accent">
+                  ড্যাশবোর্ড
+                </p>
+                <h2
+                  id="dashboard-more-title"
+                  className="mt-0.5 text-lg font-black text-primary"
+                >
+                  আরও ফিচার
+                </h2>
+              </div>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => setMoreOpen(false)}
+                className="grid size-11 place-items-center rounded-xl border border-border bg-secondary text-primary"
+                aria-label="মেনু বন্ধ করুন"
               >
-                <Icon className="size-4 shrink-0" />
-                <span className="truncate">{label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                <X className="size-5" />
+              </button>
+            </div>
+            <nav
+              className="grid max-h-[calc(78dvh-5rem)] grid-cols-2 gap-2 overflow-y-auto p-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
+              aria-label="আরও ড্যাশবোর্ড ফিচার"
+            >
+              {secondaryLinks.map(({ href, label, icon: Icon, levelAware }) => {
+                const active = isNavActive(pathname, href, role);
+                return (
+                  <Link
+                    key={href}
+                    href={buildHref(href, level, levelAware)}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex min-h-14 items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-primary hover:bg-secondary",
+                    )}
+                  >
+                    <Icon className="size-5 shrink-0" />
+                    <span className="min-w-0 leading-tight">{label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </section>
+        </div>
+      )}
+
+      <nav
+        data-dashboard-mobile-nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-1 pt-1 shadow-[0_-4px_20px_rgb(11_37_69_/_0.08)] backdrop-blur-md pb-[max(.25rem,env(safe-area-inset-bottom))] lg:hidden"
+        aria-label="ড্যাশবোর্ড নেভিগেশন"
+      >
+        <ul className="grid grid-cols-5 gap-0.5">
+          {primaryLinks.map(({ href, label, icon: Icon, levelAware }) => {
+            const active = isNavActive(pathname, href, role);
+            return (
+              <li key={href} className="min-w-0">
+                <Link
+                  href={buildHref(href, level, levelAware)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-bold leading-tight transition",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted hover:bg-secondary hover:text-primary",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  <span className="w-full truncate text-center">
+                    {label.replace("শিক্ষার্থী ", "").replace("MCQ ", "")}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+          <li className="min-w-0">
+            <button
+              ref={moreButtonRef}
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              aria-expanded={moreOpen}
+              className={cn(
+                "flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-bold leading-tight transition",
+                secondaryActive || moreOpen
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted hover:bg-secondary hover:text-primary",
+              )}
+            >
+              <MoreHorizontal className="size-4 shrink-0" />
+              <span>আরও</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </>
   );
 }
 
 export function DashboardSidebar() {
-  const locale = "bn";
-  const pathname = usePathname();
-  const guestLevel = useGuestLevel();
-  const { user } = useSession();
-  const level =
-    user?.studentClass === "class-11" || user?.studentClass === "class-12"
-      ? "HSC"
-      : user?.studentClass
-        ? "SSC"
-        : guestLevel;
-  const role = roleFromPathname(pathname);
-
-  const allLinks: Record<UserRole, NavItem[]> = {
-    student: [
-      { href: "/student", label: "শিক্ষার্থী হোম", icon: Home },
-      { href: "/student/coach", label: "স্টাডি কোচ", icon: Compass },
-      { href: "/student/learning", label: "শেখার প্ল্যান", icon: Map },
-      { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
-      { href: "/student/game", label: "গেম হাব", icon: Gamepad2 },
-      { href: "/student/challenge", label: "ডেইলি চ্যালেঞ্জ", icon: Swords },
-      { href: "/student/focus", label: "ফোকাস স্টুডিও", icon: TimerReset },
-      { href: "/student/goals", label: "সাপ্তাহিক লক্ষ্য", icon: Target },
-      { href: "/student/labs", label: "সায়েন্স ল্যাব", icon: FlaskConical },
-      { href: "/student/formulas", label: "ফর্মুলা স্প্রিন্ট", icon: Sigma },
-      { href: "/student/community", label: "ক্লাস কমিউনিটি", icon: UsersRound },
-      { href: "/student/courses", label: "কোর্স ও ক্লাস", icon: BookOpen, levelAware: true },
-      { href: "/student/practice", label: "MCQ প্র্যাকটিস", icon: Brain, levelAware: true },
-      { href: "/student/exams", label: "MCQ পরীক্ষা", icon: FileQuestion },
-      { href: "/student/assignments", label: "অ্যাসাইনমেন্ট", icon: ClipboardList },
-      { href: "/student/results", label: "ফলাফল", icon: GraduationCap },
-      { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle },
-    ],
-    teacher: [
-      { href: "/teacher/profile", label: "Profile", icon: UserCircle },
-      { href: "/teacher/mcq-review", label: "MCQ Review", icon: Brain },
-      { href: "/teacher/exams", label: "MCQ Exams", icon: FileQuestion },
-      { href: "/teacher/results", label: "Results", icon: LineChart },
-    ],
-    admin: [
-      { href: "/admin", label: "Overview", icon: LayoutDashboard },
-      { href: "/admin/profile", label: "Profile", icon: UserCircle },
-      { href: "/admin/students", label: "Students", icon: Users },
-      { href: "/admin/teachers", label: "Teachers", icon: GraduationCap },
-      //{ href: "/admin/courses", label: "Courses", icon: BookOpen },
-      //{ href: "/admin/exams", label: "Exams & results", icon: FileQuestion },
-      { href: "/admin/practice-mcqs", label: "Settings", icon: Brain },
-      //{ href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-    ],
-  };
-
-  const links = allLinks[role];
+  const { pathname, level, role, links } = useDashboardNavigation();
 
   return (
-    <aside className="hidden rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-sm)] md:block">
-      <p className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-accent">Menu</p>
-      <nav className="mt-1 space-y-0.5">
-        {links.map(({ href, label, icon: Icon, levelAware }, idx) => {
-          const fullHref = buildHref(href, locale as Locale, level, levelAware);
-          const fullHrefBase = getLocalizedPath(href);
-          const isRoleRoot = href === `/${role}`;
-          const active =
-            pathname === fullHrefBase ||
-            (!isRoleRoot && pathname.startsWith(`${fullHrefBase}/`));
-
+    <aside className="sticky top-24 hidden max-h-[calc(100dvh-7rem)] self-start overflow-y-auto rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-sm)] lg:block">
+      <p className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-accent">
+        নেভিগেশন
+      </p>
+      <nav className="mt-1 space-y-0.5" aria-label="ড্যাশবোর্ড নেভিগেশন">
+        {links.map(({ href, label, icon: Icon, levelAware }) => {
+          const active = isNavActive(pathname, href, role);
           return (
             <Link
-              key={`${href}-${idx}`}
-              href={fullHref}
+              key={href}
+              href={buildHref(href, level, levelAware)}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition",
                 active
@@ -203,7 +350,7 @@ export function DashboardSidebar() {
               )}
             >
               <Icon className="size-4 shrink-0" />
-              {label}
+              <span className="min-w-0">{label}</span>
             </Link>
           );
         })}

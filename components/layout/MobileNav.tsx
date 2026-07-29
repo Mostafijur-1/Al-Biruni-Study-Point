@@ -41,7 +41,12 @@ export function MobileNav({ navigation,
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    if (open) window.addEventListener("keydown", closeOnEscape);
     return () => {
+      window.removeEventListener("keydown", closeOnEscape);
       document.body.style.overflow = "";
     };
   }, [open]);
@@ -56,13 +61,14 @@ export function MobileNav({ navigation,
           pressableClasses,
         )}
         aria-expanded={open}
-        aria-label={open ? "Close menu" : "Open menu"}
+        aria-controls="mobile-navigation-panel"
+        aria-label={open ? "মেনু বন্ধ করুন" : "মেনু খুলুন"}
       >
         {open ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-navy lg:hidden">
+        <div id="mobile-navigation-panel" className="fixed inset-0 z-50 flex flex-col bg-navy lg:hidden">
           <div className="flex h-[var(--header-height)] shrink-0 items-center justify-between border-b border-white/15 px-4">
             <Logo size="sm" tone="onDark" link={false} />
             <button
@@ -72,13 +78,13 @@ export function MobileNav({ navigation,
                 "grid size-11 place-items-center rounded-xl border border-white/25 bg-white/10 text-white",
                 pressableClasses,
               )}
-              aria-label="Close menu"
+              aria-label="মেনু বন্ধ করুন"
             >
               <X className="size-6" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-5">
+          <div className="flex-1 overflow-y-auto px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             <nav className="space-y-2">
               {publicNavPaths.map(({ key, path }) => {
                 const href = getLocalizedPath(path);

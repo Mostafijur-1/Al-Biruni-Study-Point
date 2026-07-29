@@ -766,8 +766,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
         {/* --- CUSTOM SUBMIT CONFIRMATION MODAL --- */}
         {showSubmitConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+            <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-in zoom-in-95 duration-200">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
                   <CheckCircle2 className="size-6 text-primary" />
@@ -859,8 +859,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
         {/* --- CUSTOM SUBMIT ERROR MODAL --- */}
         {submitError && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+            <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-in zoom-in-95 duration-200">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="size-12 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shrink-0">
                   <AlertTriangle className="size-6 text-brand-red animate-pulse" />
@@ -887,8 +887,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
         {/* --- CUSTOM LEAVE WARNING MODAL --- */}
         {showLeaveWarning && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+            <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-in zoom-in-95 duration-200">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="size-12 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shrink-0">
                   <AlertTriangle className="size-6 text-brand-red animate-pulse" />
@@ -940,8 +940,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
         {/* --- TAB SWITCHING WARNING MODAL --- */}
         {showTabSwitchWarning && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+            <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-in zoom-in-95 duration-200">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="size-12 rounded-full bg-yellow-50 flex items-center justify-center border border-yellow-100 shrink-0">
                   <AlertTriangle className="size-6 text-brand-yellow animate-bounce" />

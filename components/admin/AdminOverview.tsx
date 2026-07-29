@@ -189,7 +189,55 @@ export function AdminOverview() {
               </span>
             </div>
 
-            <div className="mt-4 overflow-x-auto">
+            <div className="mt-4 space-y-3 md:hidden">
+              {stats.teacherCharges.map((teacher) => (
+                <article
+                  key={teacher.id}
+                  className="rounded-xl border border-border bg-surface p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-bold text-primary">
+                        {teacher.name}
+                      </h3>
+                      <p className="mt-0.5 break-all text-xs text-muted">
+                        {teacher.phone || teacher.email || "-"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                      {teacher.monthlyChargeTk} tk
+                    </span>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg bg-secondary/50 p-2">
+                      <dt className="text-muted">Image uploads</dt>
+                      <dd className="mt-0.5 font-bold text-primary">
+                        {teacher.imageQuestionUploadCount}
+                      </dd>
+                    </div>
+                    <div className="rounded-lg bg-secondary/50 p-2">
+                      <dt className="text-muted">Due date</dt>
+                      <dd
+                        className={cn(
+                          "mt-0.5 font-bold",
+                          teacher.isChargeExpired
+                            ? "text-red-700"
+                            : "text-amber-700",
+                        )}
+                      >
+                        {formatBillingDate(teacher.chargeDueAt)}
+                      </dd>
+                    </div>
+                  </dl>
+                  <p className="mt-2 text-xs font-semibold text-muted">
+                    {teacher.approvalStatus}
+                    {!teacher.isActive ? " · inactive" : ""}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-4 hidden overflow-x-auto md:block">
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="border-b border-border text-xs uppercase tracking-wide text-muted">
                   <tr>

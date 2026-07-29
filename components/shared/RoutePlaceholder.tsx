@@ -8,7 +8,7 @@ type RoutePlaceholderProps = {
 
 export function RoutePlaceholder({ eyebrow, title, description }: RoutePlaceholderProps) {
   return (
-    <section className="px-0">
+    <section className="space-y-4 px-0 sm:space-y-6">
       <PageHeader eyebrow={eyebrow} title={title} description={description} />
       <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-10 text-center text-sm text-muted sm:px-6 sm:py-12">
         Content coming soon.

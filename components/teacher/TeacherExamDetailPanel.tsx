@@ -837,15 +837,16 @@ d) 9"
 
       {/* Edit Exam Details Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4 animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 backdrop-blur-xs sm:p-4 animate-fade-in">
+          <div role="dialog" aria-modal="true" aria-labelledby="edit-exam-dialog-title" className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md space-y-4 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-scale-up">
             <div className="flex items-center justify-between border-b border-border/80 pb-3">
-              <h2 className="font-display text-lg font-bold text-primary">
+              <h2 id="edit-exam-dialog-title" className="font-display text-lg font-bold text-primary">
                 {"পরীক্ষার তথ্য সংশোধন"}
               </h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="text-muted hover:text-primary transition font-bold"
+                className="grid size-10 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-secondary hover:text-primary"
+                aria-label="বন্ধ করুন"
               >
                 ✕
               </button>
@@ -887,7 +888,7 @@ d) 9"
                 </select>
               </div>
 
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid gap-3 sm:grid-cols-3 sm:gap-2.5">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-exam-duration">Duration (m)</Label>
                   <input

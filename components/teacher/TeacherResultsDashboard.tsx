@@ -640,9 +640,9 @@ export function TeacherResultsDashboard() {
 
       {/* Filters */}
       <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
-        <div className="flex flex-wrap gap-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_auto_auto_auto_auto]">
           {/* Search */}
-          <div className="relative min-w-[200px] flex-1">
+          <div className="relative min-w-0 sm:col-span-2 xl:col-span-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
             <input
               type="text"
@@ -678,7 +678,7 @@ export function TeacherResultsDashboard() {
                 }
               }
             }}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+            className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
           >
             <option value="">All Classes</option>
             {allowedClasses.map((cls) => (
@@ -695,7 +695,7 @@ export function TeacherResultsDashboard() {
               setFilterSubject(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+            className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
           >
             <option value="">All Subjects</option>
             {allowedSubjects.map((sub) => (
@@ -712,7 +712,7 @@ export function TeacherResultsDashboard() {
               setFilterDate(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+            className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
           >
             <option value="today">Today</option>
             <option value="yesterday">Yesterday</option>
@@ -725,7 +725,7 @@ export function TeacherResultsDashboard() {
             type="button"
             onClick={fetchResults}
             disabled={loading}
-            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted hover:bg-secondary hover:text-primary transition disabled:opacity-50"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition hover:bg-secondary hover:text-primary disabled:opacity-50"
           >
             <RefreshCw className={cn("size-4", loading && "animate-spin")} />
             Refresh

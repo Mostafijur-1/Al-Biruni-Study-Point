@@ -92,6 +92,42 @@ body {
   overflow-x: hidden;
 }
 
+main {
+  min-width: 0;
+}
+
+html {
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 a {
   text-underline-offset: 4px;
 }
@@ -128,6 +164,24 @@ a {
 button,
 [role="button"] {
   -webkit-tap-highlight-color: transparent;
+}
+
+body:has([data-dashboard-mobile-nav]) footer {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  body:has([data-dashboard-mobile-nav]) footer {
+    padding-bottom: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

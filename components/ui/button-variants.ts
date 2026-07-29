@@ -8,7 +8,7 @@ export const pressableClasses =
 
 export const buttonVariants = cva(
   cn(
-    "relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-lg text-sm font-semibold",
+    "relative inline-flex max-w-full items-center justify-center gap-2 overflow-hidden rounded-lg text-center text-sm font-semibold",
     pressableClasses,
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     "disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100",
@@ -32,9 +32,9 @@ export const buttonVariants = cva(
           "dark:text-foreground dark:hover:border-border dark:hover:bg-secondary/70",
       },
       size: {
-        default: "h-11 px-5 py-2",
-        sm: "h-9 rounded-md px-3 text-xs",
-        lg: "h-12 rounded-xl px-6 text-base",
+        default: "min-h-11 px-5 py-2",
+        sm: "min-h-9 rounded-md px-3 py-1.5 text-xs",
+        lg: "min-h-12 rounded-xl px-6 py-2.5 text-base",
         icon: "size-10",
       },
     },

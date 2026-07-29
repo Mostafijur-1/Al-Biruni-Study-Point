@@ -62,7 +62,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           />
         ))}
         {loading && <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />}
-        <span className={cn("inline-flex items-center gap-2", loading && "opacity-90")}>
+        <span className={cn("inline-flex min-w-0 items-center justify-center gap-2", loading && "opacity-90")}>
           {children}
         </span>
       </button>
