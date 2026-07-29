@@ -23,6 +23,9 @@ export const STUDENT_EVENT_NAMES = [
   "student_goal_board_viewed",
   "student_weekly_goal_created",
   "student_weekly_goal_claimed",
+  "student_science_lab_viewed",
+  "student_science_lab_opened",
+  "student_science_lab_completed",
 ] as const;
 
 export type StudentEventName = (typeof STUDENT_EVENT_NAMES)[number];

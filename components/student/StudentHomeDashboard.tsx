@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Flame,
+  FlaskConical,
   Gamepad2,
   GraduationCap,
   LineChart,
@@ -510,6 +511,14 @@ export function StudentHomeDashboard() {
               description: "নিজের লক্ষ্য বেছে নিন এবং স্বয়ংক্রিয় অগ্রগতি দেখুন",
               icon: Target,
               tone: "bg-rose-100 text-rose-700",
+            },
+            {
+              href: "/student/labs",
+              action: "science_labs",
+              title: "সায়েন্স ল্যাব",
+              description: "গতি, সার্কিট ও মোলের সূত্র হাতে-কলমে পরীক্ষা করুন",
+              icon: FlaskConical,
+              tone: "bg-cyan-100 text-cyan-700",
             },
             {
               href: "/student/community",

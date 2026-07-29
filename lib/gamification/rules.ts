@@ -111,6 +111,16 @@ export const ACHIEVEMENTS = {
     title: "লক্ষ্য চ্যাম্পিয়ন",
     description: "একটি কঠিন সাপ্তাহিক লক্ষ্য সম্পন্ন করুন।",
   },
+  LAB_EXPLORER: {
+    code: "LAB_EXPLORER",
+    title: "তরুণ গবেষক",
+    description: "প্রথম ইন্টার‌্যাক্টিভ সায়েন্স ল্যাব সম্পন্ন করুন।",
+  },
+  LAB_MASTER: {
+    code: "LAB_MASTER",
+    title: "ল্যাব মাস্টার",
+    description: "সব ইন্টার‌্যাক্টিভ সায়েন্স ল্যাব সম্পন্ন করুন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;
