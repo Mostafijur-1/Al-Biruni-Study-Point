@@ -18,6 +18,7 @@ import {
   Target,
   Trophy,
   UsersRound,
+  Swords,
 } from "lucide-react";
 
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
@@ -484,6 +485,14 @@ export function StudentHomeDashboard() {
               description: "কোয়েস্ট, রিওয়ার্ড ও ক্লাসের শেখার র‌্যাঙ্কিং",
               icon: Gamepad2,
               tone: "bg-fuchsia-100 text-fuchsia-700",
+            },
+            {
+              href: "/student/challenge",
+              action: "daily_challenge",
+              title: "ডেইলি চ্যালেঞ্জ",
+              description: "৯০ সেকেন্ডে ৫ প্রশ্ন—দ্রুত খেলুন ও সমাধান শিখুন",
+              icon: Swords,
+              tone: "bg-orange-100 text-orange-700",
             },
             {
               href: "/student/community",

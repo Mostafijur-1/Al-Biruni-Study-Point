@@ -71,6 +71,21 @@ export const ACHIEVEMENTS = {
     title: "টিম প্লেয়ার",
     description: "সহপাঠীদের সঙ্গে একটি ক্লাস মিশন সম্পন্ন করুন।",
   },
+  DAILY_CHALLENGER: {
+    code: "DAILY_CHALLENGER",
+    title: "দৈনিক চ্যালেঞ্জার",
+    description: "প্রথম দৈনিক চ্যালেঞ্জ সম্পন্ন করুন।",
+  },
+  CHALLENGE_ACE: {
+    code: "CHALLENGE_ACE",
+    title: "চ্যালেঞ্জ এস",
+    description: "একটি দৈনিক চ্যালেঞ্জে সব প্রশ্নের সঠিক উত্তর দিন।",
+  },
+  CHALLENGE_WEEK: {
+    code: "CHALLENGE_WEEK",
+    title: "সাত দিনের চ্যালেঞ্জ",
+    description: "টানা সাত দিন দৈনিক চ্যালেঞ্জ সম্পন্ন করুন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;
