@@ -66,6 +66,11 @@ export const ACHIEVEMENTS = {
     title: "কোয়েস্ট মাস্টার",
     description: "একটি সাপ্তাহিক কোয়েস্ট সম্পন্ন করে পুরস্কার নিন।",
   },
+  TEAM_PLAYER: {
+    code: "TEAM_PLAYER",
+    title: "টিম প্লেয়ার",
+    description: "সহপাঠীদের সঙ্গে একটি ক্লাস মিশন সম্পন্ন করুন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;

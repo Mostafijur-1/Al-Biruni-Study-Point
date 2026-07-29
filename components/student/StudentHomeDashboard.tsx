@@ -17,6 +17,7 @@ import {
   Sparkles,
   Target,
   Trophy,
+  UsersRound,
 } from "lucide-react";
 
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
@@ -483,6 +484,14 @@ export function StudentHomeDashboard() {
               description: "কোয়েস্ট, রিওয়ার্ড ও ক্লাসের শেখার র‌্যাঙ্কিং",
               icon: Gamepad2,
               tone: "bg-fuchsia-100 text-fuchsia-700",
+            },
+            {
+              href: "/student/community",
+              action: "community",
+              title: "ক্লাস কমিউনিটি",
+              description: "দলের মিশনে অবদান দিন ও সহপাঠীকে উৎসাহ পাঠান",
+              icon: UsersRound,
+              tone: "bg-cyan-100 text-cyan-700",
             },
             {
               href: "/student/results",

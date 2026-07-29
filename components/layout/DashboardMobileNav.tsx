@@ -18,6 +18,7 @@ import {
   NotebookPen,
   UserCircle,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -138,6 +139,7 @@ export function DashboardSidebar() {
       { href: "/student/learning", label: "শেখার প্ল্যান", icon: Map },
       { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
       { href: "/student/game", label: "গেম হাব", icon: Gamepad2 },
+      { href: "/student/community", label: "ক্লাস কমিউনিটি", icon: UsersRound },
       { href: "/student/courses", label: "কোর্স ও ক্লাস", icon: BookOpen, levelAware: true },
       { href: "/student/practice", label: "MCQ প্র্যাকটিস", icon: Brain, levelAware: true },
       { href: "/student/exams", label: "MCQ পরীক্ষা", icon: FileQuestion },
