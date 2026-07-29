@@ -26,7 +26,6 @@ import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/hooks/use-session";
 import { useAppStore } from "@/stores/useAppStore";
-import { GameProfileCard } from "@/components/gamification/GameProfileCard";
 
 type SubjectStatus = {
   subject: string;
@@ -323,8 +322,6 @@ function StudentPracticeDashboard() {
           </div>
         )}
       </div>
-
-      {!checking && !isGuest && <GameProfileCard />}
 
       {loading ? (
         <div className="grid gap-5 sm:grid-cols-2">
