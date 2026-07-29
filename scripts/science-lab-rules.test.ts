@@ -11,6 +11,10 @@ import {
   validateLabMastery,
 } from "../lib/labs/rules.ts";
 import { getSyllabusChapters } from "../lib/content/syllabus.ts";
+import {
+  CONCEPT_VIEW_LABELS,
+  LAB_CONCEPTS,
+} from "../lib/labs/concepts.ts";
 
 test("science lab formulas return expected physical values", () => {
   assert.equal(calculateMotionDistance(12, 5), 60);
@@ -112,5 +116,29 @@ test("every class-aware lab maps to a real syllabus subject and chapter", () => 
         `${level}: ${lab.subject} / ${lab.chapter} is missing from syllabus`,
       );
     }
+  }
+});
+
+test("every lab includes a complete concept-first visualization guide", () => {
+  assert.deepEqual(Object.keys(CONCEPT_VIEW_LABELS), [
+    "mechanism",
+    "relationship",
+    "misconception",
+  ]);
+  assert.deepEqual(Object.keys(LAB_CONCEPTS).sort(), [...SCIENCE_LAB_IDS].sort());
+
+  for (const labId of SCIENCE_LAB_IDS) {
+    const concept = LAB_CONCEPTS[labId];
+    assert.ok(concept.question.length > 20, `${labId} needs a concept question`);
+    assert.ok(concept.mechanism.length > 40, `${labId} needs mechanism detail`);
+    assert.ok(
+      concept.relationship.length > 40,
+      `${labId} needs cause-effect detail`,
+    );
+    assert.ok(
+      concept.misconception.length > 30,
+      `${labId} needs misconception detail`,
+    );
+    assert.equal(concept.steps.length, 3);
   }
 });
