@@ -3,6 +3,11 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 export const STUDENT_EVENT_NAMES = [
   "student_dashboard_viewed",
   "student_dashboard_action_clicked",
+  "student_learning_task_clicked",
+  "student_mistakes_viewed",
+  "student_mistake_answered",
+  "student_learning_plan_viewed",
+  "student_video_progress_updated",
 ] as const;
 
 export type StudentEventName = (typeof STUDENT_EVENT_NAMES)[number];

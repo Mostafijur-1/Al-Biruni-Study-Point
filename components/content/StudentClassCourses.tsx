@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { formatClassList } from "@/lib/content/classes";
 import { useSession } from "@/lib/hooks/use-session";
 import { AuthGateLink } from "@/components/auth/AuthGateLink";
@@ -23,6 +24,11 @@ type VideoRow = {
   description?: string;
   videoUrl: string;
   targetClasses: StudentClass[];
+  progress?: {
+    status: "started" | "completed";
+    progressPercent: number;
+    lastWatchedAt: string;
+  } | null;
 };
 
 type Props = {
@@ -174,23 +180,43 @@ export function StudentClassCourses({ level }: Props) {
               <li key={video._id} className="rounded-xl border border-border bg-card p-4">
                 <p className="font-semibold text-primary">{video.title}</p>
                 {video.description && <p className="mt-1 text-sm text-muted">{video.description}</p>}
+                {!isGuest && video.progress && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-2xs font-bold text-muted">
+                      <span>
+                        {video.progress.status === "completed"
+                          ? "ক্লাস সম্পন্ন"
+                          : "দেখার অগ্রগতি"}
+                      </span>
+                      <span>{video.progress.progressPercent}%</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-emerald-500"
+                        style={{ width: `${video.progress.progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
                 {isGuest ? (
                   <AuthGateLink
-                    href={video.videoUrl}
+                    href={`/student/courses/video/${video._id}`}
                     returnUrl={`/student/courses?level=${level}`}
                     className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
                   >
                     {"ভিডিও দেখুন"}
                   </AuthGateLink>
                 ) : (
-                  <a
-                    href={video.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href={`/student/courses/video/${video._id}`}
                     className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
                   >
-                    {"ভিডিও দেখুন"}
-                  </a>
+                    {video.progress?.status === "completed"
+                      ? "আবার দেখুন"
+                      : video.progress
+                        ? "চালিয়ে যান"
+                        : "ভিডিও দেখুন"}
+                  </Link>
                 )}
               </li>
             ))}

@@ -1,13 +1,14 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export interface IPracticeAnswer {
-  questionId: Types.ObjectId; // reference to the MCQ question ID (stored as string in DB)
+  questionId: Types.ObjectId | string;
   question: string;
   options: string[];
   selectedIndex: number | null; // 0-3, null when unanswered
   isCorrect: boolean;
   correctIndex: number;
   explanation?: string;
+  imageUrl?: string;
 }
 
 export interface IPracticeAttempt extends Document {

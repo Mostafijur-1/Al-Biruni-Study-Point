@@ -3,7 +3,7 @@ import { McqPracticeRunner } from "@/components/exam/McqPracticeRunner";
 
 type StudentPracticeRunnerPageProps = {
   params: Promise<{ subject: string }>;
-  searchParams: Promise<{ mode?: string; count?: string }>;
+  searchParams: Promise<{ mode?: string; count?: string; chapter?: string }>;
 };
 
 export default async function StudentPracticeRunnerPage({
@@ -11,13 +11,13 @@ export default async function StudentPracticeRunnerPage({
   searchParams,
 }: StudentPracticeRunnerPageProps) {
   const { subject } = await params;
-  const { mode, count } = await searchParams;
+  const { mode, count, chapter } = await searchParams;
 
   // Decode subject name in case it contains URL-encoded characters (like %20 for space)
   const decodedSubject = decodeURIComponent(subject);
 
   const parsedCount = Number(count);
-  const initialQuestionCount = [10, 25, 50, 100].includes(parsedCount)
+  const initialQuestionCount = [10, 15, 20, 25].includes(parsedCount)
     ? parsedCount
     : undefined;
 
@@ -27,6 +27,7 @@ export default async function StudentPracticeRunnerPage({
         subject={decodedSubject}
         mode={mode || "general"}
         initialQuestionCount={initialQuestionCount}
+        initialChapter={chapter ? decodeURIComponent(chapter) : undefined}
       />
     </Suspense>
   );

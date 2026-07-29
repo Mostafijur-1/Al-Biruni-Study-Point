@@ -13,6 +13,8 @@ import {
   Home,
   LayoutDashboard,
   LineChart,
+  Map,
+  NotebookPen,
   UserCircle,
   Users,
 } from "lucide-react";
@@ -132,6 +134,8 @@ export function DashboardSidebar() {
   const allLinks: Record<UserRole, NavItem[]> = {
     student: [
       { href: "/student", label: "শিক্ষার্থী হোম", icon: Home },
+      { href: "/student/learning", label: "শেখার প্ল্যান", icon: Map },
+      { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
       { href: "/student/courses", label: "কোর্স ও ক্লাস", icon: BookOpen, levelAware: true },
       { href: "/student/practice", label: "MCQ প্র্যাকটিস", icon: Brain, levelAware: true },
       { href: "/student/exams", label: "MCQ পরীক্ষা", icon: FileQuestion },

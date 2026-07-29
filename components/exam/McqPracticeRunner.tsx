@@ -89,6 +89,7 @@ type McqPracticeRunnerProps = {
   locale?: string;
   mode?: string;
   initialQuestionCount?: number;
+  initialChapter?: string;
 };
 
 function getOptionResultMode(
@@ -319,6 +320,7 @@ export function McqPracticeRunner({
   subject,
   mode = "general",
   initialQuestionCount = 25,
+  initialChapter,
 }: McqPracticeRunnerProps) {
   const locale = "bn";
   const path = createLocalizedPath(locale);
@@ -432,7 +434,11 @@ export function McqPracticeRunner({
           const enabledChapters = matchingSubject.chapters
             .filter((chapter) => chapter.hasMcqs)
             .map((chapter) => chapter.name);
-          setSelectedChapters(enabledChapters);
+          setSelectedChapters(
+            initialChapter && enabledChapters.includes(initialChapter)
+              ? [initialChapter]
+              : enabledChapters,
+          );
           if (cachedSettings) {
             setSecondsPerQuestion(cachedSettings.secondsPerQuestion);
             setPassMarkPercent(cachedSettings.passMarkPercent);
@@ -461,8 +467,12 @@ export function McqPracticeRunner({
             const enabledChapters = matching.chapters
               .filter((c) => c.hasMcqs)
               .map((c) => c.name);
+            const preferredChapters =
+              initialChapter && enabledChapters.includes(initialChapter)
+                ? [initialChapter]
+                : enabledChapters;
             // Only overwrite selected chapters if they haven't been modified by user yet
-            setSelectedChapters((prev) => prev.length === 0 ? enabledChapters : prev);
+            setSelectedChapters((prev) => prev.length === 0 ? preferredChapters : prev);
             if (payload.data.settings) {
               setSecondsPerQuestion(payload.data.settings.secondsPerQuestion);
               setPassMarkPercent(payload.data.settings.passMarkPercent);
@@ -500,7 +510,7 @@ export function McqPracticeRunner({
     return () => {
       if (cacheTimer) window.clearTimeout(cacheTimer);
     };
-  }, [subject, locale, checking, isGuest, level, mode, configLoaded, practiceStatusCache, setPracticeStatusCache]);
+  }, [subject, locale, checking, isGuest, level, mode, initialChapter, configLoaded, practiceStatusCache, setPracticeStatusCache]);
 
   // Toggle chapter selection
   const toggleChapter = useCallback((chapterName: string) => {

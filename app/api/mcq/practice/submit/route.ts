@@ -20,6 +20,7 @@ import {
 } from "@/lib/mcq/attempt-session";
 import { awardPracticeGamification } from "@/lib/gamification/service";
 import { dedupeSubmittedAnswers } from "@/lib/mcq/answer-scoring";
+import { syncMistakesFromAnswers } from "@/lib/learning/mistake-service";
 
 const submitPracticeSchema = z.object({
   attemptSessionId: z.string().min(1),
@@ -166,6 +167,20 @@ export async function POST(request: NextRequest) {
       submissionSession.session._id.toString(),
       submissionSession.submittedAt,
     );
+
+    if (!parsed.isCancelled) {
+      try {
+        await syncMistakesFromAnswers({
+          studentId: user.id,
+          subject: parsed.subject,
+          answers: detailedAnswers,
+          attemptedAt: submissionSession.submittedAt,
+        });
+      } catch (mistakeSyncError) {
+        // Review features must never invalidate a saved academic result.
+        console.error("Could not update the student's mistake notebook", mistakeSyncError);
+      }
+    }
 
     let gamification;
     try {

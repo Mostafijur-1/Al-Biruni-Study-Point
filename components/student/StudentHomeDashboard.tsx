@@ -20,6 +20,7 @@ import {
 
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
 import { trackStudentEvent } from "@/lib/analytics/client";
+import { DailyLearningPlanCard } from "@/components/learning/DailyLearningPlanCard";
 import { useSession } from "@/lib/hooks/use-session";
 import { cn } from "@/lib/utils";
 
@@ -359,6 +360,8 @@ export function StudentHomeDashboard() {
           </p>
         </article>
       </div>
+
+      <DailyLearningPlanCard compact />
 
       <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6">

@@ -8,6 +8,7 @@ import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { Video } from "@/lib/db/models/Video";
+import { VideoProgress } from "@/lib/db/models/VideoProgress";
 import { createVideoSchema } from "@/lib/validations/video.schema";
 
 export async function GET(request: NextRequest) {
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const scope = searchParams.get("scope");
     const query: Record<string, unknown> = {};
+    let studentId: string | null = null;
 
     if (scope === "guest") {
       const level = searchParams.get("level");
@@ -41,6 +43,7 @@ export async function GET(request: NextRequest) {
     } else if (scope === "student") {
       const user = await requireAuth(request, ["student"]);
       const studentClass = requireStudentClass(user);
+      studentId = user.id;
 
       query.isPublished = true;
       Object.assign(query, classFilterForStudent(studentClass));
@@ -53,8 +56,32 @@ export async function GET(request: NextRequest) {
     }
 
     const videos = await Video.find(query).sort({ createdAt: -1 }).limit(100).lean();
+    const progress = studentId
+      ? await VideoProgress.find({
+          student: studentId,
+          video: { $in: videos.map((video) => video._id) },
+        }).lean()
+      : [];
+    const progressMap = new Map(
+      progress.map((item) => [String(item.video), item]),
+    );
 
-    return success({ videos: videos.map(mapDocWithTargetClasses) });
+    return success({
+      videos: videos.map((video) => {
+        const mapped = mapDocWithTargetClasses(video);
+        const itemProgress = progressMap.get(String(video._id));
+        return {
+          ...mapped,
+          progress: itemProgress
+            ? {
+                status: itemProgress.status,
+                progressPercent: itemProgress.progressPercent,
+                lastWatchedAt: itemProgress.lastWatchedAt,
+              }
+            : null,
+        };
+      }),
+    });
   } catch (error) {
     return handleApiError(error);
   }
