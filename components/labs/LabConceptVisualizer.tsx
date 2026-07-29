@@ -15,6 +15,9 @@ type VisualizerProps = {
   labId: ScienceLabId;
   values: LabInputValues;
   result: number;
+  target?: number;
+  unit?: string;
+  className?: string;
 };
 
 type DrawState = VisualizerProps & {
@@ -48,6 +51,9 @@ export function LabConceptVisualizer({
   labId,
   values,
   result,
+  target,
+  unit,
+  className,
 }: VisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [view, setView] = useState<ConceptView>("mechanism");
@@ -120,8 +126,13 @@ export function LabConceptVisualizer({
   }, [labId, result, values, view]);
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-white shadow-inner">
-      <header className="border-b border-white/10 bg-white/[0.04] p-4">
+    <section
+      className={cn(
+        "overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 text-white shadow-inner sm:rounded-3xl",
+        className,
+      )}
+    >
+      <header className="hidden border-b border-white/10 bg-white/[0.04] p-4 sm:block">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-2xs font-black uppercase tracking-[0.2em] text-cyan-300">
@@ -138,43 +149,47 @@ export function LabConceptVisualizer({
             LIVE MODEL
           </span>
         </div>
-        <div
-          className="mt-3 grid grid-cols-3 gap-1.5 sm:mt-4 sm:gap-2"
-          role="tablist"
-          aria-label="ভিজ্যুয়াল ব্যাখ্যার ধরন"
-        >
-          {(Object.keys(CONCEPT_VIEW_LABELS) as ConceptView[]).map((item) => {
-            const Icon = VIEW_ICONS[item];
-            return (
-              <button
-                key={item}
-                type="button"
-                role="tab"
-                aria-selected={view === item}
-                onClick={() => setView(item)}
-                className={cn(
-                  "flex min-h-11 items-center justify-center gap-1 rounded-xl border px-1.5 py-2 text-[9px] font-black leading-tight transition sm:min-h-12 sm:gap-1.5 sm:px-2 sm:text-xs",
-                  view === item
-                    ? "border-cyan-300 bg-cyan-300 text-slate-950"
-                    : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10",
-                )}
-              >
-                <Icon className="size-3.5 shrink-0" />
-                {CONCEPT_VIEW_LABELS[item]}
-              </button>
-            );
-          })}
+        <ViewTabs view={view} onChange={setView} />
+      </header>
+
+      <header className="border-b border-white/10 bg-slate-900/95 p-2.5 backdrop-blur sm:hidden">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">
+              লাইভ মডেল
+            </p>
+            <h3 className="mt-0.5 line-clamp-1 text-xs font-black text-white">
+              {concept.question}
+            </h3>
+          </div>
+          <div className="shrink-0 rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-2.5 py-1 text-right">
+            <p className="text-sm font-black tabular-nums text-cyan-200">
+              {formatVisualizationNumber(result)}
+              {unit && (
+                <span className="ml-1 text-[9px] text-cyan-100/70">
+                  {unit}
+                </span>
+              )}
+            </p>
+            {target !== undefined && (
+              <p className="text-[8px] font-bold text-slate-400">
+                লক্ষ্য {target}
+                {unit ? ` ${unit}` : ""}
+              </p>
+            )}
+          </div>
         </div>
+        <ViewTabs view={view} onChange={setView} compact />
       </header>
 
       <div>
         <canvas
           ref={canvasRef}
-          className="block h-[390px] w-full touch-pan-y sm:h-[430px]"
+          className="block h-[clamp(190px,30dvh,240px)] w-full touch-pan-y sm:h-[430px]"
           role="img"
           aria-label={`${concept.curriculumFocus} বিষয়ক চলমান ব্যাখ্যামূলক মডেল`}
         />
-        <div className="border-t border-white/10 bg-slate-900 px-4 py-3 text-center text-xs font-bold leading-5 text-slate-200">
+        <div className="line-clamp-2 border-t border-white/10 bg-slate-900 px-3 py-2 text-center text-[11px] font-bold leading-4 text-slate-200 sm:block sm:px-4 sm:py-3 sm:text-xs sm:leading-5">
           {view === "mechanism"
             ? concept.mechanism
             : view === "relationship"
@@ -183,7 +198,7 @@ export function LabConceptVisualizer({
         </div>
       </div>
 
-      <footer className="grid gap-3 border-t border-white/10 bg-white/[0.03] p-3 sm:p-4 md:grid-cols-[0.8fr_1.2fr]">
+      <footer className="hidden gap-3 border-t border-white/10 bg-white/[0.03] p-3 sm:grid sm:p-4 md:grid-cols-[0.8fr_1.2fr]">
         <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3">
           <p className="text-2xs font-black uppercase tracking-wider text-amber-300">
             কোথায় নজর দেবেন
@@ -208,6 +223,98 @@ export function LabConceptVisualizer({
       </footer>
     </section>
   );
+}
+
+export function LabConceptMobileGuide({ labId }: { labId: ScienceLabId }) {
+  const concept = getLabConcept(labId);
+
+  return (
+    <details className="group mt-3 rounded-2xl border border-border bg-card sm:hidden">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-primary [&::-webkit-details-marker]:hidden">
+        <span>ধারণাটি ধাপে ধাপে বুঝুন</span>
+        <span
+          aria-hidden
+          className="grid size-7 place-items-center rounded-full bg-secondary text-lg text-muted transition-transform group-open:rotate-45"
+        >
+          +
+        </span>
+      </summary>
+      <div className="border-t border-border p-3">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-2xs font-black uppercase tracking-wider text-amber-700">
+            কোথায় নজর দেবেন
+          </p>
+          <p className="mt-1 text-xs font-semibold leading-5 text-amber-950">
+            {concept.watchFor}
+          </p>
+        </div>
+        <ol className="mt-2 space-y-2">
+          {concept.steps.map((step, index) => (
+            <li
+              key={step}
+              className="flex gap-2 rounded-xl bg-secondary/60 p-3 text-xs font-semibold leading-5 text-primary"
+            >
+              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-cyan-600 text-2xs font-black text-white">
+                {index + 1}
+              </span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </details>
+  );
+}
+
+function ViewTabs({
+  view,
+  onChange,
+  compact = false,
+}: {
+  view: ConceptView;
+  onChange: (view: ConceptView) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-3",
+        compact ? "mt-2 gap-1" : "mt-4 gap-2",
+      )}
+      role="tablist"
+      aria-label="ভিজ্যুয়াল ব্যাখ্যার ধরন"
+    >
+      {(Object.keys(CONCEPT_VIEW_LABELS) as ConceptView[]).map((item) => {
+        const Icon = VIEW_ICONS[item];
+        return (
+          <button
+            key={item}
+            type="button"
+            role="tab"
+            aria-selected={view === item}
+            onClick={() => onChange(item)}
+            className={cn(
+              "flex items-center justify-center font-black leading-tight transition",
+              compact
+                ? "min-h-9 gap-1 rounded-lg border px-1 py-1.5 text-[9px]"
+                : "min-h-12 gap-1.5 rounded-xl border px-2 py-2 text-xs",
+              view === item
+                ? "border-cyan-300 bg-cyan-300 text-slate-950"
+                : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10",
+            )}
+          >
+            <Icon className="size-3.5 shrink-0" />
+            {CONCEPT_VIEW_LABELS[item]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatVisualizationNumber(value: number) {
+  if (!Number.isFinite(value)) return "—";
+  return Number(value.toFixed(2)).toString();
 }
 
 function drawVisualization(context: CanvasRenderingContext2D, state: DrawState) {

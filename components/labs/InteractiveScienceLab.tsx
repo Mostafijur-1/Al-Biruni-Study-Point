@@ -21,7 +21,10 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { LabConceptVisualizer } from "@/components/labs/LabConceptVisualizer";
+import {
+  LabConceptMobileGuide,
+  LabConceptVisualizer,
+} from "@/components/labs/LabConceptVisualizer";
 import {
   apiFetch,
   getApiErrorMessage,
@@ -459,7 +462,7 @@ export function InteractiveScienceLab() {
 
       <article
         role="tabpanel"
-        className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-md)] sm:rounded-3xl"
+        className="overflow-visible rounded-2xl border border-border bg-card shadow-[var(--shadow-md)] sm:overflow-hidden sm:rounded-3xl"
       >
         <div className="border-b border-border px-4 py-4 sm:px-7 sm:py-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -504,9 +507,12 @@ export function InteractiveScienceLab() {
               labId={selected.id}
               values={values}
               result={result}
+              target={selected.target}
+              unit={selected.unit}
+              className="sticky top-2 z-30 shadow-xl sm:static sm:shadow-inner"
             />
 
-            <section className="mt-4 rounded-2xl border border-border bg-card p-3 sm:p-4">
+            <section className="relative z-10 mt-3 rounded-2xl border border-border bg-card p-3 shadow-sm sm:z-auto sm:mt-4 sm:p-4 sm:shadow-none">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-2xs font-black uppercase tracking-wider text-muted">
@@ -543,6 +549,8 @@ export function InteractiveScienceLab() {
                 ))}
               </div>
             </section>
+
+            <LabConceptMobileGuide labId={selected.id} />
           </div>
 
           <aside className="border-t border-border p-4 sm:p-6 xl:border-l xl:border-t-0">
@@ -667,7 +675,7 @@ function LabControlField({
         type="button"
         onClick={() => onChange(value === 1 ? 0 : 1)}
         className={cn(
-          "flex min-h-20 items-center justify-between rounded-2xl border p-4 text-left transition",
+          "flex min-h-16 items-center justify-between rounded-2xl border p-3 text-left transition sm:min-h-20 sm:p-4",
           value === 1
             ? "border-emerald-400 bg-emerald-50"
             : "border-border bg-card",
@@ -697,7 +705,7 @@ function LabControlField({
 
   if (control.choices) {
     return (
-      <label className="block rounded-2xl border border-border bg-card p-4">
+      <label className="block rounded-2xl border border-border bg-card p-3 sm:p-4">
         <span className="text-sm font-black text-primary">{control.label}</span>
         <select
           value={value}
@@ -715,7 +723,7 @@ function LabControlField({
   }
 
   return (
-    <label className="block rounded-2xl border border-border bg-card p-4">
+    <label className="block rounded-2xl border border-border bg-card p-3 sm:p-4">
       <span className="flex items-center justify-between gap-3 text-sm font-black text-primary">
         <span>{control.label}</span>
         <span className="rounded-lg bg-primary px-2.5 py-1 text-xs text-primary-foreground">
