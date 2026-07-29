@@ -40,6 +40,7 @@ export async function POST(request: NextRequest, context: Context) {
     });
     if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
     const { id } = await context.params;
+    const parsed = submitExamSchema.parse(await request.json());
 
     const exam = await McqExam.findById(id).lean();
     if (!exam || !exam.isPublished) {
@@ -58,10 +59,15 @@ export async function POST(request: NextRequest, context: Context) {
     }).lean();
 
     if (existingAttempt) {
+      if (String(existingAttempt.attemptSession) === parsed.attemptSessionId) {
+        return success({
+          message: "Exam submitted successfully! Your teacher will publish the results soon.",
+          alreadySubmitted: true,
+        });
+      }
       return fail("You have already completed this exam.", 400);
     }
 
-    const parsed = submitExamSchema.parse(await request.json());
     const submissionSession = await loadSubmissionSession({
       sessionId: parsed.attemptSessionId,
       studentId: user.id,
@@ -70,6 +76,18 @@ export async function POST(request: NextRequest, context: Context) {
       submittedQuestionIds: parsed.answers.map((answer) => answer.questionId),
     });
     if (!submissionSession.ok) {
+      const completedAttempt = await McqExamAttempt.findOne({
+        student: user.id,
+        exam: id,
+        attemptSession: parsed.attemptSessionId,
+      }).lean();
+      if (completedAttempt) {
+        return success({
+          message: "Exam submitted successfully! Your teacher will publish the results soon.",
+          alreadySubmitted: true,
+        });
+      }
+
       const message = submissionSession.reason === "expired"
         ? "The exam submission window has expired."
         : "Exam attempt session validation failed.";
@@ -102,19 +120,25 @@ export async function POST(request: NextRequest, context: Context) {
     const percentage = totalMarks > 0 ? Number(((score / totalMarks) * 100).toFixed(2)) : 0;
     const isPassed = score >= exam.passMark;
 
-    await McqExamAttempt.create({
-      attemptSession: submissionSession.session._id,
-      student: user.id,
-      exam: id,
-      answers: answersDoc,
-      score,
-      percentage,
-      isPassed,
-      timeTaken: submissionSession.timeTaken,
-      attemptNo: 1,
-      isCancelled: parsed.isCancelled || false,
-      submittedAt: submissionSession.submittedAt,
-    });
+    const savedAttempt = await McqExamAttempt.findOneAndUpdate(
+      { student: user.id, exam: id, attemptNo: 1 },
+      {
+        $setOnInsert: {
+          attemptSession: submissionSession.session._id,
+          answers: answersDoc,
+          score,
+          percentage,
+          isPassed,
+          timeTaken: submissionSession.timeTaken,
+          isCancelled: parsed.isCancelled || false,
+          submittedAt: submissionSession.submittedAt,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+    if (String(savedAttempt.attemptSession) !== parsed.attemptSessionId) {
+      return fail("You have already completed this exam.", 400);
+    }
     await markAttemptSessionSubmitted(
       submissionSession.session._id.toString(),
       submissionSession.submittedAt,

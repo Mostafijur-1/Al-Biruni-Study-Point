@@ -391,6 +391,7 @@ export function McqPracticeRunner({
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -667,8 +668,9 @@ export function McqPracticeRunner({
 
   // Submit practice attempt
   const submitPractice = useCallback(async (isCancelled = false) => {
-    if (isSubmitting || questions.length === 0 || !attemptSessionId) return;
+    if (isSubmittingRef.current || questions.length === 0 || !attemptSessionId) return false;
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage("");
     setSubmitError(null);
@@ -696,8 +698,7 @@ export function McqPracticeRunner({
 
       if (!ok || !isApiSuccess(payload)) {
         setSubmitError(getApiErrorMessage(payload, "Submission failed. Please try again."));
-        setIsSubmitting(false);
-        return;
+        return false;
       }
 
       // Clear saved progress from localStorage on success
@@ -711,6 +712,7 @@ export function McqPracticeRunner({
       setResult(payload.data);
       setPhase("result");
       window.scrollTo({ top: 0, behavior: "smooth" });
+      return true;
     } catch (error) {
       console.error("[Submit Practice Catch Technical Details]:", error);
       setSubmitError(
@@ -718,10 +720,12 @@ export function McqPracticeRunner({
           ? "সাবমিট করা যায়নি। আপনার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।"
           : "Submission failed. Please check your internet connection and try again."
       );
+      return false;
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
-  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, isSubmitting, attemptSessionId, subject, user, locale, mode]);
+  }, [startTime, totalDurationSeconds, questions, buildSubmitAnswers, attemptSessionId, subject, user, locale, mode]);
 
   const handleTimeUp = useCallback(() => {
     setIsTimeUp(true);
@@ -1390,11 +1394,13 @@ export function McqPracticeRunner({
                     className="w-full rounded-xl py-2.5 font-bold bg-brand-red text-white hover:bg-brand-red/90"
                     onClick={async () => {
                       setShowLeaveWarning(false);
-                      await submitPractice();
-                      if (pendingNavigationUrl) {
-                        window.location.href = pendingNavigationUrl;
-                      } else {
-                        window.location.href = practiceListHref;
+                      const submitted = await submitPractice();
+                      if (submitted) {
+                        if (pendingNavigationUrl) {
+                          window.location.href = pendingNavigationUrl;
+                        } else {
+                          window.location.href = practiceListHref;
+                        }
                       }
                     }}
                   >

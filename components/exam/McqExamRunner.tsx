@@ -194,6 +194,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   const phaseRef = useRef(phase);
   const examRef = useRef(exam);
   const startTimeRef = useRef(startTime);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -356,10 +357,13 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   // Submit Exam API call
   const submitExam = useCallback(async (timeTakenSec: number, currentAnswers: Record<string, number>, isCancelled = false) => {
     if (
+      isSubmittingRef.current ||
       phaseRef.current === "submitting" ||
       phaseRef.current === "completed" ||
       !attemptSessionId
     ) return;
+    isSubmittingRef.current = true;
+    phaseRef.current = "submitting";
     setPhase("submitting");
 
     try {
@@ -386,14 +390,19 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         } catch (e) {
           console.error("Failed to clear exam progress:", e);
         }
+        phaseRef.current = "completed";
         setPhase("completed");
       } else {
         setSubmitError(getApiErrorMessage(payload, "Submission failed. Please try again."));
+        phaseRef.current = "running";
         setPhase("running");
       }
     } catch {
       setSubmitError("Network error submitting exam. Please check your connection.");
+      phaseRef.current = "running";
       setPhase("running");
+    } finally {
+      isSubmittingRef.current = false;
     }
   }, [attemptSessionId, examId, questions]);
 

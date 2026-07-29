@@ -50,6 +50,55 @@ export async function POST(request: NextRequest) {
 
     const parsed = submitPracticeSchema.parse(await request.json());
     const submittedAnswers = dedupeSubmittedAnswers(parsed.answers);
+    async function findCompletedSubmission() {
+      const [existingAttempt, existingResult] = await Promise.all([
+        PracticeAttempt.findOne({
+          attemptSession: parsed.attemptSessionId,
+          student: user.id,
+          subject: parsed.subject,
+        }).lean(),
+        PracticeResult.findOne({
+          attemptSession: parsed.attemptSessionId,
+          student: user.id,
+          subject: parsed.subject,
+        }).lean(),
+      ]);
+
+      if (!existingAttempt || !existingResult) return null;
+
+      let gamification;
+      try {
+        gamification = await awardPracticeGamification({
+          studentId: user.id,
+          attemptId: existingAttempt._id.toString(),
+          score: existingResult.score,
+          totalQuestions: existingResult.totalQuestions,
+          answeredCount: existingAttempt.answers.filter(
+            (answer) => answer.selectedIndex !== null,
+          ).length,
+          isCancelled: existingResult.isCancelled || false,
+          submittedAt: existingResult.submittedAt,
+        });
+      } catch (gamificationError) {
+        console.error("Could not apply practice gamification rewards", gamificationError);
+      }
+
+      return success({
+        result: existingResult,
+        totalQuestions: existingResult.totalQuestions,
+        solutions: existingAttempt.answers.map((answer) => ({
+          questionId: String(answer.questionId),
+          correctIndex: answer.correctIndex,
+          explanation: answer.explanation,
+        })),
+        gamification,
+        alreadySubmitted: true,
+      });
+    }
+
+    const completedSubmission = await findCompletedSubmission();
+    if (completedSubmission) return completedSubmission;
+
     const submissionSession = await loadSubmissionSession({
       sessionId: parsed.attemptSessionId,
       studentId: user.id,
@@ -58,6 +107,9 @@ export async function POST(request: NextRequest) {
       submittedQuestionIds: submittedAnswers.map((answer) => answer.questionId),
     });
     if (!submissionSession.ok) {
+      const racedSubmission = await findCompletedSubmission();
+      if (racedSubmission) return racedSubmission;
+
       const message = submissionSession.reason === "expired"
         ? "This practice session has expired. Please start a new test."
         : "Practice attempt session validation failed.";
@@ -132,38 +184,48 @@ export async function POST(request: NextRequest) {
     );
 
     // Save detailed attempt (teacher view)
-    const attempt = await PracticeAttempt.create({
-      attemptSession: submissionSession.session._id,
-      student: user.id,
-      subject: parsed.subject,
-      answers: detailedAnswers,
-      totalQuestions: scoring.totalQuestions,
-      score: scoring.score,
-      percentage: scoring.percentage,
-      isPassed: scoring.isPassed,
-      timeTaken: submissionSession.timeTaken,
-      isTeacherSet: isTeacher,
-      teacherId: teacherId || undefined,
-      isCancelled: parsed.isCancelled || false,
-      passMarkPercent: settings.passMarkPercent,
-    });
+    const attempt = await PracticeAttempt.findOneAndUpdate(
+      { attemptSession: submissionSession.session._id },
+      {
+        $setOnInsert: {
+          student: user.id,
+          subject: parsed.subject,
+          answers: detailedAnswers,
+          totalQuestions: scoring.totalQuestions,
+          score: scoring.score,
+          percentage: scoring.percentage,
+          isPassed: scoring.isPassed,
+          timeTaken: submissionSession.timeTaken,
+          isTeacherSet: isTeacher,
+          teacherId: teacherId || undefined,
+          isCancelled: parsed.isCancelled || false,
+          passMarkPercent: settings.passMarkPercent,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
 
     // Save only the summary result (existing behavior)
-    const result = await PracticeResult.create({
-      attemptSession: submissionSession.session._id,
-      student: user.id,
-      subject: parsed.subject,
-      score: scoring.score,
-      totalQuestions: scoring.totalQuestions,
-      percentage: scoring.percentage,
-      isPassed: scoring.isPassed,
-      timeTaken: submissionSession.timeTaken,
-      submittedAt: submissionSession.submittedAt,
-      isTeacherSet: isTeacher,
-      teacherId: teacherId || undefined,
-      isCancelled: parsed.isCancelled || false,
-      passMarkPercent: settings.passMarkPercent,
-    });
+    const result = await PracticeResult.findOneAndUpdate(
+      { attemptSession: submissionSession.session._id },
+      {
+        $setOnInsert: {
+          student: user.id,
+          subject: parsed.subject,
+          score: scoring.score,
+          totalQuestions: scoring.totalQuestions,
+          percentage: scoring.percentage,
+          isPassed: scoring.isPassed,
+          timeTaken: submissionSession.timeTaken,
+          submittedAt: submissionSession.submittedAt,
+          isTeacherSet: isTeacher,
+          teacherId: teacherId || undefined,
+          isCancelled: parsed.isCancelled || false,
+          passMarkPercent: settings.passMarkPercent,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
     await markAttemptSessionSubmitted(
       submissionSession.session._id.toString(),
       submissionSession.submittedAt,
