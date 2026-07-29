@@ -18,28 +18,28 @@ export type XpBreakdown = {
 export const ACHIEVEMENTS = {
   FIRST_TEST: {
     code: "FIRST_TEST",
-    title: "First Step",
-    description: "Complete your first MCQ practice test.",
+    title: "প্রথম পদক্ষেপ",
+    description: "প্রথম MCQ অনুশীলন সম্পন্ন করুন।",
   },
   THREE_DAY_STREAK: {
     code: "THREE_DAY_STREAK",
-    title: "On a Roll",
-    description: "Maintain a three-day learning streak.",
+    title: "টানা তিন দিন",
+    description: "তিন দিনের শেখার ধারাবাহিকতা বজায় রাখুন।",
   },
   HUNDRED_QUESTIONS: {
     code: "HUNDRED_QUESTIONS",
-    title: "Century",
-    description: "Answer 100 practice questions.",
+    title: "প্রশ্নের সেঞ্চুরি",
+    description: "১০০টি অনুশীলনী প্রশ্নের উত্তর দিন।",
   },
   SHARP_SHOOTER: {
     code: "SHARP_SHOOTER",
-    title: "Sharp Shooter",
-    description: "Score at least 80% in a 10-question practice test.",
+    title: "দারুণ নিশানা",
+    description: "১০ প্রশ্নের অনুশীলনে অন্তত ৮০% নম্বর পান।",
   },
   PERFECT_SCORE: {
     code: "PERFECT_SCORE",
-    title: "Perfect Score",
-    description: "Answer every question correctly in a practice test.",
+    title: "নিখুঁত স্কোর",
+    description: "একটি অনুশীলনের সব প্রশ্নের সঠিক উত্তর দিন।",
   },
 } as const;
 

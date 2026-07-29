@@ -61,13 +61,13 @@ export function GameProfileCard() {
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-700">
             <Sparkles className="size-4" />
-            Learning journey
+            শেখার যাত্রা
           </div>
           <div className="mt-3 flex items-end justify-between gap-3">
             <div>
-              <p className="text-3xl font-black text-primary">Level {profile.level}</p>
+              <p className="text-3xl font-black text-primary">লেভেল {profile.level}</p>
               <p className="mt-1 text-xs font-semibold text-muted">
-                {profile.totalXp} total XP
+                মোট {profile.totalXp} XP
               </p>
             </div>
             <Trophy className="size-10 text-amber-500" />
@@ -79,27 +79,27 @@ export function GameProfileCard() {
             />
           </div>
           <p className="mt-1 text-right text-2xs font-bold text-violet-700">
-            {100 - levelProgress} XP to next level
+            পরের লেভেলে যেতে আর {100 - levelProgress} XP
           </p>
         </div>
 
         <div className="rounded-xl border border-orange-200/70 bg-white/70 p-4">
           <div className="flex items-center gap-2 text-xs font-bold text-orange-700">
             <Flame className="size-5" />
-            Current streak
+            বর্তমান ধারাবাহিকতা
           </div>
           <p className="mt-2 text-3xl font-black text-primary">
-            {profile.currentStreak} <span className="text-sm">days</span>
+            {profile.currentStreak} <span className="text-sm">দিন</span>
           </p>
           <p className="mt-1 text-2xs font-semibold text-muted">
-            Best: {profile.longestStreak} days
+            সর্বোচ্চ: {profile.longestStreak} দিন
           </p>
         </div>
 
         <div className="rounded-xl border border-emerald-200/70 bg-white/70 p-4">
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
             <Target className="size-5" />
-            Daily goal
+            আজকের লক্ষ্য
           </div>
           <p className="mt-2 text-2xl font-black text-primary">
             {profile.dailyProgress}/{profile.dailyGoalTarget}
@@ -111,7 +111,7 @@ export function GameProfileCard() {
             />
           </div>
           <p className="mt-1 text-2xs font-semibold text-muted">
-            questions answered today
+            আজ উত্তর দেওয়া প্রশ্ন
           </p>
         </div>
       </div>
@@ -119,7 +119,7 @@ export function GameProfileCard() {
       {achievements.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-violet-100 bg-white/50 px-5 py-3">
           <span className="mr-1 text-2xs font-black uppercase tracking-wider text-muted">
-            Recent badges
+            সাম্প্রতিক ব্যাজ
           </span>
           {achievements.slice(0, 3).map((achievement) => (
             <span

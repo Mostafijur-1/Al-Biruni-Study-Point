@@ -88,6 +88,7 @@ type McqPracticeRunnerProps = {
   subject: string;
   locale?: string;
   mode?: string;
+  initialQuestionCount?: number;
 };
 
 function getOptionResultMode(
@@ -314,7 +315,11 @@ const ChapterListItem = React.memo(function ChapterListItem({
   );
 });
 
-export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunnerProps) {
+export function McqPracticeRunner({
+  subject,
+  mode = "general",
+  initialQuestionCount = 25,
+}: McqPracticeRunnerProps) {
   const locale = "bn";
   const path = createLocalizedPath(locale);
   const router = useRouter();
@@ -355,7 +360,8 @@ export function McqPracticeRunner({ subject, mode = "general" }: McqPracticeRunn
   const [configLoaded, setConfigLoaded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(25);
+  const [selectedQuestionCount, setSelectedQuestionCount] =
+    useState<number>(initialQuestionCount);
   const [reportingQuestionId, setReportingQuestionId] = useState<string | null>(null);
   const [reportComment, setReportComment] = useState("");
   const [reportError, setReportError] = useState("");

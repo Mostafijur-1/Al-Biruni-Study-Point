@@ -5,9 +5,12 @@ import { usePathname } from "next/navigation";
 import { getLocalizedPath, type Locale } from "@/lib/i18n";
 import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import {
+  BookOpen,
   Brain,
+  ClipboardList,
   FileQuestion,
   GraduationCap,
+  Home,
   LayoutDashboard,
   LineChart,
   UserCircle,
@@ -15,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/hooks/use-session";
 import type { UserRole } from "@/types";
 
 type NavItem = {
@@ -27,10 +31,12 @@ type NavItem = {
 
 const linksByRole: Record<UserRole, NavItem[]> = {
   student: [
-    { href: "/student/profile", label: "Profile", icon: UserCircle },
-    { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
-    { href: "/student/exams", label: "MCQ exam", icon: FileQuestion },
-    { href: "/student/results", label: "Results", icon: GraduationCap },
+    { href: "/student", label: "হোম", icon: Home },
+    { href: "/student/courses", label: "ক্লাস", icon: BookOpen, levelAware: true },
+    { href: "/student/practice", label: "প্র্যাকটিস", icon: Brain, levelAware: true },
+    { href: "/student/exams", label: "পরীক্ষা", icon: FileQuestion },
+    { href: "/student/assignments", label: "কাজ", icon: ClipboardList },
+    { href: "/student/results", label: "ফলাফল", icon: GraduationCap },
   ],
   teacher: [
     { href: "/teacher/profile", label: "Profile", icon: UserCircle },
@@ -62,8 +68,15 @@ function buildHref(href: string, locale: Locale, level: "SSC" | "HSC", levelAwar
 
 export function DashboardMobileNav() {
   const locale = "bn";
-      const pathname = usePathname();
-  const level = useGuestLevel();
+  const pathname = usePathname();
+  const guestLevel = useGuestLevel();
+  const { user } = useSession();
+  const level =
+    user?.studentClass === "class-11" || user?.studentClass === "class-12"
+      ? "HSC"
+      : user?.studentClass
+        ? "SSC"
+        : guestLevel;
   const role = roleFromPathname(pathname);
   const links = linksByRole[role];
 
@@ -105,18 +118,26 @@ export function DashboardMobileNav() {
 
 export function DashboardSidebar() {
   const locale = "bn";
-      const pathname = usePathname();
-  const level = useGuestLevel();
+  const pathname = usePathname();
+  const guestLevel = useGuestLevel();
+  const { user } = useSession();
+  const level =
+    user?.studentClass === "class-11" || user?.studentClass === "class-12"
+      ? "HSC"
+      : user?.studentClass
+        ? "SSC"
+        : guestLevel;
   const role = roleFromPathname(pathname);
 
   const allLinks: Record<UserRole, NavItem[]> = {
     student: [
-      // { href: "/student/courses", label: "Overview", icon: LayoutDashboard, levelAware: true },
-      { href: "/student/profile", label: "Profile", icon: UserCircle },
-     // { href: "/student/courses", label: "Courses", icon: BookOpen, levelAware: true },
-      { href: "/student/practice", label: "MCQ test", icon: Brain, levelAware: true },
-      { href: "/student/exams", label: "MCQ exam", icon: FileQuestion },
-      { href: "/student/results", label: "Results", icon: GraduationCap },
+      { href: "/student", label: "শিক্ষার্থী হোম", icon: Home },
+      { href: "/student/courses", label: "কোর্স ও ক্লাস", icon: BookOpen, levelAware: true },
+      { href: "/student/practice", label: "MCQ প্র্যাকটিস", icon: Brain, levelAware: true },
+      { href: "/student/exams", label: "MCQ পরীক্ষা", icon: FileQuestion },
+      { href: "/student/assignments", label: "অ্যাসাইনমেন্ট", icon: ClipboardList },
+      { href: "/student/results", label: "ফলাফল", icon: GraduationCap },
+      { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle },
     ],
     teacher: [
       { href: "/teacher/profile", label: "Profile", icon: UserCircle },
