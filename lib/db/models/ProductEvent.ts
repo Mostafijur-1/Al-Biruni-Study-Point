@@ -8,6 +8,9 @@ export const STUDENT_EVENT_NAMES = [
   "student_mistake_answered",
   "student_learning_plan_viewed",
   "student_video_progress_updated",
+  "student_game_hub_viewed",
+  "student_quest_claimed",
+  "student_reward_equipped",
 ] as const;
 
 export type StudentEventName = (typeof STUDENT_EVENT_NAMES)[number];

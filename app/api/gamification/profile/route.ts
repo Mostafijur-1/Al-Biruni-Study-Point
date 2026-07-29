@@ -6,9 +6,9 @@ import { connectDB } from "@/lib/db/connect";
 import { StudentAchievement } from "@/lib/db/models/StudentAchievement";
 import {
   ACHIEVEMENTS,
-  differenceInDateKeys,
   getDhakaDateKey,
 } from "@/lib/gamification/rules";
+import { visibleStreak } from "@/lib/gamification/engagement-rules";
 import { getOrCreateGameProfile } from "@/lib/gamification/service";
 
 export async function GET(request: NextRequest) {
@@ -21,10 +21,12 @@ export async function GET(request: NextRequest) {
       .limit(5)
       .lean();
     const today = getDhakaDateKey();
-    const currentStreak = profile.lastQualifiedDate &&
-      differenceInDateKeys(profile.lastQualifiedDate, today) > 1
-      ? 0
-      : profile.currentStreak;
+    const currentStreak = visibleStreak({
+      currentStreak: profile.currentStreak,
+      lastQualifiedDate: profile.lastQualifiedDate,
+      currentDateKey: today,
+      streakFreezes: profile.streakFreezes,
+    });
 
     return success({
       profile: {
@@ -37,6 +39,10 @@ export async function GET(request: NextRequest) {
         testsCompleted: profile.testsCompleted,
         totalQuestionsAnswered: profile.totalQuestionsAnswered,
         totalCorrect: profile.totalCorrect,
+        streakFreezes: profile.streakFreezes,
+        streakFreezesUsed: profile.streakFreezesUsed,
+        selectedFrame: profile.selectedFrame,
+        selectedTheme: profile.selectedTheme,
       },
       achievements: achievements.flatMap((achievement) => {
         const definition = ACHIEVEMENTS[

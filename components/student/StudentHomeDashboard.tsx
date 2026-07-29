@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Flame,
+  Gamepad2,
   GraduationCap,
   LineChart,
   PlayCircle,
@@ -474,6 +475,14 @@ export function StudentHomeDashboard() {
               description: `${availableExams.length}টি পরীক্ষা বাকি`,
               icon: GraduationCap,
               tone: "bg-violet-100 text-violet-700",
+            },
+            {
+              href: "/student/game",
+              action: "game_hub",
+              title: "গেম হাব",
+              description: "কোয়েস্ট, রিওয়ার্ড ও ক্লাসের শেখার র‌্যাঙ্কিং",
+              icon: Gamepad2,
+              tone: "bg-fuchsia-100 text-fuchsia-700",
             },
             {
               href: "/student/results",

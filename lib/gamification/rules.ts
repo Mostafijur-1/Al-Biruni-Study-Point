@@ -41,6 +41,31 @@ export const ACHIEVEMENTS = {
     title: "নিখুঁত স্কোর",
     description: "একটি অনুশীলনের সব প্রশ্নের সঠিক উত্তর দিন।",
   },
+  SEVEN_DAY_STREAK: {
+    code: "SEVEN_DAY_STREAK",
+    title: "সাত দিনের অগ্রযাত্রা",
+    description: "টানা সাত দিন শেখার লক্ষ্য পূরণ করুন।",
+  },
+  FIVE_HUNDRED_QUESTIONS: {
+    code: "FIVE_HUNDRED_QUESTIONS",
+    title: "প্রশ্নযোদ্ধা",
+    description: "৫০০টি অনুশীলনী প্রশ্নের উত্তর দিন।",
+  },
+  SUBJECT_SPECIALIST: {
+    code: "SUBJECT_SPECIALIST",
+    title: "বিষয় বিশেষজ্ঞ",
+    description: "যেকোনো একটি বিষয়ে লেভেল ৩ অর্জন করুন।",
+  },
+  COMEBACK: {
+    code: "COMEBACK",
+    title: "দারুণ প্রত্যাবর্তন",
+    description: "একটি বিষয়ে নিজের সেরা ফল অন্তত ১৫% বাড়ান।",
+  },
+  QUEST_MASTER: {
+    code: "QUEST_MASTER",
+    title: "কোয়েস্ট মাস্টার",
+    description: "একটি সাপ্তাহিক কোয়েস্ট সম্পন্ন করে পুরস্কার নিন।",
+  },
 } as const;
 
 export type AchievementCode = keyof typeof ACHIEVEMENTS;
@@ -100,7 +125,9 @@ export function getEarnedAchievementCodes(input: {
   const codes: AchievementCode[] = [];
   if (input.testsCompleted >= 1) codes.push("FIRST_TEST");
   if (input.currentStreak >= 3) codes.push("THREE_DAY_STREAK");
+  if (input.currentStreak >= 7) codes.push("SEVEN_DAY_STREAK");
   if (input.totalQuestionsAnswered >= 100) codes.push("HUNDRED_QUESTIONS");
+  if (input.totalQuestionsAnswered >= 500) codes.push("FIVE_HUNDRED_QUESTIONS");
   if (
     input.totalQuestions >= 10 &&
     input.score / input.totalQuestions >= 0.8

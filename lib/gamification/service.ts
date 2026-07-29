@@ -9,10 +9,10 @@ import {
   DEFAULT_DAILY_GOAL,
   calculateLevel,
   calculatePracticeReward,
-  differenceInDateKeys,
   getDhakaDateKey,
   getEarnedAchievementCodes,
 } from "@/lib/gamification/rules";
+import { resolveStreakUpdate } from "@/lib/gamification/engagement-rules";
 
 type PracticeGamificationInput = {
   studentId: string;
@@ -31,6 +31,10 @@ function profileSnapshot(profile: {
   longestStreak: number;
   dailyProgress: number;
   dailyGoalTarget: number;
+  streakFreezes: number;
+  streakFreezesUsed: number;
+  selectedFrame: string;
+  selectedTheme: string;
 }) {
   return {
     totalXp: profile.totalXp,
@@ -39,6 +43,10 @@ function profileSnapshot(profile: {
     longestStreak: profile.longestStreak,
     dailyProgress: profile.dailyProgress,
     dailyGoalTarget: profile.dailyGoalTarget,
+    streakFreezes: profile.streakFreezes,
+    streakFreezesUsed: profile.streakFreezesUsed,
+    selectedFrame: profile.selectedFrame,
+    selectedTheme: profile.selectedTheme,
   };
 }
 
@@ -56,6 +64,10 @@ export async function getOrCreateGameProfile(studentId: string) {
         testsCompleted: 0,
         totalQuestionsAnswered: 0,
         totalCorrect: 0,
+        streakFreezes: 0,
+        streakFreezesUsed: 0,
+        selectedFrame: "classic",
+        selectedTheme: "classic",
       },
     },
     { new: true, upsert: true },
@@ -101,6 +113,7 @@ export async function awardPracticeGamification(input: PracticeGamificationInput
           title: string;
           description: string;
         }>;
+        streakFreezeUsed: boolean;
       }
     | undefined;
 
@@ -119,6 +132,7 @@ export async function awardPracticeGamification(input: PracticeGamificationInput
           xpBreakdown: duplicate.breakdown,
           profile: profileSnapshot(profile),
           newAchievements: [],
+          streakFreezeUsed: false,
         };
         return;
       }
@@ -161,19 +175,26 @@ export async function awardPracticeGamification(input: PracticeGamificationInput
         ? profile.dailyProgress + input.answeredCount
         : input.answeredCount;
 
-      let currentStreak = profile.currentStreak;
+      let streakFreezeUsed = false;
       if (reward.qualifiedDay && profile.lastQualifiedDate !== dateKey) {
-        currentStreak = profile.lastQualifiedDate &&
-          differenceInDateKeys(profile.lastQualifiedDate, dateKey) === 1
-          ? profile.currentStreak + 1
-          : 1;
+        const streak = resolveStreakUpdate({
+          currentStreak: profile.currentStreak,
+          lastQualifiedDate: profile.lastQualifiedDate,
+          currentDateKey: dateKey,
+          streakFreezes: profile.streakFreezes,
+        });
+        profile.currentStreak = streak.currentStreak;
+        profile.streakFreezes = streak.streakFreezes;
+        if (streak.streakFreezeUsed) {
+          profile.streakFreezesUsed += 1;
+          streakFreezeUsed = true;
+        }
         profile.lastQualifiedDate = dateKey;
       }
 
       profile.totalXp += xpEarned;
       profile.level = calculateLevel(profile.totalXp);
-      profile.currentStreak = currentStreak;
-      profile.longestStreak = Math.max(profile.longestStreak, currentStreak);
+      profile.longestStreak = Math.max(profile.longestStreak, profile.currentStreak);
       profile.dailyProgressDate = dateKey;
       profile.dailyProgress = dailyProgress;
       profile.testsCompleted += 1;
@@ -216,6 +237,7 @@ export async function awardPracticeGamification(input: PracticeGamificationInput
         xpBreakdown: reward.breakdown,
         profile: profileSnapshot(profile),
         newAchievements: newCodes.map((code) => ACHIEVEMENTS[code]),
+        streakFreezeUsed,
       };
     });
   } finally {

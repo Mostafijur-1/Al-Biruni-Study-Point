@@ -21,6 +21,7 @@ import {
 import { awardPracticeGamification } from "@/lib/gamification/service";
 import { dedupeSubmittedAnswers } from "@/lib/mcq/answer-scoring";
 import { syncMistakesFromAnswers } from "@/lib/learning/mistake-service";
+import { awardSubjectProgress } from "@/lib/gamification/subject-progress-service";
 
 const submitPracticeSchema = z.object({
   attemptSessionId: z.string().min(1),
@@ -198,11 +199,30 @@ export async function POST(request: NextRequest) {
       console.error("Could not apply practice gamification rewards", gamificationError);
     }
 
+    let subjectProgress;
+    if (!parsed.isCancelled) {
+      try {
+        subjectProgress = await awardSubjectProgress({
+          studentId: user.id,
+          attemptId: attempt._id.toString(),
+          subject: parsed.subject,
+          score: scoring.score,
+          totalQuestions: scoring.totalQuestions,
+          percentage: scoring.percentage,
+          submittedAt: submissionSession.submittedAt,
+        });
+      } catch (subjectProgressError) {
+        // Progress feedback must never invalidate an already-saved academic result.
+        console.error("Could not update subject progression", subjectProgressError);
+      }
+    }
+
     return success({
       result,
       totalQuestions: scoring.totalQuestions,
       solutions: scoring.solutions,
       gamification,
+      subjectProgress,
     });
   } catch (error) {
     return handleApiError(error);

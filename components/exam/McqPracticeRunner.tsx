@@ -81,6 +81,20 @@ type PracticeSubmitResult = {
       title: string;
       description: string;
     }>;
+    streakFreezeUsed?: boolean;
+  };
+  subjectProgress?: {
+    xpEarned: number;
+    personalBest: boolean;
+    previousBest: number;
+    improvement: number;
+    progress: {
+      subject: string;
+      xp: number;
+      level: number;
+      bestAccuracy: number;
+      personalBestCount: number;
+    } | null;
   };
 };
 
@@ -1554,6 +1568,49 @@ export function McqPracticeRunner({
                 </div>
               </div>
             )}
+            {result.gamification.streakFreezeUsed && (
+              <p className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800">
+                আপনার একটি স্ট্রিক ফ্রিজ ব্যবহার হয়েছে—শেখার ধারাবাহিকতা অক্ষুণ্ণ আছে।
+              </p>
+            )}
+          </div>
+        )}
+
+        {result.subjectProgress?.progress && !result.result.isCancelled && (
+          <div
+            className={cn(
+              "rounded-2xl border p-5 shadow-[var(--shadow-sm)]",
+              result.subjectProgress.personalBest
+                ? "border-amber-300 bg-gradient-to-br from-amber-50 to-white"
+                : "border-sky-200 bg-sky-50/70",
+            )}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-sky-700">
+                  {result.subjectProgress.personalBest
+                    ? "নতুন ব্যক্তিগত সেরা!"
+                    : "বিষয়ভিত্তিক অগ্রগতি"}
+                </p>
+                <p className="mt-1 text-lg font-black text-primary">
+                  {result.subjectProgress.progress.subject} · লেভেল{" "}
+                  {result.subjectProgress.progress.level}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-muted">
+                  +{result.subjectProgress.xpEarned} বিষয় XP · সেরা{" "}
+                  {Math.round(result.subjectProgress.progress.bestAccuracy)}%
+                </p>
+              </div>
+              {result.subjectProgress.personalBest && (
+                <div className="rounded-xl bg-amber-100 px-4 py-3 text-center text-amber-900">
+                  <Trophy className="mx-auto size-5 text-amber-600" />
+                  <p className="mt-1 text-lg font-black">
+                    +{Math.round(result.subjectProgress.improvement)}%
+                  </p>
+                  <p className="text-2xs font-bold">আগের সেরা থেকে উন্নতি</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

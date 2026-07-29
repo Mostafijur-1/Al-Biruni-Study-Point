@@ -13,6 +13,10 @@ export interface IStudentGameProfile extends Document {
   testsCompleted: number;
   totalQuestionsAnswered: number;
   totalCorrect: number;
+  streakFreezes: number;
+  streakFreezesUsed: number;
+  selectedFrame: string;
+  selectedTheme: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +40,10 @@ const StudentGameProfileSchema = new Schema<IStudentGameProfile>(
     testsCompleted: { type: Number, default: 0, min: 0 },
     totalQuestionsAnswered: { type: Number, default: 0, min: 0 },
     totalCorrect: { type: Number, default: 0, min: 0 },
+    streakFreezes: { type: Number, default: 0, min: 0 },
+    streakFreezesUsed: { type: Number, default: 0, min: 0 },
+    selectedFrame: { type: String, default: "classic", trim: true },
+    selectedTheme: { type: String, default: "classic", trim: true },
   },
   { timestamps: true },
 );

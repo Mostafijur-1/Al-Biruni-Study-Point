@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Flame, Sparkles, Star, Target, Trophy } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Flame,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+} from "lucide-react";
 
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
 
@@ -16,6 +25,7 @@ type GameProfileData = {
     testsCompleted: number;
     totalQuestionsAnswered: number;
     totalCorrect: number;
+    streakFreezes: number;
   };
   achievements: Array<{
     code: string;
@@ -94,6 +104,10 @@ export function GameProfileCard() {
           <p className="mt-1 text-2xs font-semibold text-muted">
             সর্বোচ্চ: {profile.longestStreak} দিন
           </p>
+          <p className="mt-2 inline-flex items-center gap-1 text-2xs font-bold text-sky-700">
+            <ShieldCheck className="size-3.5" />
+            {profile.streakFreezes}টি স্ট্রিক ফ্রিজ
+          </p>
         </div>
 
         <div className="rounded-xl border border-emerald-200/70 bg-white/70 p-4">
@@ -133,6 +147,13 @@ export function GameProfileCard() {
           ))}
         </div>
       )}
+      <Link
+        href="/student/game"
+        className="flex items-center justify-center gap-2 border-t border-violet-100 bg-violet-700 px-5 py-3 text-xs font-black text-white transition hover:bg-violet-800"
+      >
+        কোয়েস্ট ও রিওয়ার্ড দেখতে গেম হাবে যান
+        <ArrowRight className="size-4" />
+      </Link>
     </section>
   );
 }
