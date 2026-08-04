@@ -23,7 +23,6 @@ jobs:
     timeout-minutes: 45
     env:
       MONGOMS_VERSION: ${{ inputs.mongodb_version }}
-      MONGOMS_DOWNLOAD_DIR: ${{ runner.temp }}/mongodb-binaries
 
     steps:
       - name: Check out tested commit
@@ -50,6 +49,8 @@ jobs:
       - name: Run disposable replica-set integration test
         id: integration
         shell: bash
+        env:
+          MONGOMS_DOWNLOAD_DIR: ${{ runner.temp }}/mongodb-binaries
         run: |
           mkdir -p evidence
           set -o pipefail

@@ -10,6 +10,15 @@ test("academic DB validation stays manual, isolated, and reviewable", async () =
   assert.match(workflow, /npm run test:academic-db:memory/);
   assert.match(workflow, /actions\/upload-artifact@v7/);
   assert.match(workflow, /permissions:\s*\n\s+contents: read/);
+  assert.doesNotMatch(
+    workflow,
+    /^\s{6}MONGOMS_DOWNLOAD_DIR:\s*\$\{\{\s*runner\./m,
+    "runner context is unavailable in job-level env",
+  );
+  assert.match(
+    workflow,
+    /id: integration[\s\S]*?env:\s*\n\s{10}MONGOMS_DOWNLOAD_DIR:\s*\$\{\{\s*runner\.temp\s*\}\}\/mongodb-binaries/,
+  );
 });
 
 test("normal dependency installs do not use the MongoDB binary postinstall package", async () => {
