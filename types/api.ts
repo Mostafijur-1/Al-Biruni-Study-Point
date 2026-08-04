@@ -2,6 +2,7 @@ export type ApiErrorBody = {
   message: string;
   code?: string;
   details?: unknown;
+  requestId?: string;
 };
 
 export type ApiSuccess<T> = {

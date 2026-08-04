@@ -28,6 +28,7 @@ export interface IUser extends Document {
     lastChargeRefreshedAt?: Date;
   };
   refreshTokenHash?: string;
+  sessionVersion: number;
   aiProfile?: {
     learningStyle?: string;
     weakTopics?: string[];
@@ -75,6 +76,7 @@ const UserSchema = new Schema<IUser>(
     },
     reference: { type: String, trim: true },
     refreshTokenHash: { type: String, select: false },
+    sessionVersion: { type: Number, default: 0, min: 0 },
     aiProfile: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true },
@@ -97,6 +99,7 @@ if (
     !ExistingUserModel.schema.path("teacherDomain") ||
     !ExistingUserModel.schema.path("teacherUsage") ||
     !ExistingUserModel.schema.path("teacherUsage.chargeDueAt") ||
+    !ExistingUserModel.schema.path("sessionVersion") ||
     !ExistingUserModel.schema.path("schoolCollege") ||
     !ExistingUserModel.schema.path("reference") ||
     ExistingUserModel.schema.path("phone")?.options.required)

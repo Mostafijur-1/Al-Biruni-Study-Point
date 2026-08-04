@@ -5,6 +5,11 @@ import { resolvePostAuthRedirect } from "@/lib/auth/return-url";
 import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import {
+  nextSessionVersion,
+  normalizeSessionVersion,
+  sessionVersionFilter,
+} from "@/lib/auth/session-version";
 import { serializeUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
@@ -54,24 +59,43 @@ export async function POST(request: NextRequest) {
       return fail("Teacher account is pending admin approval.", 403);
     }
 
+    const currentSessionVersion = normalizeSessionVersion(user.sessionVersion);
+    const sessionVersion = nextSessionVersion(currentSessionVersion);
     const payload = {
       userId: String(user._id),
       role: user.role,
+      sessionVersion,
       phone: user.phone,
       email: user.email,
     };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
+    const refreshTokenHash = await hashPassword(refreshToken);
 
-    user.refreshTokenHash = await hashPassword(refreshToken);
-    await user.save();
+    const sessionUser = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        ...sessionVersionFilter(currentSessionVersion),
+      },
+      {
+        $set: {
+          refreshTokenHash,
+          sessionVersion,
+        },
+      },
+      { new: true },
+    );
+
+    if (!sessionUser) {
+      return fail("A newer sign-in replaced this request. Please try again.", 409);
+    }
 
     const response = success({
-      user: serializeUser(user),
-      redirectTo: resolvePostAuthRedirect(user.role, parsed.returnUrl),
+      user: serializeUser(sessionUser),
+      redirectTo: resolvePostAuthRedirect(sessionUser.role, parsed.returnUrl),
     });
 
-    setAuthCookies(response, { accessToken, refreshToken }, user.role);
+    setAuthCookies(response, { accessToken, refreshToken }, sessionUser.role);
 
     return response;
   } catch (error) {

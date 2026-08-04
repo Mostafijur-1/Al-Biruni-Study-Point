@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword } from "@/lib/auth/password";
+import { normalizeSessionVersion } from "@/lib/auth/session-version";
 import { resolvePostAuthRedirect } from "@/lib/auth/return-url";
 import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { serializeUser } from "@/lib/auth/session";
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
     const tokenPayload = {
       userId: String(user._id),
       role: user.role,
+      sessionVersion: normalizeSessionVersion(user.sessionVersion),
       phone: user.phone,
       email: user.email,
     };

@@ -92,6 +92,7 @@ export function getApiErrorMessage(
   // Log the actual detailed technical error to developer console
   console.error("[API Error Technical Details]:", {
     code,
+    requestId: rawError.requestId,
     message: techMsg,
     details: rawError.details,
   });

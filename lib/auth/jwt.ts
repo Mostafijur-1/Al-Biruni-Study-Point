@@ -5,6 +5,7 @@ import type { UserRole } from "@/types";
 export interface TokenPayload extends JwtPayload {
   userId: string;
   role: UserRole;
+  sessionVersion?: number;
   phone?: string;
   email?: string;
 }

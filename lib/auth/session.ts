@@ -1,6 +1,7 @@
 import type { SessionUser, UserRole } from "@/types";
 import { ACCESS_COOKIE } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
+import { sessionVersionMatches } from "@/lib/auth/session-version";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/connect";
 import { getTeacherMonthlyUsage, isTeacherChargeExpired } from "@/lib/teacher-charges";
@@ -70,10 +71,6 @@ export async function requireAuth(
     throw new AuthError("Invalid or expired session.");
   }
 
-  if (allowedRoles?.length && !allowedRoles.includes(payload.role)) {
-    throw new AuthError("Forbidden", 403);
-  }
-
   await connectDB();
   const user = await User.findById(payload.userId).lean();
 
@@ -84,6 +81,14 @@ export async function requireAuth(
 
   if (!user || !user.isActive) {
     throw new AuthError("Account is not active.");
+  }
+
+  if (!sessionVersionMatches(payload.sessionVersion, user.sessionVersion)) {
+    throw new AuthError("Invalid or expired session.");
+  }
+
+  if (allowedRoles?.length && !allowedRoles.includes(user.role)) {
+    throw new AuthError("Forbidden", 403);
   }
 
   if (user.role === "teacher" && user.approvalStatus !== "approved") {

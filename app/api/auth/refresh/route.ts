@@ -5,10 +5,16 @@ import { clearAuthCookies, REFRESH_COOKIE } from "@/lib/auth/cookies";
 import { setAuthCookies } from "@/lib/auth/set-auth-cookies";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "@/lib/auth/jwt";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import {
+  normalizeSessionVersion,
+  sessionVersionFilter,
+  sessionVersionMatches,
+} from "@/lib/auth/session-version";
 import { sanitizeLocalReturnUrl } from "@/lib/auth/safe-return-url";
 import { serializeUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
+import { isTeacherChargeExpired } from "@/lib/teacher-charges";
 
 function invalidSessionResponse() {
   const response = fail("Invalid session.", 401);
@@ -28,22 +34,46 @@ async function rotateSession(request: NextRequest) {
 
     if (!user?.refreshTokenHash || !user.isActive) return null;
 
-    const matchesStoredToken = await verifyPassword(refreshToken, user.refreshTokenHash);
+    const sessionVersion = normalizeSessionVersion(user.sessionVersion);
+    if (!sessionVersionMatches(payload.sessionVersion, sessionVersion)) return null;
+
+    if (user.role === "teacher" && isTeacherChargeExpired(user.teacherUsage)) {
+      user.isActive = false;
+      await user.save();
+      return null;
+    }
+
+    if (user.role === "teacher" && user.approvalStatus !== "approved") return null;
+
+    const storedRefreshTokenHash = user.refreshTokenHash;
+    const matchesStoredToken = await verifyPassword(refreshToken, storedRefreshTokenHash);
     if (!matchesStoredToken) return null;
 
     const nextPayload = {
       userId: String(user._id),
       role: user.role,
+      sessionVersion,
       phone: user.phone,
       email: user.email,
     };
     const nextAccessToken = generateAccessToken(nextPayload);
     const nextRefreshToken = generateRefreshToken(nextPayload);
 
-    user.refreshTokenHash = await hashPassword(nextRefreshToken);
-    await user.save();
+    const nextRefreshTokenHash = await hashPassword(nextRefreshToken);
+    const sessionUser = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        isActive: true,
+        refreshTokenHash: storedRefreshTokenHash,
+        ...sessionVersionFilter(sessionVersion),
+      },
+      { $set: { refreshTokenHash: nextRefreshTokenHash } },
+      { new: true },
+    );
 
-    return { user, accessToken: nextAccessToken, refreshToken: nextRefreshToken };
+    if (!sessionUser) return null;
+
+    return { user: sessionUser, accessToken: nextAccessToken, refreshToken: nextRefreshToken };
   } catch (error) {
     if (
       error instanceof Error &&
