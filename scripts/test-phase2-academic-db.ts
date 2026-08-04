@@ -6,8 +6,12 @@ import { NextRequest } from "next/server";
 import {
   assignTeacher,
   createBatch,
+  createClassSession,
+  createRoutineSlot,
   endTeacherAssignment,
+  endRoutineSlot,
   enrollStudent,
+  transitionClassSession,
   transferStudent,
 } from "../lib/academic-workflows.ts";
 import { ApiRouteError } from "../lib/api-error.ts";
@@ -170,6 +174,56 @@ try {
     effectiveFrom: new Date("2026-01-02T00:00:00.000Z"),
     reason: "Approved integration assignment",
   });
+  const routine = await createRoutineSlot({
+    request,
+    actor,
+    assignmentId: String(assignment._id),
+    weekday: 1,
+    startMinute: 9 * 60,
+    endMinute: 10 * 60,
+    room: "Test Room",
+    effectiveFrom: new Date("2026-01-02T00:00:00.000Z"),
+    effectiveTo: new Date("2026-06-30T00:00:00.000Z"),
+    reason: "Approved integration routine",
+  });
+  await assert.rejects(
+    createRoutineSlot({
+      request,
+      actor,
+      assignmentId: String(assignment._id),
+      weekday: 1,
+      startMinute: 9 * 60 + 30,
+      endMinute: 10 * 60 + 30,
+      effectiveFrom: new Date("2026-01-02T00:00:00.000Z"),
+      effectiveTo: new Date("2026-06-30T00:00:00.000Z"),
+      reason: "Routine conflict integration test",
+    }),
+    (error) => error instanceof ApiRouteError && error.status === 409,
+  );
+  const classSession = await createClassSession({
+    request,
+    actor,
+    assignmentId: String(assignment._id),
+    routineSlotId: String(routine._id),
+    scheduledStart: new Date("2026-01-05T03:00:00.000Z"),
+    scheduledEnd: new Date("2026-01-05T04:00:00.000Z"),
+    reason: "Approved integration class",
+  });
+  const completedClass = await transitionClassSession({
+    request,
+    actor,
+    classSessionId: String(classSession._id),
+    nextStatus: "completed",
+    reason: "Integration class completed",
+  });
+  assert.equal(completedClass.status, "completed");
+  await endRoutineSlot({
+    request,
+    actor,
+    routineSlotId: String(routine._id),
+    effectiveAt: new Date("2026-06-30T00:00:00.000Z"),
+    reason: "Integration routine end",
+  });
   const endedAssignment = await endTeacherAssignment({
     request,
     actor,
@@ -178,7 +232,7 @@ try {
     reason: "Integration assignment end",
   });
   assert.equal(endedAssignment.status, "ended");
-  assert.equal(await AuditLog.countDocuments({ requestId: "academic-db-integration-test" }), 6);
+  assert.equal(await AuditLog.countDocuments({ requestId: "academic-db-integration-test" }), 10);
 
   console.log(JSON.stringify({ status: "passed", database: dbName }, null, 2));
 } finally {

@@ -3,7 +3,9 @@ import test from "node:test";
 
 import {
   batchCreateSchema,
+  classSessionMutationSchema,
   enrollmentMutationSchema,
+  routineMutationSchema,
   teacherAssignmentMutationSchema,
 } from "../lib/validations/academic.schema.ts";
 
@@ -71,6 +73,43 @@ test("teacher assignment mutations distinguish assign and end contracts", () => 
       action: "end",
       assignmentId: id,
       reason: "x",
+    }).success,
+    false,
+  );
+});
+
+test("routine contracts reject inverted time windows", () => {
+  const routine = routineMutationSchema.parse({
+    action: "create",
+    assignmentId: id,
+    weekday: 6,
+    startMinute: 9 * 60,
+    endMinute: 10 * 60,
+    effectiveFrom: "2026-01-01T00:00:00.000Z",
+    reason: "Approved weekly timetable",
+  });
+  assert.equal(routine.action, "create");
+  assert.equal(
+    routineMutationSchema.safeParse({ ...routine, startMinute: routine.endMinute }).success,
+    false,
+  );
+});
+
+test("class-session contracts use explicit create and terminal actions", () => {
+  const classSession = classSessionMutationSchema.parse({
+    action: "create",
+    assignmentId: id,
+    scheduledStart: "2026-08-04T03:00:00.000Z",
+    scheduledEnd: "2026-08-04T04:00:00.000Z",
+    reason: "Approved class schedule",
+  });
+  assert.equal(classSession.action, "create");
+
+  assert.equal(
+    classSessionMutationSchema.safeParse({
+      action: "reopen",
+      classSessionId: id,
+      reason: "Not permitted",
     }).success,
     false,
   );

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   areAcademicWritesEnabled,
   canTransitionClassSession,
+  getZonedSchedulePosition,
   canTransitionAcademicLifecycle,
   hasEnrollmentCapacity,
   isEffectiveOn,
@@ -79,4 +80,11 @@ test("class sessions cannot reopen after completion or cancellation", () => {
   assert.equal(canTransitionClassSession("scheduled", "cancelled"), true);
   assert.equal(canTransitionClassSession("completed", "scheduled"), false);
   assert.equal(canTransitionClassSession("cancelled", "scheduled"), false);
+});
+
+test("schedule positions use the organization's local timezone", () => {
+  assert.deepEqual(
+    getZonedSchedulePosition(new Date("2026-08-03T03:00:00.000Z"), "Asia/Dhaka"),
+    { weekday: 1, minuteOfDay: 9 * 60 },
+  );
 });

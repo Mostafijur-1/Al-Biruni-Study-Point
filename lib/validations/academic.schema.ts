@@ -85,3 +85,78 @@ export const teacherAssignmentMutationSchema = z.discriminatedUnion("action", [
     reason: mutationReasonSchema,
   }),
 ]);
+
+export const routineListQuerySchema = z.object({
+  organizationId: objectIdSchema.optional(),
+  branchId: objectIdSchema.optional(),
+  academicSessionId: objectIdSchema.optional(),
+  batchId: objectIdSchema.optional(),
+  teacherId: objectIdSchema.optional(),
+  subjectId: objectIdSchema.optional(),
+  weekday: z.coerce.number().int().min(0).max(6).optional(),
+  status: z.enum(["active", "ended"]).default("active"),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+});
+
+export const routineMutationSchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("create"),
+      assignmentId: objectIdSchema,
+      weekday: z.coerce.number().int().min(0).max(6),
+      startMinute: z.coerce.number().int().min(0).max(1439),
+      endMinute: z.coerce.number().int().min(1).max(1440),
+      room: z.string().trim().min(1).max(80).optional(),
+      effectiveFrom: z.coerce.date(),
+      effectiveTo: z.coerce.date().optional(),
+      reason: mutationReasonSchema,
+    })
+    .refine((value) => value.startMinute < value.endMinute, {
+      path: ["endMinute"],
+      message: "Routine end time must be after its start time.",
+    })
+    .refine((value) => !value.effectiveTo || value.effectiveFrom <= value.effectiveTo, {
+      path: ["effectiveTo"],
+      message: "Routine end date cannot precede its start date.",
+    }),
+  z.object({
+    action: z.literal("end"),
+    routineSlotId: objectIdSchema,
+    effectiveAt: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+]);
+
+export const classSessionListQuerySchema = z.object({
+  organizationId: objectIdSchema.optional(),
+  branchId: objectIdSchema.optional(),
+  academicSessionId: objectIdSchema.optional(),
+  batchId: objectIdSchema.optional(),
+  teacherId: objectIdSchema.optional(),
+  subjectId: objectIdSchema.optional(),
+  status: z.enum(["scheduled", "completed", "cancelled"]).default("scheduled"),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+});
+
+export const classSessionMutationSchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("create"),
+      assignmentId: objectIdSchema,
+      routineSlotId: objectIdSchema.optional(),
+      scheduledStart: z.coerce.date(),
+      scheduledEnd: z.coerce.date(),
+      reason: mutationReasonSchema,
+    })
+    .refine((value) => value.scheduledStart < value.scheduledEnd, {
+      path: ["scheduledEnd"],
+      message: "Class session end time must be after its start time.",
+    }),
+  z.object({
+    action: z.enum(["complete", "cancel"]),
+    classSessionId: objectIdSchema,
+    reason: mutationReasonSchema,
+  }),
+]);

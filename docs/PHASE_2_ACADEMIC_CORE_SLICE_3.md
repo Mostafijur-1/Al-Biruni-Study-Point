@@ -11,6 +11,9 @@ Establish the verification tools and deterministic rules needed before canonical
 - Added a read-only scope parity command that reports matches, mismatches, and legacy all-access assignments requiring review.
 - Added a destructive-but-isolated database integration harness for batch capacity, transaction rollback, transfer counters, teacher assignments, and audit atomicity.
 - Refactored academic workflow imports so the same production service code is exercised by the standalone DB harness.
+- Added transaction-safe routine creation and ending with serialized branch schedule writes, teacher ownership enforcement, and historical effective-date collision checks.
+- Added transaction-safe class-session creation, completion, and cancellation with timetable/timezone validation and terminal-state protection.
+- Added role-scoped routine and class-session APIs for administrators, teachers, and actively enrolled students.
 
 ## Teacher-scope parity audit
 
@@ -43,11 +46,18 @@ Run only against a disposable replica-set database:
 npm.cmd run test:academic-db
 ```
 
-It exercises the real services and collections, including a capacity rejection rollback and audit-count verification. It was added but not executed in this repository session because no approved disposable MongoDB test environment was available.
+It exercises the real services and collections, including a capacity rejection rollback, timetable collision rejection, session-state transition, and audit-count verification. It was added but not executed in this repository session because no approved disposable MongoDB test environment was available.
 
-## Remaining Phase 2 work
+## Timetable API behavior
 
-- Expose routine and class-session service workflows through scoped API routes.
+- `GET /api/routines` and `GET /api/class-sessions` scope teachers to their own records and students to batches where they have a current active enrollment.
+- `POST /api/routines` supports `create` and `end`; `POST /api/class-sessions` supports `create`, `complete`, and `cancel`.
+- All timetable mutations require `ACADEMIC_WRITES_ENABLED=true`, use the production transaction/audit workflow, and reject unauthorized teacher ownership.
+- Routine-linked sessions must match the organization timezone, weekday, and exact routine start/end minutes.
+- Assignment and routine windows cannot be shortened past linked sessions; active routines must be ended before their teacher assignment.
+
+## Remaining Phase 2 operational work
+
 - Run the DB integration harness successfully.
 - Run bootstrap dry-run/apply in staging with an approved manifest.
 - Resolve parity differences and shadow-read existing teacher policies before switching authority.

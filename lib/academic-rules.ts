@@ -105,3 +105,33 @@ export function canTransitionClassSession(
   if (current === next) return true;
   return current === "scheduled" && (next === "completed" || next === "cancelled");
 }
+
+export function getZonedSchedulePosition(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = Object.fromEntries(
+    formatter.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+  const weekdayByName: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  const weekday = weekdayByName[parts.weekday];
+  const hour = Number(parts.hour);
+  const minute = Number(parts.minute);
+
+  if (weekday === undefined || !Number.isInteger(hour) || !Number.isInteger(minute)) {
+    throw new Error(`Unable to resolve schedule position for timezone ${timeZone}.`);
+  }
+  return { weekday, minuteOfDay: hour * 60 + minute };
+}
