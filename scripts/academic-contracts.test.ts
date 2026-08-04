@@ -6,6 +6,7 @@ import {
   classSessionMutationSchema,
   enrollmentMutationSchema,
   routineMutationSchema,
+  teacherAssignmentListQuerySchema,
   teacherAssignmentMutationSchema,
 } from "../lib/validations/academic.schema.ts";
 
@@ -76,6 +77,10 @@ test("teacher assignment mutations distinguish assign and end contracts", () => 
     }).success,
     false,
   );
+});
+
+test("teacher assignment history can be requested without enabling writes", () => {
+  assert.equal(teacherAssignmentListQuerySchema.parse({ status: "all" }).status, "all");
 });
 
 test("routine contracts reject inverted time windows", () => {

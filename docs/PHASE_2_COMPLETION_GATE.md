@@ -2,7 +2,7 @@
 
 ## Code status
 
-The academic-core code slice is complete. It now contains canonical organization, branch, session, curriculum, batch, enrollment, teacher-assignment, routine, and class-session models; guarded transactional write services; scoped read/write APIs; deterministic collision and lifecycle rules; audit logging; bootstrap tooling; parity tooling; and an isolated database integration harness.
+The academic-core code slice is complete. It now contains canonical organization, branch, session, curriculum, batch, enrollment, teacher-assignment, routine, and class-session models; guarded transactional write services; scoped read/write APIs; responsive administrator/teacher timetable workspaces; deterministic collision and lifecycle rules; audit logging; bootstrap tooling; parity tooling; and an isolated database integration harness.
 
 `ACADEMIC_WRITES_ENABLED` remains disabled by default. Phase 2 is code-complete but is not operationally approved until every gate below passes in an approved non-production environment.
 
@@ -14,7 +14,7 @@ The academic-core code slice is complete. It now contains canonical organization
 - Run `npm.cmd run test:academic-db` against a disposable transaction-capable MongoDB database named `absp_*test`.
 - Run `npm.cmd run audit:academic-scope -- --fail-on-mismatch` and resolve every mismatch or explicitly reviewed global legacy assignment.
 - Shadow-read canonical teacher scope against legacy authorization before changing authority.
-- Complete administrator/teacher timetable UI and interactive mobile/accessibility validation.
+- Run authenticated administrator/teacher timetable journeys in an attached browser at mobile and desktop widths, including keyboard and screen-reader smoke checks.
 - Obtain an explicit rollout decision before enabling `ACADEMIC_WRITES_ENABLED=true` outside the approved validation environment.
 
 ## Phase 3 boundary

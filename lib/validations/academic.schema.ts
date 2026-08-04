@@ -65,7 +65,7 @@ export const teacherAssignmentListQuerySchema = z.object({
   batchId: objectIdSchema.optional(),
   teacherId: objectIdSchema.optional(),
   subjectId: objectIdSchema.optional(),
-  status: z.enum(["active", "ended"]).default("active"),
+  status: z.enum(["active", "ended", "all"]).default("active"),
   limit: z.coerce.number().int().min(1).max(200).default(100),
 });
 

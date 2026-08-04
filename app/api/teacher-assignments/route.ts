@@ -10,10 +10,21 @@ import {
   TeacherAssignment,
   type ITeacherAssignment,
 } from "@/lib/db/models/TeacherAssignment";
+import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
+import { Batch } from "@/lib/db/models/Batch";
+import { Organization } from "@/lib/db/models/Organization";
+import { User } from "@/lib/db/models/User";
 import {
   teacherAssignmentListQuerySchema,
   teacherAssignmentMutationSchema,
 } from "@/lib/validations/academic.schema";
+
+type AssignmentContext = {
+  batches: Map<string, { name: string; code: string; studentClass: string }>;
+  subjects: Map<string, { name: string; nameBn: string; code: string }>;
+  teachers: Map<string, { name: string }>;
+  organizations: Map<string, { name: string; timezone: string }>;
+};
 
 function serializeAssignment(assignment: {
   _id: unknown;
@@ -27,7 +38,11 @@ function serializeAssignment(assignment: {
   effectiveFrom: Date;
   effectiveTo?: Date;
   endReason?: string;
-}) {
+}, context?: AssignmentContext) {
+  const batch = context?.batches.get(String(assignment.batchId));
+  const subject = context?.subjects.get(String(assignment.subjectId));
+  const teacher = context?.teachers.get(String(assignment.teacherId));
+  const organization = context?.organizations.get(String(assignment.organizationId));
   return {
     id: String(assignment._id),
     organizationId: String(assignment.organizationId),
@@ -40,6 +55,10 @@ function serializeAssignment(assignment: {
     effectiveFrom: assignment.effectiveFrom.toISOString(),
     effectiveTo: assignment.effectiveTo?.toISOString(),
     endReason: assignment.endReason,
+    batch,
+    subject,
+    teacher,
+    organization,
   };
 }
 
@@ -49,7 +68,8 @@ export async function GET(request: NextRequest) {
     const parsed = teacherAssignmentListQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
     );
-    const query: QueryFilter<ITeacherAssignment> = { status: parsed.status };
+    const query: QueryFilter<ITeacherAssignment> =
+      parsed.status === "all" ? {} : { status: parsed.status };
 
     if (parsed.organizationId) query.organizationId = parsed.organizationId;
     if (parsed.branchId) query.branchId = parsed.branchId;
@@ -64,7 +84,39 @@ export async function GET(request: NextRequest) {
       .limit(parsed.limit)
       .lean();
 
-    return success({ assignments: assignments.map(serializeAssignment) });
+    const [batches, subjects, teachers, organizations] = await Promise.all([
+      Batch.find({ _id: { $in: assignments.map((item) => item.batchId) } })
+        .select("name code studentClass")
+        .lean(),
+      AcademicSubject.find({ _id: { $in: assignments.map((item) => item.subjectId) } })
+        .select("name nameBn code")
+        .lean(),
+      User.find({ _id: { $in: assignments.map((item) => item.teacherId) } })
+        .select("name")
+        .lean(),
+      Organization.find({ _id: { $in: assignments.map((item) => item.organizationId) } })
+        .select("name timezone")
+        .lean(),
+    ]);
+    const context: AssignmentContext = {
+      batches: new Map(batches.map((item) => [String(item._id), {
+        name: item.name,
+        code: item.code,
+        studentClass: item.studentClass,
+      }])),
+      subjects: new Map(subjects.map((item) => [String(item._id), {
+        name: item.name,
+        nameBn: item.nameBn,
+        code: item.code,
+      }])),
+      teachers: new Map(teachers.map((item) => [String(item._id), { name: item.name }])),
+      organizations: new Map(organizations.map((item) => [String(item._id), {
+        name: item.name,
+        timezone: item.timezone,
+      }])),
+    };
+
+    return success({ assignments: assignments.map((item) => serializeAssignment(item, context)) });
   } catch (error) {
     return handleApiError(error);
   }

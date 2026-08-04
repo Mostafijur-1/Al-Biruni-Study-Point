@@ -24,4 +24,10 @@ test("teacher navigation exposes the actionable class workflow", () => {
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher"), true);
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/classes"), true);
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/results"), true);
+  assert.equal(dashboardTopLevelRoutes.teacher.length, 6);
+});
+
+test("admin navigation exposes academic operations without exceeding six destinations", () => {
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/academic"), true);
+  assert.equal(dashboardTopLevelRoutes.admin.length, 6);
 });

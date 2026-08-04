@@ -61,6 +61,6 @@ It exercises the real services and collections, including a capacity rejection r
 - Run the DB integration harness successfully.
 - Run bootstrap dry-run/apply in staging with an approved manifest.
 - Resolve parity differences and shadow-read existing teacher policies before switching authority.
-- Add admin/teacher timetable UI and interactive accessibility/mobile validation.
+- Run authenticated timetable journeys in an attached browser at mobile and desktop widths.
 
 Phase 3 attendance must not begin until roster, assignment, routine, and class-session truth has passed these checks.

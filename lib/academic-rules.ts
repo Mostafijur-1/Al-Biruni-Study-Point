@@ -135,3 +135,58 @@ export function getZonedSchedulePosition(date: Date, timeZone: string) {
   }
   return { weekday, minuteOfDay: hour * 60 + minute };
 }
+
+export function zonedScheduleDateTimeToUtc(
+  date: string,
+  time: string,
+  timeZone: string,
+) {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  if (
+    ![year, month, day, hour, minute].every(Number.isInteger) ||
+    month < 1 || month > 12 || day < 1 || day > 31 ||
+    hour < 0 || hour > 23 || minute < 0 || minute > 59
+  ) {
+    throw new Error("Invalid schedule date or time.");
+  }
+
+  const targetWallTime = Date.UTC(year, month - 1, day, hour, minute);
+  let instant = targetWallTime;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = Object.fromEntries(
+      formatter.formatToParts(new Date(instant)).map((part) => [part.type, part.value]),
+    );
+    const renderedWallTime = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+    );
+    instant += targetWallTime - renderedWallTime;
+  }
+
+  const result = new Date(instant);
+  const position = getZonedSchedulePosition(result, timeZone);
+  const renderedDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(result);
+  if (renderedDate !== date || position.minuteOfDay !== hour * 60 + minute) {
+    throw new Error("Schedule time does not exist in the organization timezone.");
+  }
+  return result;
+}

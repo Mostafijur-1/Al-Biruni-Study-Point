@@ -5,6 +5,7 @@ import {
   areAcademicWritesEnabled,
   canTransitionClassSession,
   getZonedSchedulePosition,
+  zonedScheduleDateTimeToUtc,
   canTransitionAcademicLifecycle,
   hasEnrollmentCapacity,
   isEffectiveOn,
@@ -86,5 +87,12 @@ test("schedule positions use the organization's local timezone", () => {
   assert.deepEqual(
     getZonedSchedulePosition(new Date("2026-08-03T03:00:00.000Z"), "Asia/Dhaka"),
     { weekday: 1, minuteOfDay: 9 * 60 },
+  );
+});
+
+test("organization-local schedule input converts to a stable UTC instant", () => {
+  assert.equal(
+    zonedScheduleDateTimeToUtc("2026-08-03", "09:00", "Asia/Dhaka").toISOString(),
+    "2026-08-03T03:00:00.000Z",
   );
 });
