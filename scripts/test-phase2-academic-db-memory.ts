@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-import { MongoMemoryReplSet } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 
 const databaseName = "absp_academic_memory_test";
 const replicaSet = await MongoMemoryReplSet.create({

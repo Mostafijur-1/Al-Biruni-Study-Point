@@ -25,7 +25,7 @@ const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
 let inMemoryReplicaSetAvailable = false;
 try {
-  require.resolve("mongodb-memory-server");
+  require.resolve("mongodb-memory-server-core");
   inMemoryReplicaSetAvailable = true;
 } catch {
   // The explicit test URI remains available as the fallback prerequisite.

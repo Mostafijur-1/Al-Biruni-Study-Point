@@ -29,6 +29,7 @@ Evidence is rejected if incomplete, still contains placeholders, lacks any brows
 - Apply the approved manifest in staging and verify its migration-ledger record.
 - Run `npm.cmd run test:academic-db` against a disposable transaction-capable MongoDB database named `absp_*test`.
 - Alternatively, run `npm.cmd run test:academic-db:memory` to create a loopback-only temporary replica set and execute the same production-service harness. Its first run downloads an official MongoDB test binary unless `MONGOMS_SYSTEM_BINARY` points to an installed compatible binary; cache the large Windows archive in CI.
+- For a cached, reviewable run, manually dispatch `.github/workflows/phase2-academic-db.yml`. The workflow has read-only repository permission, receives no secrets, uploads the integration log, and never runs on push or pull request.
 - Run `npm.cmd run audit:academic-scope -- --fail-on-mismatch` and resolve every mismatch or explicitly reviewed global legacy assignment.
 - Shadow-read canonical teacher scope against legacy authorization before changing authority.
 - Run authenticated administrator/teacher timetable journeys in an attached browser at mobile and desktop widths, including keyboard and screen-reader smoke checks.

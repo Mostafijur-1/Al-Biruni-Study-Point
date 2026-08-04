@@ -6,7 +6,7 @@ Allow the real Phase 2 database integration harness to run without receiving or 
 
 ## Changes completed
 
-- Added `mongodb-memory-server` as a development-only dependency.
+- Added `mongodb-memory-server-core` as a development-only dependency so ordinary installs do not run the binary-download postinstall hook.
 - Added `npm.cmd run test:academic-db:memory`, which starts a one-member loopback replica set with `wiredTiger` transaction support.
 - Injected only the generated temporary URI and fixed `absp_academic_memory_test` name into the existing production-service harness child process.
 - Reused the existing destructive database-name guard, audit assertions, transaction rollback checks, transfer counters, routine collision checks, and class-session lifecycle checks.
