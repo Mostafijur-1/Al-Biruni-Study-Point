@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Home,
   LayoutDashboard,
+  LayoutGrid,
   LineChart,
   Map,
   MoreHorizontal,
@@ -31,6 +32,10 @@ import {
 import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
 import { getLocalizedPath } from "@/lib/i18n";
+import {
+  isStudentToolRoute,
+  isTopLevelDashboardRoute,
+} from "@/lib/dashboard-navigation";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
@@ -78,9 +83,11 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
     { href: "/student/assignments", label: "অ্যাসাইনমেন্ট", icon: ClipboardList },
     { href: "/student/results", label: "ফলাফল", icon: GraduationCap },
     { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle },
+    { href: "/student/tools", label: "শেখার সরঞ্জাম", icon: LayoutGrid },
   ],
   teacher: [
     { href: "/teacher", label: "হোম", icon: Home, mobilePrimary: true },
+    { href: "/teacher/classes", label: "ক্লাস কনটেন্ট", icon: BookOpen },
     {
       href: "/teacher/mcq-review",
       label: "MCQ রিভিউ",
@@ -140,6 +147,9 @@ function roleFromPathname(pathname: string): UserRole {
 function isNavActive(pathname: string, href: string, role: UserRole) {
   const localizedBase = getLocalizedPath(href);
   const isRoleRoot = href === `/${role}`;
+  if (role === "student" && href === "/student/tools" && isStudentToolRoute(pathname)) {
+    return true;
+  }
   return (
     pathname === localizedBase ||
     (!isRoleRoot && pathname.startsWith(`${localizedBase}/`))
@@ -170,7 +180,9 @@ function useDashboardNavigation() {
     pathname,
     level,
     role,
-    links: navigationByRole[role],
+    links: navigationByRole[role].filter((item) =>
+      isTopLevelDashboardRoute(role, item.href),
+    ),
   };
 }
 
