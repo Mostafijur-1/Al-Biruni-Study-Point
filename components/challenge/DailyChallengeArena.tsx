@@ -13,7 +13,6 @@ import {
   Play,
   RotateCcw,
   Sparkles,
-  Star,
   Target,
   Trophy,
   UsersRound,

@@ -109,7 +109,15 @@ export async function getClassLeaderboard(input: {
 
   return {
     periodKey: week.key,
-    entries: top.map(({ studentId, ...entry }) => entry),
+    entries: top.map((entry) => ({
+      displayName: entry.displayName,
+      activeDays: entry.activeDays,
+      questions: entry.questions,
+      improvement: entry.improvement,
+      score: entry.score,
+      rank: entry.rank,
+      isCurrentStudent: entry.isCurrentStudent,
+    })),
     currentRank: current?.rank ?? null,
     participantCount: entries.length,
   };

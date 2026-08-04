@@ -6,6 +6,14 @@ The academic-core code slice is complete. It now contains canonical organization
 
 `ACADEMIC_WRITES_ENABLED` remains disabled by default. Phase 2 is code-complete but is not operationally approved until every gate below passes in an approved non-production environment.
 
+Run the read-only prerequisite report at any time; it never connects to MongoDB:
+
+```powershell
+npm.cmd run check:academic-readiness
+```
+
+Use `npm.cmd run check:academic-readiness -- --strict` in CI when missing prerequisites should fail the job. A successful prerequisite report only permits the external validation work below; it never enables Phase 3 automatically.
+
 ## Required operational gates
 
 - Review and approve a real bootstrap manifest derived from `docs/phase2-academic-bootstrap.example.json`.
