@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, context: Context) {
     const parsed = submitExamSchema.parse(await request.json());
 
     const exam = await McqExam.findById(id).lean();
-    if (!exam || !exam.isPublished) {
+    if (!exam || !exam.isPublished || exam.isArchived) {
       return fail("Exam not found or not published.", 404);
     }
 
@@ -116,7 +116,14 @@ export async function POST(request: NextRequest, context: Context) {
       isCorrect: answer.isCorrect,
     }));
 
-    const totalMarks = exam.totalMarks;
+    const questionMarks = dbQuestions.map((question) => question.marks ?? 1);
+    if (questionMarks.some((marks) => !Number.isFinite(marks) || marks <= 0)) {
+      return fail("This exam has an invalid question mark configuration.", 409);
+    }
+    const totalMarks = questionMarks.reduce((sum, marks) => sum + marks, 0);
+    if (totalMarks < 1 || exam.passMark > totalMarks) {
+      return fail("This exam has an invalid total or pass mark configuration.", 409);
+    }
     const percentage = totalMarks > 0 ? Number(((score / totalMarks) * 100).toFixed(2)) : 0;
     const isPassed = score >= exam.passMark;
 
@@ -131,6 +138,9 @@ export async function POST(request: NextRequest, context: Context) {
           isPassed,
           timeTaken: submissionSession.timeTaken,
           isCancelled: parsed.isCancelled || false,
+          totalMarksSnapshot: totalMarks,
+          passMarkSnapshot: exam.passMark,
+          examVersion: exam.version ?? 0,
           submittedAt: submissionSession.submittedAt,
         },
       },

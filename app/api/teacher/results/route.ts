@@ -28,6 +28,7 @@ type TeacherResultAttempt = {
   score: number;
   percentage: number;
   isPassed: boolean;
+  isCancelled?: boolean;
   timeTaken: number;
   teacherComment?: string;
   createdAt: Date;
@@ -209,6 +210,7 @@ export async function GET(request: NextRequest) {
         totalQuestions: attempt.totalQuestions,
         percentage: attempt.percentage,
         isPassed: attempt.isPassed,
+        isCancelled: Boolean(attempt.isCancelled),
         timeTaken: attempt.timeTaken,
         submittedAt: attempt.createdAt,
         teacherComment: attempt.teacherComment ?? "",

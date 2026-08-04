@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Award,
+  Archive,
   Clock,
   Eye,
   EyeOff,
   FileQuestion,
   Plus,
-  Trash2,
   Users,
 } from "lucide-react";
 
@@ -110,21 +110,25 @@ export function TeacherExamsPanel() {
   };
 
   const handleDelete = async (id: string) => {
-    const msg = "আপনি কি নিশ্চিত যে এই পরীক্ষাটি এবং এর সকল প্রশ্ন ও ফলাফল মুছে ফেলতে চান?";
+    const msg = "পরীক্ষাটি আর্কাইভ করবেন? প্রশ্ন ও ফলাফলের ইতিহাস সংরক্ষিত থাকবে।";
     if (!confirm(msg)) return;
+    const reason = window.prompt("Why should this exam be archived?");
+    if (!reason?.trim()) return;
 
     try {
-      const { ok, payload } = await apiFetch(`/api/teacher/exams/${id}`, {
-        method: "DELETE",
+      const { ok, payload } = await apiFetch(`/api/teacher/exams/${id}/archive`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
       });
 
       if (ok && isApiSuccess(payload)) {
         setExams((prev) => prev.filter((e) => e._id !== id));
       } else {
-        alert(getApiErrorMessage(payload, "Failed to delete exam."));
+        alert(getApiErrorMessage(payload, "Failed to archive exam."));
       }
     } catch {
-      alert("Error deleting exam.");
+      alert("Error archiving exam.");
     }
   };
 
@@ -240,9 +244,9 @@ export function TeacherExamsPanel() {
                     <button
                       onClick={() => handleDelete(exam._id)}
                       className="p-1 rounded-lg hover:bg-red-50 text-muted hover:text-brand-red transition cursor-pointer"
-                      title="Delete Exam"
+                      title="Archive exam"
                     >
-                      <Trash2 className="size-4" />
+                      <Archive className="size-4" />
                     </button>
                   </div>
                 </div>

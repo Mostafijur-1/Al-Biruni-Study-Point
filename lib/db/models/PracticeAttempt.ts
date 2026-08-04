@@ -27,6 +27,9 @@ export interface IPracticeAttempt extends Document {
   isTeacherSet?: boolean;
   teacherId?: Types.ObjectId;
   isCancelled?: boolean;
+  voidedAt?: Date;
+  voidedBy?: Types.ObjectId;
+  voidReason?: string;
   passMarkPercent?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +52,9 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
     isTeacherSet: { type: Boolean, default: false },
     teacherId: { type: Schema.Types.ObjectId, ref: "User" },
     isCancelled: { type: Boolean, default: false },
+    voidedAt: { type: Date },
+    voidedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    voidReason: { type: String, trim: true },
     passMarkPercent: { type: Number, min: 1, max: 100 },
   },
   { timestamps: true }

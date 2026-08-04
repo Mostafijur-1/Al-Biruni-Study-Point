@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, context: Context) {
     const { id } = await context.params;
 
     const exam = await McqExam.findById(id).lean();
-    if (!exam || !exam.isPublished) {
+    if (!exam || !exam.isPublished || exam.isArchived) {
       return fail("Exam not found or not published.", 404);
     }
 
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest, context: Context) {
         _id: exam._id.toString(),
         title: exam.title,
         duration: exam.duration, // in minutes
-        totalMarks: exam.totalMarks,
+        totalMarks: exam.publishedTotalMarks ?? exam.totalMarks,
         passMark: exam.passMark,
         questionCount: sanitizedQuestions.length,
       },

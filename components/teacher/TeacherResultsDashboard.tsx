@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
+  Ban,
   BookOpen,
   ChevronDown,
   GraduationCap,
@@ -10,7 +11,6 @@ import {
   MessageSquare,
   RefreshCw,
   Search,
-  Trash2,
   TrendingDown,
   TrendingUp,
   User,
@@ -188,18 +188,22 @@ function ResultRow({
   }
 
   async function handleDeleteAttempt() {
+    const reason = window.prompt("Why should this result be voided?");
+    if (!reason?.trim()) return;
     setIsDeleting(true);
     try {
-      const { ok, payload } = await apiFetch(`/api/teacher/results/${result.id}`, {
-        method: "DELETE",
+      const { ok, payload } = await apiFetch(`/api/teacher/results/${result.id}/void`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
       });
       if (ok && isApiSuccess(payload)) {
         onDeleted(result.id);
       } else {
-        alert("Could not delete result");
+        alert("Could not void result");
       }
     } catch {
-      alert("Error deleting result");
+      alert("Error voiding result");
     } finally {
       setIsDeleting(false);
       setConfirmDelete(false);
@@ -316,7 +320,7 @@ function ResultRow({
             <TrendingDown className="size-5 text-orange-500 shrink-0" />
           )}
 
-          {/* Inline header buttons: Comment & Delete */}
+          {/* Inline header buttons: comment and void */}
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -338,9 +342,9 @@ function ResultRow({
               type="button"
               onClick={() => setConfirmDelete(true)}
               className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
-              title="Delete Attempt"
+              title="Void result"
             >
-              <Trash2 className="size-4" />
+              <Ban className="size-4" />
             </button>
           </div>
 
@@ -381,8 +385,8 @@ function ResultRow({
               onClick={() => setConfirmDelete(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red text-xs font-semibold hover:bg-red-100 transition cursor-pointer"
             >
-              <Trash2 className="size-3.5" />
-              <span>Delete</span>
+              <Ban className="size-3.5" />
+              <span>Void</span>
             </button>
           </div>
 
@@ -449,7 +453,7 @@ function ResultRow({
         </div>
       )}
 
-      {/* Delete Confirmation Modal Overlay to prevent inline shifting */}
+      {/* Void confirmation modal */}
       {confirmDelete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
@@ -463,11 +467,11 @@ function ResultRow({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-              <Trash2 className="size-5 text-brand-red" />
-              Confirm Deletion
+              <Ban className="size-5 text-brand-red" />
+              Confirm void
             </h3>
             <p className="text-sm text-muted leading-relaxed">
-              Are you sure you want to delete the result attempt for <strong>{result.student.name}</strong>? This action cannot be undone.
+              Void the result attempt for <strong>{result.student.name}</strong>? The record will be preserved with your reason in the audit history.
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
@@ -483,7 +487,7 @@ function ResultRow({
                 disabled={isDeleting}
                 className="rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:bg-brand-red-hover disabled:opacity-50 cursor-pointer"
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? "Voiding..." : "Void result"}
               </button>
             </div>
           </div>
@@ -521,8 +525,9 @@ export function TeacherResultsDashboard() {
   }, []);
 
   const handleDeleted = useCallback((id: string) => {
-    setResults((prev) => prev.filter((r) => r.id !== id));
-    setTotal((prev) => Math.max(0, prev - 1));
+    setResults((prev) =>
+      prev.map((result) => result.id === id ? { ...result, isCancelled: true } : result)
+    );
   }, []);
 
   const fetchResults = useCallback(async () => {

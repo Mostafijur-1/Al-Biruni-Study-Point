@@ -2,11 +2,23 @@ import { NextRequest } from "next/server";
 import type { QueryFilter } from "mongoose";
 import webpush from "web-push";
 
-import { success, fail, handleApiError } from "@/lib/api/response";
+import { success, handleApiError } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { PushSubscription, type IPushSubscription } from "@/lib/db/models/PushSubscription";
 import { User } from "@/lib/db/models/User";
+import { z } from "zod";
+
+const broadcastSchema = z.object({
+  title: z.string().trim().min(1).max(120).optional(),
+  message: z.string().trim().min(1).max(500),
+  url: z.string().trim().max(500).refine(
+    (value) => value.startsWith("/") && !value.startsWith("//"),
+    "URL must be an application-relative path.",
+  ).optional(),
+  targetClass: z.enum(["class-9", "class-10", "class-11", "class-12"]).optional(),
+  targetAudience: z.enum(["all", "pwa-only"]).optional(),
+});
 
 // Set up VAPID details conditionally (prevents errors during Next.js build phase if keys are missing)
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -19,15 +31,12 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(request, ["admin", "teacher"]);
+    await requireAuth(request, ["admin"]);
     await connectDB();
 
-    const body = await request.json();
-    const { title, message, url, targetClass, targetAudience } = body;
-
-    if (!message) {
-      return fail("Message content is required", 400);
-    }
+    const { title, message, url, targetClass, targetAudience } = broadcastSchema.parse(
+      await request.json(),
+    );
 
     const query: QueryFilter<IPushSubscription> = {};
 

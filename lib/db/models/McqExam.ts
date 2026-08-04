@@ -11,6 +11,14 @@ export interface IMcqExam extends Document {
   targetClasses: StudentClass[];
   isPublished: boolean;
   resultsPublished: boolean;
+  publishedAt?: Date;
+  publishedQuestionCount?: number;
+  publishedTotalMarks?: number;
+  version: number;
+  isArchived: boolean;
+  archivedAt?: Date;
+  archivedBy?: Types.ObjectId;
+  archiveReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +34,14 @@ const McqExamSchema = new Schema<IMcqExam>(
     targetClasses: { type: [String], default: [] },
     isPublished: { type: Boolean, default: false },
     resultsPublished: { type: Boolean, default: false },
+    publishedAt: { type: Date },
+    publishedQuestionCount: { type: Number, min: 1 },
+    publishedTotalMarks: { type: Number, min: 1 },
+    version: { type: Number, default: 0, min: 0 },
+    isArchived: { type: Boolean, default: false },
+    archivedAt: { type: Date },
+    archivedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    archiveReason: { type: String, trim: true },
   },
   { timestamps: true }
 );

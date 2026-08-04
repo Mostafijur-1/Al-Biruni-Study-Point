@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MessageSquare, Trash2, XCircle } from "lucide-react";
+import { Ban, MessageSquare, XCircle } from "lucide-react";
 
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 
@@ -110,18 +110,22 @@ function McqResultRow({
   }
 
   async function handleDeleteResult() {
+    const reason = window.prompt("Why should this result be voided?");
+    if (!reason?.trim()) return;
     setIsDeleting(true);
     try {
-      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}`, {
-        method: "DELETE",
+      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}/void`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
       });
       if (ok && isApiSuccess(payload)) {
         onDelete(row._id);
       } else {
-        alert("Could not delete result");
+        alert("Could not void result");
       }
     } catch {
-      alert("Error deleting result");
+      alert("Error voiding result");
     } finally {
       setIsDeleting(false);
       setConfirmDelete(false);
@@ -187,7 +191,7 @@ function McqResultRow({
 
             {confirmDelete ? (
               <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5 text-left">
-                <span className="text-[9px] text-brand-red font-bold px-1">Delete?</span>
+                <span className="text-[9px] text-brand-red font-bold px-1">Void?</span>
                 <button
                   type="button"
                   onClick={handleDeleteResult}
@@ -209,9 +213,9 @@ function McqResultRow({
                 type="button"
                 onClick={() => setConfirmDelete(true)}
                 className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
-                title="Delete Result"
+                title="Void result"
               >
-                <Trash2 className="size-3.5" />
+                <Ban className="size-3.5" />
               </button>
             )}
           </div>
@@ -307,18 +311,22 @@ function McqResultMobileCard({
   }
 
   async function handleDeleteResult() {
+    const reason = window.prompt("Why should this result be voided?");
+    if (!reason?.trim()) return;
     setIsDeleting(true);
     try {
-      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}`, {
-        method: "DELETE",
+      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}/void`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
       });
       if (ok && isApiSuccess(payload)) {
         onDelete(row._id);
       } else {
-        alert("Could not delete result");
+        alert("Could not void result");
       }
     } catch {
-      alert("Error deleting result");
+      alert("Error voiding result");
     } finally {
       setIsDeleting(false);
       setConfirmDelete(false);
@@ -389,7 +397,7 @@ function McqResultMobileCard({
 
         {confirmDelete ? (
           <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5 text-left">
-            <span className="text-[9px] text-brand-red font-bold px-1">Delete?</span>
+            <span className="text-[9px] text-brand-red font-bold px-1">Void?</span>
             <button
               type="button"
               onClick={handleDeleteResult}
@@ -411,8 +419,9 @@ function McqResultMobileCard({
             type="button"
             onClick={() => setConfirmDelete(true)}
             className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
+            title="Void result"
           >
-            <Trash2 className="size-3.5" />
+            <Ban className="size-3.5" />
           </button>
         )}
       </div>
@@ -478,7 +487,9 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
       if (!prev) return null;
       return {
         ...prev,
-        results: prev.results.filter((r) => r._id !== deletedId),
+        results: prev.results.map((result) =>
+          result._id === deletedId ? { ...result, isCancelled: true } : result
+        ),
       };
     });
   }

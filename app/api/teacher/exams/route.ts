@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { handleApiError, success } from "@/lib/api/response";
+import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
+import { User } from "@/lib/db/models/User";
+import { isExamWithinTeacherDomain } from "@/lib/auth/teacher-domain-rules";
 import type { StudentClass } from "@/types";
 
 const createExamSchema = z.object({
@@ -14,7 +16,10 @@ const createExamSchema = z.object({
   duration: z.number().int().min(1), // in minutes
   totalMarks: z.number().int().min(1),
   passMark: z.number().int().min(1),
-  targetClasses: z.array(z.string()).default([]),
+  targetClasses: z.array(z.enum(["class-9", "class-10", "class-11", "class-12"])).min(1),
+}).refine((exam) => exam.passMark <= exam.totalMarks, {
+  message: "Pass mark cannot exceed total marks.",
+  path: ["passMark"],
 });
 
 export async function GET(request: NextRequest) {
@@ -22,7 +27,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
     const user = await requireAuth(request, ["teacher"]);
 
-    const exams = await McqExam.find({ teacher: user.id })
+    const exams = await McqExam.find({ teacher: user.id, isArchived: { $ne: true } })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -52,6 +57,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const parsed = createExamSchema.parse(body);
+    const teacher = await User.findById(user.id).select("teacherDomain").lean();
+    if (!isExamWithinTeacherDomain(teacher?.teacherDomain, parsed.subject, parsed.targetClasses)) {
+      return fail("The selected subject or class is outside your assigned teaching scope.", 403);
+    }
 
     const exam = await McqExam.create({
       ...parsed,

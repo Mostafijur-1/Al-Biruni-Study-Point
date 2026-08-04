@@ -9,6 +9,7 @@ import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import type { IMcqExam } from "@/lib/db/models/McqExam";
 import "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
+import { canManageTeacherOwnedResource } from "@/lib/auth/resource-policy";
 
 const commentSchema = z.object({
   teacherComment: z.string().trim().default(""),
@@ -40,6 +41,13 @@ export async function GET(request: NextRequest, context: Context) {
     }
 
     const exam = attempt.exam as unknown as IMcqExam;
+
+    if (
+      user.role === "teacher" &&
+      !canManageTeacherOwnedResource(user, exam.teacher)
+    ) {
+      return fail("Result not found or you do not have permission to view it.", 404);
+    }
 
     // Enforce results publishing check for students
     if (user.role === "student" && !exam.resultsPublished) {
@@ -79,8 +87,8 @@ export async function GET(request: NextRequest, context: Context) {
         commentedBy: attempt.commentedBy,
         exam: {
           title: exam.title,
-          totalMarks: exam.totalMarks,
-          passMark: exam.passMark,
+          totalMarks: attempt.totalMarksSnapshot ?? exam.totalMarks,
+          passMark: attempt.passMarkSnapshot ?? exam.passMark,
         },
       },
       solutions: solutionBreakdown,
@@ -108,7 +116,7 @@ export async function PUT(request: NextRequest, context: Context) {
     const exam = await attempt
       .populate("exam")
       .then((populatedAttempt) => populatedAttempt.exam as unknown as IMcqExam);
-    if (user.role === "teacher" && String(exam.teacher) !== user.id) {
+    if (!canManageTeacherOwnedResource(user, exam.teacher)) {
       return fail("You do not have permission to comment on this exam result.", 403);
     }
 
@@ -124,26 +132,12 @@ export async function PUT(request: NextRequest, context: Context) {
 
 export async function DELETE(request: NextRequest, context: Context) {
   try {
-    await connectDB();
-    const user = await requireAuth(request, ["teacher", "admin"]);
-    const { id } = await context.params;
-
-    const attempt = await McqExamAttempt.findById(id);
-    if (!attempt) {
-      return fail("Attempt not found.", 404);
-    }
-
-    // Verify teacher owns the exam
-    const exam = await attempt
-      .populate("exam")
-      .then((populatedAttempt) => populatedAttempt.exam as unknown as IMcqExam);
-    if (user.role === "teacher" && String(exam.teacher) !== user.id) {
-      return fail("You do not have permission to delete this student's result.", 403);
-    }
-
-    await McqExamAttempt.findByIdAndDelete(id);
-
-    return success({ message: "Exam result deleted successfully." });
+    await requireAuth(request, ["teacher", "admin"]);
+    await context.params;
+    return fail(
+      "Deleting academic results is disabled. Use the void action with a reason.",
+      405,
+    );
   } catch (error) {
     return handleApiError(error);
   }

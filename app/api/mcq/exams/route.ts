@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
     const exams = await McqExam.find({
       teacher: { $in: teacherIds },
       isPublished: true,
+      isArchived: { $ne: true },
       targetClasses: studentClass,
     })
       .sort({ createdAt: -1 })

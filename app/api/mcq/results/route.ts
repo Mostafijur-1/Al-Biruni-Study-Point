@@ -1,15 +1,14 @@
 import { NextRequest } from "next/server";
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 
-import { handleApiError, success } from "@/lib/api/response";
+import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import {
   McqExamAttempt,
   type IMcqExamAnswer,
 } from "@/lib/db/models/McqExamAttempt";
-import type { IMcqExam } from "@/lib/db/models/McqExam";
-import "@/lib/db/models/McqExam";
+import { McqExam, type IMcqExam } from "@/lib/db/models/McqExam";
 import { connectDB } from "@/lib/db/connect";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { getCanonicalSubjectName } from "@/lib/content/syllabus";
@@ -43,6 +42,8 @@ type ResultAttempt = {
   teacherComment?: string;
   commentedBy?: PopulatedPerson | Types.ObjectId;
   isCancelled?: boolean;
+  totalMarksSnapshot?: number;
+  passMarkSnapshot?: number;
 };
 
 export async function GET(request: NextRequest) {
@@ -127,8 +128,8 @@ export async function GET(request: NextRequest) {
         exam: {
           _id: ea.exam._id.toString(),
           title: ea.exam.title,
-          totalMarks: ea.exam.totalMarks,
-          passMark: ea.exam.passMark,
+          totalMarks: ea.totalMarksSnapshot ?? ea.exam.totalMarks,
+          passMark: ea.passMarkSnapshot ?? ea.exam.passMark,
           duration: ea.exam.duration,
         },
       }));
@@ -143,6 +144,20 @@ export async function GET(request: NextRequest) {
     if (user.role === "teacher" || user.role === "admin") {
       const examId = searchParams.get("examId");
       if (examId) {
+        if (!Types.ObjectId.isValid(examId)) {
+          return fail("Exam not found.", 404);
+        }
+
+        const examAccessQuery = user.role === "teacher"
+          ? { _id: examId, teacher: user.id, isArchived: { $ne: true } }
+          : { _id: examId, isArchived: { $ne: true } };
+        const accessibleExam = await McqExam.findOne(examAccessQuery)
+          .select("_id")
+          .lean();
+        if (!accessibleExam) {
+          return fail("Exam not found or you do not have permission to view its results.", 404);
+        }
+
         // Retrieve attempts for this specific exam
         const attempts = await McqExamAttempt.find({ exam: examId })
           .populate("student", "name phone studentClass schoolCollege")
@@ -185,8 +200,8 @@ export async function GET(request: NextRequest) {
             exam: {
               _id: ea.exam._id.toString(),
               title: ea.exam.title,
-              totalMarks: ea.exam.totalMarks,
-              passMark: ea.exam.passMark,
+              totalMarks: ea.totalMarksSnapshot ?? ea.exam.totalMarks,
+              passMark: ea.passMarkSnapshot ?? ea.exam.passMark,
               duration: ea.exam.duration,
             },
           };

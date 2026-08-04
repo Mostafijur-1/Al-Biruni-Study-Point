@@ -25,6 +25,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!exam) {
       return fail("Exam not found or you do not have permission to manage questions for it.", 404);
     }
+    if (exam.isPublished || exam.publishedAt || (exam.version ?? 0) > 0) {
+      return fail("Questions in a published exam are immutable. Create a new exam version.", 409);
+    }
 
     const rateLimit = await consumeRateLimit("teacher:exam-question-ingest", user.id, {
       limit: 10,
@@ -173,6 +176,9 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     const exam = await McqExam.findOne({ _id: id, teacher: user.id });
     if (!exam) {
       return fail("Exam not found or you do not have permission.", 404);
+    }
+    if (exam.isPublished || exam.publishedAt || (exam.version ?? 0) > 0) {
+      return fail("Questions in a published exam are immutable. Create a new exam version.", 409);
     }
 
     const { searchParams } = request.nextUrl;

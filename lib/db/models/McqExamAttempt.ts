@@ -19,6 +19,12 @@ export interface IMcqExamAttempt extends Document {
   teacherComment?: string;
   commentedBy?: Types.ObjectId;
   isCancelled?: boolean;
+  totalMarksSnapshot?: number;
+  passMarkSnapshot?: number;
+  examVersion?: number;
+  voidedAt?: Date;
+  voidedBy?: Types.ObjectId;
+  voidReason?: string;
   submittedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +44,12 @@ const McqExamAttemptSchema = new Schema<IMcqExamAttempt>(
     teacherComment: { type: String, default: "" },
     commentedBy: { type: Schema.Types.ObjectId, ref: "User" },
     isCancelled: { type: Boolean, default: false },
+    totalMarksSnapshot: { type: Number, min: 1 },
+    passMarkSnapshot: { type: Number, min: 1 },
+    examVersion: { type: Number, min: 0 },
+    voidedAt: { type: Date },
+    voidedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    voidReason: { type: String, trim: true },
     submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

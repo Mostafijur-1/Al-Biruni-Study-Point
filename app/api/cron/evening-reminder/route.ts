@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import webpush from "web-push";
 
-import { success, handleApiError } from "@/lib/api/response";
+import { fail, success, handleApiError } from "@/lib/api/response";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PushSubscription } from "@/lib/db/models/PushSubscription";
@@ -16,25 +16,18 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
 }
 
-// Support both GET and POST to make cron triggering flexible (e.g., via simple webhook or GET cron request)
-export async function GET(request: NextRequest) {
-  return handleCronTrigger(request);
-}
-
 export async function POST(request: NextRequest) {
   return handleCronTrigger(request);
 }
 
 async function handleCronTrigger(request: NextRequest) {
   try {
-    // Optional CRON secret validation if configured
     const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    if (!cronSecret) return fail("Cron trigger is not configured.", 503);
+    if (authHeader !== `Bearer ${cronSecret}`) return fail("Unauthorized", 401);
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      return fail("Push notification delivery is not configured.", 503);
     }
 
     await connectDB();
