@@ -83,7 +83,7 @@ export function PwaInstallPrompt() {
     // Generate or retrieve unique deviceId
     let deviceId = localStorage.getItem("absp_pwa_device_id");
     if (!deviceId) {
-      deviceId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      deviceId = window.crypto.randomUUID();
       localStorage.setItem("absp_pwa_device_id", deviceId);
     }
 

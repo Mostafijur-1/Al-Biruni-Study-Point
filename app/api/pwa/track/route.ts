@@ -4,17 +4,32 @@ import { AppInstall } from "@/lib/db/models/AppInstall";
 import { success, fail, handleApiError } from "@/lib/api/response";
 import { ACCESS_COOKIE } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
+import { consumeRateLimit, getClientIdentifier, rateLimitResponse } from "@/lib/rate-limit";
+import {
+  getPwaEventKey,
+  getTelemetryExpiry,
+  hashNetworkIdentifier,
+  pwaTrackSchema,
+  truncateUserAgent,
+} from "@/lib/pwa-contracts";
+import { getRequiredEnv } from "@/lib/env";
+import { User } from "@/lib/db/models/User";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
+    const clientIdentifier = getClientIdentifier(request);
+    const rateLimit = await consumeRateLimit(
+      "public:pwa-track",
+      clientIdentifier,
+      { limit: 30, windowMs: 10 * 60 * 1000 },
+    );
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
-    const body = await request.json();
-    const { deviceId, type } = body;
+    const contentLength = Number(request.headers.get("content-length") ?? 0);
+    if (contentLength > 4 * 1024) return fail("Request body is too large.", 413);
 
-    if (!deviceId || !type || !["install", "launch"].includes(type)) {
-      return fail("Invalid tracking parameters", 400);
-    }
+    const { deviceId, type } = pwaTrackSchema.parse(await request.json());
 
     // Attempt to extract userId from auth session cookies if present
     let userId: string | undefined;
@@ -22,23 +37,32 @@ export async function POST(request: NextRequest) {
     if (token) {
       try {
         const payload = verifyAccessToken(token);
-        userId = payload.userId;
+        const activeUser = await User.exists({ _id: payload.userId, isActive: true });
+        if (activeUser) userId = payload.userId;
       } catch {
         // Session token might be expired or invalid; proceed as anonymous tracking
       }
     }
 
-    const userAgent = request.headers.get("user-agent") || undefined;
-    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || undefined;
+    const userAgent = truncateUserAgent(request.headers.get("user-agent"));
+    const ipHash = hashNetworkIdentifier(clientIdentifier, getRequiredEnv("JWT_ACCESS_SECRET"));
+    const eventKey = getPwaEventKey(type);
 
-    // Create the record
-    await AppInstall.create({
-      deviceId,
-      userId,
-      type,
-      userAgent,
-      ipAddress,
-    });
+    await AppInstall.findOneAndUpdate(
+      { deviceId, eventKey },
+      {
+        $setOnInsert: {
+          deviceId,
+          userId,
+          type,
+          eventKey,
+          userAgent,
+          ipHash,
+          expiresAt: getTelemetryExpiry(),
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
     return success({ message: "Analytics logged successfully" });
   } catch (error) {

@@ -34,6 +34,7 @@ const PushSubscriptionSchema = new Schema<IPushSubscription>(
 );
 
 PushSubscriptionSchema.index({ deviceId: 1 });
+PushSubscriptionSchema.index({ "subscription.endpoint": 1 });
 PushSubscriptionSchema.index({ userId: 1 });
 PushSubscriptionSchema.index({ isInstalledApp: 1 });
 

@@ -6,6 +6,9 @@ export interface IAppInstall extends Document {
   type: "install" | "launch";
   userAgent?: string;
   ipAddress?: string;
+  ipHash?: string;
+  eventKey?: string;
+  expiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +20,9 @@ const AppInstallSchema = new Schema<IAppInstall>(
     type: { type: String, enum: ["install", "launch"], required: true },
     userAgent: { type: String },
     ipAddress: { type: String },
+    ipHash: { type: String },
+    eventKey: { type: String },
+    expiresAt: { type: Date },
   },
   { timestamps: true }
 );
@@ -24,6 +30,8 @@ const AppInstallSchema = new Schema<IAppInstall>(
 // Indexing deviceId and type to facilitate counting unique devices
 AppInstallSchema.index({ deviceId: 1, type: 1 });
 AppInstallSchema.index({ createdAt: -1 });
+AppInstallSchema.index({ deviceId: 1, eventKey: 1 });
+AppInstallSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 if (process.env.NODE_ENV !== "production" && mongoose.models.AppInstall) {
   mongoose.deleteModel("AppInstall");
