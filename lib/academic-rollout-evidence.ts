@@ -47,6 +47,22 @@ export const academicRolloutEvidenceSchema = z
     }
   });
 
+export type AcademicRolloutEvidence = z.infer<typeof academicRolloutEvidenceSchema>;
+
+export function latestAcademicRolloutEvidenceTimestamp(evidence: AcademicRolloutEvidence) {
+  const timestamps = [
+    evidence.databaseIntegration.completedAt,
+    evidence.bootstrapDryRun.completedAt,
+    evidence.bootstrapApply.completedAt,
+    evidence.scopeParity.completedAt,
+    evidence.shadowRead.completedAt,
+    evidence.browserValidation.completedAt,
+    evidence.academicWriteRolloutApproval.approvedAt,
+  ];
+
+  return new Date(Math.max(...timestamps.map((value) => Date.parse(value)))).toISOString();
+}
+
 export function resolveWorkspaceEvidencePath(workspaceRoot: string, evidencePath: string) {
   const resolvedPath = path.resolve(workspaceRoot, evidencePath);
   const relativePath = path.relative(workspaceRoot, resolvedPath);

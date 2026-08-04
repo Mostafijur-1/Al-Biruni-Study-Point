@@ -12,10 +12,11 @@ All conditions are mandatory:
 2. The transaction-capable academic database harness has passed and its log has been reviewed.
 3. Canonical-versus-legacy teacher scope parity and shadow reads have passed or have reviewed exceptions.
 4. Authenticated admin and teacher timetable journeys have passed at mobile and desktop widths, including keyboard and screen-reader smoke checks.
-5. `npm.cmd run check:academic-readiness -- --strict --require-evidence` passes on the exact implementation commit.
-6. An authorized reviewer explicitly approves Phase 3 and the initial attendance write rollout.
+5. `npm.cmd run check:academic-readiness -- --strict --require-evidence` passes on the exact Phase 3 base commit.
+6. An authorized reviewer records the bounded Phase 3 implementation decision described in `PHASE_3_ATTENDANCE_ENTRY_GATE.md`.
+7. The checker passes with `--require-phase3-authorization` on that same base commit.
 
-Passing these conditions grants implementation eligibility only. Attendance writes remain disabled until their own guarded rollout is approved.
+Passing these conditions grants implementation eligibility only. Attendance writes remain disabled until their own guarded rollout is approved on the eventual release candidate.
 
 ## First-slice boundaries
 

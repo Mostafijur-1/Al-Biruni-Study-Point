@@ -41,3 +41,5 @@ Evidence is rejected if incomplete, still contains placeholders, lacks any brows
 Do not enable attendance capture or migrate attendance authority until roster, assignment, routine, and class-session truth passes these gates. No bootstrap, migration, parity audit, integration cleanup, or database mutation was run while completing this code slice because no approved staging manifest or disposable database was supplied.
 
 The design-only Phase 3 entry package is available in `PHASE_3_ATTENDANCE_ENTRY_CONTRACT.md` and `PHASE_3_ATTENDANCE_ACCEPTANCE_MATRIX.md`. These documents prepare implementation and release evidence; they do not satisfy a gate or authorize attendance code.
+
+After the Phase 2 evidence passes, use `PHASE_3_ATTENDANCE_ENTRY_GATE.md` to record the separate, commit-bound implementation decision. A valid entry authorization permits only the bounded first-slice implementation and keeps attendance runtime writes locked.

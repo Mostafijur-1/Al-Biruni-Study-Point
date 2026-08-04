@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "decision": "approved",
+  "authorizedBaseCommit": "REPLACE_WITH_PHASE3_BASE_COMMIT",
+  "phase2EvidenceRef": "REPLACE_WITH_REVIEWED_PHASE2_EVIDENCE_REFERENCE",
+  "scope": "phase3-attendance-first-slice",
+  "contractVersion": 1,
+  "runtimeWriteRolloutApproved": false,
+  "approvedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+  "approvedBy": "REPLACE_WITH_APPROVER",
+  "changeRef": "REPLACE_WITH_CHANGE_APPROVAL_REFERENCE"
+}

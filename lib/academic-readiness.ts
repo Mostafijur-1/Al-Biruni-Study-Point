@@ -5,6 +5,7 @@ export type AcademicReadinessInput = {
   inMemoryReplicaSetAvailable?: boolean;
   academicWritesEnabled: boolean;
   externalEvidenceValid?: boolean;
+  phase3AuthorizationValid?: boolean;
 };
 
 export type AcademicReadinessCheck = {
@@ -60,6 +61,9 @@ export function evaluateAcademicReadiness(input: AcademicReadinessInput) {
 
   const prerequisitesReady = checks.every((check) => check.ready);
   const externalEvidenceValid = input.externalEvidenceValid === true;
+  const phase3AuthorizationValid = input.phase3AuthorizationValid === true;
+  const phase3ImplementationAuthorized =
+    prerequisitesReady && externalEvidenceValid && phase3AuthorizationValid;
 
   return {
     status: prerequisitesReady
@@ -72,19 +76,33 @@ export function evaluateAcademicReadiness(input: AcademicReadinessInput) {
         ? "All external gates and the academic-write rollout approval are recorded."
         : "Reviewed external-gate evidence is missing or invalid.",
     },
+    phase3Authorization: {
+      valid: phase3AuthorizationValid,
+      detail: phase3AuthorizationValid
+        ? "Bounded Phase 3 attendance implementation is explicitly authorized."
+        : "Explicit, commit-bound Phase 3 attendance authorization is missing or invalid.",
+    },
     rolloutEligibility:
-      prerequisitesReady && externalEvidenceValid
-        ? "eligible-for-explicit-phase3-authorization" as const
-        : "not-eligible" as const,
+      phase3ImplementationAuthorized
+        ? "authorized-for-bounded-phase3-implementation" as const
+        : prerequisitesReady && externalEvidenceValid
+          ? "eligible-for-explicit-phase3-authorization" as const
+          : "not-eligible" as const,
+    phase3ImplementationAuthorized,
     phase3Unlocked: false,
-    remainingExternalGates: externalEvidenceValid
-      ? ["Obtain explicit authorization to begin Phase 3 attendance work."]
-      : [
-          "Run the disposable MongoDB integration harness.",
-          "Run and review the staging bootstrap dry-run, then approved apply.",
-          "Resolve canonical-versus-legacy teacher-scope parity and complete shadow-read review.",
-          "Complete authenticated mobile, desktop, keyboard, and screen-reader smoke checks.",
-          "Record an explicit academic-write rollout decision in the reviewed evidence manifest.",
-        ],
+    remainingExternalGates: phase3ImplementationAuthorized
+      ? []
+      : externalEvidenceValid
+        ? ["Obtain explicit authorization to begin the bounded Phase 3 attendance slice."]
+        : [
+            "Run the disposable MongoDB integration harness.",
+            "Run and review the staging bootstrap dry-run, then approved apply.",
+            "Resolve canonical-versus-legacy teacher-scope parity and complete shadow-read review.",
+            "Complete authenticated mobile, desktop, keyboard, and screen-reader smoke checks.",
+            "Record an explicit academic-write rollout decision in the reviewed evidence manifest.",
+          ],
+    nextRequiredControl: phase3ImplementationAuthorized
+      ? "Implement only the approved first slice behind a default-off attendance write flag; runtime rollout requires separate Phase 3 release evidence and approval."
+      : "Complete the remaining entry gates without enabling attendance runtime writes.",
   };
 }

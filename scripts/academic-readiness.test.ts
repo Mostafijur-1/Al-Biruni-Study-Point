@@ -60,6 +60,22 @@ test("reviewed evidence creates eligibility but still requires explicit Phase 3 
   assert.equal(result.rolloutEligibility, "eligible-for-explicit-phase3-authorization");
   assert.equal(result.phase3Unlocked, false);
   assert.deepEqual(result.remainingExternalGates, [
-    "Obtain explicit authorization to begin Phase 3 attendance work.",
+    "Obtain explicit authorization to begin the bounded Phase 3 attendance slice.",
   ]);
+});
+
+test("valid evidence and explicit authorization permit only bounded implementation", () => {
+  const result = evaluateAcademicReadiness({
+    approvedManifestValid: true,
+    testMongoUriConfigured: true,
+    testDatabaseName: "absp_academic_test",
+    academicWritesEnabled: false,
+    externalEvidenceValid: true,
+    phase3AuthorizationValid: true,
+  });
+  assert.equal(result.rolloutEligibility, "authorized-for-bounded-phase3-implementation");
+  assert.equal(result.phase3ImplementationAuthorized, true);
+  assert.equal(result.phase3Unlocked, false);
+  assert.deepEqual(result.remainingExternalGates, []);
+  assert.match(result.nextRequiredControl, /default-off attendance write flag/);
 });

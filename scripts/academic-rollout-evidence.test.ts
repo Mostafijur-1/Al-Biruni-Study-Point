@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   academicRolloutEvidenceSchema,
+  latestAcademicRolloutEvidenceTimestamp,
   resolveWorkspaceEvidencePath,
   rolloutEvidenceMatchesCommit,
 } from "../lib/academic-rollout-evidence.ts";
@@ -84,5 +85,14 @@ test("rollout evidence is valid only for the current commit", () => {
       "d486c92000000000000000000000000000000000",
     ),
     false,
+  );
+});
+
+test("rollout evidence reports its latest completed gate", () => {
+  const evidence = validEvidence();
+  evidence.browserValidation.completedAt = "2026-08-04T12:30:00.000Z";
+  assert.equal(
+    latestAcademicRolloutEvidenceTimestamp(evidence),
+    "2026-08-04T12:30:00.000Z",
   );
 });
