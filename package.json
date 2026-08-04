@@ -12,7 +12,9 @@
     "load:seed": "node --env-file=.env.local scripts/load/seed-exam.mjs",
     "load:exam": "node scripts/load/exam-load.mjs",
     "migrate:phase1": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase1-migration.ts",
-    "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts"
+    "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
+    "audit:academic-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/audit-phase2-teacher-scope.ts",
+    "test:academic-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

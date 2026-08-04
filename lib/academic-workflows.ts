@@ -1,17 +1,17 @@
 import mongoose, { type ClientSession, type QueryFilter, type Types } from "mongoose";
 import type { NextRequest } from "next/server";
 
-import { ApiRouteError } from "@/lib/api-error";
-import { writeAuditLog } from "@/lib/audit/write-audit-log";
-import { AcademicSession } from "@/lib/db/models/AcademicSession";
-import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
-import { Batch, type IBatch } from "@/lib/db/models/Batch";
-import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
-import { Branch } from "@/lib/db/models/Branch";
-import { Organization } from "@/lib/db/models/Organization";
-import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
-import { User } from "@/lib/db/models/User";
-import type { SessionUser } from "@/types";
+import { ApiRouteError } from "./api-error.ts";
+import { writeAuditLog } from "./audit/write-audit-log.ts";
+import { AcademicSession } from "./db/models/AcademicSession.ts";
+import { AcademicSubject } from "./db/models/AcademicSubject.ts";
+import { Batch, type IBatch } from "./db/models/Batch.ts";
+import { BatchEnrollment } from "./db/models/BatchEnrollment.ts";
+import { Branch } from "./db/models/Branch.ts";
+import { Organization } from "./db/models/Organization.ts";
+import { TeacherAssignment } from "./db/models/TeacherAssignment.ts";
+import { User } from "./db/models/User.ts";
+import type { SessionUser } from "../types/index.ts";
 
 type WorkflowAuditContext = {
   request: NextRequest;

@@ -3,11 +3,13 @@ import test from "node:test";
 
 import {
   areAcademicWritesEnabled,
+  canTransitionClassSession,
   canTransitionAcademicLifecycle,
   hasEnrollmentCapacity,
   isEffectiveOn,
   isValidDateRange,
   isValidRoutineWindow,
+  routineSlotsConflict,
 } from "../lib/academic-rules.ts";
 
 test("academic writes require an explicit true feature flag", () => {
@@ -42,4 +44,39 @@ test("capacity and effective-date rules are boundary safe", () => {
   const to = new Date("2026-06-30T23:59:59.000Z");
   assert.equal(isEffectiveOn(from, to, new Date("2026-04-01T00:00:00.000Z")), true);
   assert.equal(isEffectiveOn(from, to, new Date("2026-07-01T00:00:00.000Z")), false);
+});
+
+test("routine conflicts require overlapping day, time, and effective dates", () => {
+  const first = {
+    weekday: 1,
+    startMinute: 9 * 60,
+    endMinute: 10 * 60,
+    effectiveFrom: new Date("2026-01-01T00:00:00.000Z"),
+    effectiveTo: new Date("2026-06-30T00:00:00.000Z"),
+  };
+
+  assert.equal(
+    routineSlotsConflict(first, { ...first, startMinute: 9 * 60 + 30, endMinute: 11 * 60 }),
+    true,
+  );
+  assert.equal(
+    routineSlotsConflict(first, { ...first, startMinute: 10 * 60, endMinute: 11 * 60 }),
+    false,
+  );
+  assert.equal(routineSlotsConflict(first, { ...first, weekday: 2 }), false);
+  assert.equal(
+    routineSlotsConflict(first, {
+      ...first,
+      effectiveFrom: new Date("2026-07-01T00:00:00.000Z"),
+      effectiveTo: undefined,
+    }),
+    false,
+  );
+});
+
+test("class sessions cannot reopen after completion or cancellation", () => {
+  assert.equal(canTransitionClassSession("scheduled", "completed"), true);
+  assert.equal(canTransitionClassSession("scheduled", "cancelled"), true);
+  assert.equal(canTransitionClassSession("completed", "scheduled"), false);
+  assert.equal(canTransitionClassSession("cancelled", "scheduled"), false);
 });
