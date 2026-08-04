@@ -41,3 +41,5 @@ The approved artifact stays outside Git because it contains environment-specific
 ## After implementation begins
 
 Phase 3 commits will naturally differ from the authorized base. That does not authorize their rollout. Attendance models, services, APIs, and UI must remain behind a dedicated default-off write flag until the acceptance matrix is satisfied on the exact release candidate and a separate runtime rollout decision is recorded.
+
+Use `PHASE_3_ATTENDANCE_RELEASE_GATE.md` for that later release-candidate evidence and named-pilot decision.

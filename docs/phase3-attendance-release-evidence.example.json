@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "environment": "staging",
+  "scope": "phase3-attendance-first-slice",
+  "authorizedBaseCommit": "REPLACE_WITH_AUTHORIZED_PHASE3_BASE_COMMIT",
+  "releaseCommit": "REPLACE_WITH_RELEASE_CANDIDATE_COMMIT",
+  "attendanceWritesDefaultOff": true,
+  "migrationDryRun": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "migrationApply": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "migrationRollback": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "schemaAndIndexes": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "databaseTransactions": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "authorizationScope": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "idempotencyAndConcurrency": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "correctionAudit": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "calculationPolicy": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "outboxReplay": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "privacyAndSecurity": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "browserValidation": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_BROWSER_REPORT_REFERENCE",
+    "teacherMobile": true,
+    "adminDesktop": true,
+    "studentOwnView": true,
+    "keyboard": true,
+    "screenReader": true,
+    "zoomReflow": true,
+    "reducedMotion": true,
+    "banglaCopy": true
+  },
+  "observability": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "rollbackDrill": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_REFERENCE"
+  },
+  "runtimeWriteRolloutApproval": {
+    "approved": true,
+    "approvedAt": "REPLACE_WITH_ISO_TIMESTAMP_AFTER_EVERY_GATE",
+    "approvedBy": "REPLACE_WITH_APPROVER",
+    "changeRef": "REPLACE_WITH_CHANGE_APPROVAL_REFERENCE",
+    "initialScope": "named-pilot-branch",
+    "pilotBranchRef": "REPLACE_WITH_PILOT_BRANCH_REFERENCE"
+  }
+}

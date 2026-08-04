@@ -55,3 +55,5 @@ The eventual Phase 3 evidence artifact must identify the exact commit and contai
 - named security, academic-operations, accessibility, and rollout approvals.
 
 The bundle is invalid if it contains placeholders, refers to another commit, omits a modality, or treats a green CI job as business rollout approval.
+
+The machine-verifiable artifact and read-only validation workflow are defined in `PHASE_3_ATTENDANCE_RELEASE_GATE.md`. A valid artifact permits only a separately approved named-branch pilot; it never enables attendance writes itself.
