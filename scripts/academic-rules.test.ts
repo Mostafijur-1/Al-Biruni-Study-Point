@@ -2,12 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  areAcademicWritesEnabled,
   canTransitionAcademicLifecycle,
   hasEnrollmentCapacity,
   isEffectiveOn,
   isValidDateRange,
   isValidRoutineWindow,
 } from "../lib/academic-rules.ts";
+
+test("academic writes require an explicit true feature flag", () => {
+  assert.equal(areAcademicWritesEnabled(undefined), false);
+  assert.equal(areAcademicWritesEnabled("false"), false);
+  assert.equal(areAcademicWritesEnabled(" true "), true);
+});
 
 test("academic lifecycle prevents reopening closed or archived records", () => {
   assert.equal(canTransitionAcademicLifecycle("planned", "active"), true);

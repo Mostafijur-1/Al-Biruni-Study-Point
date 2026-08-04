@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-import { isValidDateRange, type AcademicLifecycleStatus } from "@/lib/academic-rules";
+import { isValidDateRange, type AcademicLifecycleStatus } from "../../academic-rules.ts";
 import type { StudentClass } from "@/types";
 
 export interface IBatch extends Document {
@@ -11,6 +11,7 @@ export interface IBatch extends Document {
   name: string;
   studentClass: StudentClass;
   capacity: number;
+  activeEnrollmentCount: number;
   startsAt: Date;
   endsAt: Date;
   status: AcademicLifecycleStatus;
@@ -31,6 +32,7 @@ const BatchSchema = new Schema<IBatch>(
       required: true,
     },
     capacity: { type: Number, required: true, min: 1, max: 500 },
+    activeEnrollmentCount: { type: Number, default: 0, min: 0 },
     startsAt: { type: Date, required: true },
     endsAt: { type: Date, required: true },
     status: {

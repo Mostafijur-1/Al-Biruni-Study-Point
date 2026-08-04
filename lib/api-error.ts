@@ -15,6 +15,25 @@ export type ApiErrorCode =
   | "INTERNAL_ERROR"
   | "REQUEST_FAILED";
 
+export class ApiRouteError extends Error {
+  status: number;
+  code: ApiErrorCode;
+  details?: unknown;
+
+  constructor(
+    message: string,
+    status = 400,
+    code: ApiErrorCode = apiErrorCodeForStatus(status),
+    details?: unknown,
+  ) {
+    super(message);
+    this.name = "ApiRouteError";
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
 export function apiErrorCodeForStatus(status: number): ApiErrorCode {
   switch (status) {
     case 400:

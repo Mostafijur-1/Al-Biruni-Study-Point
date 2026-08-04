@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-import { isValidDateRange, type AcademicLifecycleStatus } from "@/lib/academic-rules";
+import { isValidDateRange, type AcademicLifecycleStatus } from "../../academic-rules.ts";
 
 export interface IAcademicSession extends Document {
   organizationId: Types.ObjectId;

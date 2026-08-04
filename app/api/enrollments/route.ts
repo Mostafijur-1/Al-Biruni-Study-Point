@@ -1,7 +1,10 @@
 import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
-import { success, handleApiError } from "@/lib/api/response";
+import { handleApiError, success } from "@/lib/api/response";
+import { enrollStudent, transferStudent } from "@/lib/academic-workflows";
+import { areAcademicWritesEnabled } from "@/lib/academic-rules";
+import { ApiRouteError } from "@/lib/api-error";
 import { requireAuth } from "@/lib/auth/session";
 import {
   BatchEnrollment,
@@ -9,7 +12,36 @@ import {
 } from "@/lib/db/models/BatchEnrollment";
 import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
 import { User } from "@/lib/db/models/User";
-import { enrollmentListQuerySchema } from "@/lib/validations/academic.schema";
+import {
+  enrollmentListQuerySchema,
+  enrollmentMutationSchema,
+} from "@/lib/validations/academic.schema";
+
+function serializeEnrollment(enrollment: {
+  _id: unknown;
+  organizationId: unknown;
+  branchId: unknown;
+  academicSessionId: unknown;
+  batchId: unknown;
+  studentId: unknown;
+  status: string;
+  effectiveFrom: Date;
+  effectiveTo?: Date;
+  endReason?: string;
+}) {
+  return {
+    id: String(enrollment._id),
+    organizationId: String(enrollment.organizationId),
+    branchId: String(enrollment.branchId),
+    academicSessionId: String(enrollment.academicSessionId),
+    batchId: String(enrollment.batchId),
+    studentId: String(enrollment.studentId),
+    status: enrollment.status,
+    effectiveFrom: enrollment.effectiveFrom.toISOString(),
+    effectiveTo: enrollment.effectiveTo?.toISOString(),
+    endReason: enrollment.endReason,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -80,6 +112,42 @@ export async function GET(request: NextRequest) {
         };
       }),
     });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const actor = await requireAuth(request, ["admin"]);
+    if (!areAcademicWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED)) {
+      throw new ApiRouteError("Academic write workflows are not enabled.", 503);
+    }
+    const parsed = enrollmentMutationSchema.parse(await request.json());
+
+    const enrollment =
+      parsed.action === "enroll"
+        ? await enrollStudent({
+            request,
+            actor,
+            batchId: parsed.batchId,
+            studentId: parsed.studentId,
+            effectiveFrom: parsed.effectiveFrom ?? new Date(),
+            reason: parsed.reason,
+          })
+        : await transferStudent({
+            request,
+            actor,
+            enrollmentId: parsed.enrollmentId,
+            targetBatchId: parsed.targetBatchId,
+            effectiveAt: parsed.effectiveAt ?? new Date(),
+            reason: parsed.reason,
+          });
+
+    return success(
+      { enrollment: serializeEnrollment(enrollment) },
+      parsed.action === "enroll" ? { status: 201 } : undefined,
+    );
   } catch (error) {
     return handleApiError(error);
   }

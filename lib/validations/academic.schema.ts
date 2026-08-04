@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid record identifier.");
 const studentClassSchema = z.enum(["class-9", "class-10", "class-11", "class-12"]);
+const mutationReasonSchema = z.string().trim().min(4).max(500);
 
 export const batchListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
@@ -12,6 +13,24 @@ export const batchListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+export const batchCreateSchema = z
+  .object({
+    organizationId: objectIdSchema,
+    branchId: objectIdSchema,
+    academicSessionId: objectIdSchema,
+    code: z.string().trim().min(2).max(30),
+    name: z.string().trim().min(2).max(120),
+    studentClass: studentClassSchema,
+    capacity: z.coerce.number().int().min(1).max(500),
+    startsAt: z.coerce.date(),
+    endsAt: z.coerce.date(),
+    reason: mutationReasonSchema,
+  })
+  .refine((value) => value.startsAt < value.endsAt, {
+    path: ["endsAt"],
+    message: "Batch end date must be after its start date.",
+  });
+
 export const enrollmentListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
   branchId: objectIdSchema.optional(),
@@ -21,3 +40,48 @@ export const enrollmentListQuerySchema = z.object({
   status: z.enum(["active", "completed", "withdrawn", "transferred"]).default("active"),
   limit: z.coerce.number().int().min(1).max(200).default(100),
 });
+
+export const enrollmentMutationSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("enroll"),
+    batchId: objectIdSchema,
+    studentId: objectIdSchema,
+    effectiveFrom: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+  z.object({
+    action: z.literal("transfer"),
+    enrollmentId: objectIdSchema,
+    targetBatchId: objectIdSchema,
+    effectiveAt: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+]);
+
+export const teacherAssignmentListQuerySchema = z.object({
+  organizationId: objectIdSchema.optional(),
+  branchId: objectIdSchema.optional(),
+  academicSessionId: objectIdSchema.optional(),
+  batchId: objectIdSchema.optional(),
+  teacherId: objectIdSchema.optional(),
+  subjectId: objectIdSchema.optional(),
+  status: z.enum(["active", "ended"]).default("active"),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+});
+
+export const teacherAssignmentMutationSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("assign"),
+    batchId: objectIdSchema,
+    teacherId: objectIdSchema,
+    subjectId: objectIdSchema,
+    effectiveFrom: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+  z.object({
+    action: z.literal("end"),
+    assignmentId: objectIdSchema,
+    effectiveAt: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+]);

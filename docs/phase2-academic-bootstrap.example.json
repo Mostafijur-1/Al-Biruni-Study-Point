@@ -1,0 +1,27 @@
+{
+  "organization": {
+    "name": "Al-Biruni Study Point",
+    "slug": "al-biruni-study-point",
+    "timezone": "Asia/Dhaka"
+  },
+  "branch": {
+    "name": "REPLACE WITH APPROVED BRANCH NAME",
+    "code": "REPLACE-CODE",
+    "address": "REPLACE WITH APPROVED ADDRESS"
+  },
+  "academicSession": {
+    "name": "REPLACE WITH APPROVED SESSION NAME",
+    "startsAt": "2026-01-01T00:00:00.000+06:00",
+    "endsAt": "2026-12-31T23:59:59.000+06:00",
+    "status": "planned"
+  },
+  "subjects": [
+    {
+      "code": "PHY",
+      "name": "Physics",
+      "nameBn": "পদার্থবিজ্ঞান",
+      "classLevels": ["class-9", "class-10"],
+      "aliases": ["পদার্থ বিজ্ঞান"]
+    }
+  ]
+}

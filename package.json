@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit --pretty false",
     "load:seed": "node --env-file=.env.local scripts/load/seed-exam.mjs",
     "load:exam": "node scripts/load/exam-load.mjs",
-    "migrate:phase1": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase1-migration.ts"
+    "migrate:phase1": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase1-migration.ts",
+    "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

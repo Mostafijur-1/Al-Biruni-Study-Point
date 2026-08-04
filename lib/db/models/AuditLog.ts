@@ -3,6 +3,8 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import type { UserRole } from "../../../types";
 
 export interface IAuditLog extends Document {
+  organizationId?: Types.ObjectId;
+  branchId?: Types.ObjectId;
   actor: Types.ObjectId;
   actorRole: UserRole;
   action: string;
@@ -17,6 +19,8 @@ export interface IAuditLog extends Document {
 
 const AuditLogSchema = new Schema<IAuditLog>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
     actor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     actorRole: {
       type: String,
@@ -35,10 +39,11 @@ const AuditLogSchema = new Schema<IAuditLog>(
 );
 
 AuditLogSchema.index({ resourceType: 1, resourceId: 1, createdAt: -1 });
+AuditLogSchema.index({ organizationId: 1, resourceType: 1, createdAt: -1 });
+AuditLogSchema.index({ branchId: 1, createdAt: -1 });
 AuditLogSchema.index({ actor: 1, createdAt: -1 });
 AuditLogSchema.index({ action: 1, createdAt: -1 });
 
 export const AuditLog: Model<IAuditLog> =
   mongoose.models.AuditLog ||
   mongoose.model<IAuditLog>("AuditLog", AuditLogSchema);
-

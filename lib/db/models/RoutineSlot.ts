@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
-import { isValidRoutineWindow } from "@/lib/academic-rules";
+import { isValidRoutineWindow } from "../../academic-rules.ts";
 
 export interface IRoutineSlot extends Document {
   organizationId: Types.ObjectId;

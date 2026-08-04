@@ -1,13 +1,46 @@
 import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
-import { success, handleApiError } from "@/lib/api/response";
+import { createBatch } from "@/lib/academic-workflows";
+import { areAcademicWritesEnabled } from "@/lib/academic-rules";
+import { ApiRouteError } from "@/lib/api-error";
+import { handleApiError, success } from "@/lib/api/response";
 import { resolveAcademicBatchReadScope } from "@/lib/academic-scope";
 import { requireAuth } from "@/lib/auth/session";
 import { Batch, type IBatch } from "@/lib/db/models/Batch";
 import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
 import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
-import { batchListQuerySchema } from "@/lib/validations/academic.schema";
+import { batchCreateSchema, batchListQuerySchema } from "@/lib/validations/academic.schema";
+
+function serializeBatch(batch: {
+  _id: unknown;
+  organizationId: unknown;
+  branchId: unknown;
+  academicSessionId: unknown;
+  code: string;
+  name: string;
+  studentClass: string;
+  capacity: number;
+  activeEnrollmentCount: number;
+  startsAt: Date;
+  endsAt: Date;
+  status: string;
+}) {
+  return {
+    id: String(batch._id),
+    organizationId: String(batch.organizationId),
+    branchId: String(batch.branchId),
+    academicSessionId: String(batch.academicSessionId),
+    code: batch.code,
+    name: batch.name,
+    studentClass: batch.studentClass,
+    capacity: batch.capacity,
+    activeEnrollmentCount: batch.activeEnrollmentCount,
+    startsAt: batch.startsAt.toISOString(),
+    endsAt: batch.endsAt.toISOString(),
+    status: batch.status,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,20 +92,23 @@ export async function GET(request: NextRequest) {
       .lean();
 
     return success({
-      batches: batches.map((batch) => ({
-        id: String(batch._id),
-        organizationId: String(batch.organizationId),
-        branchId: String(batch.branchId),
-        academicSessionId: String(batch.academicSessionId),
-        code: batch.code,
-        name: batch.name,
-        studentClass: batch.studentClass,
-        capacity: batch.capacity,
-        startsAt: batch.startsAt.toISOString(),
-        endsAt: batch.endsAt.toISOString(),
-        status: batch.status,
-      })),
+      batches: batches.map(serializeBatch),
     });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const actor = await requireAuth(request, ["admin"]);
+    if (!areAcademicWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED)) {
+      throw new ApiRouteError("Academic write workflows are not enabled.", 503);
+    }
+    const parsed = batchCreateSchema.parse(await request.json());
+    const batch = await createBatch({ request, actor, ...parsed });
+
+    return success({ batch: serializeBatch(batch) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

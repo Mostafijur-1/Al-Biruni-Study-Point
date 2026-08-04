@@ -47,3 +47,7 @@ export function isEffectiveOn(
 ): boolean {
   return effectiveFrom <= at && (!effectiveTo || effectiveTo >= at);
 }
+
+export function areAcademicWritesEnabled(value: string | undefined): boolean {
+  return value?.trim().toLowerCase() === "true";
+}

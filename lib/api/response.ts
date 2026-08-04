@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { AuthError } from "@/lib/auth/session";
 import {
   apiErrorCodeForStatus,
+  ApiRouteError,
   createRequestId,
   type ApiErrorCode,
 } from "@/lib/api-error";
@@ -30,12 +31,25 @@ export function fail(
 export function handleApiError(error: unknown) {
   const requestId = createRequestId();
 
+  if (error instanceof ApiRouteError) {
+    return fail(error.message, error.status, error.details, error.code, requestId);
+  }
+
   if (error instanceof AuthError) {
     return fail(error.message, error.status, undefined, apiErrorCodeForStatus(error.status), requestId);
   }
 
   if (error instanceof ZodError) {
     return fail("Validation failed.", 400, error.flatten(), "VALIDATION_ERROR", requestId);
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === 11000
+  ) {
+    return fail("A record with the same active identity already exists.", 409, undefined, "CONFLICT", requestId);
   }
 
   if (error instanceof Error) {
