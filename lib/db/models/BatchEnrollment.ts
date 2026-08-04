@@ -1,0 +1,49 @@
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
+
+import type { EnrollmentStatus } from "@/lib/academic-rules";
+
+export interface IBatchEnrollment extends Document {
+  organizationId: Types.ObjectId;
+  branchId: Types.ObjectId;
+  academicSessionId: Types.ObjectId;
+  batchId: Types.ObjectId;
+  studentId: Types.ObjectId;
+  status: EnrollmentStatus;
+  effectiveFrom: Date;
+  effectiveTo?: Date;
+  endReason?: string;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const BatchEnrollmentSchema = new Schema<IBatchEnrollment>(
+  {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch", required: true },
+    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession", required: true },
+    batchId: { type: Schema.Types.ObjectId, ref: "Batch", required: true },
+    studentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    status: {
+      type: String,
+      enum: ["active", "completed", "withdrawn", "transferred"],
+      default: "active",
+    },
+    effectiveFrom: { type: Date, required: true, default: Date.now },
+    effectiveTo: { type: Date },
+    endReason: { type: String, trim: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: true },
+);
+
+BatchEnrollmentSchema.index(
+  { organizationId: 1, academicSessionId: 1, studentId: 1 },
+  { unique: true, partialFilterExpression: { status: "active" } },
+);
+BatchEnrollmentSchema.index({ branchId: 1, batchId: 1, status: 1, studentId: 1 });
+BatchEnrollmentSchema.index({ studentId: 1, status: 1, effectiveFrom: -1 });
+
+export const BatchEnrollment: Model<IBatchEnrollment> =
+  (mongoose.models.BatchEnrollment as Model<IBatchEnrollment> | undefined) ||
+  mongoose.model<IBatchEnrollment>("BatchEnrollment", BatchEnrollmentSchema);
