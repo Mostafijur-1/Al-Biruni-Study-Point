@@ -3,6 +3,7 @@ export type AcademicReadinessInput = {
   testMongoUriConfigured: boolean;
   testDatabaseName?: string;
   academicWritesEnabled: boolean;
+  externalEvidenceValid?: boolean;
 };
 
 export type AcademicReadinessCheck = {
@@ -47,18 +48,33 @@ export function evaluateAcademicReadiness(input: AcademicReadinessInput) {
     },
   ];
 
+  const prerequisitesReady = checks.every((check) => check.ready);
+  const externalEvidenceValid = input.externalEvidenceValid === true;
+
   return {
-    status: checks.every((check) => check.ready)
+    status: prerequisitesReady
       ? "ready-for-external-validation" as const
       : "blocked" as const,
     checks,
+    externalEvidence: {
+      valid: externalEvidenceValid,
+      detail: externalEvidenceValid
+        ? "All external gates and the academic-write rollout approval are recorded."
+        : "Reviewed external-gate evidence is missing or invalid.",
+    },
+    rolloutEligibility:
+      prerequisitesReady && externalEvidenceValid
+        ? "eligible-for-explicit-phase3-authorization" as const
+        : "not-eligible" as const,
     phase3Unlocked: false,
-    remainingExternalGates: [
-      "Run the disposable MongoDB integration harness.",
-      "Run and review the staging bootstrap dry-run, then approved apply.",
-      "Resolve canonical-versus-legacy teacher-scope parity.",
-      "Complete authenticated mobile, desktop, keyboard, and screen-reader smoke checks.",
-      "Record an explicit rollout decision before enabling academic writes or Phase 3.",
-    ],
+    remainingExternalGates: externalEvidenceValid
+      ? ["Obtain explicit authorization to begin Phase 3 attendance work."]
+      : [
+          "Run the disposable MongoDB integration harness.",
+          "Run and review the staging bootstrap dry-run, then approved apply.",
+          "Resolve canonical-versus-legacy teacher-scope parity and complete shadow-read review.",
+          "Complete authenticated mobile, desktop, keyboard, and screen-reader smoke checks.",
+          "Record an explicit academic-write rollout decision in the reviewed evidence manifest.",
+        ],
   };
 }

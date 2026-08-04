@@ -22,5 +22,6 @@ The local report is `blocked`: the approved manifest and disposable MongoDB conf
 - `ACADEMIC_TEST_MONGODB_URI` for a disposable transaction-capable MongoDB deployment.
 - `ACADEMIC_TEST_DB_NAME` matching `absp_*test`.
 - An attached authenticated browser session for mobile, desktop, keyboard, and screen-reader validation.
+- A reviewed rollout-evidence artifact based on `docs/phase2-rollout-evidence.example.json` after every external gate passes.
 
 After those inputs exist, rerun the prerequisite report, execute each external gate in `docs/PHASE_2_COMPLETION_GATE.md`, review its evidence, and record the rollout decision before beginning attendance work.

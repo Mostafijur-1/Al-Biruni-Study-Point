@@ -14,6 +14,14 @@ npm.cmd run check:academic-readiness
 
 Use `npm.cmd run check:academic-readiness -- --strict` in CI when missing prerequisites should fail the job. A successful prerequisite report only permits the external validation work below; it never enables Phase 3 automatically.
 
+After every external gate passes on the same commit, copy `docs/phase2-rollout-evidence.example.json` to the ignored local/CI artifact path `evidence/phase2-rollout-evidence.approved.json`, replace every placeholder, and have each reference reviewed. Then run:
+
+```powershell
+npm.cmd run check:academic-readiness -- --strict --require-evidence
+```
+
+Evidence is rejected if incomplete, still contains placeholders, lacks any browser modality, or names a commit other than the current `HEAD`. A valid report means only that the code is eligible for explicit Phase 3 authorization; it does not change a feature flag or unlock attendance.
+
 ## Required operational gates
 
 - Review and approve a real bootstrap manifest derived from `docs/phase2-academic-bootstrap.example.json`.
@@ -24,6 +32,7 @@ Use `npm.cmd run check:academic-readiness -- --strict` in CI when missing prereq
 - Shadow-read canonical teacher scope against legacy authorization before changing authority.
 - Run authenticated administrator/teacher timetable journeys in an attached browser at mobile and desktop widths, including keyboard and screen-reader smoke checks.
 - Obtain an explicit rollout decision before enabling `ACADEMIC_WRITES_ENABLED=true` outside the approved validation environment.
+- Record the reviewed results and academic-write rollout approval in the bounded evidence artifact.
 
 ## Phase 3 boundary
 

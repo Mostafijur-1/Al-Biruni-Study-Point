@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "environment": "staging",
+  "testedCommit": "REPLACE_WITH_TESTED_COMMIT",
+  "databaseIntegration": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_OR_TICKET_REFERENCE"
+  },
+  "bootstrapDryRun": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_REPORT_OR_TICKET_REFERENCE"
+  },
+  "bootstrapApply": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_MIGRATION_LEDGER_REFERENCE"
+  },
+  "scopeParity": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_PARITY_REPORT_REFERENCE"
+  },
+  "shadowRead": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_SHADOW_READ_REPORT_REFERENCE"
+  },
+  "browserValidation": {
+    "status": "passed",
+    "completedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "reviewedBy": "REPLACE_WITH_REVIEWER",
+    "reportRef": "REPLACE_WITH_BROWSER_REPORT_REFERENCE",
+    "mobile": true,
+    "desktop": true,
+    "keyboard": true,
+    "screenReader": true
+  },
+  "academicWriteRolloutApproval": {
+    "approved": true,
+    "approvedAt": "REPLACE_WITH_ISO_TIMESTAMP",
+    "approvedBy": "REPLACE_WITH_APPROVER",
+    "changeRef": "REPLACE_WITH_CHANGE_APPROVAL_REFERENCE"
+  }
+}

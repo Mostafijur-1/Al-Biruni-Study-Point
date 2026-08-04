@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/evidence/*.approved.json
 
 # next.js
 /.next/

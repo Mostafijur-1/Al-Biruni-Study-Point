@@ -36,3 +36,18 @@ test("readiness permits external validation but never unlocks Phase 3 automatica
   assert.equal(result.phase3Unlocked, false);
   assert.equal(result.remainingExternalGates.length, 5);
 });
+
+test("reviewed evidence creates eligibility but still requires explicit Phase 3 authorization", () => {
+  const result = evaluateAcademicReadiness({
+    approvedManifestValid: true,
+    testMongoUriConfigured: true,
+    testDatabaseName: "absp_academic_test",
+    academicWritesEnabled: false,
+    externalEvidenceValid: true,
+  });
+  assert.equal(result.rolloutEligibility, "eligible-for-explicit-phase3-authorization");
+  assert.equal(result.phase3Unlocked, false);
+  assert.deepEqual(result.remainingExternalGates, [
+    "Obtain explicit authorization to begin Phase 3 attendance work.",
+  ]);
+});
