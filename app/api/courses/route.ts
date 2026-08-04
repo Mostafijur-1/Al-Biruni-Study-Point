@@ -9,6 +9,8 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { Course } from "@/lib/db/models/Course";
 import { createCourseSchema } from "@/lib/validations/course.schema";
+import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
+import { doTargetClassesMatchLevel } from "@/lib/auth/teacher-domain-rules";
 
 function slugify(value: string) {
   return value
@@ -72,7 +74,20 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request, ["admin", "teacher"]);
     const parsed = createCourseSchema.parse(await request.json());
 
+    if (!doTargetClassesMatchLevel(parsed.level, parsed.targetClasses)) {
+      return fail("Target classes must match the selected course level.", 400);
+    }
+
     await connectDB();
+
+    if (user.role === "teacher") {
+      const decision = await authorizeTeacherContentScope(
+        user.id,
+        parsed.targetClasses,
+        parsed.subject,
+      );
+      if (!decision.ok) return fail(decision.message, decision.status);
+    }
 
     const baseSlug = slugify(parsed.title);
     let slug = baseSlug;

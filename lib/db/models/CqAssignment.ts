@@ -6,6 +6,7 @@ import type { StudentClass } from "@/types";
 export interface ICqAssignment extends Document {
   title: string;
   description?: string;
+  subject?: string;
   targetClasses: StudentClass[];
   teacher: Types.ObjectId;
   totalMarks: number;
@@ -19,6 +20,7 @@ const CqAssignmentSchema = new Schema<ICqAssignment>(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
+    subject: { type: String, trim: true },
     targetClasses: {
       type: [String],
       enum: ["class-9", "class-10", "class-11", "class-12"],
@@ -37,6 +39,7 @@ const CqAssignmentSchema = new Schema<ICqAssignment>(
 );
 
 CqAssignmentSchema.index({ teacher: 1, createdAt: -1 });
+CqAssignmentSchema.index({ subject: 1, targetClasses: 1, isPublished: 1 });
 CqAssignmentSchema.index({ targetClasses: 1, isPublished: 1 });
 
 const CqAssignmentModel =

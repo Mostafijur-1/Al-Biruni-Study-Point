@@ -1,9 +1,34 @@
 import { COURSE_TO_MCQ_SUBJECT_MAP } from "../content/syllabus";
 import { User } from "../db/models/User";
+import type { StudentClass } from "../../types";
+import {
+  areClassesWithinTeacherDomain,
+  isExamWithinTeacherDomain,
+} from "./teacher-domain-rules";
 
 export type TeacherScopeDecision =
   | { ok: true }
   | { ok: false; status: 403 | 404; message: string };
+
+export async function authorizeTeacherContentScope(
+  teacherId: string,
+  targetClasses: StudentClass[],
+  subject?: string,
+): Promise<TeacherScopeDecision> {
+  const teacher = await User.findById(teacherId).select("teacherDomain").lean();
+  if (!teacher) return { ok: false, status: 404, message: "Teacher not found." };
+
+  const allowed = subject
+    ? isExamWithinTeacherDomain(teacher.teacherDomain, subject, targetClasses)
+    : areClassesWithinTeacherDomain(teacher.teacherDomain, targetClasses);
+  return allowed
+    ? { ok: true }
+    : {
+        ok: false,
+        status: 403,
+        message: "The selected subject or class is outside your assigned teaching scope.",
+      };
+}
 
 export async function authorizeTeacherForStudentSubject(
   teacherId: string,

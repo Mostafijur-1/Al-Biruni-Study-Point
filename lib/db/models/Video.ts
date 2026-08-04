@@ -6,6 +6,7 @@ import type { StudentClass } from "@/types";
 export interface IVideo extends Document {
   title: string;
   description?: string;
+  subject?: string;
   videoUrl: string;
   targetClasses: StudentClass[];
   teacher: Types.ObjectId;
@@ -18,6 +19,7 @@ const VideoSchema = new Schema<IVideo>(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
+    subject: { type: String, trim: true },
     videoUrl: { type: String, required: true, trim: true },
     targetClasses: {
       type: [String],
@@ -35,6 +37,7 @@ const VideoSchema = new Schema<IVideo>(
 );
 
 VideoSchema.index({ teacher: 1, createdAt: -1 });
+VideoSchema.index({ subject: 1, targetClasses: 1, isPublished: 1 });
 VideoSchema.index({ targetClasses: 1, isPublished: 1 });
 
 const VideoModel = mongoose.models.Video || mongoose.model<IVideo>("Video", VideoSchema);

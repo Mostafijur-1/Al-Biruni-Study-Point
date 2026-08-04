@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { TargetClassPicker } from "@/components/content/TargetClassPicker";
 import { Alert } from "@/components/ui/alert";
@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
-import { formatClassList } from "@/lib/content/classes";
+import { formatClassList, STUDENT_CLASSES } from "@/lib/content/classes";
 import type { StudentClass } from "@/types";
 
 type VideoRow = {
   _id: string;
   title: string;
+  subject?: string;
   videoUrl: string;
   targetClasses: StudentClass[];
   isPublished: boolean;
@@ -31,8 +32,21 @@ type CourseRow = {
 type AssignmentRow = {
   _id: string;
   title: string;
+  subject?: string;
   totalMarks: number;
   targetClasses: StudentClass[];
+};
+
+const COURSE_SUBJECTS = ["Physics", "Chemistry", "Math", "Higher Math", "ICT"] as const;
+type SupportedCourseSubject = (typeof COURSE_SUBJECTS)[number];
+
+type TeacherScopeResponse = {
+  subjects: Array<{ subject: string }>;
+  domain: {
+    isAll: boolean;
+    classes: StudentClass[];
+    subjects: string[];
+  };
 };
 
 export function TeacherClassUploadPanel() {
@@ -50,7 +64,14 @@ export function TeacherClassUploadPanel() {
   const [cqTitle, setCqTitle] = useState("");
   const [cqDescription, setCqDescription] = useState("");
   const [cqMarks, setCqMarks] = useState(10);
-  const [targetClasses, setTargetClasses] = useState<StudentClass[]>(["class-9"]);
+  const [videoTargetClasses, setVideoTargetClasses] = useState<StudentClass[]>(["class-9"]);
+  const [courseTargetClasses, setCourseTargetClasses] = useState<StudentClass[]>(["class-9"]);
+  const [cqTargetClasses, setCqTargetClasses] = useState<StudentClass[]>(["class-9"]);
+  const [allowedClasses, setAllowedClasses] = useState<StudentClass[]>([...STUDENT_CLASSES]);
+  const [allowedCourseSubjects, setAllowedCourseSubjects] = useState<SupportedCourseSubject[]>([...COURSE_SUBJECTS]);
+  const [allowedContentSubjects, setAllowedContentSubjects] = useState<string[]>([]);
+  const [videoSubject, setVideoSubject] = useState("");
+  const [cqSubject, setCqSubject] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,11 +88,12 @@ export function TeacherClassUploadPanel() {
     locale === "bn" ? "লোড হচ্ছে..." : "Loading...",
   );
 
-  async function loadContent() {
-    const [videosRes, coursesRes, assignmentsRes] = await Promise.all([
+  const loadContent = useCallback(async () => {
+    const [videosRes, coursesRes, assignmentsRes, scopeRes] = await Promise.all([
       apiFetch<{ videos: VideoRow[] }>("/api/videos"),
       apiFetch<{ courses: CourseRow[] }>("/api/courses"),
       apiFetch<{ assignments: AssignmentRow[] }>("/api/cq/assignments"),
+      apiFetch<TeacherScopeResponse>("/api/teacher/subjects"),
     ]);
 
     if (!videosRes.ok || !isApiSuccess(videosRes.payload)) {
@@ -88,8 +110,45 @@ export function TeacherClassUploadPanel() {
         ? assignmentsRes.payload.data.assignments
         : [],
     );
+    if (scopeRes.ok && isApiSuccess(scopeRes.payload)) {
+      const domain = scopeRes.payload.data.domain;
+      const contentSubjects = Array.from(
+        new Set(scopeRes.payload.data.subjects.map((item) => item.subject)),
+      );
+      const nextClasses = domain.classes;
+      const nextSubjects = domain.isAll
+        ? [...COURSE_SUBJECTS]
+        : COURSE_SUBJECTS.filter((subject) => domain.subjects.includes(subject));
+      setAllowedClasses(nextClasses);
+      setAllowedCourseSubjects(nextSubjects);
+      setAllowedContentSubjects(contentSubjects);
+      setVideoSubject((current) => contentSubjects.includes(current) ? current : (contentSubjects[0] ?? ""));
+      setCqSubject((current) => contentSubjects.includes(current) ? current : (contentSubjects[0] ?? ""));
+      const keepAllowed = (current: StudentClass[]) => {
+        const kept = current.filter((item) => nextClasses.includes(item));
+        return kept.length > 0 ? kept : nextClasses.slice(0, 1);
+      };
+      setVideoTargetClasses(keepAllowed);
+      setCourseTargetClasses(keepAllowed);
+      setCqTargetClasses(keepAllowed);
+      setCourseSubject((current) =>
+        nextSubjects.includes(current) ? current : (nextSubjects[0] ?? "Physics"),
+      );
+      setCourseLevel((current) => {
+        const hasCurrentLevel = nextClasses.some((item) =>
+          current === "SSC"
+            ? item === "class-9" || item === "class-10"
+            : item === "class-11" || item === "class-12",
+        );
+        return hasCurrentLevel
+          ? current
+          : nextClasses.some((item) => item === "class-9" || item === "class-10")
+            ? "SSC"
+            : "HSC";
+      });
+    }
     setListMessage("");
-  }
+  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -97,7 +156,7 @@ export function TeacherClassUploadPanel() {
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [loadContent]);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -111,8 +170,9 @@ export function TeacherClassUploadPanel() {
       body: JSON.stringify({
         title,
         description,
+        subject: videoSubject,
         videoUrl,
-        targetClasses,
+        targetClasses: videoTargetClasses,
         isPublished: true,
       }),
     });
@@ -149,7 +209,7 @@ export function TeacherClassUploadPanel() {
         description: courseDescription,
         level: courseLevel,
         subject: courseSubject,
-        targetClasses,
+        targetClasses: courseTargetClasses,
         isPublished: true,
       }),
     });
@@ -181,7 +241,8 @@ export function TeacherClassUploadPanel() {
       body: JSON.stringify({
         title: cqTitle,
         description: cqDescription,
-        targetClasses,
+        subject: cqSubject,
+        targetClasses: cqTargetClasses,
         totalMarks: cqMarks,
         isPublished: true,
       }),
@@ -251,15 +312,36 @@ export function TeacherClassUploadPanel() {
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="video-subject">Subject</Label>
+          <select
+            id="video-subject"
+            value={videoSubject}
+            onChange={(event) => setVideoSubject(event.target.value)}
+            className="w-full rounded-lg border border-input bg-surface px-3 py-2.5 text-sm"
+            required
+          >
+            {allowedContentSubjects.map((subject) => (
+              <option key={subject} value={subject}>{subject}</option>
+            ))}
+          </select>
+        </div>
+
         <TargetClassPicker
-          value={targetClasses}
-          onChange={setTargetClasses}
+          value={videoTargetClasses}
+          onChange={setVideoTargetClasses}
+          allowedClasses={allowedClasses}
           label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}
         />
 
         {message && <Alert variant={isSuccess ? "success" : "destructive"}>{message}</Alert>}
 
-        <Button type="submit" loading={isSubmitting} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          loading={isSubmitting}
+          disabled={!videoSubject || videoTargetClasses.length === 0}
+          className="w-full sm:w-auto"
+        >
           {locale === "bn" ? "ভিডিও সংরক্ষণ" : "Save video"}
         </Button>
       </form>
@@ -297,11 +379,23 @@ export function TeacherClassUploadPanel() {
             <select
               id="course-level"
               value={courseLevel}
-              onChange={(event) => setCourseLevel(event.target.value as "SSC" | "HSC")}
+              onChange={(event) => {
+                const nextLevel = event.target.value as "SSC" | "HSC";
+                setCourseLevel(nextLevel);
+                const levelClasses = allowedClasses.filter((item) =>
+                  nextLevel === "SSC"
+                    ? item === "class-9" || item === "class-10"
+                    : item === "class-11" || item === "class-12",
+                );
+                setCourseTargetClasses((current) => {
+                  const kept = current.filter((item) => levelClasses.includes(item));
+                  return kept.length > 0 ? kept : levelClasses.slice(0, 1);
+                });
+              }}
               className="w-full rounded-lg border border-input bg-surface px-3 py-2.5 text-sm"
             >
-              <option value="SSC">SSC</option>
-              <option value="HSC">HSC</option>
+              {allowedClasses.some((item) => item === "class-9" || item === "class-10") && <option value="SSC">SSC</option>}
+              {allowedClasses.some((item) => item === "class-11" || item === "class-12") && <option value="HSC">HSC</option>}
             </select>
           </div>
           <div className="space-y-2">
@@ -316,11 +410,9 @@ export function TeacherClassUploadPanel() {
               }
               className="w-full rounded-lg border border-input bg-surface px-3 py-2.5 text-sm"
             >
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-              <option value="Math">Math</option>
-              <option value="Higher Math">Higher Math</option>
-              <option value="ICT">ICT</option>
+              {allowedCourseSubjects.map((subject) => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -334,14 +426,24 @@ export function TeacherClassUploadPanel() {
           />
         </div>
         <TargetClassPicker
-          value={targetClasses}
-          onChange={setTargetClasses}
+          value={courseTargetClasses}
+          onChange={setCourseTargetClasses}
+          allowedClasses={allowedClasses.filter((item) =>
+            courseLevel === "SSC"
+              ? item === "class-9" || item === "class-10"
+              : item === "class-11" || item === "class-12",
+          )}
           label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}
         />
         {courseMessage && (
           <Alert variant={courseSuccess ? "success" : "destructive"}>{courseMessage}</Alert>
         )}
-        <Button type="submit" loading={isCourseSubmitting} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          loading={isCourseSubmitting}
+          disabled={allowedCourseSubjects.length === 0 || courseTargetClasses.length === 0}
+          className="w-full sm:w-auto"
+        >
           {locale === "bn" ? "কোর্স সংরক্ষণ" : "Save course"}
         </Button>
       </form>
@@ -383,13 +485,34 @@ export function TeacherClassUploadPanel() {
             required
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="cq-subject">Subject</Label>
+          <select
+            id="cq-subject"
+            value={cqSubject}
+            onChange={(event) => setCqSubject(event.target.value)}
+            className="w-full rounded-lg border border-input bg-surface px-3 py-2.5 text-sm"
+            required
+          >
+            {allowedContentSubjects.map((subject) => (
+              <option key={subject} value={subject}>{subject}</option>
+            ))}
+          </select>
+        </div>
+
         <TargetClassPicker
-          value={targetClasses}
-          onChange={setTargetClasses}
+          value={cqTargetClasses}
+          onChange={setCqTargetClasses}
+          allowedClasses={allowedClasses}
           label={locale === "bn" ? "লক্ষ্য শ্রেণি" : "Target class(es)"}
         />
         {cqMessage && <Alert variant={cqSuccess ? "success" : "destructive"}>{cqMessage}</Alert>}
-        <Button type="submit" loading={isCqSubmitting} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          loading={isCqSubmitting}
+          disabled={!cqSubject || cqTargetClasses.length === 0}
+          className="w-full sm:w-auto"
+        >
           {locale === "bn" ? "CQ সংরক্ষণ" : "Save CQ"}
         </Button>
       </form>

@@ -10,6 +10,8 @@ import { connectDB } from "@/lib/db/connect";
 import { Video } from "@/lib/db/models/Video";
 import { VideoProgress } from "@/lib/db/models/VideoProgress";
 import { createVideoSchema } from "@/lib/validations/video.schema";
+import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
+import { redactGuestVideoUrl } from "@/lib/content/video-visibility";
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,7 +57,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const videos = await Video.find(query).sort({ createdAt: -1 }).limit(100).lean();
+    const videoQuery = Video.find(query).sort({ createdAt: -1 }).limit(100);
+    if (scope === "guest") videoQuery.select("-videoUrl");
+    const videos = await videoQuery.lean();
     const progress = studentId
       ? await VideoProgress.find({
           student: studentId,
@@ -68,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     return success({
       videos: videos.map((video) => {
-        const mapped = mapDocWithTargetClasses(video);
+        const mapped = redactGuestVideoUrl(scope, mapDocWithTargetClasses(video));
         const itemProgress = progressMap.get(String(video._id));
         return {
           ...mapped,
@@ -94,9 +98,20 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
+    if (user.role === "teacher") {
+      if (!parsed.subject) return fail("Subject is required for teacher content.", 400);
+      const decision = await authorizeTeacherContentScope(
+        user.id,
+        parsed.targetClasses,
+        parsed.subject,
+      );
+      if (!decision.ok) return fail(decision.message, decision.status);
+    }
+
     const video = await Video.create({
       title: parsed.title,
       description: parsed.description || undefined,
+      subject: parsed.subject,
       videoUrl: parsed.videoUrl,
       targetClasses: parsed.targetClasses,
       teacher: user.id,

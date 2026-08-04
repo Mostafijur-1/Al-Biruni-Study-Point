@@ -22,7 +22,7 @@ type VideoRow = {
   _id: string;
   title: string;
   description?: string;
-  videoUrl: string;
+  videoUrl?: string;
   targetClasses: StudentClass[];
   progress?: {
     status: "started" | "completed";

@@ -10,6 +10,7 @@ type TargetClassPickerProps = {
   error?: string;
   label?: string;
   hint?: string;
+  allowedClasses?: readonly StudentClass[];
 };
 
 export function TargetClassPicker({ value,
@@ -17,6 +18,7 @@ export function TargetClassPicker({ value,
   error,
   label,
   hint,
+  allowedClasses = STUDENT_CLASSES,
 }: TargetClassPickerProps) {
   const locale = "bn";
       const selectedClasses = value ?? [];
@@ -35,7 +37,7 @@ export function TargetClassPicker({ value,
       {label && <span className="text-sm font-semibold">{label}</span>}
       {hint && <p className="text-xs text-muted">{hint}</p>}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {STUDENT_CLASSES.map((studentClass) => {
+        {STUDENT_CLASSES.filter((studentClass) => allowedClasses.includes(studentClass)).map((studentClass) => {
           const selected = selectedClasses.includes(studentClass);
 
           return (

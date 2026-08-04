@@ -60,6 +60,13 @@ export async function GET(request: NextRequest) {
 
     return success({
       subjects: subjectsWithChapters,
+      domain: {
+        isAll: Boolean(domain?.isAll),
+        classes: domain?.isAll
+          ? ["class-9", "class-10", "class-11", "class-12"]
+          : domain?.classes ?? [],
+        subjects: domain?.subjects ?? [],
+      },
     });
   } catch (error) {
     return handleApiError(error);

@@ -4,11 +4,12 @@ import { classFilterForStudent } from "@/lib/content/classes";
 import { applyGuestClassFilter } from "@/lib/content/guest-scope.server";
 import { mapDocWithTargetClasses } from "@/lib/content/serialize";
 import { requireStudentClass } from "@/lib/content/student-access";
-import { handleApiError, success } from "@/lib/api/response";
+import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { CqAssignment } from "@/lib/db/models/CqAssignment";
 import { createCqAssignmentSchema } from "@/lib/validations/cq.schema";
+import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,9 +59,20 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
+    if (user.role === "teacher") {
+      if (!parsed.subject) return fail("Subject is required for teacher content.", 400);
+      const decision = await authorizeTeacherContentScope(
+        user.id,
+        parsed.targetClasses,
+        parsed.subject,
+      );
+      if (!decision.ok) return fail(decision.message, decision.status);
+    }
+
     const assignment = await CqAssignment.create({
       title: parsed.title,
       description: parsed.description || undefined,
+      subject: parsed.subject,
       targetClasses: parsed.targetClasses,
       teacher: user.id,
       totalMarks: parsed.totalMarks,

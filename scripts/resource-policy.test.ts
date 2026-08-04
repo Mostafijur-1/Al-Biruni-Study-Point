@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { canManageTeacherOwnedResource } from "../lib/auth/resource-policy.ts";
-import { isExamWithinTeacherDomain } from "../lib/auth/teacher-domain-rules.ts";
+import {
+  areClassesWithinTeacherDomain,
+  doTargetClassesMatchLevel,
+  isExamWithinTeacherDomain,
+} from "../lib/auth/teacher-domain-rules.ts";
 
 test("admin can manage any teacher-owned resource", () => {
   assert.equal(
@@ -59,4 +63,26 @@ test("exam definitions stay inside the teacher's assigned classes and subjects",
     ),
     false,
   );
+});
+
+test("class-only content stays inside the teacher's assigned classes", () => {
+  const domain = {
+    isAll: false,
+    classes: ["class-11"] as const,
+    subjects: ["Physics"],
+  };
+  assert.equal(
+    areClassesWithinTeacherDomain({ ...domain, classes: [...domain.classes] }, ["class-11"]),
+    true,
+  );
+  assert.equal(
+    areClassesWithinTeacherDomain({ ...domain, classes: [...domain.classes] }, ["class-12"]),
+    false,
+  );
+});
+
+test("course target classes must match the selected academic level", () => {
+  assert.equal(doTargetClassesMatchLevel("SSC", ["class-9", "class-10"]), true);
+  assert.equal(doTargetClassesMatchLevel("SSC", ["class-11"]), false);
+  assert.equal(doTargetClassesMatchLevel("HSC", ["class-12"]), true);
 });
