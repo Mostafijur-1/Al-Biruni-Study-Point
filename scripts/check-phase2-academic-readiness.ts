@@ -1,5 +1,6 @@
 import { access, readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
+import { createRequire } from "node:module";
 import { promisify } from "node:util";
 
 import {
@@ -21,6 +22,14 @@ const strict = process.argv.includes("--strict");
 const requireEvidence = process.argv.includes("--require-evidence");
 const workspaceRoot = process.cwd();
 const execFileAsync = promisify(execFile);
+const require = createRequire(import.meta.url);
+let inMemoryReplicaSetAvailable = false;
+try {
+  require.resolve("mongodb-memory-server");
+  inMemoryReplicaSetAvailable = true;
+} catch {
+  // The explicit test URI remains available as the fallback prerequisite.
+}
 const { resolvedPath: manifestPath, relativePath } = resolveWorkspaceManifestPath(
   workspaceRoot,
   manifestArgument,
@@ -77,6 +86,7 @@ const report = evaluateAcademicReadiness({
   approvedManifestValid,
   testMongoUriConfigured: Boolean(process.env.ACADEMIC_TEST_MONGODB_URI?.trim()),
   testDatabaseName: process.env.ACADEMIC_TEST_DB_NAME?.trim(),
+  inMemoryReplicaSetAvailable,
   academicWritesEnabled: process.env.ACADEMIC_WRITES_ENABLED?.trim().toLowerCase() === "true",
   externalEvidenceValid,
 });

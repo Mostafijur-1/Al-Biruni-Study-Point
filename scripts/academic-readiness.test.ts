@@ -25,6 +25,18 @@ test("academic readiness stays blocked when any prerequisite is absent", () => {
   assert.equal(result.phase3Unlocked, false);
 });
 
+test("the installed in-memory replica set satisfies only the disposable DB prerequisite", () => {
+  const result = evaluateAcademicReadiness({
+    approvedManifestValid: false,
+    testMongoUriConfigured: false,
+    inMemoryReplicaSetAvailable: true,
+    academicWritesEnabled: false,
+  });
+  assert.equal(result.checks.find((check) => check.id === "test-mongodb-uri")?.ready, true);
+  assert.equal(result.checks.find((check) => check.id === "safe-test-database")?.ready, true);
+  assert.equal(result.status, "blocked");
+});
+
 test("readiness permits external validation but never unlocks Phase 3 automatically", () => {
   const result = evaluateAcademicReadiness({
     approvedManifestValid: true,

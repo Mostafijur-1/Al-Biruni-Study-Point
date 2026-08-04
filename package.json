@@ -15,7 +15,8 @@
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",
     "audit:academic-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/audit-phase2-teacher-scope.ts",
-    "test:academic-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db.ts"
+    "test:academic-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db.ts",
+    "test:academic-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -47,6 +48,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "mongodb-memory-server": "^11.2.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

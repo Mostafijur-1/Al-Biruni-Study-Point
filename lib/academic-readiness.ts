@@ -2,6 +2,7 @@ export type AcademicReadinessInput = {
   approvedManifestValid: boolean;
   testMongoUriConfigured: boolean;
   testDatabaseName?: string;
+  inMemoryReplicaSetAvailable?: boolean;
   academicWritesEnabled: boolean;
   externalEvidenceValid?: boolean;
 };
@@ -17,6 +18,11 @@ export function isSafeAcademicTestDatabaseName(value: string | undefined) {
 }
 
 export function evaluateAcademicReadiness(input: AcademicReadinessInput) {
+  const disposableMongoAvailable =
+    input.testMongoUriConfigured || input.inMemoryReplicaSetAvailable === true;
+  const safeDisposableDatabase =
+    (input.testMongoUriConfigured && isSafeAcademicTestDatabaseName(input.testDatabaseName)) ||
+    input.inMemoryReplicaSetAvailable === true;
   const checks: AcademicReadinessCheck[] = [
     {
       id: "approved-manifest",
@@ -27,17 +33,21 @@ export function evaluateAcademicReadiness(input: AcademicReadinessInput) {
     },
     {
       id: "test-mongodb-uri",
-      ready: input.testMongoUriConfigured,
+      ready: disposableMongoAvailable,
       detail: input.testMongoUriConfigured
         ? "An isolated MongoDB URI is configured."
-        : "ACADEMIC_TEST_MONGODB_URI is not configured.",
+        : input.inMemoryReplicaSetAvailable
+          ? "The local disposable MongoDB replica-set harness is installed."
+          : "No isolated MongoDB URI or in-memory replica-set harness is available.",
     },
     {
       id: "safe-test-database",
-      ready: isSafeAcademicTestDatabaseName(input.testDatabaseName),
-      detail: isSafeAcademicTestDatabaseName(input.testDatabaseName)
-        ? "The database name matches the disposable absp_*test boundary."
-        : "ACADEMIC_TEST_DB_NAME must match absp_*test.",
+      ready: safeDisposableDatabase,
+      detail: input.inMemoryReplicaSetAvailable && !input.testMongoUriConfigured
+        ? "The in-memory harness uses the fixed disposable absp_academic_memory_test database."
+        : isSafeAcademicTestDatabaseName(input.testDatabaseName)
+          ? "The database name matches the disposable absp_*test boundary."
+          : "ACADEMIC_TEST_DB_NAME must match absp_*test.",
     },
     {
       id: "writes-disabled",

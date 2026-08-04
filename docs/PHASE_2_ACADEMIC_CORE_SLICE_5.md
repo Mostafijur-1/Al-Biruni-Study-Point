@@ -14,7 +14,7 @@ Make the Phase 2-to-Phase 3 boundary reproducible in developer, CI, and staging 
 
 ## Current result
 
-The local report is `blocked`: the approved manifest and disposable MongoDB configuration are absent, while academic writes remain safely disabled. The command did not connect to a database.
+The local report is `blocked`: the approved manifest and reviewed rollout evidence are absent, while academic writes remain safely disabled. A disposable in-memory replica-set runner is installed, but its real integration assertions must still pass and be reviewed. The readiness command does not connect to a database.
 
 ## Required next inputs
 
