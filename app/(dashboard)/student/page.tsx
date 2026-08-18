@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { StudentHomeDashboard } from "@/components/student/StudentHomeDashboard";
+import { getLocalizedPath } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: "শিক্ষার্থী ড্যাশবোর্ড | ABSP",
-  description: "আজকের শেখার লক্ষ্য, পরীক্ষা, অ্যাসাইনমেন্ট ও অগ্রগতি একসাথে দেখুন।",
+type StudentDashboardPageProps = {
+  searchParams: Promise<{ level?: string }>;
 };
 
-export default function StudentDashboardPage() {
-  return <StudentHomeDashboard />;
+export default async function StudentDashboardPage({ searchParams }: StudentDashboardPageProps) {
+  const { level } = await searchParams;
+  const query = level ? `?level=${level}` : "";
+  redirect(getLocalizedPath(`/student/practice${query}`));
 }

@@ -4,39 +4,23 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpen,
   Brain,
   CalendarDays,
-  ClipboardList,
-  Compass,
   FileQuestion,
-  FlaskConical,
-  Gamepad2,
   GraduationCap,
   Home,
   LayoutDashboard,
-  LayoutGrid,
   LineChart,
-  Map,
   MoreHorizontal,
-  NotebookPen,
-  Swords,
-  Sigma,
-  Target,
-  TimerReset,
   UserCircle,
   Users,
-  UsersRound,
   X,
 } from "lucide-react";
 
 import { useGuestLevel } from "@/lib/hooks/use-guest-level";
 import { useSession } from "@/lib/hooks/use-session";
 import { getLocalizedPath } from "@/lib/i18n";
-import {
-  isStudentToolRoute,
-  isTopLevelDashboardRoute,
-} from "@/lib/dashboard-navigation";
+import { isTopLevelDashboardRoute } from "@/lib/dashboard-navigation";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
@@ -50,24 +34,7 @@ type NavItem = {
 
 const navigationByRole: Record<UserRole, NavItem[]> = {
   student: [
-    { href: "/student", label: "শিক্ষার্থী হোম", icon: Home, mobilePrimary: true },
-    { href: "/student/coach", label: "স্টাডি কোচ", icon: Compass },
-    { href: "/student/learning", label: "শেখার প্ল্যান", icon: Map },
-    { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
-    { href: "/student/game", label: "গেম হাব", icon: Gamepad2 },
-    { href: "/student/challenge", label: "ডেইলি চ্যালেঞ্জ", icon: Swords },
-    { href: "/student/focus", label: "ফোকাস স্টুডিও", icon: TimerReset },
-    { href: "/student/goals", label: "সাপ্তাহিক লক্ষ্য", icon: Target },
-    { href: "/student/labs", label: "সায়েন্স ল্যাব", icon: FlaskConical },
-    { href: "/student/formulas", label: "ফর্মুলা স্প্রিন্ট", icon: Sigma },
-    { href: "/student/community", label: "ক্লাস কমিউনিটি", icon: UsersRound },
-    {
-      href: "/student/courses",
-      label: "কোর্স ও ক্লাস",
-      icon: BookOpen,
-      levelAware: true,
-      mobilePrimary: true,
-    },
+    { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle, mobilePrimary: true },
     {
       href: "/student/practice",
       label: "MCQ প্র্যাকটিস",
@@ -81,10 +48,7 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       icon: FileQuestion,
       mobilePrimary: true,
     },
-    { href: "/student/assignments", label: "অ্যাসাইনমেন্ট", icon: ClipboardList },
-    { href: "/student/results", label: "ফলাফল", icon: GraduationCap },
-    { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle },
-    { href: "/student/tools", label: "শেখার সরঞ্জাম", icon: LayoutGrid },
+    { href: "/student/results", label: "ফলাফল", icon: GraduationCap, mobilePrimary: true },
   ],
   teacher: [
     { href: "/teacher", label: "হোম", icon: Home, mobilePrimary: true },
@@ -149,9 +113,6 @@ function roleFromPathname(pathname: string): UserRole {
 function isNavActive(pathname: string, href: string, role: UserRole) {
   const localizedBase = getLocalizedPath(href);
   const isRoleRoot = href === `/${role}`;
-  if (role === "student" && href === "/student/tools" && isStudentToolRoute(pathname)) {
-    return true;
-  }
   return (
     pathname === localizedBase ||
     (!isRoleRoot && pathname.startsWith(`${localizedBase}/`))
