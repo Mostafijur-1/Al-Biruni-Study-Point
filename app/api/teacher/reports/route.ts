@@ -6,11 +6,25 @@ import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
 import { ReportedQuestion } from "@/lib/db/models/ReportedQuestion";
 import type { IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
-import "@/lib/db/models/PracticeQuestion";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 
-type PopulatedReport = {
-  questionId: IPracticeQuestion | null;
+type ReportRow = {
+  _id: { toString(): string };
+  questionId: { toString(): string };
+  studentId: unknown;
+  comment: string;
+  resolved: boolean;
+  createdAt: Date;
+  sourceType?: "practice" | "exam";
+  sourceOwnerId?: { toString(): string };
+  sourceTitle?: string;
+  questionSnapshot?: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation?: string;
+  };
 };
 
 export async function GET(request: NextRequest) {
@@ -35,21 +49,55 @@ export async function GET(request: NextRequest) {
 
     const reports = await ReportedQuestion.find({ resolved: false })
       .populate({
-        path: "questionId",
-        model: "PracticeQuestion"
-      })
-      .populate({
         path: "studentId",
         model: "User",
         select: "name email"
       })
       .sort({ createdAt: -1 })
-      .lean<PopulatedReport[]>();
+      .lean<ReportRow[]>();
+
+    const practiceQuestionIds = reports
+      .filter((report) => (report.sourceType ?? "practice") === "practice")
+      .map((report) => report.questionId.toString());
+    const practiceQuestions = await PracticeQuestion.find({
+      _id: { $in: practiceQuestionIds },
+    }).lean();
+    const practiceQuestionMap = new Map(
+      practiceQuestions.map((question) => [question._id.toString(), question]),
+    );
+
+    const hydratedReports = reports.map((report) => {
+      if (report.sourceType === "exam") {
+        const snapshot = report.questionSnapshot;
+        return {
+          ...report,
+          sourceType: "exam" as const,
+          questionId: snapshot
+            ? {
+                _id: report.questionId.toString(),
+                level: "exam",
+                subject: report.sourceTitle || "Official Exam",
+                chapter: "Reported question",
+                ...snapshot,
+              }
+            : null,
+        };
+      }
+      return {
+        ...report,
+        sourceType: "practice" as const,
+        questionId: practiceQuestionMap.get(report.questionId.toString()) ?? null,
+      };
+    });
 
     // Filter reports to match teacher's domain classes and subjects
-    const filteredReports = reports.filter((report) => {
+    const filteredReports = hydratedReports.filter((report) => {
       const q = report.questionId;
       if (!q) return false;
+
+      if (report.sourceType === "exam") {
+        return report.sourceOwnerId?.toString() === sessionUser.id;
+      }
 
       if (domain?.isAll) return true;
 
@@ -93,18 +141,29 @@ export async function PUT(request: NextRequest) {
       return fail("User not found", 404);
     }
 
-    const report = await ReportedQuestion.findById(parsed.reportId).populate({
-      path: "questionId",
-      model: "PracticeQuestion",
-    });
+    const report = await ReportedQuestion.findById(parsed.reportId);
     if (!report) {
       return fail("Report not found", 404);
     }
 
-    const question = report.questionId as unknown as IPracticeQuestion | null;
-    if (question) {
-      const isCreator = question.createdBy && String(question.createdBy) === String(user._id);
-      if (!isCreator) {
+    if (report.sourceType === "exam") {
+      if (report.sourceOwnerId?.toString() !== sessionUser.id) {
+        return fail("Access denied to this Exam report", 403);
+      }
+      report.resolved = true;
+      await report.save();
+      return success({ message: "Report marked as resolved successfully." });
+    }
+
+    const question = await PracticeQuestion.findById(
+      report.questionId,
+    ) as IPracticeQuestion | null;
+    if (!question) {
+      return fail("Reported question not found", 404);
+    }
+
+    const isCreator = question.createdBy && String(question.createdBy) === String(user._id);
+    if (!isCreator) {
         const domain = user.teacherDomain;
         let allowed = false;
         if (domain?.isAll) {
@@ -130,9 +189,8 @@ export async function PUT(request: NextRequest) {
           }
         }
 
-        if (!allowed) {
-          return fail("Access denied to this question's subject/level", 403);
-        }
+      if (!allowed) {
+        return fail("Access denied to this question's subject/level", 403);
       }
     }
 

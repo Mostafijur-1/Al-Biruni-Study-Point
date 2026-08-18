@@ -6,8 +6,8 @@ export default function StudentResultsPage() {
     <section className="space-y-5">
       <PageHeader
         eyebrow="শিক্ষার্থী"
-        title="ফলাফল"
-        description="প্র্যাকটিস ও পরীক্ষার সাম্প্রতিক ফলাফল এবং অগ্রগতি দেখুন।"
+        title="আমার ফলাফল"
+        description="MCQ Practice ও Exam-এর ফলাফল, উত্তরপত্র, সঠিক উত্তর এবং বিস্তারিত ব্যাখ্যা এক জায়গায় দেখুন।"
       />
       <ResultHistory />
     </section>

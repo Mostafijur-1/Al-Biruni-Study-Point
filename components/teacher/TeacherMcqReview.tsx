@@ -52,6 +52,7 @@ type ReportedQuestion = {
   comment: string;
   resolved: boolean;
   createdAt: string;
+  sourceType?: "practice" | "exam";
 };
 
 type SubjectInfo = {
@@ -546,7 +547,7 @@ export function TeacherMcqReview() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                            Reported MCQ
+                            {report.sourceType === "exam" ? "Exam MCQ Report" : "Reported MCQ"}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
                             {new Date(report.createdAt).toLocaleDateString()}
@@ -575,26 +576,30 @@ export function TeacherMcqReview() {
                         >
                           Resolve/Dismiss
                         </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditModal(q)}
-                          className="rounded-lg h-8 text-xs font-bold text-primary"
-                        >
-                          <Edit className="size-3.5 mr-1" />
-                          Edit MCQ
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteMcq(q._id)}
-                          className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
-                        >
-                          <Trash2 className="size-3.5 mr-1" />
-                          Delete MCQ
-                        </Button>
+                        {report.sourceType !== "exam" && (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(q)}
+                              className="rounded-lg h-8 text-xs font-bold text-primary"
+                            >
+                              <Edit className="size-3.5 mr-1" />
+                              Edit MCQ
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteMcq(q._id)}
+                              className="rounded-lg h-8 text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
+                            >
+                              <Trash2 className="size-3.5 mr-1" />
+                              Delete MCQ
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
 
