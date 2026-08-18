@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
       tasks.push({
         id: "mistake-review",
         type: "mistake_review",
-        title: `${dueMistakes}টি ভুল আবার দেখুন`,
-        description: "আজ পুনরাবৃত্তির সময় হয়েছে—সঠিক উত্তর দিয়ে স্মৃতি শক্ত করুন।",
+        title: `${dueMistakes}টি ভুল আবার দেখো`,
+        description: "আজ পুনরাবৃত্তির সময় হয়েছে—সঠিক উত্তর দিয়ে স্মৃতি শক্ত করো।",
         href: "/student/mistakes?due=1",
         estimatedMinutes: Math.min(20, Math.max(3, Math.ceil(dueMistakes * 0.75))),
       });
@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       tasks.push({
         id: "mistake-notebook",
         type: "mistake_review",
-        title: "ভুলের খাতা দেখে নিন",
-        description: "আগের কঠিন প্রশ্নগুলো একবার ঝালিয়ে নিন।",
+        title: "ভুলের খাতা দেখে নাও",
+        description: "আগের কঠিন প্রশ্নগুলো একবার ঝালিয়ে নাও।",
         href: "/student/mistakes",
         estimatedMinutes: 5,
       });
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         id: "mastery-practice",
         type: "chapter_practice",
         title: `${recommendation.subject}: লক্ষ্যভিত্তিক অনুশীলন`,
-        description: `${recommendation.chapter} অধ্যায়ে আপনার দক্ষতা ${recommendation.score}%।`,
+        description: `${recommendation.chapter} অধ্যায়ে তোমার দক্ষতা ${recommendation.score}%।`,
         href: "/student/practice",
         estimatedMinutes: 10,
       });
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
         id: "general-practice",
         type: "chapter_practice",
         title: "আজকের ১০ প্রশ্ন",
-        description: "যেকোনো বিষয় বেছে নিয়ে নিয়মিত অনুশীলন ধরে রাখুন।",
+        description: "যেকোনো বিষয় বেছে নিয়ে নিয়মিত অনুশীলন ধরে রাখো।",
         href: "/student/practice",
         estimatedMinutes: 10,
       });
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       tasks.push({
         id: "continue-video",
         type: "video",
-        title: nextVideoProgress ? "ভিডিও ক্লাস চালিয়ে যান" : "নতুন ভিডিও ক্লাস দেখুন",
+        title: nextVideoProgress ? "ভিডিও ক্লাস চালিয়ে যাও" : "নতুন ভিডিও ক্লাস দেখো",
         description: nextVideo.title,
         href: `/student/courses/video/${nextVideo._id}`,
         estimatedMinutes: 15,

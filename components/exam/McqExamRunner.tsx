@@ -545,7 +545,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         </div>
         <div className="space-y-2">
           <h2 className="font-display text-xl font-bold text-primary">
-            {countdownSeconds > 0 ? "আপনার পরীক্ষা শুরু হচ্ছে" : "পরীক্ষা প্রস্তুত"}
+            {countdownSeconds > 0 ? "তোমার পরীক্ষা শুরু হচ্ছে" : "পরীক্ষা প্রস্তুত"}
           </h2>
           <p className="text-xs text-muted font-semibold leading-relaxed">
             {countdownSeconds > 0 
@@ -566,7 +566,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         </h2>
         <p className="text-sm text-red-700">{errorMessage}</p>
         <Button onClick={() => router.push("/student/exams")} className="rounded-xl font-bold">
-          {"পরীক্ষা তালিকায় ফিরে যান"}
+          {"পরীক্ষা তালিকায় ফিরে যাও"}
         </Button>
       </div>
     );
@@ -621,10 +621,10 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
           </h3>
           <ul className="text-xs text-muted space-y-2.5 list-disc pl-5 font-semibold leading-relaxed">
             <li className="text-brand-red font-bold">
-              {"পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন করবেন না। একাধিকবার পরিবর্তন করলে আপনার পরীক্ষাটি স্বয়ংক্রিয়ভাবে বাতিল হয়ে যাবে।"}
+              {"পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন কোরো না। একাধিকবার পরিবর্তন করলে তোমার পরীক্ষাটি স্বয়ংক্রিয়ভাবে বাতিল হয়ে যাবে।"}
             </li>
             <li>
-              {"পরীক্ষা চলাকালীন পেজ রিফ্রেশ বা ব্যাক করবেন না।"}
+              {"পরীক্ষা চলাকালীন পেজ রিফ্রেশ বা ব্যাক কোরো না।"}
             </li>
             <li>
               {"সময় শেষ হয়ে গেলে পরীক্ষাটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।"}
@@ -633,7 +633,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
               {"প্রতিটি প্রশ্নের জন্য ১ নম্বর বরাদ্দ রয়েছে এবং কোনো নেগেটিভ মার্ক নেই।"}
             </li>
             <li>
-              {"পরীক্ষার ফলাফল এবং সঠিক উত্তর আপনার শিক্ষক পরবর্তীতে প্রকাশ করবেন।"}
+              {"পরীক্ষার ফলাফল এবং সঠিক উত্তর তোমার শিক্ষক পরবর্তীতে প্রকাশ করবেন।"}
             </li>
           </ul>
         </div>
@@ -652,7 +652,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             className="rounded-xl font-bold flex items-center gap-1.5 px-6"
           >
             <Play className="size-3.5 fill-current" />
-            {"পরীক্ষা শুরু করুন"}
+            {"পরীক্ষা শুরু করো"}
           </Button>
         </div>
       </div>
@@ -672,10 +672,10 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-bounce" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {"আপনি এখন অফলাইন আছেন"}
+                {"তুমি এখন অফলাইন আছ"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
-                {"আপনার internet connection বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন পরীক্ষটি আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"}
+                {"তোমার Internet connection বিচ্ছিন্ন রয়েছে। পৃষ্ঠাটি রিফ্রেশ বা বন্ধ কোরো না। পরীক্ষাটি তোমার Browser-এ সুরক্ষিত আছে এবং Internet ফিরে এলে সাবমিট করতে পারবে।"}
               </p>
             </div>
           </div>
@@ -691,8 +691,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
               </h3>
               <p className="text-xs leading-5 text-red-700">
                 {isOffline 
-                  ? "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।" 
-                  : "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..."}
+                  ? "তুমি একাধিকবার ট্যাব পরিবর্তন করেছ, তাই তোমার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।"
+                  : "তুমি একাধিকবার ট্যাব পরিবর্তন করেছ, তাই তোমার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..."}
               </p>
             </div>
           </div>
@@ -760,7 +760,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
           {phase === "submitting"
             ? "Submitting..."
             : locale === "bn"
-            ? `পরীক্ষা জমা দিন (${answeredCount}/${questions.length}টি উত্তর দেওয়া হয়েছে)`
+            ? `পরীক্ষা জমা দাও (${answeredCount}/${questions.length}টি উত্তর দেওয়া হয়েছে)`
             : `Submit Exam (${answeredCount}/${questions.length} answered)`}
         </Button>
 
@@ -778,7 +778,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       {"পরীক্ষা জমা দিতে চান?"}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {"জমা দেওয়ার পূর্বে আপনার উত্তরগুলো মিলিয়ে নিন।"}
+                      {"জমা দেওয়ার পূর্বে তোমার উত্তরগুলো মিলিয়ে নাও।"}
                     </p>
                   </div>
 
@@ -835,7 +835,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                     className="w-full rounded-xl py-2.5 font-bold"
                     onClick={() => setShowSubmitConfirm(false)}
                   >
-                    {"ফিরে যান"}
+                    {"ফিরে যাও"}
                   </Button>
                   <Button
                     type="button"
@@ -849,7 +849,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       submitExam(elapsedSeconds, answers, false);
                     }}
                   >
-                    {"জমা দিন"}
+                    {"জমা দাও"}
                   </Button>
                 </div>
               </div>
@@ -898,7 +898,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                     {"পরীক্ষা চলমান আছে!"}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {"পরীক্ষা চলাকালীন আপনি অন্য পৃষ্ঠায় যেতে পারবেন না। অনুগ্রহ করে প্রথমে আপনার পরীক্ষাটি সাবমিট করুন।"}
+                    {"পরীক্ষা চলাকালীন তুমি অন্য পৃষ্ঠায় যেতে পারবে না। দয়া করে প্রথমে তোমার পরীক্ষাটি সাবমিট করো।"}
                   </p>
                 </div>
                 <div className="mt-2 flex flex-col sm:flex-row items-center gap-3 w-full">
@@ -911,7 +911,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       setPendingNavigationUrl(null);
                     }}
                   >
-                    {"পরীক্ষায় ফিরে যান"}
+                    {"পরীক্ষায় ফিরে যাও"}
                   </Button>
                   <Button
                     type="button"
@@ -930,7 +930,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       }
                     }}
                   >
-                    {"সাবমিট করে চলে যান"}
+                    {"সাবমিট করে চলে যাও"}
                   </Button>
                 </div>
               </div>
@@ -951,7 +951,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                     {"ট্যাব পরিবর্তনের সতর্কতা!"}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed font-semibold text-red-600">
-                    {"আপনি উইন্ডো বা ট্যাব পরিবর্তন করেছেন! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে আপনার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"}
+                    {"তুমি উইন্ডো বা ট্যাব পরিবর্তন করেছ! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে তোমার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"}
                   </p>
                 </div>
                 <Button
@@ -959,7 +959,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                   className="w-full rounded-xl py-2.5 font-bold"
                   onClick={() => setShowTabSwitchWarning(false)}
                 >
-                  {"পরীক্ষায় ফিরে যান"}
+                  {"পরীক্ষায় ফিরে যাও"}
                 </Button>
               </div>
             </div>
@@ -981,7 +981,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 {"পরীক্ষা বাতিল করা হয়েছে"}
               </h3>
               <p className="text-xs leading-5 text-red-700 font-semibold">
-                {"পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে আপনার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"}
+                {"পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে তোমার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"}
               </p>
             </div>
           </div>
@@ -996,15 +996,15 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         </h2>
         <p className="text-xs text-muted leading-relaxed font-semibold">
           {wasAutoSubmittedDueToTabLeave 
-            ? "নীতিমালা লঙ্ঘন করার কারণে আপনার পরীক্ষা বাতিল হয়েছে। আপনার বর্তমান উত্তরগুলো আপনার শিক্ষকের নিকট পাঠানো হয়েছে।"
-            : "আপনার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। আপনার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"}
+            ? "নীতিমালা লঙ্ঘন করার কারণে তোমার পরীক্ষা বাতিল হয়েছে। তোমার বর্তমান উত্তরগুলো তোমার শিক্ষকের নিকট পাঠানো হয়েছে।"
+            : "তোমার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। তোমার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"}
         </p>
         <div className="pt-4 border-t border-border">
           <Button
             onClick={() => router.push("/student/exams")}
             className="w-full rounded-xl py-2.5 font-bold"
           >
-            {"পরীক্ষা তালিকায় ফিরে যান"}
+            {"পরীক্ষা তালিকায় ফিরে যাও"}
           </Button>
         </div>
       </div>

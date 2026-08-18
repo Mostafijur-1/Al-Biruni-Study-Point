@@ -190,7 +190,7 @@ export function StudentGameHub() {
       });
       setMessage(
         quest.streakFreezes > 0
-          ? `দারুণ! ${quest.xp} XP ও ${quest.streakFreezes}টি স্ট্রিক ফ্রিজ পেয়েছেন।`
+          ? `দারুণ! ${quest.xp} XP ও ${quest.streakFreezes}টি স্ট্রিক ফ্রিজ পেয়েছ।`
           : `দারুণ! ${quest.xp} XP সংগ্রহ হয়েছে।`,
       );
       await loadHub();
@@ -272,10 +272,10 @@ export function StudentGameHub() {
               <Gamepad2 className="size-5" />
               শেখো · এগিয়ে যাও · উদ্‌যাপন করো
             </div>
-            <h1 className="mt-3 text-3xl font-black sm:text-4xl">আপনার গেম হাব</h1>
+            <h1 className="mt-3 text-3xl font-black sm:text-4xl">তোমার গেম হাব</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-              প্রতিদিনের ছোট লক্ষ্য পূরণ করুন, নিজের আগের ফলকে ছাড়িয়ে যান এবং শেখার
-              ধারাবাহিকতায় নতুন রিওয়ার্ড খুলুন।
+              প্রতিদিনের ছোট লক্ষ্য পূরণ করো, নিজের আগের ফলকে ছাড়িয়ে যাও এবং শেখার
+              ধারাবাহিকতায় নতুন রিওয়ার্ড খোলো।
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
@@ -357,19 +357,19 @@ export function StudentGameHub() {
             <p className="text-xs font-black uppercase tracking-widest text-sky-700">
               বিষয়ভিত্তিক দক্ষতা
             </p>
-            <h2 className="mt-1 text-xl font-black text-primary">আপনার বিষয় লেভেল</h2>
+            <h2 className="mt-1 text-xl font-black text-primary">তোমার বিষয় লেভেল</h2>
           </div>
           <Link
             href="/student/practice"
             className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
           >
-            অনুশীলন করুন <ArrowRight className="size-3.5" />
+            অনুশীলন করো <ArrowRight className="size-3.5" />
           </Link>
         </div>
         {data.subjects.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-sky-300 bg-sky-50 p-6 text-center">
             <Zap className="mx-auto size-8 text-sky-600" />
-            <p className="mt-2 font-black text-primary">প্রথম বিষয় লেভেল খুলুন</p>
+            <p className="mt-2 font-black text-primary">প্রথম বিষয় লেভেল খোলো</p>
             <p className="mt-1 text-sm text-muted">
               যেকোনো একটি MCQ অনুশীলন শেষ করলেই বিষয়ভিত্তিক XP শুরু হবে।
             </p>
@@ -438,7 +438,7 @@ export function StudentGameHub() {
         </div>
         {data.achievements.length === 0 ? (
           <p className="mt-3 text-sm text-muted">
-            প্রথম অনুশীলন শেষ করলেই আপনার প্রথম ব্যাজটি খুলবে।
+            প্রথম অনুশীলন শেষ করলেই তোমার প্রথম ব্যাজটি খুলবে।
           </p>
         ) : (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -531,14 +531,14 @@ function QuestGroup({
                     loading={busyKey === quest.code}
                     onClick={() => void onClaim(quest)}
                   >
-                    পুরস্কার নিন
+                    পুরস্কার নাও
                   </Button>
                 ) : (
                   <Link
                     href={quest.href}
                     className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 text-xs font-black text-primary hover:bg-secondary"
                   >
-                    শুরু করুন <ArrowRight className="size-3.5" />
+                    শুরু করো <ArrowRight className="size-3.5" />
                   </Link>
                 )}
               </div>
@@ -593,7 +593,7 @@ function Leaderboard({ data }: { data: HubData }) {
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-primary">
-                  {entry.displayName}{entry.isCurrentStudent ? " (আপনি)" : ""}
+                  {entry.displayName}{entry.isCurrentStudent ? " (তুমি)" : ""}
                 </p>
                 <p className="text-2xs font-semibold text-muted">
                   {entry.activeDays} দিন · {entry.questions} প্রশ্ন · উন্নতি{" "}
@@ -609,7 +609,7 @@ function Leaderboard({ data }: { data: HubData }) {
       </div>
       <p className="mt-4 text-center text-xs font-bold text-muted">
         {data.leaderboard.currentRank
-          ? `আপনার অবস্থান ${data.leaderboard.currentRank} · মোট ${data.leaderboard.participantCount} জন`
+          ? `তোমার অবস্থান ${data.leaderboard.currentRank} · মোট ${data.leaderboard.participantCount} জন`
           : `${data.leaderboard.participantCount} জন এই সপ্তাহে সক্রিয়`}
       </p>
     </article>
@@ -679,7 +679,7 @@ function RewardLocker({
                   {reward.selected
                     ? "ব্যবহার হচ্ছে"
                     : reward.unlocked
-                      ? "ব্যবহার করুন"
+                      ? "ব্যবহার করো"
                       : `লেভেল ${reward.requiredLevel}-এ খুলবে`}
                 </span>
               </span>

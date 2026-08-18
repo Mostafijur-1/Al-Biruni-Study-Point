@@ -283,7 +283,7 @@ export function StudentHomeDashboard() {
             স্বাগতম, {firstName(user?.name)}!
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-            ছোট একটি লক্ষ্য দিয়ে শুরু করুন। আজকের অনুশীলন শেষ করলেই আপনার
+            ছোট একটি লক্ষ্য দিয়ে শুরু করো। আজকের অনুশীলন শেষ করলেই তোমার
             ধারাবাহিকতা ও XP দুটোই বাড়বে।
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -293,7 +293,7 @@ export function StudentHomeDashboard() {
               "inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-yellow px-5 py-3 text-sm font-black text-primary transition hover:bg-yellow-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
               <>
                 <Target className="size-4" />
-                {dailyComplete ? "আরও অনুশীলন করুন" : "আজকের ১০ প্রশ্ন শুরু করুন"}
+                {dailyComplete ? "আরও অনুশীলন করো" : "আজকের ১০ প্রশ্ন শুরু করো"}
                 <ArrowRight className="size-4" />
               </>,
             )}
@@ -308,7 +308,7 @@ export function StudentHomeDashboard() {
 
       {!hasAnyData && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          আপনার জন্য নতুন শেখার কন্টেন্ট প্রস্তুত হচ্ছে। এর মধ্যে অনুশীলনের
+          তোমার জন্য নতুন শেখার কন্টেন্ট প্রস্তুত হচ্ছে। এর মধ্যে অনুশীলনের
           বিষয়গুলো দেখে একটি ছোট পরীক্ষা শুরু করতে পারেন।
         </div>
       )}
@@ -376,7 +376,7 @@ export function StudentHomeDashboard() {
                 পরবর্তী সেরা কাজ
               </p>
               <h2 className="mt-2 text-xl font-black text-primary">
-                {dailyComplete ? "আজকের লক্ষ্য ধরে রাখুন" : "১০ প্রশ্নের দৈনিক মিশন"}
+                {dailyComplete ? "আজকের লক্ষ্য ধরে রাখো" : "১০ প্রশ্নের দৈনিক মিশন"}
               </h2>
             </div>
             <span
@@ -396,8 +396,8 @@ export function StudentHomeDashboard() {
           </div>
           <p className="mt-3 text-sm leading-6 text-muted">
             {recommendedSubject
-              ? `${recommendedSubject.subject} থেকে নির্বাচিত প্রশ্ন দিয়ে আজকের শেখা শুরু করুন।`
-              : "আপনার শ্রেণির যেকোনো বিষয় বেছে নিয়ে আজকের অনুশীলন শুরু করুন।"}
+              ? `${recommendedSubject.subject} থেকে নির্বাচিত প্রশ্ন দিয়ে আজকের শেখা শুরু করো।`
+              : "তোমার শ্রেণির যেকোনো বিষয় বেছে নিয়ে আজকের অনুশীলন শুরু করো।"}
           </p>
           <div className="mt-5">
             {dashboardLink(
@@ -406,7 +406,7 @@ export function StudentHomeDashboard() {
               "inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover",
               <>
                 <PlayCircle className="size-4" />
-                অনুশীলন শুরু করুন
+                অনুশীলন শুরু করো
               </>,
             )}
           </div>
@@ -449,9 +449,9 @@ export function StudentHomeDashboard() {
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-brand-blue">
-              দ্রুত শুরু করুন
+              দ্রুত শুরু করো
             </p>
-            <h2 className="mt-1 text-xl font-black text-primary">আপনার শেখার জায়গা</h2>
+            <h2 className="mt-1 text-xl font-black text-primary">তোমার শেখার জায়গা</h2>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -468,7 +468,7 @@ export function StudentHomeDashboard() {
               href: "/student/coach",
               action: "study_coach",
               title: "স্মার্ট স্টাডি কোচ",
-              description: "সময় ও অগ্রগতি অনুযায়ী পরের সেরা কাজটি বেছে নিন",
+              description: "সময় ও অগ্রগতি অনুযায়ী পরের সেরা কাজটি বেছে নাও",
               icon: Compass,
               tone: "bg-blue-100 text-blue-700",
             },
@@ -476,7 +476,7 @@ export function StudentHomeDashboard() {
               href: "/student/assignments",
               action: "assignments",
               title: "অ্যাসাইনমেন্ট",
-              description: nextAssignment?.title || "প্রকাশিত CQ কাজ দেখুন",
+              description: nextAssignment?.title || "প্রকাশিত CQ কাজ দেখো",
               icon: ClipboardList,
               tone: "bg-amber-100 text-amber-700",
             },
@@ -500,7 +500,7 @@ export function StudentHomeDashboard() {
               href: "/student/challenge",
               action: "daily_challenge",
               title: "ডেইলি চ্যালেঞ্জ",
-              description: "৯০ সেকেন্ডে ৫ প্রশ্ন—দ্রুত খেলুন ও সমাধান শিখুন",
+              description: "৯০ সেকেন্ডে ৫ প্রশ্ন—দ্রুত খেলো ও সমাধান শেখো",
               icon: Swords,
               tone: "bg-orange-100 text-orange-700",
             },
@@ -516,7 +516,7 @@ export function StudentHomeDashboard() {
               href: "/student/goals",
               action: "weekly_goals",
               title: "সাপ্তাহিক লক্ষ্য",
-              description: "নিজের লক্ষ্য বেছে নিন এবং স্বয়ংক্রিয় অগ্রগতি দেখুন",
+              description: "নিজের লক্ষ্য বেছে নাও এবং স্বয়ংক্রিয় অগ্রগতি দেখো",
               icon: Target,
               tone: "bg-rose-100 text-rose-700",
             },
@@ -524,7 +524,7 @@ export function StudentHomeDashboard() {
               href: "/student/labs",
               action: "science_labs",
               title: "সায়েন্স ল্যাব",
-              description: "গতি, সার্কিট ও মোলের সূত্র হাতে-কলমে পরীক্ষা করুন",
+              description: "গতি, সার্কিট ও মোলের সূত্র হাতে-কলমে পরীক্ষা করো",
               icon: FlaskConical,
               tone: "bg-cyan-100 text-cyan-700",
             },
@@ -532,7 +532,7 @@ export function StudentHomeDashboard() {
               href: "/student/formulas",
               action: "formula_sprint",
               title: "ফর্মুলা স্প্রিন্ট",
-              description: "প্রতিদিন ৫টি সূত্র কার্ডে দ্রুত স্মৃতি ঝালাই করুন",
+              description: "প্রতিদিন ৫টি সূত্র কার্ডে দ্রুত স্মৃতি ঝালাই করো",
               icon: Sigma,
               tone: "bg-indigo-100 text-indigo-700",
             },
@@ -540,7 +540,7 @@ export function StudentHomeDashboard() {
               href: "/student/community",
               action: "community",
               title: "ক্লাস কমিউনিটি",
-              description: "দলের মিশনে অবদান দিন ও সহপাঠীকে উৎসাহ পাঠান",
+              description: "দলের মিশনে অবদান রাখো ও সহপাঠীকে উৎসাহ পাঠাও",
               icon: UsersRound,
               tone: "bg-cyan-100 text-cyan-700",
             },
@@ -548,7 +548,7 @@ export function StudentHomeDashboard() {
               href: "/student/results",
               action: "results",
               title: "ফলাফল ও অগ্রগতি",
-              description: "স্কোর ও শিক্ষকের মতামত দেখুন",
+              description: "স্কোর ও শিক্ষকের মতামত দেখো",
               icon: LineChart,
               tone: "bg-emerald-100 text-emerald-700",
             },

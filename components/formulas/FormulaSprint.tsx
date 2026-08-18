@@ -148,7 +148,7 @@ export function FormulaSprint() {
         setError(
           getApiErrorMessage(
             result.payload,
-            "ফর্মুলা স্প্রিন্ট লোড করা যায়নি। আবার চেষ্টা করুন।",
+            "ফর্মুলা স্প্রিন্ট লোড করা যায়নি। আবার চেষ্টা করো।",
           ),
         );
       }
@@ -195,7 +195,7 @@ export function FormulaSprint() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "আজকের স্প্রিন্ট শুরু করা যায়নি। আবার চেষ্টা করুন।",
+          "আজকের স্প্রিন্ট শুরু করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -236,7 +236,7 @@ export function FormulaSprint() {
         setStatus(refreshed.payload.data);
         setAttempt(refreshed.payload.data.today ?? data.attempt);
       }
-      setMessage(`স্প্রিন্ট সম্পন্ন—আপনি +${data.reward.xp} XP পেয়েছেন।`);
+      setMessage(`স্প্রিন্ট সম্পন্ন—তুমি +${data.reward.xp} XP পেয়েছ।`);
       trackStudentEvent("student_formula_sprint_completed", "formula_sprint", {
         confidence_percent: data.attempt.confidencePercent,
         xp_earned: data.reward.xp,
@@ -247,7 +247,7 @@ export function FormulaSprint() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "স্প্রিন্ট জমা দেওয়া যায়নি। আবার চেষ্টা করুন।",
+          "স্প্রিন্ট জমা দেওয়া যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -340,10 +340,10 @@ export function FormulaSprint() {
                 </p>
                 <span className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-primary-foreground">
                   <Eye className="size-4" />
-                  উত্তর দেখুন
+                  উত্তর দেখো
                 </span>
                 <span className="mt-3 text-xs font-semibold text-muted">
-                  আগে মনে মনে উত্তরটি বলার চেষ্টা করুন
+                  আগে মনে মনে উত্তরটি বলার চেষ্টা করো
                 </span>
               </button>
             ) : (
@@ -359,7 +359,7 @@ export function FormulaSprint() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
                     <p className="text-xs font-black uppercase tracking-wider text-sky-800">
-                      বুঝে রাখুন
+                      বুঝে রাখো
                     </p>
                     <p className="mt-2 text-sm leading-6 text-sky-950">
                       {card.explanation}
@@ -432,7 +432,7 @@ export function FormulaSprint() {
               পাঁচ কার্ডে সূত্র ঝালাই
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-              আগে মনে করার চেষ্টা করুন, তারপর উত্তর উল্টে দেখুন। আপনার
+              আগে মনে করার চেষ্টা করো, তারপর উত্তর উল্টে দেখো। তোমার
               আত্মবিশ্বাস অনুযায়ী আগামী দিনের কার্ড নিজে থেকেই সাজবে।
             </p>
           </div>
@@ -443,7 +443,7 @@ export function FormulaSprint() {
             </div>
             <div className="rounded-xl border border-white/15 bg-white/10 p-3 text-center">
               <p className="text-2xl font-black">{status.level}</p>
-              <p className="text-2xs font-bold text-white/65">আপনার লেভেল</p>
+              <p className="text-2xs font-bold text-white/65">তোমার লেভেল</p>
             </div>
           </div>
         </div>
@@ -503,7 +503,7 @@ export function FormulaSprint() {
               ৫টি ছোট কার্ড, প্রায় ৩ মিনিট
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">
-              সূত্র দেখার আগে মনে করার চেষ্টা করুন। ভুল হলেও সমস্যা নেই—সেই
+              সূত্র দেখার আগে মনে করার চেষ্টা করো। ভুল হলেও সমস্যা নেই—সেই
               কার্ডটিই আগামী স্প্রিন্টে বেশি গুরুত্ব পাবে।
             </p>
             <Button
@@ -511,7 +511,7 @@ export function FormulaSprint() {
               loading={working}
               onClick={startSprint}
             >
-              আজকের স্প্রিন্ট শুরু করুন
+              আজকের স্প্রিন্ট শুরু করো
               <ArrowRight className="size-4" />
             </Button>
           </article>

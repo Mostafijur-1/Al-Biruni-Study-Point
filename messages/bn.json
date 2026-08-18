@@ -21,7 +21,7 @@
       "classStartVal": "কলেজ শুরুর প্রথম মাস থেকেই।",
       "specialOfferLabel": "বিশেষ অফার",
       "specialOfferVal": "কলেজ শুরুর প্রথম মাসের মধ্যে ভর্তি হলে থাকছে প্রতি মাসে বিশেষ ছাড়।",
-      "ctaCourses": "কোর্স দেখুন",
+      "ctaCourses": "কোর্স দেখো",
       "ctaExplore": "MCQ TEST",
       "ctaRegister": "ভর্তি হোন"
     },
@@ -63,7 +63,7 @@
         "regularFee": "৪০০০ টাকা",
         "offerFeeLabel": "মাসিক ফি (অফার)---শর্ত প্রযোজ্য",
         "offerFee": "৩৫০০ টাকা",
-        "cta": "ভর্তি হতে যোগাযোগ করুন"
+        "cta": "ভর্তি হতে যোগাযোগ করো"
       }
     },
     "subjects": {
@@ -137,19 +137,19 @@
     },
     "login": {
       "title": "Login",
-      "subtitle": "আপনার অ্যাকাউন্টে প্রবেশ করুন",
+      "subtitle": "তোমার অ্যাকাউন্টে প্রবেশ করো",
       "identifier": "ফোন বা ইমেইল",
       "password": "পাসওয়ার্ড",
-      "submit": "Login করুন",
+      "submit": "Login করো",
       "submitting": "Login হচ্ছে...",
       "noAccount": "অ্যাকাউন্ট নেই?",
-      "registerLink": "Register করুন",
+      "registerLink": "Register করো",
       "alreadyLoggedInEyebrow": "সক্রিয় সেশন",
-      "alreadyLoggedInTitle": "আপনি ইতিমধ্যে লগইন করা আছেন",
-      "alreadyLoggedInBody": "অন্য অ্যাকাউন্টে লগইন করতে হলে প্রথমে বর্তমান অ্যাকাউন্ট থেকে লগআউট করুন।",
-      "logoutAndLogin": "লগআউট করে আবার লগইন করুন",
+      "alreadyLoggedInTitle": "তুমি ইতিমধ্যে Login করা আছ",
+      "alreadyLoggedInBody": "অন্য অ্যাকাউন্টে Login করতে হলে প্রথমে বর্তমান অ্যাকাউন্ট থেকে Logout করো।",
+      "logoutAndLogin": "Logout করে আবার Login করো",
       "loggingOut": "লগআউট হচ্ছে...",
-      "logoutFailed": "লগআউট করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+      "logoutFailed": "Logout করা যায়নি। আবার চেষ্টা করো।"
     },
     "register": {
       "name": "নাম",
@@ -158,23 +158,23 @@
       "password": "পাসওয়ার্ড",
       "studentClass": "শ্রেণি",
       "hasAccount": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
-      "loginLink": "Login করুন",
-      "continueLogin": "Login পেজে যান",
-      "teacherPrompt": "আপনি শিক্ষক?",
+      "loginLink": "Login করো",
+      "continueLogin": "Login পেজে যাও",
+      "teacherPrompt": "তুমি কি শিক্ষক?",
       "teacherLink": "Teacher Registration",
       "studentPrompt": "শিক্ষার্থী রেজিস্ট্রেশন?",
       "studentLink": "Register",
       "student": {
         "eyebrow": "শিক্ষার্থী",
         "title": "Registration",
-        "subtitle": "আপনার অ্যাকাউন্ট তৈরি করুন।",
-        "submit": "Register করুন",
+        "subtitle": "তোমার অ্যাকাউন্ট তৈরি করো।",
+        "submit": "Register করো",
         "submitting": "তৈরি হচ্ছে..."
       },
       "teacher": {
         "eyebrow": "শিক্ষক",
         "title": "Teacher Registration",
-        "subtitle": "ফোন ও ইমেইল দিয়ে শিক্ষক হিসেবে আবেদন করুন। লগইনের আগে অ্যাডমিন অনুমোদন প্রয়োজন।",
+        "subtitle": "ফোন ও ইমেইল দিয়ে শিক্ষক হিসেবে আবেদন করো। Login-এর আগে Admin-এর অনুমোদন প্রয়োজন।",
         "submit": "Apply as Teacher",
         "submitting": "আবেদন পাঠানো হচ্ছে..."
       },
@@ -194,24 +194,24 @@
     "logout": "Logout",
     "guestAccess": {
       "accessTitle": "লগইন প্রয়োজন",
-      "accessBody": "এক্সেস করতে রেজিস্টার বা লগইন করুন।"
+      "accessBody": "Access করতে Register বা Login করো।"
     }
   },
   "explore": {
     "eyebrow": "ব্রাউজ",
-    "title": "ক্লাস ও কন্টেন্ট দেখুন",
-    "subtitle": "যেকোনো শ্রেণি বেছে নিন — প্রকাশিত কোর্স, ভিডিও, MCQ পরীক্ষা ও CQ অ্যাসাইনমেন্ট দেখতে পারবেন। শুরু করতে রেজিস্টার/লগইন করুন।",
-    "guestHint": "আপনি অতিথি হিসেবে ব্রাউজ করছেন। যেকোনো বাটনে ক্লিক করলে রেজিস্টার/লগইন করতে হবে — পরে আবার এখানেই ফিরে আসবেন।",
+    "title": "ক্লাস ও কন্টেন্ট দেখো",
+    "subtitle": "যেকোনো শ্রেণি বেছে নাও—প্রকাশিত কোর্স, ভিডিও, MCQ Exam ও CQ অ্যাসাইনমেন্ট দেখতে পাবে। শুরু করতে Register বা Login করো।",
+    "guestHint": "তুমি অতিথি হিসেবে ব্রাউজ করছ। যেকোনো বাটনে ক্লিক করলে Register বা Login করতে হবে—পরে আবার এখানেই ফিরে আসবে।",
     "tabs": {
       "exams": "MCQ পরীক্ষা",
       "courses": "কোর্স ও ভিডিও",
       "assignments": "CQ অ্যাসাইনমেন্ট"
     },
     "startExam": "পরীক্ষা শুরু",
-    "watchVideo": "ভিডিও দেখুন",
-    "viewCourses": "কোর্স দেখুন",
+    "watchVideo": "ভিডিও দেখো",
+    "viewCourses": "কোর্স দেখো",
     "openAssignments": "অ্যাসাইনমেন্ট",
-    "loginToAccess": "লগইন করুন",
+    "loginToAccess": "Login করো",
     "emptyExams": "এই শ্রেণিতে এখনও কোনো প্রকাশিত পরীক্ষা নেই।",
     "emptyCourses": "এই শ্রেণিতে এখনও কোনো কোর্স নেই।",
     "emptyVideos": "এই শ্রেণিতে এখনও কোনো ভিডিও নেই।",
@@ -220,8 +220,8 @@
   },
   "contact": {
     "eyebrow": "যোগাযোগ",
-    "title": "আমাদের সাথে যোগাযোগ করুন",
-    "subtitle": "ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে কল করুন অথবা ইমেইল করুন।",
+    "title": "আমাদের সঙ্গে যোগাযোগ করো",
+    "subtitle": "ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে Call করো অথবা Email পাঠাও।",
     "addressTitle": "ঠিকানা",
     "addressLines": [
       "জামগড়া, মোল্লাবাড়ী মসজিদ ও মুন্সী",
@@ -235,7 +235,7 @@
     "hoursTitle": "যোগাযোগের সময়",
     "hours": "সকাল ৭টা থেকে রাত ১১টা পর্যন্ত",
     "ctaRegister": "অনলাইনে ভর্তি হোন",
-    "ctaCall": "এখনই কল করুন",
+    "ctaCall": "এখনই Call করো",
     "mapHint": "Mollabari Mosjid Jamgora Fantasy Kingdom Ashulia Savar Dhaka জামগড়া মোল্লাবাড়ী মসজিদ ফ্যান্টাসি কিংডম আশুলিয়া সাভার ঢাকা"
   },
   "footer": {

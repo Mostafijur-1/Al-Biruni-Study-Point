@@ -49,7 +49,7 @@ export default function StudentToolsPage() {
         <p className="text-xs font-bold uppercase tracking-widest text-accent">শিক্ষার্থী</p>
         <h1 className="mt-2 text-2xl font-black text-primary sm:text-3xl">শেখার সরঞ্জাম</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
-          মূল পড়াশোনার বাইরে প্রয়োজন অনুযায়ী সহায়ক সরঞ্জাম বেছে নিন।
+          মূল পড়াশোনার বাইরে প্রয়োজন অনুযায়ী সহায়ক সরঞ্জাম বেছে নাও।
         </p>
       </header>
 

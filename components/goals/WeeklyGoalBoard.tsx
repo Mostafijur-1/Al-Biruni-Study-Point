@@ -154,7 +154,7 @@ export function WeeklyGoalBoard() {
         setError(
           getApiErrorMessage(
             result.payload,
-            "সাপ্তাহিক লক্ষ্য লোড করা যায়নি। আবার চেষ্টা করুন।",
+            "সাপ্তাহিক লক্ষ্য লোড করা যায়নি। আবার চেষ্টা করো।",
           ),
         );
       }
@@ -220,7 +220,7 @@ export function WeeklyGoalBoard() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "লক্ষ্য তৈরি করা যায়নি। আবার চেষ্টা করুন।",
+          "লক্ষ্য তৈরি করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -238,7 +238,7 @@ export function WeeklyGoalBoard() {
     if (result.ok && isApiSuccess(result.payload)) {
       const data = result.payload.data;
       setBoard(data.board);
-      setMessage(`লক্ষ্য জয়! আপনার অ্যাকাউন্টে +${data.reward.xp} XP যোগ হয়েছে।`);
+      setMessage(`লক্ষ্য জয়! তোমার অ্যাকাউন্টে +${data.reward.xp} XP যোগ হয়েছে।`);
       trackStudentEvent("student_weekly_goal_claimed", "weekly_goal_board", {
         metric: board.current.metric,
         target: board.current.target,
@@ -248,7 +248,7 @@ export function WeeklyGoalBoard() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "পুরস্কার সংগ্রহ করা যায়নি। আবার চেষ্টা করুন।",
+          "পুরস্কার সংগ্রহ করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -304,7 +304,7 @@ export function WeeklyGoalBoard() {
               নিজের লক্ষ্য, নিজের অগ্রযাত্রা
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-              একটি বাস্তবসম্মত লক্ষ্য বেছে নিন। অনুশীলন, ফোকাস বা চ্যালেঞ্জ
+              একটি বাস্তবসম্মত লক্ষ্য বেছে নাও। অনুশীলন, ফোকাস বা চ্যালেঞ্জ
               সম্পন্ন করলেই অগ্রগতি স্বয়ংক্রিয়ভাবে বাড়বে।
             </p>
           </div>
@@ -444,14 +444,14 @@ export function WeeklyGoalBoard() {
                     onClick={claimReward}
                   >
                     <Gift className="size-4" />
-                    +{goal.rewardXp} XP সংগ্রহ করুন
+                    +{goal.rewardXp} XP সংগ্রহ করো
                   </Button>
                 ) : (
                   <Link
                     href={goal.href}
                     className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-primary-foreground transition hover:bg-primary-hover"
                   >
-                    পরের ধাপ শুরু করুন <ArrowRight className="size-4" />
+                    পরের ধাপ শুরু করো <ArrowRight className="size-4" />
                   </Link>
                 )}
               </div>
@@ -469,7 +469,7 @@ export function WeeklyGoalBoard() {
               </span>
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-rose-700">
-                  একটি লক্ষ্য বেছে নিন
+                  একটি লক্ষ্য বেছে নাও
                 </p>
                 <h2 className="mt-1 text-xl font-black text-primary">
                   এই সপ্তাহে কোন জয়টি চান?
@@ -571,11 +571,11 @@ export function WeeklyGoalBoard() {
               onClick={createGoal}
             >
               <Flame className="size-4" />
-              এই লক্ষ্য নিন
+              এই লক্ষ্য নাও
             </Button>
             <p className="mt-3 text-center text-xs leading-5 text-muted">
               প্রতি সপ্তাহে একটি লক্ষ্য নেওয়া যায়। সোমবার নতুন লক্ষ্য বেছে নিতে
-              পারবেন।
+              পারবে।
             </p>
           </article>
 

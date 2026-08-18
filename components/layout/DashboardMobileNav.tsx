@@ -190,7 +190,7 @@ export function DashboardMobileNav() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="মেনু বন্ধ করুন"
+            aria-label="মেনু বন্ধ করো"
             className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
             onClick={() => setMoreOpen(false)}
           />
@@ -217,7 +217,7 @@ export function DashboardMobileNav() {
                 type="button"
                 onClick={() => setMoreOpen(false)}
                 className="grid size-11 place-items-center rounded-xl border border-border bg-secondary text-primary"
-                aria-label="মেনু বন্ধ করুন"
+                aria-label="মেনু বন্ধ করো"
               >
                 <X className="size-5" />
               </button>

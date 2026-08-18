@@ -99,7 +99,7 @@ export function ContactSection({ contact }: ContactSectionProps) {
               {"ভর্তি ও পরামর্শ"}
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
-              {"ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করুন।"}
+              {"ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করো।"}
             </p>
           </div>
 
@@ -125,7 +125,7 @@ export function ContactSection({ contact }: ContactSectionProps) {
             )}
           >
             <MapPin className="size-4" />
-            {"গুগল ম্যাপে দেখুন"}
+            {"গুগল ম্যাপে দেখো"}
           </a>
         </aside>
       </div>

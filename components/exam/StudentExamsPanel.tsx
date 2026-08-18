@@ -88,7 +88,7 @@ export function StudentExamsPanel() {
           {"শ্রেণীকক্ষ পরীক্ষা"}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          {"আপনার শিক্ষকের দেওয়া পরীক্ষাগুলোতে অংশ নিন।"}
+          {"তোমার শিক্ষকের দেওয়া পরীক্ষাগুলোতে অংশ নাও।"}
         </p>
       </div>
 
@@ -141,7 +141,7 @@ export function StudentExamsPanel() {
         <div className="rounded-xl border border-border bg-card p-10 text-center text-muted">
           {activeTab === "available"
             ? "এই মুহূর্তে কোনো নতুন পরীক্ষা নেই।"
-            : "আপনি এখনো কোনো পরীক্ষা সম্পন্ন করেননি।"}
+            : "তুমি এখনো কোনো পরীক্ষা সম্পন্ন করেননি।"}
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -194,7 +194,7 @@ export function StudentExamsPanel() {
                   <Link href={`/student/exams/${exam._id}`} className="block">
                     <Button className="w-full rounded-xl py-2 text-xs font-bold flex items-center justify-center gap-1.5">
                       <Play className="size-3.5 fill-current" />
-                      {"পরীক্ষা শুরু করুন"}
+                      {"পরীক্ষা শুরু করো"}
                     </Button>
                   </Link>
                 ) : (
@@ -203,7 +203,7 @@ export function StudentExamsPanel() {
                       <Link href={"/student/results"} className="block">
                         <Button variant="outline" className="w-full rounded-xl py-2 text-xs font-bold border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100 flex items-center justify-center gap-1.5">
                           <GraduationCap className="size-4" />
-                          {"ফলাফল ও সমাধান দেখুন"}
+                          {"ফলাফল ও সমাধান দেখো"}
                         </Button>
                       </Link>
                     ) : (

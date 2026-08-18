@@ -258,7 +258,7 @@ export function DailyChallengeArena() {
           আজকের চ্যালেঞ্জ প্রস্তুত হচ্ছে
         </h1>
         <p className="mt-2 text-sm text-muted">
-          {status?.message || message || "কিছুক্ষণ পর আবার চেষ্টা করুন।"}
+          {status?.message || message || "কিছুক্ষণ পর আবার চেষ্টা করো।"}
         </p>
       </div>
     );
@@ -297,7 +297,7 @@ export function DailyChallengeArena() {
               loading={busy}
               onClick={() => void submitChallenge()}
             >
-              {secondsLeft === 0 ? "সময় শেষ—জমা দিন" : "জমা দিন"}
+              {secondsLeft === 0 ? "সময় শেষ—জমা দাও" : "জমা দাও"}
             </Button>
           </div>
         </div>
@@ -408,8 +408,8 @@ export function DailyChallengeArena() {
               ডেইলি চ্যালেঞ্জ এরিনা
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
-              ৯০ সেকেন্ডে ৫টি প্রশ্ন। দ্রুত ভাবুন, উত্তর দিন এবং শেষে প্রতিটি
-              সমাধান দেখে শিখে নিন।
+              ৯০ সেকেন্ডে ৫টি প্রশ্ন। দ্রুত ভাবুন, উত্তর দাও এবং শেষে প্রতিটি
+              সমাধান দেখে শিখে নাও।
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
@@ -432,7 +432,7 @@ export function DailyChallengeArena() {
               onClick={() => void startChallenge()}
             >
               <Play className="size-5" />
-              {status.status === "started" ? "চ্যালেঞ্জ চালিয়ে যান" : "আজকের চ্যালেঞ্জ শুরু করুন"}
+              {status.status === "started" ? "চ্যালেঞ্জ চালিয়ে যাও" : "আজকের চ্যালেঞ্জ শুরু করো"}
             </Button>
           </div>
           <div className="mx-auto grid size-40 place-items-center rounded-full border-4 border-white/20 bg-white/10 text-center shadow-2xl backdrop-blur">
@@ -476,7 +476,7 @@ export function DailyChallengeArena() {
         <article className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5">
           <div className="flex items-center gap-2">
             <Trophy className="size-6 text-violet-700" />
-            <h2 className="text-lg font-black text-primary">কীভাবে XP পাবেন</h2>
+            <h2 className="text-lg font-black text-primary">কীভাবে XP পাবে</h2>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-center">
             <div className="rounded-xl bg-white p-3">

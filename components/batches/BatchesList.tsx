@@ -130,7 +130,7 @@ export function BatchesList({ dict }: BatchesListProps) {
                     "w-full justify-center gap-1.5 rounded-xl font-bold"
                   )}
                 >
-                  {"ভর্তি হতে যোগাযোগ করুন"}
+                  {"ভর্তি হতে যোগাযোগ করো"}
                   <ArrowRight className="size-4" />
                 </Link>
               </div>

@@ -285,7 +285,7 @@ function StudentPracticeDashboard() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-accent">
-            {"শিক্ষার্থী প্যানেল"}
+            {"শিক্ষার্থী প্যাওেল"}
           </p>
           <h1 className="mt-2 font-display text-3xl font-bold text-primary sm:text-4xl">
             {"অধ্যায়-ভিত্তিক এমসিকিউ পরীক্ষা"}
@@ -350,7 +350,7 @@ function StudentPracticeDashboard() {
         <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">{error}</div>
       ) : statusList.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-6 text-center text-muted">
-          {"আপনার ক্লাসের জন্য কোনো mcq test প্রস্তুত নেই।"}
+          {"তোমার ক্লাসের জন্য কোনো mcq test প্রস্তুত নেই।"}
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2">

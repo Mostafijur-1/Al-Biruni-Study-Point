@@ -33,31 +33,31 @@ export function PwaInstallPrompt() {
 
   // Localized texts
   const t = {
-    title: isBengali ? "ABSP অ্যাপ ইনস্টল করুন" : "Install ABSP App",
+    title: isBengali ? "ABSP অ্যাপ ইনস্টল করো" : "Install ABSP App",
     desc: isBengali
-      ? "দ্রুত MCQ পরীক্ষা ও ক্লাসের আপডেট পেতে আমাদের অফিশিয়াল অ্যাপটি ইনস্টল করুন।"
+      ? "দ্রুত MCQ পরীক্ষা ও ক্লাসের আপডেট পেতে আমাদের অফিশিয়াল অ্যাপটি ইনস্টল করো।"
       : "Install Al-Biruni Study Point on your device for instant access, classes, and study alerts.",
     iosInstallDesc: isBengali
-      ? "অ্যাপটি ইনস্টল করতে শেয়ার বাটন চেপে 'Add to Home Screen' (বা হোম স্ক্রিনে যোগ করুন) সিলেক্ট করুন।"
+      ? "অ্যাপটি ইনস্টল করতে শেয়ার বাটন চেপে 'Add to Home Screen' (বা হোম স্ক্রিনে যোগ করো) বেছে নাও।"
       : "To install the app, tap the Share button and select 'Add to Home Screen'.",
     firefoxInstallDesc: isBengali
-      ? "অ্যাপটি ইনস্টল করতে ৩-ডট মেনু চেপে 'Install' (বা হোম স্ক্রিনে যোগ করুন) সিলেক্ট করুন।"
+      ? "অ্যাপটি ইনস্টল করতে ৩-ডট মেনু চেপে 'Install' (বা হোম স্ক্রিনে যোগ করো) বেছে নাও।"
       : "To install the app, tap the 3-dot menu and select 'Install' or 'Add to Home Screen'.",
-    installBtn: isBengali ? "ইনস্টল করুন" : "Install App",
+    installBtn: isBengali ? "ইনস্টল করো" : "Install App",
     dismissBtn: isBengali ? "পরে" : "Later",
-    notifTitle: isBengali ? "নোটিফিকেশন চালু করুন" : "Enable Alerts",
+    notifTitle: isBengali ? "নোটিফিকেশন চালু করো" : "Enable Alerts",
     notifDesc: isBengali
       ? "ক্লাস এবং পরীক্ষার নোটিফিকেশন সরাসরি ফোনে পেতে চান?"
       : "Get real-time updates and class reminders directly on your phone.",
-    allowNotif: isBengali ? "চালু করুন" : "Enable Notifications",
-    inAppTitle: isBengali ? "ব্রাউজারে ওপেন করুন" : "Open in Default Browser",
+    allowNotif: isBengali ? "চালু করো" : "Enable Notifications",
+    inAppTitle: isBengali ? "ব্রাউজারে খোলো" : "Open in Default Browser",
     inAppDescAndroid: isBengali
-      ? "সম্পূর্ণ ফিচার, ইনস্টলেশন ও নোটিফিকেশন পেতে অ্যাপটি আপনার ডিফল্ট ব্রাউজারে (যেমন ক্রোম, এজ, ফায়ারফক্স) ওপেন করুন।"
+      ? "সম্পূর্ণ ফিচার, ইনস্টলেশন ও নোটিফিকেশন পেতে অ্যাপটি তোমার ডিফল্ট ব্রাউজারে (যেমন ক্রোম, এজ, ফায়ারফক্স) খোলো।"
       : "Open this page in your default browser (like Chrome, Edge, Firefox) to install the app and enable alerts.",
     inAppDescIos: isBengali
-      ? "অ্যাপটি ইনস্টল করতে নিচের শেয়ার বা ৩-ডট আইকন চেপে 'Open in Safari' সিলেক্ট করুন।"
+      ? "অ্যাপটি ইনস্টল করতে নিচের শেয়ার বা ৩-ডট আইকন চেপে 'Open in Safari' বেছে নাও।"
       : "To install the app, tap the share or '...' button and select 'Open in Safari'.",
-    openBrowserBtn: isBengali ? "ব্রাউজারে ওপেন করুন" : "Open in Browser",
+    openBrowserBtn: isBengali ? "ব্রাউজারে খোলো" : "Open in Browser",
   };
 
   React.useEffect(() => {
@@ -279,7 +279,7 @@ export function PwaInstallPrompt() {
         await subscribeToPushNotifications();
         new Notification(isBengali ? "অভিনন্দন!" : "Awesome!", {
           body: isBengali
-            ? "ABSP থেকে এখন আপনি সকল প্রয়োজনীয় নোটিফিকেশন সরাসরি পাবেন।"
+            ? "ABSP থেকে এখন তুমি সব প্রয়োজনীয় নোটিফিকেশন সরাসরি পাবে।"
             : "You will now receive exam updates and alerts directly from ABSP.",
           icon: "/icon.png",
         });

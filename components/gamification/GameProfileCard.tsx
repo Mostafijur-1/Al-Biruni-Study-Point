@@ -151,7 +151,7 @@ export function GameProfileCard() {
         href="/student/game"
         className="flex items-center justify-center gap-2 border-t border-violet-100 bg-violet-700 px-5 py-3 text-xs font-black text-white transition hover:bg-violet-800"
       >
-        কোয়েস্ট ও রিওয়ার্ড দেখতে গেম হাবে যান
+        কোয়েস্ট ও রিওয়ার্ড দেখতে গেম হাবে যাও
         <ArrowRight className="size-4" />
       </Link>
     </section>

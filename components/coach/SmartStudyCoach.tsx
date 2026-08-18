@@ -181,7 +181,7 @@ export function SmartStudyCoach() {
         setError(
           getApiErrorMessage(
             result.payload,
-            "স্টাডি কোচ লোড করা যায়নি। আবার চেষ্টা করুন।",
+            "স্টাডি কোচ লোড করা যায়নি। আবার চেষ্টা করো।",
           ),
         );
       }
@@ -217,7 +217,7 @@ export function SmartStudyCoach() {
         previous ? { ...previous, current: checkIn } : previous,
       );
       setEditing(false);
-      setMessage("আপনার সময় ও অগ্রগতি দেখে আজকের সেরা পরবর্তী কাজটি সাজানো হয়েছে।");
+      setMessage("তোমার সময় ও অগ্রগতি দেখে আজকের সেরা পরবর্তী কাজটি সাজানো হয়েছে।");
       trackStudentEvent("student_coach_recommendation_created", "study_coach", {
         available_minutes: availableMinutes,
         energy,
@@ -228,7 +228,7 @@ export function SmartStudyCoach() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "পরামর্শ তৈরি করা যায়নি। আবার চেষ্টা করুন।",
+          "পরামর্শ তৈরি করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -268,7 +268,7 @@ export function SmartStudyCoach() {
     setError(
       getApiErrorMessage(
         result.payload,
-        "প্রস্তাবিত কাজটি খোলা যায়নি। আবার চেষ্টা করুন।",
+        "প্রস্তাবিত কাজটি খোলা যায়নি। আবার চেষ্টা করো।",
       ),
     );
     setWorking(false);
@@ -321,7 +321,7 @@ export function SmartStudyCoach() {
             এখন কী পড়বেন—সেটা আর ভাবতে হবে না
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
-            আপনার সময়, শক্তি এবং বাস্তব শেখার অগ্রগতি মিলিয়ে সবচেয়ে কাজে লাগবে
+            তোমার সময়, শক্তি এবং বাস্তব শেখার অগ্রগতি মিলিয়ে সবচেয়ে কাজে লাগবে
             এমন একটি পরবর্তী পদক্ষেপ বেছে দেয়।
           </p>
         </div>
@@ -404,7 +404,7 @@ function ProgressSignals({ signals }: { signals: CoachSignalsSummary }) {
             ? `${signals.weakChapter.chapter} · দক্ষতা ${signals.weakChapter.score}%`
             : signals.weeklyGoal
               ? `আর ${signals.weeklyGoal.remaining} ${signals.weeklyGoal.unit}`
-              : "নিয়মিত শেখা ধরে রাখুন"
+              : "নিয়মিত শেখা ধরে রাখো"
         }
         tone="border-sky-200 bg-sky-50/70 text-sky-800"
       />
@@ -471,10 +471,10 @@ function CoachPreferences({
             ছোট চেক-ইন
           </p>
           <h2 className="mt-1 text-xl font-black text-primary">
-            আজকের অবস্থা বলুন
+            আজকের অবস্থা বলো
           </h2>
           <p className="mt-1 text-sm text-muted">
-            তিনটি উত্তরেই আপনার জন্য উপযুক্ত পরবর্তী কাজ সাজানো হবে।
+            তিনটি উত্তরেই তোমার জন্য উপযুক্ত পরবর্তী কাজ সাজানো হবে।
           </p>
         </div>
       </div>
@@ -574,7 +574,7 @@ function CoachPreferences({
       <div className="mt-7 flex flex-wrap justify-end gap-2">
         {isEditing && (
           <Button variant="outline" className="rounded-xl" onClick={onCancel}>
-            আগের পরামর্শ রাখুন
+            আগের পরামর্শ রাখো
           </Button>
         )}
         <Button
@@ -644,12 +644,12 @@ function CoachRecommendationCard({
             </span>
             <span className="rounded-full border border-current/10 bg-white/60 px-3 py-1.5 text-xs font-black text-primary">
               <Brain className="mr-1.5 inline size-4" />
-              আপনার অগ্রগতি অনুযায়ী
+              তোমার অগ্রগতি অনুযায়ী
             </span>
             {checkIn.launchedAt && (
               <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-800">
                 <CheckCircle2 className="mr-1.5 inline size-4" />
-                আজ একবার শুরু করেছেন
+                আজ একবার শুরু করেছ
               </span>
             )}
           </div>
@@ -661,7 +661,7 @@ function CoachRecommendationCard({
             loading={working}
             onClick={onLaunch}
           >
-            এই কাজ শুরু করুন
+            এই কাজ শুরু করো
             <ArrowRight className="size-4" />
           </Button>
           <Button variant="outline" className="rounded-xl bg-white/60" onClick={onEdit}>

@@ -114,7 +114,7 @@ export function FocusStudio() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "ফোকাস স্টুডিও লোড করা যায়নি। আবার চেষ্টা করুন।",
+          "ফোকাস স্টুডিও লোড করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -132,7 +132,7 @@ export function FocusStudio() {
         setError(
           getApiErrorMessage(
             result.payload,
-            "ফোকাস স্টুডিও লোড করা যায়নি। আবার চেষ্টা করুন।",
+            "ফোকাস স্টুডিও লোড করা যায়নি। আবার চেষ্টা করো।",
           ),
         );
       }
@@ -223,7 +223,7 @@ export function FocusStudio() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "সেশন শুরু করা যায়নি। আবার চেষ্টা করুন।",
+          "সেশন শুরু করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -243,8 +243,8 @@ export function FocusStudio() {
       const xp = result.payload.data.reward?.xp ?? current.xpEarned;
       setNotice(
         xp > 0
-          ? `দারুণ! সেশন সম্পন্ন হয়েছে—আপনি +${xp} XP পেয়েছেন।`
-          : "দারুণ! আজকের XP সীমা পূর্ণ হলেও সেশনটি আপনার অগ্রগতিতে যোগ হয়েছে।",
+          ? `দারুণ! সেশন সম্পন্ন হয়েছে—তুমি +${xp} XP পেয়েছ।`
+          : "দারুণ! আজকের XP সীমা পূর্ণ হলেও সেশনটি তোমার অগ্রগতিতে যোগ হয়েছে।",
       );
       trackStudentEvent("student_focus_completed", "focus_studio", {
         subject: current.subject,
@@ -258,7 +258,7 @@ export function FocusStudio() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "সেশন সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।",
+          "সেশন সম্পন্ন করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -275,13 +275,13 @@ export function FocusStudio() {
       body: JSON.stringify({ sessionId: current.id }),
     });
     if (result.ok && isApiSuccess(result.payload)) {
-      setNotice("সেশনটি বন্ধ করা হয়েছে। প্রস্তুত হলে আবার শুরু করুন।");
+      setNotice("সেশনটি বন্ধ করা হয়েছে। প্রস্তুত হলে আবার শুরু করো।");
       await loadStatus();
     } else {
       setError(
         getApiErrorMessage(
           result.payload,
-          "সেশন বন্ধ করা যায়নি। আবার চেষ্টা করুন।",
+          "সেশন বন্ধ করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -314,7 +314,7 @@ export function FocusStudio() {
         </h1>
         <p className="mt-2 text-sm text-red-800">{error}</p>
         <Button className="mt-5 rounded-xl" onClick={() => loadStatus(true)}>
-          আবার চেষ্টা করুন
+          আবার চেষ্টা করো
         </Button>
       </section>
     );
@@ -390,7 +390,7 @@ export function FocusStudio() {
                     </p>
                   )}
                   <p className="mt-2 text-sm font-bold text-emerald-100/75">
-                    {timerFinished ? "সেশন শেষ—নিজেকে মূল্যায়ন করুন" : "শুধু এই কাজেই মন দিন"}
+                    {timerFinished ? "সেশন শেষ—নিজেকে মূল্যায়ন করো" : "শুধু এই কাজেই মন দাও"}
                   </p>
                 </div>
               </div>
@@ -399,7 +399,7 @@ export function FocusStudio() {
             {!timerFinished ? (
               <div className="mt-6">
                 <p className="text-xs font-semibold leading-5 text-white/60">
-                  টাইমার শেষ হওয়া পর্যন্ত এই সেশনটি চালু রাখুন। চাইলে অন্য ট্যাবে
+                  টাইমার শেষ হওয়া পর্যন্ত এই সেশনটি চালু রাখো। চাইলে অন্য ট্যাবে
                   পড়াশোনা করতে পারেন।
                 </p>
                 <Button
@@ -409,7 +409,7 @@ export function FocusStudio() {
                   onClick={cancelSession}
                 >
                   <X className="size-4" />
-                  সেশন বন্ধ করুন
+                  সেশন বন্ধ করো
                 </Button>
               </div>
             ) : (
@@ -441,7 +441,7 @@ export function FocusStudio() {
                   onClick={completeSession}
                 >
                   <CheckCircle2 className="size-4" />
-                  সেশন সম্পন্ন করুন
+                  সেশন সম্পন্ন করো
                 </Button>
               </div>
             )}
@@ -451,8 +451,8 @@ export function FocusStudio() {
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-900">
           <UsersRound className="size-5 shrink-0 text-emerald-700" />
           {status.activeClassmates > 1
-            ? `আপনিসহ ${status.activeClassmates} জন সহপাঠী এখন ফোকাস করছে`
-            : "আপনি এখন আপনার ক্লাসের ফোকাস যাত্রা শুরু করেছেন"}
+            ? `তোমাসহ ${status.activeClassmates} জন সহপাঠী এখন ফোকাস করছে`
+            : "তুমি এখন তোমার ক্লাসের ফোকাস যাত্রা শুরু করেছ"}
         </div>
       </section>
     );
@@ -471,17 +471,17 @@ export function FocusStudio() {
             ফোকাস স্টুডিও
           </div>
           <h1 className="mt-3 text-2xl font-black sm:text-4xl">
-            কম সময়ে মনোযোগ দিয়ে শিখুন
+            কম সময়ে মনোযোগ দিয়ে শেখো
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-            একটি বিষয়, একটি লক্ষ্য, একটি টাইমার। সেশন শেষ করলে XP পাবেন এবং
-            আপনার শেখার ধারাবাহিকতাও বাড়বে।
+            একটি বিষয়, একটি লক্ষ্য, একটি টাইমার। সেশন শেষ করলে XP পাবে এবং
+            তোমার শেখার ধারাবাহিকতাও বাড়বে।
           </p>
           <div className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold">
             <UsersRound className="size-4 text-emerald-200" />
             {status.activeClassmates > 0
               ? `${status.activeClassmates} জন সহপাঠী এখন ফোকাস করছে`
-              : "প্রথম সেশনটি আপনিই শুরু করুন"}
+              : "প্রথম সেশনটি তুমিই শুরু করো"}
           </div>
         </div>
       </div>
@@ -563,7 +563,7 @@ export function FocusStudio() {
                 নতুন সেশন
               </p>
               <h2 className="mt-1 text-xl font-black text-primary">
-                আজ কী নিয়ে ফোকাস করবেন?
+                আজ কী নিয়ে ফোকাস করবে?
               </h2>
             </div>
           </div>
@@ -641,7 +641,7 @@ export function FocusStudio() {
             onClick={startSession}
           >
             <Play className="size-4 fill-current" />
-            ফোকাস সেশন শুরু করুন
+            ফোকাস সেশন শুরু করো
           </Button>
           <p className="mt-3 text-center text-xs leading-5 text-muted">
             সম্পন্ন মিনিট অনুযায়ী দিনে সর্বোচ্চ ৬০ XP পাওয়া যাবে।

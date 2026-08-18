@@ -106,12 +106,12 @@ export function LearningInsightsDashboard() {
       <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-violet-900 via-primary to-sky-800 p-5 text-white shadow-[var(--shadow-lg)] sm:p-7">
         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-yellow">
           <Sparkles className="size-4" />
-          আপনার জন্য সাজানো
+          তোমার জন্য সাজানো
         </div>
-        <h1 className="mt-3 text-2xl font-black sm:text-4xl">শেখার প্ল্যান ও দক্ষতার মানচিত্র</h1>
+        <h1 className="mt-3 text-2xl font-black sm:text-4xl">শেখার প্ল্যাও ও দক্ষতার মানচিত্র</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-          আপনার অনুশীলনের ফল থেকে কোন অধ্যায় শক্তিশালী, কোথায় আরও কাজ দরকার
-          এবং আজ কী করবেন—সব এক জায়গায়।
+          তোমার অনুশীলনের ফল থেকে কোন অধ্যায় শক্তিশালী, কোথায় আরও কাজ দরকার
+          এবং আজ কী করবে—সব এক জায়গায়।
         </p>
       </div>
 
@@ -140,7 +140,7 @@ export function LearningInsightsDashboard() {
             {mastery?.recommendation?.score ?? 0}%
           </p>
           <p className="truncate text-xs font-bold text-muted">
-            পরবর্তী লক্ষ্য: {mastery?.recommendation?.chapter ?? "প্র্যাকটিস শুরু করুন"}
+            পরবর্তী লক্ষ্য: {mastery?.recommendation?.chapter ?? "প্র্যাকটিস শুরু করো"}
           </p>
         </article>
       </div>
@@ -239,7 +239,7 @@ export function LearningInsightsDashboard() {
                         href="/student/practice"
                         className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-red hover:underline"
                       >
-                        এই অধ্যায় অনুশীলন করুন
+                        এই অধ্যায় অনুশীলন করো
                         <ArrowRight className="size-3.5" />
                       </Link>
                     )}
@@ -260,7 +260,7 @@ export function LearningInsightsDashboard() {
             href="/student/practice"
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
           >
-            প্র্যাকটিস শুরু করুন
+            প্র্যাকটিস শুরু করো
             <ArrowRight className="size-4" />
           </Link>
         </div>

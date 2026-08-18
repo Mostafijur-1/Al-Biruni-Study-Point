@@ -7,7 +7,7 @@ export default function StudentAssignmentsPage() {
       <PageHeader
         eyebrow="শিক্ষার্থী"
         title="CQ অ্যাসাইনমেন্ট"
-        description="শুধু আপনার শ্রেণির জন্য প্রকাশিত অ্যাসাইনমেন্ট।"
+        description="শুধু তোমার শ্রেণির জন্য প্রকাশিত অ্যাসাইনমেন্ট।"
       />
       <StudentClassAssignments />
     </section>

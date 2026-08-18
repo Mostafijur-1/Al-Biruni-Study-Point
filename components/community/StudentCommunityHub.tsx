@@ -172,7 +172,7 @@ export function StudentCommunityHub() {
         { xp: result.payload.data.reward.xp },
       );
       setMessage(
-        `অভিনন্দন! দলের সঙ্গে মিশন শেষ করে ${result.payload.data.reward.xp} XP পেয়েছেন।`,
+        `অভিনন্দন! দলের সঙ্গে মিশন শেষ করে ${result.payload.data.reward.xp} XP পেয়েছ।`,
       );
       await refresh();
     } else {
@@ -225,8 +225,8 @@ export function StudentCommunityHub() {
           </div>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">ক্লাস কমিউনিটি</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-            সহপাঠীদের সঙ্গে একটি লক্ষ্য পূরণ করুন, তাদের চেষ্টাকে উৎসাহ দিন এবং
-            নিজের শেখার অবদান উদ্‌যাপন করুন।
+            সহপাঠীদের সঙ্গে একটি লক্ষ্য পূরণ করো, তাদের চেষ্টাকে উৎসাহ দাও এবং
+            নিজের শেখার অবদান উদ্‌যাপন করো।
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
@@ -289,7 +289,7 @@ export function StudentCommunityHub() {
 
           <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-primary">আপনার অবদান</span>
+              <span className="text-xs font-black text-primary">তোমার অবদান</span>
               <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-black text-cyan-800">
                 {mission.studentContribution} প্রশ্ন
               </span>
@@ -301,7 +301,7 @@ export function StudentCommunityHub() {
               />
             </div>
             <p className="mt-2 text-2xs font-semibold leading-5 text-muted">
-              রিওয়ার্ড পেতে এই সপ্তাহে অন্তত ১০টি প্রশ্নের উত্তর দিন।
+              রিওয়ার্ড পেতে এই সপ্তাহে অন্তত ১০টি প্রশ্নের উত্তর দাও।
             </p>
             <div className="mt-4">
               {mission.claimed ? (
@@ -315,13 +315,13 @@ export function StudentCommunityHub() {
                   onClick={() => void claimMission()}
                 >
                   <Gift className="size-4" />
-                  {mission.rewardXp} XP নিন
+                  {mission.rewardXp} XP নাও
                 </Button>
               ) : (
                 <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/70 px-3 py-2.5 text-xs font-black text-muted">
                   <LockKeyhole className="size-4" />
                   {mission.complete
-                    ? "নিজের ১০ প্রশ্ন পূরণ করুন"
+                    ? "নিজের ১০ প্রশ্ন পূরণ করো"
                     : "ক্লাস লক্ষ্য পূরণের অপেক্ষা"}
                 </div>
               )}
@@ -351,13 +351,13 @@ export function StudentCommunityHub() {
             <div className="mt-4 rounded-xl border border-dashed border-cyan-300 bg-cyan-50 p-5 text-center">
               <Zap className="mx-auto size-7 text-cyan-600" />
               <p className="mt-2 text-sm font-black text-primary">
-                প্রথম অবদান রাখুন
+                প্রথম অবদান রাখো
               </p>
               <Link
                 href="/student/practice"
                 className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-800 hover:underline"
               >
-                অনুশীলন শুরু করুন <ArrowRight className="size-3.5" />
+                অনুশীলন শুরু করো <ArrowRight className="size-3.5" />
               </Link>
             </div>
           ) : (
@@ -378,7 +378,7 @@ export function StudentCommunityHub() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black text-primary">
-                        {member.displayName}{member.isCurrentStudent ? " (আপনি)" : ""}
+                        {member.displayName}{member.isCurrentStudent ? " (তুমি)" : ""}
                       </p>
                       <p className="text-2xs font-semibold text-muted">
                         {member.contribution} প্রশ্ন · {member.activeDays} সক্রিয় দিন ·{" "}
@@ -429,11 +429,11 @@ export function StudentCommunityHub() {
           <article className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5">
             <div className="flex items-center gap-2">
               <MessageCircleHeart className="size-6 text-rose-600" />
-              <h2 className="text-lg font-black text-primary">আপনার উৎসাহ বাক্স</h2>
+              <h2 className="text-lg font-black text-primary">তোমার উৎসাহ বাক্স</h2>
             </div>
             {data.inbox.length === 0 ? (
               <p className="mt-3 rounded-xl bg-white/70 p-4 text-sm leading-6 text-muted">
-                সহপাঠীর উৎসাহ এলে এখানে দেখা যাবে। আগে আপনি কাউকে একটি হাই ফাইভ
+                সহপাঠীর উৎসাহ এলে এখানে দেখা যাবে। আগে তুমি কাউকে একটি হাই ফাইভ
                 পাঠাতে পারেন।
               </p>
             ) : (
@@ -478,13 +478,13 @@ export function StudentCommunityHub() {
       <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-center">
         <Target className="mx-auto size-6 text-cyan-700" />
         <p className="mt-2 text-sm font-black text-primary">
-          দলের পরবর্তী প্রশ্নটি আপনার হতে পারে
+          দলের পরবর্তী প্রশ্নটি তোমার হতে পারে
         </p>
         <Link
           href="/student/practice"
           className="mt-2 inline-flex items-center gap-1 text-xs font-black text-cyan-800 hover:underline"
         >
-          এখনই অনুশীলন করুন <ArrowRight className="size-3.5" />
+          এখনই অনুশীলন করো <ArrowRight className="size-3.5" />
         </Link>
       </div>
     </section>

@@ -145,7 +145,7 @@ export function StudentClassCourses({ level }: Props) {
           <p className="text-sm text-muted">{courseMessage}</p>
         ) : courses.length === 0 ? (
           <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-            {"আপনার শ্রেণির জন্য এখনও কোনো কোর্স নেই।"}
+            {"তোমার শ্রেণির জন্য এখনো কোনো কোর্স নেই।"}
           </p>
         ) : (
           <ul className="grid gap-3">
@@ -172,7 +172,7 @@ export function StudentClassCourses({ level }: Props) {
           <p className="text-sm text-muted">{videoMessage}</p>
         ) : videos.length === 0 ? (
           <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-            {"আপনার শ্রেণির জন্য এখনও কোনো ভিডিও নেই।"}
+            {"তোমার শ্রেণির জন্য এখনো কোনো ভিডিও নেই।"}
           </p>
         ) : (
           <ul className="grid gap-3">
@@ -204,7 +204,7 @@ export function StudentClassCourses({ level }: Props) {
                     returnUrl={`/student/courses?level=${level}`}
                     className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
                   >
-                    {"ভিডিও দেখুন"}
+                    {"ভিডিও দেখো"}
                   </AuthGateLink>
                 ) : (
                   <Link
@@ -212,10 +212,10 @@ export function StudentClassCourses({ level }: Props) {
                     className="mt-2 inline-block text-sm font-semibold text-brand-red hover:underline"
                   >
                     {video.progress?.status === "completed"
-                      ? "আবার দেখুন"
+                      ? "আবার দেখো"
                       : video.progress
-                        ? "চালিয়ে যান"
-                        : "ভিডিও দেখুন"}
+                        ? "চালিয়ে যাও"
+                        : "ভিডিও দেখো"}
                   </Link>
                 )}
               </li>

@@ -21,12 +21,12 @@ export default async function StudentCoursesPage({ searchParams }: StudentCourse
         title="আমার কোর্স ও ক্লাস"
         description={
           <p>
-            শুধু আপনার নিবন্ধিত শ্রেণির কনটেন্ট দেখানো হয়।{" "}
+            শুধু তোমার নিবন্ধিত শ্রেণির কনটেন্ট দেখানো হয়।{" "}
             <Link
               href={otherLevelHref}
               className="font-semibold text-primary underline underline-offset-2 hover:opacity-80"
             >
-              বরং {otherLevel} দেখুন
+              বরং {otherLevel} দেখো
             </Link>
           </p>
         }

@@ -196,7 +196,7 @@ export function VideoLessonPlayer({ videoId }: { videoId: string }) {
             <div>
               <PlayCircle className="mx-auto size-14 text-brand-yellow" />
               <p className="mt-3 text-sm font-bold">
-                এই ভিডিওটি মূল উৎসে খুলে দেখুন
+                এই ভিডিওটি মূল উৎসে খুলে দেখো
               </p>
               <a
                 href={data.video.videoUrl}
@@ -204,7 +204,7 @@ export function VideoLessonPlayer({ videoId }: { videoId: string }) {
                 rel="noopener noreferrer"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-yellow px-4 py-2.5 text-sm font-black text-primary"
               >
-                ভিডিও খুলুন
+                ভিডিও খোলো
                 <ExternalLink className="size-4" />
               </a>
             </div>
@@ -238,7 +238,7 @@ export function VideoLessonPlayer({ videoId }: { videoId: string }) {
             ) : (
               <CheckCircle2 className="size-4" />
             )}
-            {completed ? "ক্লাস সম্পন্ন" : "দেখা শেষ হিসেবে চিহ্নিত করুন"}
+            {completed ? "ক্লাস সম্পন্ন" : "দেখা শেষ হিসেবে চিহ্নিত করো"}
           </button>
         </div>
         <div className="mt-5">

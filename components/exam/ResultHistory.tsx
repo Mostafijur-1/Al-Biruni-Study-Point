@@ -60,7 +60,7 @@ const reportIssues: Array<{ id: ReportIssue; label: string }> = [
   { id: "unclear-question", label: "প্রশ্নটি অস্পষ্ট" },
   { id: "option-problem", label: "অপশনে সমস্যা" },
   { id: "explanation-problem", label: "ব্যাখ্যায় সমস্যা" },
-  { id: "other", label: "অন্যান্য" },
+  { id: "other", label: "অন্যাও্য" },
 ];
 
 const optionLabels = ["ক", "খ", "গ", "ঘ"];
@@ -92,7 +92,7 @@ export function ResultHistory() {
     "/api/mcq/results",
     {
       loadingMessage: "ফলাফল লোড হচ্ছে...",
-      errorMessage: "ফলাফল লোড করা যায়নি। আবার চেষ্টা করুন।",
+      errorMessage: "ফলাফল লোড করা যায়নি। আবার চেষ্টা করো।",
     },
   );
   const results = data?.results ?? emptyResults;
@@ -197,7 +197,7 @@ export function ResultHistory() {
         setDetailError(getApiErrorMessage(payload, "উত্তরপত্র লোড করা যায়নি।"));
       }
     } catch {
-      setDetailError("ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।");
+      setDetailError("ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করো।");
     } finally {
       setDetailLoading(false);
     }
@@ -225,7 +225,7 @@ export function ResultHistory() {
         setReportError(getApiErrorMessage(payload, "রিপোর্ট জমা দেওয়া যায়নি।"));
       }
     } catch {
-      setReportError("ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।");
+      setReportError("ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করো।");
     } finally {
       setReportSubmitting(false);
     }
@@ -260,7 +260,7 @@ export function ResultHistory() {
     <div className="space-y-6">
       <aside className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm"><Lightbulb className="size-4.5" /></span>
-        <div><p className="text-sm font-extrabold text-primary">ফলাফল বিশ্লেষণ করে পরবর্তী প্রস্তুতি ঠিক করুন</p><p className="mt-1 text-sm leading-6 text-muted">উত্তরপত্রে আপনার উত্তর, সঠিক উত্তর ও সহজ ব্যাখ্যা পাশাপাশি দেখানো হয়েছে। কোনো ভুল তথ্য চোখে পড়লে প্রশ্নটি রিপোর্ট করতে পারবেন।</p></div>
+        <div><p className="text-sm font-extrabold text-primary">ফলাফল বিশ্লেষণ করে পরবর্তী প্রস্তুতি ঠিক করো</p><p className="mt-1 text-sm leading-6 text-muted">উত্তরপত্রে তোমার উত্তর, সঠিক উত্তর ও সহজ ব্যাখ্যা পাশাপাশি দেখানো হয়েছে। কোনো ভুল তথ্য চোখে পড়লে প্রশ্নটি রিপোর্ট করতে পারবে।</p></div>
       </aside>
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm" aria-label="ফলাফল খোঁজা ও ফিল্টার">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -279,7 +279,7 @@ export function ResultHistory() {
               <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="বিষয় বা পরীক্ষার নাম খুঁজুন" className="h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-3 text-sm font-medium outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30" />
             </label>
             <label className="relative sm:w-48">
-              <span className="sr-only">বিষয় নির্বাচন করুন</span>
+              <span className="sr-only">বিষয় নির্বাচন করো</span>
               <select value={selectedSubject} onChange={(event) => setSelectedSubject(event.target.value)} className="h-11 w-full appearance-none rounded-xl border border-border bg-surface px-3 pr-9 text-sm font-semibold outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30">
                 <option value="all">সব বিষয়</option>{subjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}
               </select>
@@ -290,7 +290,7 @@ export function ResultHistory() {
       </section>
 
       {filteredResults.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center"><Search className="mx-auto size-7 text-muted" /><p className="mt-3 font-bold text-primary">মিলে যায় এমন ফলাফল পাওয়া যায়নি</p><p className="mt-1 text-sm text-muted">খোঁজার শব্দ বা নির্বাচিত বিষয় পরিবর্তন করে আবার দেখুন।</p></div>
+        <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center"><Search className="mx-auto size-7 text-muted" /><p className="mt-3 font-bold text-primary">মিলে যায় এমন ফলাফল পাওয়া যায়নি</p><p className="mt-1 text-sm text-muted">খোঁজার শব্দ বা নির্বাচিত বিষয় পরিবর্তন করে আবার দেখো।</p></div>
       ) : (
         <section className="grid gap-4 xl:grid-cols-2" aria-label="ফলাফলের তালিকা">
           {filteredResults.map((result) => {
@@ -312,7 +312,7 @@ export function ResultHistory() {
                   <div><p className="text-xs font-semibold text-muted">সময়</p><p className="mt-1 text-base font-black text-primary">{formatDuration(result.timeTaken)}</p></div>
                 </div>
                 {result.teacherComment && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5"><p className="flex items-center gap-2 text-xs font-extrabold text-amber-800"><MessageSquareText className="size-4" /> শিক্ষকের মন্তব্য</p><p className="mt-2 text-sm leading-6 text-amber-950">{result.teacherComment}</p></div>}
-                <Button type="button" onClick={() => openDetails(result._id)} className="mt-5 min-h-11 w-full rounded-xl font-bold"><Eye className="size-4" /> উত্তরপত্র ও ব্যাখ্যা দেখুন</Button>
+                <Button type="button" onClick={() => openDetails(result._id)} className="mt-5 min-h-11 w-full rounded-xl font-bold"><Eye className="size-4" /> উত্তরপত্র ও ব্যাখ্যা দেখো</Button>
               </article>
             );
           })}
@@ -325,7 +325,7 @@ export function ResultHistory() {
             <header className="shrink-0 border-b border-border bg-card px-4 py-4 sm:px-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0"><p className="text-xs font-extrabold text-accent">উত্তরপত্র বিশ্লেষণ</p><h2 id="result-review-title" className="mt-1 text-lg font-black leading-7 text-primary sm:text-xl">{attemptDetail?.exam.title || "ফলাফলের বিস্তারিত লোড হচ্ছে..."}</h2></div>
-                <button type="button" onClick={closeDetails} className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted transition hover:bg-secondary hover:text-primary" aria-label="উত্তরপত্র বন্ধ করুন"><X className="size-5" /></button>
+                <button type="button" onClick={closeDetails} className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted transition hover:bg-secondary hover:text-primary" aria-label="উত্তরপত্র বন্ধ করো"><X className="size-5" /></button>
               </div>
               {attemptDetail && <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">{[["Score", `${banglaNumber(attemptDetail.score)} / ${banglaNumber(attemptDetail.exam.totalMarks)}`], ["Accuracy", `${banglaNumber(attemptDetail.percentage)}%`], ["সময়", formatDuration(attemptDetail.timeTaken)]].map(([label, value]) => <div key={label} className="rounded-xl bg-secondary/50 p-2.5 text-center"><p className="text-[11px] font-bold text-muted">{label}</p><p className="mt-1 text-sm font-black text-primary">{value}</p></div>)}</div>}
             </header>
@@ -356,7 +356,7 @@ export function ResultHistory() {
                             {solution.options.map((option, optionIndex) => {
                               const correct = optionIndex === solution.correctIndex;
                               const selected = optionIndex === solution.selectedIndex;
-                              return <div key={`${solution.id}-${optionIndex}`} className={cn("flex min-h-12 items-start justify-between gap-3 rounded-xl border px-3.5 py-3 text-sm leading-6", correct ? "border-emerald-300 bg-emerald-50 text-emerald-950" : selected ? "border-red-300 bg-red-50 text-red-950" : "border-border bg-surface text-primary")}><span className="flex gap-2.5"><strong className="shrink-0">{optionLabels[optionIndex]}.</strong><span>{option}</span></span><span className="flex shrink-0 flex-col items-end gap-1 text-xs font-bold">{correct && <span className="inline-flex items-center gap-1 text-emerald-700"><Check className="size-4" /> সঠিক</span>}{selected && !correct && <span className="inline-flex items-center gap-1 text-red-700"><XCircle className="size-4" /> আপনার উত্তর</span>}{selected && correct && <span className="text-emerald-700">আপনার উত্তর</span>}</span></div>;
+                              return <div key={`${solution.id}-${optionIndex}`} className={cn("flex min-h-12 items-start justify-between gap-3 rounded-xl border px-3.5 py-3 text-sm leading-6", correct ? "border-emerald-300 bg-emerald-50 text-emerald-950" : selected ? "border-red-300 bg-red-50 text-red-950" : "border-border bg-surface text-primary")}><span className="flex gap-2.5"><strong className="shrink-0">{optionLabels[optionIndex]}.</strong><span>{option}</span></span><span className="flex shrink-0 flex-col items-end gap-1 text-xs font-bold">{correct && <span className="inline-flex items-center gap-1 text-emerald-700"><Check className="size-4" /> সঠিক</span>}{selected && !correct && <span className="inline-flex items-center gap-1 text-red-700"><XCircle className="size-4" /> তোমার উত্তর</span>}{selected && correct && <span className="text-emerald-700">তোমার উত্তর</span>}</span></div>;
                             })}
                           </div>
 
@@ -368,14 +368,14 @@ export function ResultHistory() {
                             <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm font-bold text-emerald-700"><CheckCircle2 className="size-4.5" /> রিপোর্টটি জমা হয়েছে। শিক্ষক এটি পর্যালোচনা করবেন।</div>
                           ) : reportingQuestionId === solution.id ? (
                             <section className="rounded-2xl border border-amber-200 bg-amber-50/55 p-4" aria-label="প্রশ্ন রিপোর্ট করার ফর্ম">
-                              <div className="flex items-start justify-between gap-3"><div><h4 className="flex items-center gap-2 text-sm font-extrabold text-primary"><Flag className="size-4 text-amber-700" /> প্রশ্নে সমস্যা রিপোর্ট করুন</h4><p className="mt-1 text-xs leading-5 text-muted">কী ধরনের সমস্যা দেখেছেন তা নির্বাচন করে সংক্ষেপে লিখুন।</p></div><button type="button" onClick={resetReportForm} className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white hover:text-primary" aria-label="রিপোর্ট ফর্ম বন্ধ করুন"><X className="size-4" /></button></div>
+                              <div className="flex items-start justify-between gap-3"><div><h4 className="flex items-center gap-2 text-sm font-extrabold text-primary"><Flag className="size-4 text-amber-700" /> প্রশ্নে সমস্যা রিপোর্ট করো</h4><p className="mt-1 text-xs leading-5 text-muted">কী ধরনের সমস্যা দেখেছেন তা নির্বাচন করে সংক্ষেপে লেখো।</p></div><button type="button" onClick={resetReportForm} className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white hover:text-primary" aria-label="রিপোর্ট ফর্ম বন্ধ করো"><X className="size-4" /></button></div>
                               <div className="mt-4 flex flex-wrap gap-2">{reportIssues.map((issue) => <button key={issue.id} type="button" onClick={() => setReportIssue(issue.id)} className={cn("min-h-9 rounded-full border px-3 text-xs font-bold transition", reportIssue === issue.id ? "border-amber-700 bg-amber-700 text-white" : "border-amber-200 bg-white text-amber-900 hover:border-amber-400")}>{issue.label}</button>)}</div>
-                              <label className="mt-4 block"><span className="text-xs font-bold text-primary">অতিরিক্ত বিবরণ <span className="font-medium text-muted">(ঐচ্ছিক)</span></span><textarea value={reportComment} onChange={(event) => setReportComment(event.target.value)} rows={3} maxLength={500} placeholder="প্রয়োজনে সমস্যাটি সম্পর্কে আরও লিখুন..." className="mt-2 w-full resize-y rounded-xl border border-amber-200 bg-white px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-200" /></label>
-                              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted"><span className={reportError ? "font-bold text-red-700" : ""}>{reportError || "শুধু সমস্যার ধরন নির্বাচন করেও রিপোর্ট জমা দিতে পারবেন।"}</span><span>{banglaNumber(reportComment.length)}/৫০০</span></div>
-                              <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={resetReportForm} disabled={reportSubmitting} className="rounded-xl">বাতিল</Button><Button type="button" onClick={() => submitReport(solution.id)} loading={reportSubmitting} disabled={reportSubmitting} className="rounded-xl">রিপোর্ট জমা দিন</Button></div>
+                              <label className="mt-4 block"><span className="text-xs font-bold text-primary">অতিরিক্ত বিবরণ <span className="font-medium text-muted">(ঐচ্ছিক)</span></span><textarea value={reportComment} onChange={(event) => setReportComment(event.target.value)} rows={3} maxLength={500} placeholder="প্রয়োজনে সমস্যাটি সম্পর্কে আরও লেখো..." className="mt-2 w-full resize-y rounded-xl border border-amber-200 bg-white px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-200" /></label>
+                              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted"><span className={reportError ? "font-bold text-red-700" : ""}>{reportError || "শুধু সমস্যার ধরন নির্বাচন করেও রিপোর্ট জমা দিতে পারবে।"}</span><span>{banglaNumber(reportComment.length)}/৫০০</span></div>
+                              <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={resetReportForm} disabled={reportSubmitting} className="rounded-xl">বাতিল</Button><Button type="button" onClick={() => submitReport(solution.id)} loading={reportSubmitting} disabled={reportSubmitting} className="rounded-xl">রিপোর্ট জমা দাও</Button></div>
                             </section>
                           ) : (
-                            <button type="button" onClick={() => { resetReportForm(); setReportingQuestionId(solution.id); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-muted transition hover:bg-amber-50 hover:px-3 hover:text-amber-800"><Flag className="size-4" /> এই প্রশ্নে সমস্যা রিপোর্ট করুন</button>
+                            <button type="button" onClick={() => { resetReportForm(); setReportingQuestionId(solution.id); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-muted transition hover:bg-amber-50 hover:px-3 hover:text-amber-800"><Flag className="size-4" /> এই প্রশ্নে সমস্যা রিপোর্ট করো</button>
                           )}
                         </div>
                       </article>
@@ -384,7 +384,7 @@ export function ResultHistory() {
                 </div>
               )}
             </div>
-            <footer className="flex shrink-0 items-center justify-end border-t border-border bg-card px-4 py-3 sm:px-6"><Button type="button" onClick={closeDetails} className="rounded-xl">উত্তরপত্র বন্ধ করুন</Button></footer>
+            <footer className="flex shrink-0 items-center justify-end border-t border-border bg-card px-4 py-3 sm:px-6"><Button type="button" onClick={closeDetails} className="rounded-xl">উত্তরপত্র বন্ধ করো</Button></footer>
           </section>
         </div>
       )}

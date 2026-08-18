@@ -201,7 +201,7 @@ export function LabConceptVisualizer({
       <footer className="hidden gap-3 border-t border-white/10 bg-white/[0.03] p-3 sm:grid sm:p-4 md:grid-cols-[0.8fr_1.2fr]">
         <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3">
           <p className="text-2xs font-black uppercase tracking-wider text-amber-300">
-            কোথায় নজর দেবেন
+            কোথায় নজর দেবে
           </p>
           <p className="mt-1 text-xs font-semibold leading-5 text-amber-50">
             {concept.watchFor}
@@ -231,7 +231,7 @@ export function LabConceptMobileGuide({ labId }: { labId: ScienceLabId }) {
   return (
     <details className="group mt-3 rounded-2xl border border-border bg-card sm:hidden">
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-black text-primary [&::-webkit-details-marker]:hidden">
-        <span>ধারণাটি ধাপে ধাপে বুঝুন</span>
+        <span>ধারণাটি ধাপে ধাপে বোঝো</span>
         <span
           aria-hidden
           className="grid size-7 place-items-center rounded-full bg-secondary text-lg text-muted transition-transform group-open:rotate-45"
@@ -242,7 +242,7 @@ export function LabConceptMobileGuide({ labId }: { labId: ScienceLabId }) {
       <div className="border-t border-border p-3">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-2xs font-black uppercase tracking-wider text-amber-700">
-            কোথায় নজর দেবেন
+            কোথায় নজর দেবে
           </p>
           <p className="mt-1 text-xs font-semibold leading-5 text-amber-950">
             {concept.watchFor}

@@ -5,7 +5,7 @@ import { MistakeNotebook } from "@/components/learning/MistakeNotebook";
 
 export const metadata: Metadata = {
   title: "ভুলের খাতা | ABSP",
-  description: "ভুল প্রশ্নগুলো সঠিক সময়ে পুনরায় অনুশীলন করুন।",
+  description: "ভুল প্রশ্নগুলো সঠিক সময়ে পুনরায় অনুশীলন করো।",
 };
 
 export default function StudentMistakesPage() {

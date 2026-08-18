@@ -51,7 +51,7 @@ function getTeacherPaymentMessage(chargeDueAt?: string, isChargeExpired?: boolea
   const daysLeft = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
   if (isChargeExpired || daysLeft <= 0) {
-    return "পেমেন্টের সময় শেষ হয়েছে। অ্যাকাউন্ট সক্রিয় রাখতে অ্যাডমিনের সাথে যোগাযোগ করুন।";
+    return "পেমেন্টের সময় শেষ হয়েছে। অ্যাকাউন্ট সক্রিয় রাখতে অ্যাডমিনের সঙ্গে যোগাযোগ করো।";
   }
 
   return `পেমেন্ট করতে আর ${daysLeft.toLocaleString("bn-BD")} দিন বাকি।`;

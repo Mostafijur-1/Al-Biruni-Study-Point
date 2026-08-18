@@ -155,7 +155,7 @@ export function InteractiveScienceLab() {
         setError(
           getApiErrorMessage(
             result.payload,
-            "ইন্টার‌্যাক্টিভ ল্যাব লোড করা যায়নি। আবার চেষ্টা করুন।",
+            "ইন্টার‌্যাক্টিভ ল্যাব লোড করা যায়নি। আবার চেষ্টা করো।",
           ),
         );
       }
@@ -274,7 +274,7 @@ export function InteractiveScienceLab() {
       setHub(data.hub);
       setMessage(
         data.alreadyCompleted
-          ? "এই অধ্যায়ের মাস্টারি আগেই সম্পন্ন হয়েছে—নতুন মান দিয়ে আরও পরীক্ষা করুন।"
+          ? "এই অধ্যায়ের মাস্টারি আগেই সম্পন্ন হয়েছে—নতুন মান দিয়ে আরও পরীক্ষা করো।"
           : `চমৎকার! অধ্যায় মাস্টারি সম্পন্ন হয়েছে এবং +${data.reward.xp} XP যোগ হয়েছে।`,
       );
       trackStudentEvent("student_science_lab_completed", "science_lab", {
@@ -338,11 +338,11 @@ export function InteractiveScienceLab() {
               ইন্টার‌্যাক্টিভ স্টেম ল্যাব · {hub.level.toUpperCase()}
             </div>
             <h1 className="mt-3 text-2xl font-black leading-tight sm:text-4xl">
-              দেখুন, নিয়ন্ত্রণ করুন, ধারণাটি বুঝুন
+              দেখো, নিয়ন্ত্রণ করো, ধারণাটি বোঝো
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-              বিষয় ও অধ্যায় বেছে চলক পরিবর্তন করুন। ভেতরের প্রক্রিয়া,
-              কারণ–ফল এবং প্রচলিত ভুল ধারণা একই মডেলে দেখুন।
+              বিষয় ও অধ্যায় বেছে চলক পরিবর্তন করো। ভেতরের প্রক্রিয়া,
+              কারণ–ফল এবং প্রচলিত ভুল ধারণা একই মডেলে দেখো।
             </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-md sm:min-w-64 sm:p-4">
@@ -621,7 +621,7 @@ export function InteractiveScienceLab() {
                   )}
                 >
                   {mastery.valid
-                    ? "লক্ষ্য মিলেছে—মাস্টারি সংগ্রহ করুন!"
+                    ? "লক্ষ্য মিলেছে—মাস্টারি সংগ্রহ করো!"
                     : "চলক বদলে বর্তমান মানকে লক্ষ্যের সঙ্গে মেলান"}
                 </p>
               </div>
@@ -645,7 +645,7 @@ export function InteractiveScienceLab() {
                   </>
                 ) : (
                   <>
-                    <Zap className="size-4" /> ফলাফল যাচাই করুন
+                    <Zap className="size-4" /> ফলাফল যাচাই করো
                   </>
                 )}
               </Button>
@@ -686,7 +686,7 @@ function LabControlField({
             {control.label}
           </span>
           <span className="mt-1 block text-xs font-semibold text-muted">
-            চাপ দিয়ে অন/অফ করুন
+            চাপ দিয়ে অন/অফ করো
           </span>
         </span>
         <span

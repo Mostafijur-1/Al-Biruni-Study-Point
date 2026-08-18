@@ -62,7 +62,7 @@ export function MobileNav({ navigation,
         )}
         aria-expanded={open}
         aria-controls="mobile-navigation-panel"
-        aria-label={open ? "মেনু বন্ধ করুন" : "মেনু খুলুন"}
+        aria-label={open ? "মেনু বন্ধ করো" : "মেনু খোলো"}
       >
         {open ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
@@ -78,7 +78,7 @@ export function MobileNav({ navigation,
                 "grid size-11 place-items-center rounded-xl border border-white/25 bg-white/10 text-white",
                 pressableClasses,
               )}
-              aria-label="মেনু বন্ধ করুন"
+              aria-label="মেনু বন্ধ করো"
             >
               <X className="size-6" />
             </button>

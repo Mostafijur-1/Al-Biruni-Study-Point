@@ -31,7 +31,7 @@ export function StudentClassAssignments() {
         <p className="text-sm text-muted">{message}</p>
       ) : assignments.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
-          {"আপনার শ্রেণির জন্য এখনও কোনো CQ অ্যাসাইনমেন্ট নেই।"}
+          {"তোমার শ্রেণির জন্য এখনো কোনো CQ অ্যাসাইনমেন্ট নেই।"}
         </p>
       ) : (
         <ul className="grid gap-3">

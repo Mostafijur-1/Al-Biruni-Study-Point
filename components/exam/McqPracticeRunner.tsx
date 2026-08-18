@@ -717,7 +717,7 @@ export function McqPracticeRunner({
       console.error("[Submit Practice Catch Technical Details]:", error);
       setSubmitError(
         locale === "bn"
-          ? "সাবমিট করা যায়নি। আপনার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।"
+          ? "সাবমিট করা যায়নি। তোমার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করো।"
           : "Submission failed. Please check your internet connection and try again."
       );
       return false;
@@ -1125,7 +1125,7 @@ export function McqPracticeRunner({
           <p className="text-xs text-muted font-semibold leading-relaxed">
             {locale === "bn"
               ? (countdownSeconds > 0 
-                  ? `${countdownSeconds} সেকেন্ডের মধ্যে আপনার পরীক্ষাটি শুরু হতে যাচ্ছে...` 
+                  ? `${countdownSeconds} সেকেন্ডের মধ্যে তোমার পরীক্ষাটি শুরু হতে যাচ্ছে...`
                   : "পরীক্ষার প্রশ্ন লোড করা সম্পন্ন হয়েছে।")
               : (countdownSeconds > 0
                   ? `Your test is going to start in ${countdownSeconds} seconds...`
@@ -1145,11 +1145,11 @@ export function McqPracticeRunner({
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-bounce" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {locale === "bn" ? "আপনি এখন অফলাইন আছেন" : "You are Offline"}
+                {locale === "bn" ? "তুমি এখন অফলাইন আছ" : "You are Offline"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
                 {locale === "bn"
-                  ? "আপনার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ করবেন না। আপনার উত্তরগুলো আপনার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবেন।"
+                  ? "তোমার ইন্টারনেট কানেকশন বিচ্ছিন্ন রয়েছে। দয়া করে পৃষ্ঠাটি রিফ্রেশ বা বন্ধ কোরো না। তোমার উত্তরগুলো তোমার ব্রাউজারে সুরক্ষিত রয়েছে এবং ইন্টারনেট ফিরে আসলে সাবমিট করতে পারবে।"
                   : "Your internet connection is currently disconnected. Please do not close or refresh this page. Your selected answers are saved locally, and you can submit them once your connection is restored."}
               </p>
             </div>
@@ -1166,8 +1166,8 @@ export function McqPracticeRunner({
               </h3>
               <p className="text-xs leading-5 text-red-700">
                 {isOffline 
-                  ? (locale === "bn" ? "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।" : "Your test was cancelled due to multiple tab switches. It will be automatically submitted when internet connection is restored.") 
-                  : (locale === "bn" ? "আপনি একাধিকবার ট্যাব পরিবর্তন করেছেন, তাই আপনার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..." : "Your test was cancelled and is being submitted...")}
+                  ? (locale === "bn" ? "তুমি একাধিকবার ট্যাব পরিবর্তন করেছ, তাই তোমার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।" : "Your test was cancelled due to multiple tab switches. It will be automatically submitted when internet connection is restored.")
+                  : (locale === "bn" ? "তুমি একাধিকবার ট্যাব পরিবর্তন করেছ, তাই তোমার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..." : "Your test was cancelled and is being submitted...")}
               </p>
             </div>
           </div>
@@ -1254,7 +1254,7 @@ export function McqPracticeRunner({
                     </h3>
                     <p className="text-xs text-muted-foreground">
                       {locale === "bn"
-                        ? "জমা দেওয়ার পূর্বে আপনার উত্তরগুলো মিলিয়ে নিন।"
+                        ? "জমা দেওয়ার পূর্বে তোমার উত্তরগুলো মিলিয়ে নাও।"
                         : "Please review your answers before submitting."}
                     </p>
                   </div>
@@ -1313,7 +1313,7 @@ export function McqPracticeRunner({
                     className="w-full rounded-xl py-2.5 font-bold"
                     onClick={() => setShowSubmitConfirm(false)}
                   >
-                    {locale === "bn" ? "ফিরে যান" : "Cancel"}
+                    {locale === "bn" ? "ফিরে যাও" : "Cancel"}
                   </Button>
                   <Button
                     type="button"
@@ -1323,7 +1323,7 @@ export function McqPracticeRunner({
                       submitPractice();
                     }}
                   >
-                    {locale === "bn" ? "জমা দিন" : "Submit Now"}
+                    {locale === "bn" ? "জমা দাও" : "Submit Now"}
                   </Button>
                 </div>
               </div>
@@ -1373,7 +1373,7 @@ export function McqPracticeRunner({
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {locale === "bn"
-                      ? "পরীক্ষা চলাকালীন আপনি অন্য পৃষ্ঠায় যেতে পারবেন না। অনুগ্রহ করে প্রথমে আপনার পরীক্ষাটি সাবমিট করুন।"
+                      ? "পরীক্ষা চলাকালীন তুমি অন্য পৃষ্ঠায় যেতে পারবে না। দয়া করে প্রথমে তোমার পরীক্ষাটি সাবমিট করো।"
                       : "You cannot navigate to other pages during the test. Please submit your exam first."}
                   </p>
                 </div>
@@ -1387,7 +1387,7 @@ export function McqPracticeRunner({
                       setPendingNavigationUrl(null);
                     }}
                   >
-                    {locale === "bn" ? "পরীক্ষায় ফিরে যান" : "Back to Test"}
+                    {locale === "bn" ? "পরীক্ষায় ফিরে যাও" : "Back to Test"}
                   </Button>
                   <Button
                     type="button"
@@ -1404,7 +1404,7 @@ export function McqPracticeRunner({
                       }
                     }}
                   >
-                    {locale === "bn" ? "সাবমিট করে চলে যান" : "Submit & Leave"}
+                    {locale === "bn" ? "সাবমিট করে চলে যাও" : "Submit & Leave"}
                   </Button>
                 </div>
               </div>
@@ -1426,7 +1426,7 @@ export function McqPracticeRunner({
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed font-semibold text-red-600">
                     {locale === "bn"
-                      ? "আপনি উইন্ডো বা ট্যাব পরিবর্তন করেছেন! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে আপনার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"
+                      ? "তুমি উইন্ডো বা ট্যাব পরিবর্তন করেছ! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে তোমার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"
                       : "You changed tabs or windows! If you change it again, your test will be cancelled and automatically submitted."}
                   </p>
                 </div>
@@ -1435,7 +1435,7 @@ export function McqPracticeRunner({
                   className="w-full rounded-xl py-2.5 font-bold"
                   onClick={() => setShowTabSwitchWarning(false)}
                 >
-                  {locale === "bn" ? "পরীক্ষায় ফিরে যান" : "Return to Test"}
+                  {locale === "bn" ? "পরীক্ষায় ফিরে যাও" : "Return to Test"}
                 </Button>
               </div>
             </div>
@@ -1458,7 +1458,7 @@ export function McqPracticeRunner({
               </h3>
               <p className="text-xs leading-5 text-red-700">
                 {locale === "bn"
-                  ? "পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে আপনার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"
+                  ? "পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে তোমার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"
                   : "Your test was cancelled and automatically submitted because you changed windows or switched tabs multiple times."}
               </p>
             </div>
@@ -1474,7 +1474,7 @@ export function McqPracticeRunner({
             </h3>
             <p className="text-xs leading-5 text-muted">
               {locale === "bn"
-                ? "পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবে না। অনুগ্রহ করে এখান থেকে যাওয়ার আগে উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নাও!"
+                ? "পরে এই প্রশ্নের বিস্তারিত উত্তর দেখতে পাবে না। দয়া করে এখান থেকে যাওয়ার আগে উত্তর ও ব্যাখ্যাগুলো মনোযোগ দিয়ে দেখে নাও!"
                 : "You will NOT be able to view this detailed question review later (the database only stores your final score). Please review your answers and explanations carefully before navigating away!"}
             </p>
           </div>
@@ -1576,7 +1576,7 @@ export function McqPracticeRunner({
             )}
             {result.gamification.streakFreezeUsed && (
               <p className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800">
-                আপনার একটি স্ট্রিক ফ্রিজ ব্যবহার হয়েছে—শেখার ধারাবাহিকতা অক্ষুণ্ণ আছে।
+                তোমার একটি স্ট্রিক ফ্রিজ ব্যবহার হয়েছে—শেখার ধারাবাহিকতা অক্ষুণ্ণ আছে।
               </p>
             )}
           </div>
@@ -1736,11 +1736,11 @@ export function McqPracticeRunner({
             <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-in fade-in zoom-in-95 duration-200">
               <h3 className="font-display text-lg font-bold text-primary flex items-center gap-2">
                 <AlertTriangle className="size-5 text-amber-500 animate-bounce" />
-                {locale === "bn" ? "প্রশ্ন রিপোর্ট করুন" : "Report Question"}
+                {locale === "bn" ? "প্রশ্ন রিপোর্ট করো" : "Report Question"}
               </h3>
               <p className="mt-1.5 text-xs text-muted-foreground">
                 {locale === "bn"
-                  ? "এই প্রশ্নটির কোনো ভুল বা সমস্যা থাকলে অনুগ্রহ করে নিচে মন্তব্য লিখুন।"
+                  ? "এই প্রশ্নটির কোনো ভুল বা সমস্যা থাকলে দয়া করে নিচে মন্তব্য লেখো।"
                   : "Please describe the issue with this question (e.g., wrong correct index, typo, bad options)."}
               </p>
 
@@ -1748,7 +1748,7 @@ export function McqPracticeRunner({
                 value={reportComment}
                 onChange={(e) => setReportComment(e.target.value)}
                 rows={4}
-                placeholder={locale === "bn" ? "আপনার মন্তব্য লিখুন..." : "Enter your comment..."}
+                placeholder={locale === "bn" ? "তোমার মন্তব্য লেখো..." : "Enter your comment..."}
                 className="mt-4 w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
 
@@ -1784,7 +1784,7 @@ export function McqPracticeRunner({
                   disabled={isSubmittingReport || !reportComment.trim()}
                   className="rounded-xl"
                 >
-                  {locale === "bn" ? "জমা দিন" : "Submit"}
+                  {locale === "bn" ? "জমা দাও" : "Submit"}
                 </Button>
               </div>
             </div>

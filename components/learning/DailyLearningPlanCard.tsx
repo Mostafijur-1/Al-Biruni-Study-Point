@@ -66,10 +66,10 @@ export function DailyLearningPlanCard({ compact = false }: { compact?: boolean }
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-700">
             <Sparkles className="size-4" />
-            ব্যক্তিগত দৈনিক প্ল্যান
+            ব্যক্তিগত দৈনিক প্ল্যাও
           </div>
           <h2 className="mt-1 text-lg font-black text-primary">
-            আজ এই {tasks.length}টি ছোট কাজ শেষ করুন
+            আজ এই {tasks.length}টি ছোট কাজ শেষ করো
           </h2>
         </div>
         {compact && (

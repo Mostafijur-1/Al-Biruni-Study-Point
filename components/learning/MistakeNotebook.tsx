@@ -254,7 +254,7 @@ export function MistakeNotebook() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white"
           >
             <RefreshCw className="size-3.5" />
-            তালিকা আপডেট করুন
+            তালিকা আপডেট করো
           </button>
         </div>
       )}
