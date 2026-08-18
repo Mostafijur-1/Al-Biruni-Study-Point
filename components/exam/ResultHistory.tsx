@@ -258,6 +258,10 @@ export function ResultHistory() {
 
   return (
     <div className="space-y-6">
+      <aside className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm"><Lightbulb className="size-4.5" /></span>
+        <div><p className="text-sm font-extrabold text-primary">ফলাফল বিশ্লেষণ করে পরবর্তী প্রস্তুতি ঠিক করুন</p><p className="mt-1 text-sm leading-6 text-muted">উত্তরপত্রে আপনার উত্তর, সঠিক উত্তর ও সহজ ব্যাখ্যা পাশাপাশি দেখানো হয়েছে। কোনো ভুল তথ্য চোখে পড়লে প্রশ্নটি রিপোর্ট করতে পারবেন।</p></div>
+      </aside>
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm" aria-label="ফলাফল খোঁজা ও ফিল্টার">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex w-full gap-1 rounded-xl bg-secondary/50 p-1 sm:w-auto">
@@ -284,11 +288,6 @@ export function ResultHistory() {
           </div>
         </div>
       </section>
-
-      <aside className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm"><Lightbulb className="size-4.5" /></span>
-        <div><p className="text-sm font-extrabold text-primary">ফলাফল বিশ্লেষণ করে পরবর্তী প্রস্তুতি ঠিক করুন</p><p className="mt-1 text-sm leading-6 text-muted">উত্তরপত্রে আপনার উত্তর, সঠিক উত্তর ও সহজ ব্যাখ্যা পাশাপাশি দেখানো হয়েছে। কোনো ভুল তথ্য চোখে পড়লে প্রশ্নটি রিপোর্ট করতে পারবেন।</p></div>
-      </aside>
 
       {filteredResults.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center"><Search className="mx-auto size-7 text-muted" /><p className="mt-3 font-bold text-primary">মিলে যায় এমন ফলাফল পাওয়া যায়নি</p><p className="mt-1 text-sm text-muted">খোঁজার শব্দ বা নির্বাচিত বিষয় পরিবর্তন করে আবার দেখুন।</p></div>
