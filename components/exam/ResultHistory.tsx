@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Clock,
   Eye,
+  Lightbulb,
   MessageSquare,
   RefreshCw,
   X,
@@ -311,6 +312,18 @@ export function ResultHistory() {
       </div>
 
       {/* Results Grid */}
+      <div className="flex items-start gap-3 rounded-2xl border border-brand-blue/20 bg-brand-blue-light/40 p-4 text-sm text-primary">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-brand-blue shadow-sm">
+          <Lightbulb className="size-4.5" />
+        </span>
+        <div>
+          <p className="font-bold">ফলাফল শুধু নম্বর নয়—কোথায় ভুল হয়েছে সেটিও দেখুন</p>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            প্রতিটি ফলাফলের উত্তরপত্র খুললে আপনার উত্তর, সঠিক উত্তর এবং প্রশ্নের ব্যাখ্যা একসাথে দেখা যাবে।
+          </p>
+        </div>
+      </div>
+
       {filteredResults.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center text-muted font-bold flex flex-col items-center justify-center gap-3">
           <Sparkles className="size-8 text-brand-blue opacity-50 animate-pulse" />
@@ -438,20 +451,14 @@ export function ResultHistory() {
 
                 {/* Card CTA */}
                 <div className="mt-5">
-                  {!isPractice ? (
-                    <Button
-                      onClick={() => handleOpenSolutions(result._id)}
-                      variant="outline"
-                      className="w-full rounded-xl py-2 text-xs font-bold border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100 flex items-center justify-center gap-1 hover:scale-[1.01] active:scale-[0.99] transition duration-150"
-                    >
-                      <Eye className="size-3.5" />
-                      View Answers & Explanations
-                    </Button>
-                  ) : (
-                    <div className="text-center py-2 text-3xs font-bold text-muted uppercase tracking-wider bg-secondary/20 border border-border/30 rounded-xl">
-                      Detailed explanations hidden for practice
-                    </div>
-                  )}
+                  <Button
+                    onClick={() => handleOpenSolutions(result._id)}
+                    variant="outline"
+                    className="w-full rounded-xl border-primary/20 bg-primary/5 py-2.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center gap-2 transition duration-150"
+                  >
+                    <Eye className="size-4" />
+                    উত্তর ও বিস্তারিত ব্যাখ্যা দেখুন
+                  </Button>
                 </div>
               </article>
             );
@@ -467,10 +474,10 @@ export function ResultHistory() {
             <div className="flex items-center justify-between border-b border-border/80 pb-3.5">
               <div>
                 <span className="text-3xs font-extrabold uppercase tracking-wider text-muted">
-                  Reviewing Solutions
+                  উত্তরপত্র ও ব্যাখ্যা
                 </span>
                 <h3 id="solutions-review-title" className="font-display mt-0.5 text-base font-bold leading-tight text-primary md:text-lg">
-                  {attemptDetail ? attemptDetail.exam.title : "Loading Exam Details..."}
+                  {attemptDetail ? attemptDetail.exam.title : "ফলাফলের বিস্তারিত লোড হচ্ছে..."}
                 </h3>
               </div>
               <button
@@ -656,16 +663,18 @@ export function ResultHistory() {
                           })}
                         </div>
 
-                        {/* Explanation */}
-                        {sol.explanation && (
-                          <div className="mt-2.5 rounded-lg border border-border/40 bg-secondary/15 p-3 text-3xs md:text-2xs text-muted leading-relaxed font-semibold pl-8 flex items-start gap-2">
-                            <HelpCircle className="size-3.5 text-brand-blue shrink-0 mt-0.5" />
-                            <div>
-                              <strong className="text-primary font-bold">Explanation:</strong>{" "}
-                              {sol.explanation}
-                            </div>
+                        {/* Explanation is always visible with the reviewed answer. */}
+                        <div className="mt-2.5 flex items-start gap-3 rounded-xl border border-brand-blue/20 bg-brand-blue-light/35 p-3.5 text-xs font-medium leading-6 text-primary md:ml-8">
+                          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-white text-brand-blue shadow-sm">
+                            <HelpCircle className="size-4" />
+                          </span>
+                          <div>
+                            <strong className="mb-0.5 block font-extrabold">বিস্তারিত ব্যাখ্যা</strong>
+                            <p className="text-muted">
+                              {sol.explanation || "এই প্রশ্নের জন্য আলাদা ব্যাখ্যা যোগ করা হয়নি। সঠিক উত্তরটি উপরে সবুজ রঙে দেখানো হয়েছে।"}
+                            </p>
                           </div>
-                        )}
+                        </div>
                       </article>
                     );
                   })}

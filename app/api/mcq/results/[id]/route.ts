@@ -9,6 +9,8 @@ import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import type { IMcqExam } from "@/lib/db/models/McqExam";
 import "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
+import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
+import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { canManageTeacherOwnedResource } from "@/lib/auth/resource-policy";
 
 const commentSchema = z.object({
@@ -32,7 +34,64 @@ export async function GET(request: NextRequest, context: Context) {
       .lean();
 
     if (!attempt) {
-      return fail("Exam attempt result not found.", 404);
+      if (user.role !== "student") {
+        return fail("Exam attempt result not found.", 404);
+      }
+
+      const practiceResult = await PracticeResult.findOne({
+        _id: id,
+        student: user.id,
+      })
+        .populate("commentedBy", "name")
+        .lean();
+
+      if (!practiceResult) {
+        return fail("Result not found.", 404);
+      }
+
+      const practiceAttempt = practiceResult.attemptSession
+        ? await PracticeAttempt.findOne({
+            attemptSession: practiceResult.attemptSession,
+            student: user.id,
+          }).lean()
+        : null;
+
+      if (!practiceAttempt) {
+        return fail(
+          "Detailed answers are unavailable for this older practice result.",
+          404,
+        );
+      }
+
+      return success({
+        attempt: {
+          _id: practiceResult._id.toString(),
+          score: practiceResult.score,
+          percentage: practiceResult.percentage,
+          isPassed: practiceResult.isPassed,
+          timeTaken: practiceResult.timeTaken,
+          submittedAt: practiceResult.submittedAt,
+          teacherComment: practiceResult.teacherComment,
+          commentedBy: practiceResult.commentedBy,
+          exam: {
+            title: `${practiceResult.subject} MCQ Practice`,
+            totalMarks: practiceResult.totalQuestions,
+            passMark: Math.ceil(
+              practiceResult.totalQuestions *
+                ((practiceResult.passMarkPercent ?? 60) / 100),
+            ),
+          },
+        },
+        solutions: practiceAttempt.answers.map((answer, index) => ({
+          id: String(answer.questionId || index),
+          question: answer.question,
+          options: answer.options,
+          correctIndex: answer.correctIndex,
+          explanation: answer.explanation || "",
+          selectedIndex: answer.selectedIndex,
+          isCorrect: answer.isCorrect,
+        })),
+      });
     }
 
     // Enforce privacy: only the student who took it, or a teacher/admin, can view details
