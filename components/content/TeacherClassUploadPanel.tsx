@@ -265,8 +265,7 @@ export function TeacherClassUploadPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-accent">Teacher panel</p>
-        <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
           {locale === "bn" ? "ক্লাস কন্টেন্ট আপলোড" : "Upload class content"}
         </h1>
         <p className="mt-2 text-sm text-muted">

@@ -37,8 +37,7 @@ export function AdminCoursesPanel() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
-        <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
           {"কোর্স পরিচালনা"}
         </h1>
         <p className="mt-2 text-sm text-muted">

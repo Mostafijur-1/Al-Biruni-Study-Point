@@ -221,8 +221,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
-        <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">{title}</h1>
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">{title}</h1>
         <p className="mt-2 text-sm text-muted">
           {role === "student"
             ?"Activate or deactivate student accounts."

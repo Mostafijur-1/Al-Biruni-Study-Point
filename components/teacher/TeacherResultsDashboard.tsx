@@ -634,7 +634,6 @@ export function TeacherResultsDashboard() {
             <LineChart className="size-5 text-primary" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-accent">Teacher Panel</p>
             <h1 className="font-display text-2xl font-bold text-primary">Student Results</h1>
           </div>
         </div>

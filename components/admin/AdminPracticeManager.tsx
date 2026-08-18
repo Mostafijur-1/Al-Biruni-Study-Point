@@ -501,8 +501,7 @@ export function AdminPracticeManager() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-accent">Admin panel</p>
-        <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
           {"Practice MCQ Management"}
         </h1>
         <p className="mt-2 text-sm text-muted">

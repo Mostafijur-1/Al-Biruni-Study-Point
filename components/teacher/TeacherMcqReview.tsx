@@ -441,7 +441,7 @@ export function TeacherMcqReview() {
       {/* Header */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
         <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
-          {"MCQ রিভিউ প্যানেল"}
+          {"MCQ রিভিউ"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {"আপনার সিলেক্ট করা বিষয়ের প্রশ্নগুলো দেখুন, এডিট বা ডিলিট করুন এবং রিপোর্ট চেক করুন।"}

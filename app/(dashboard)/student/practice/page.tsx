@@ -284,10 +284,7 @@ function StudentPracticeDashboard() {
       {/* Dashboard Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-accent">
-            {"শিক্ষার্থী প্যাওেল"}
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-primary sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold text-primary sm:text-4xl">
             {"অধ্যায়-ভিত্তিক এমসিকিউ পরীক্ষা"}
           </h1>
           <p className="mt-2 text-sm text-muted">

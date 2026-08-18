@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest, context: AdminUserRouteContext
     }
 
     if (String(user._id) === admin.id) {
-      return fail("You cannot modify your own account from this panel.", 403);
+      return fail("You cannot modify your own account from this page.", 403);
     }
 
     if (parsed.isActive !== undefined) {
