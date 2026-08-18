@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
-  Clock3,
   Eye,
   Flag,
   Lightbulb,
@@ -15,8 +14,6 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
-  Target,
-  Trophy,
   X,
   XCircle,
 } from "lucide-react";
@@ -147,20 +144,6 @@ export function ResultHistory() {
     });
   }, [resultCategory, results, searchTerm, selectedSubject]);
 
-  const summary = useMemo(() => {
-    const total = results.length;
-    const passed = results.filter((result) => result.isPassed).length;
-    const average = total
-      ? Math.round(results.reduce((sum, result) => sum + (result.percentage || 0), 0) / total)
-      : 0;
-    return {
-      total,
-      average,
-      passRate: total ? Math.round((passed / total) * 100) : 0,
-      totalTime: results.reduce((sum, result) => sum + (result.timeTaken || 0), 0),
-    };
-  }, [results]);
-
   const solutionSummary = useMemo(
     () => ({
       all: solutions.length,
@@ -221,7 +204,7 @@ export function ResultHistory() {
   }
 
   async function submitReport(questionId: string) {
-    if (!selectedAttemptId || reportComment.trim().length < 3 || reportSubmitting) return;
+    if (!selectedAttemptId || reportSubmitting) return;
     setReportSubmitting(true);
     setReportError("");
     try {
@@ -251,10 +234,10 @@ export function ResultHistory() {
   if (isLoading) {
     return (
       <div className="space-y-5" aria-label="ফলাফল লোড হচ্ছে">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((item) => <div key={item} className="h-28 animate-pulse rounded-2xl bg-secondary/60" />)}
+        <div className="h-20 animate-pulse rounded-2xl bg-secondary/50" />
+        <div className="grid gap-4 xl:grid-cols-2">
+          {[1, 2].map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-secondary/40" />)}
         </div>
-        <div className="h-64 animate-pulse rounded-2xl bg-secondary/40" />
       </div>
     );
   }
@@ -273,24 +256,8 @@ export function ResultHistory() {
     );
   }
 
-  const summaryCards = [
-    { label: "গড় Accuracy", value: `${banglaNumber(summary.average)}%`, icon: Target, tone: "bg-blue-50 text-blue-700" },
-    { label: "Pass Rate", value: `${banglaNumber(summary.passRate)}%`, icon: Trophy, tone: "bg-amber-50 text-amber-700" },
-    { label: "সম্পন্ন MCQ", value: banglaNumber(summary.total), icon: BookOpenCheck, tone: "bg-violet-50 text-violet-700" },
-    { label: "মোট সময়", value: formatDuration(summary.totalTime), icon: Clock3, tone: "bg-emerald-50 text-emerald-700" },
-  ];
-
   return (
     <div className="space-y-6">
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="ফলাফলের সারসংক্ষেপ">
-        {summaryCards.map(({ label, value, icon: Icon, tone }) => (
-          <article key={label} className="flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", tone)}><Icon className="size-5" /></span>
-            <div className="min-w-0"><p className="text-xs font-bold text-muted">{label}</p><p className="mt-1 break-words text-xl font-black leading-tight text-primary">{value}</p></div>
-          </article>
-        ))}
-      </section>
-
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm" aria-label="ফলাফল খোঁজা ও ফিল্টার">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex w-full gap-1 rounded-xl bg-secondary/50 p-1 sm:w-auto">
@@ -404,9 +371,9 @@ export function ResultHistory() {
                             <section className="rounded-2xl border border-amber-200 bg-amber-50/55 p-4" aria-label="প্রশ্ন রিপোর্ট করার ফর্ম">
                               <div className="flex items-start justify-between gap-3"><div><h4 className="flex items-center gap-2 text-sm font-extrabold text-primary"><Flag className="size-4 text-amber-700" /> প্রশ্নে সমস্যা রিপোর্ট করুন</h4><p className="mt-1 text-xs leading-5 text-muted">কী ধরনের সমস্যা দেখেছেন তা নির্বাচন করে সংক্ষেপে লিখুন।</p></div><button type="button" onClick={resetReportForm} className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white hover:text-primary" aria-label="রিপোর্ট ফর্ম বন্ধ করুন"><X className="size-4" /></button></div>
                               <div className="mt-4 flex flex-wrap gap-2">{reportIssues.map((issue) => <button key={issue.id} type="button" onClick={() => setReportIssue(issue.id)} className={cn("min-h-9 rounded-full border px-3 text-xs font-bold transition", reportIssue === issue.id ? "border-amber-700 bg-amber-700 text-white" : "border-amber-200 bg-white text-amber-900 hover:border-amber-400")}>{issue.label}</button>)}</div>
-                              <label className="mt-4 block"><span className="text-xs font-bold text-primary">সমস্যার সংক্ষিপ্ত বিবরণ</span><textarea value={reportComment} onChange={(event) => setReportComment(event.target.value)} rows={3} maxLength={500} placeholder="যেমন: সঠিক উত্তরটি বইয়ের তথ্যের সঙ্গে মিলছে না..." className="mt-2 w-full resize-y rounded-xl border border-amber-200 bg-white px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-200" /></label>
-                              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted"><span className={reportError ? "font-bold text-red-700" : ""}>{reportError || "ব্যক্তিগত তথ্য লিখবেন না।"}</span><span>{banglaNumber(reportComment.length)}/৫০০</span></div>
-                              <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={resetReportForm} disabled={reportSubmitting} className="rounded-xl">বাতিল</Button><Button type="button" onClick={() => submitReport(solution.id)} loading={reportSubmitting} disabled={reportSubmitting || reportComment.trim().length < 3} className="rounded-xl">রিপোর্ট জমা দিন</Button></div>
+                              <label className="mt-4 block"><span className="text-xs font-bold text-primary">অতিরিক্ত বিবরণ <span className="font-medium text-muted">(ঐচ্ছিক)</span></span><textarea value={reportComment} onChange={(event) => setReportComment(event.target.value)} rows={3} maxLength={500} placeholder="প্রয়োজনে সমস্যাটি সম্পর্কে আরও লিখুন..." className="mt-2 w-full resize-y rounded-xl border border-amber-200 bg-white px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-200" /></label>
+                              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted"><span className={reportError ? "font-bold text-red-700" : ""}>{reportError || "শুধু সমস্যার ধরন নির্বাচন করেও রিপোর্ট জমা দিতে পারবেন।"}</span><span>{banglaNumber(reportComment.length)}/৫০০</span></div>
+                              <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={resetReportForm} disabled={reportSubmitting} className="rounded-xl">বাতিল</Button><Button type="button" onClick={() => submitReport(solution.id)} loading={reportSubmitting} disabled={reportSubmitting} className="rounded-xl">রিপোর্ট জমা দিন</Button></div>
                             </section>
                           ) : (
                             <button type="button" onClick={() => { resetReportForm(); setReportingQuestionId(solution.id); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-muted transition hover:bg-amber-50 hover:px-3 hover:text-amber-800"><Flag className="size-4" /> এই প্রশ্নে সমস্যা রিপোর্ট করুন</button>

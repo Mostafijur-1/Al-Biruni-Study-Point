@@ -23,7 +23,7 @@ const reportSchema = z.object({
     "explanation-problem",
     "other",
   ]),
-  comment: z.string().trim().min(3).max(500),
+  comment: z.string().trim().max(500).optional().default(""),
 });
 
 const issueLabels = {
@@ -111,7 +111,9 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const comment = `${issueLabels[parsed.issueType]} — ${parsed.comment}`;
+    const comment = parsed.comment
+      ? `${issueLabels[parsed.issueType]} — ${parsed.comment}`
+      : issueLabels[parsed.issueType];
     const report = await ReportedQuestion.findOneAndUpdate(
       {
         questionId: parsed.questionId,
