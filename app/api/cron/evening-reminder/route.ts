@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
   return handleCronTrigger(request);
 }
 
+// Vercel Cron invokes configured routes with GET requests.
+export async function GET(request: NextRequest) {
+  return handleCronTrigger(request);
+}
+
 async function handleCronTrigger(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");

@@ -3,5 +3,11 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "regions": ["bom1"]
+  "regions": ["bom1"],
+  "crons": [
+    {
+      "path": "/api/cron/evening-reminder",
+      "schedule": "0 14 * * *"
+    }
+  ]
 }
