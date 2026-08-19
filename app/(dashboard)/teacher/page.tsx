@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, Brain, CalendarDays, FileQuestion, LineChart, UserCircle } from "lucide-react";
+import { BookOpen, Brain, FileQuestion, LineChart, UserCircle } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "শিক্ষক ড্যাশবোর্ড | ABSP",
@@ -10,12 +10,6 @@ export const metadata: Metadata = {
 const teacherTasks = [
   {
     href: "/teacher/classes",
-    title: "ক্লাস রুটিন ও সেশন",
-    description: "সাপ্তাহিক রুটিন দেখুন এবং আজকের ক্লাস সেশন পরিচালনা করুন।",
-    icon: CalendarDays,
-  },
-  {
-    href: "/teacher/classes?view=content",
     title: "ক্লাস কনটেন্ট",
     description: "নির্ধারিত শ্রেণি ও বিষয়ের ভিডিও, কোর্স এবং কাজ তৈরি করুন।",
     icon: BookOpen,

@@ -20,7 +20,6 @@ export const dashboardTopLevelRoutes = {
     "/admin/students",
     "/admin/teachers",
     "/admin/practice-mcqs",
-    "/admin/academic",
     "/admin/profile",
   ],
 } as const satisfies Record<UserRole, readonly string[]>;

@@ -1,12 +1,5 @@
-import type { Metadata } from "next";
-
-import { TimetableWorkspace } from "@/components/TimetableWorkspace";
-
-export const metadata: Metadata = {
-  title: "একাডেমিক রুটিন | ABSP Admin",
-  description: "ব্যাচ, শিক্ষক অ্যাসাইনমেন্ট, রুটিন ও ক্লাস সেশন পরিচালনা।",
-};
+import { redirect } from "next/navigation";
 
 export default function AdminAcademicPage() {
-  return <TimetableWorkspace role="admin" />;
+  redirect("/admin");
 }

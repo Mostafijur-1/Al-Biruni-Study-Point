@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   Brain,
-  CalendarDays,
   FileQuestion,
   GraduationCap,
   Home,
@@ -52,7 +52,7 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { href: "/teacher", label: "হোম", icon: Home, mobilePrimary: true },
-    { href: "/teacher/classes", label: "ক্লাস ও রুটিন", icon: CalendarDays },
+    { href: "/teacher/classes", label: "ক্লাস কনটেন্ট", icon: BookOpen },
     {
       href: "/teacher/mcq-review",
       label: "MCQ রিভিউ",
@@ -98,7 +98,6 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       icon: Brain,
       mobilePrimary: true,
     },
-    { href: "/admin/academic", label: "একাডেমিক", icon: CalendarDays },
     { href: "/admin/profile", label: "প্রোফাইল", icon: UserCircle },
   ],
 };

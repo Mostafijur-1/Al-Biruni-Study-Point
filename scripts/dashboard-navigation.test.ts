@@ -18,7 +18,7 @@ test("student navigation restores the focused four-item menu", () => {
   assert.equal(isTopLevelDashboardRoute("student", "/student/game"), false);
 });
 
-test("teacher navigation exposes the actionable class workflow", () => {
+test("teacher navigation exposes class content without routine sessions", () => {
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher"), true);
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/classes"), true);
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/results"), true);
@@ -26,6 +26,6 @@ test("teacher navigation exposes the actionable class workflow", () => {
 });
 
 test("admin navigation exposes academic operations without exceeding six destinations", () => {
-  assert.equal(isTopLevelDashboardRoute("admin", "/admin/academic"), true);
-  assert.equal(dashboardTopLevelRoutes.admin.length, 6);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/academic"), false);
+  assert.equal(dashboardTopLevelRoutes.admin.length, 5);
 });

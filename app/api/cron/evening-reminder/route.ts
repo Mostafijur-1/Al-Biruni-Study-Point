@@ -73,8 +73,8 @@ async function handleCronTrigger(request: NextRequest) {
     }
 
     const payload = JSON.stringify({
-      title: "সময়মত পরীক্ষা দিন! 📝",
-      body: "আজকের MCQ প্র্যাকটিস পরীক্ষাটি এখনও দেওয়া হয়নি। এখনই অ্যাপে প্রবেশ করে পরীক্ষা সম্পন্ন করুন!",
+      title: "সময়মতো পরীক্ষা দাও! 📝",
+      body: "তুমি আজকের MCQ প্র্যাকটিস পরীক্ষাটি এখনো দাওনি। এখনই অ্যাপে ঢুকে পরীক্ষা সম্পন্ন করো!",
       url: "/student/practice",
     });
 
