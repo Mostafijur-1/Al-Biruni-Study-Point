@@ -80,7 +80,8 @@ export function CoachingEnrollmentPanel() {
     setMessage("");
   }
   function chooseStudent(student: Student) {
-    setSelectedEnrollment(undefined); setSelectedStudent(student); setBatchId(""); setSubjects([]); setSubjectIds([]); setFeeTk(0); setMessage("");
+    const batchFromLink = new URLSearchParams(window.location.search).get("batchId") || "";
+    setSelectedEnrollment(undefined); setSelectedStudent(student); setBatchId(batchFromLink); setBatchFilter(batchFromLink); setSubjects([]); setSubjectIds([]); setFeeTk(0); setMessage("");
   }
   function closeEditor() { setSelectedStudent(undefined); setSelectedEnrollment(undefined); setBatchId(""); setSubjects([]); setSubjectIds([]); setFeeTk(0); }
 

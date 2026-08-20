@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Archive, Check, CheckCircle2, Layers3, Pencil, Plus, X } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
@@ -152,7 +153,7 @@ export function AdminBatchManager() {
           </h2>
         </div>
         <Button onClick={startCreate}>
-          <Plus className="size-4" /> নতুন Batch
+          <Plus className="size-4" /> New Batch
         </Button>
       </div>
 
@@ -186,7 +187,7 @@ export function AdminBatchManager() {
           </div>
           <fieldset className="mt-5"><legend className="text-sm font-bold text-primary">Batch-এর বিষয়সমূহ</legend><p className="mt-1 text-xs text-muted">ভর্তির সময় এগুলো শুরুতে নির্বাচিত থাকবে; শিক্ষার্থী অনুযায়ী বিষয় ও ফি পরিবর্তন করা যাবে।</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{subjects.map((subject) => { const checked = selectedSubjects.includes(subject.name); return <button key={subject.code} type="button" aria-pressed={checked} onClick={() => setSelectedSubjects((current) => checked ? current.filter((name) => name !== subject.name) : [...current, subject.name])} className={cn("flex items-center gap-2 rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><span className="text-sm font-bold text-primary">{subject.nameBn || subject.name}</span></button>; })}</div></fieldset>
           <Button className="mt-5 w-full" type="submit" disabled={saving || selectedSubjects.length === 0}>
-            {saving ? "সংরক্ষণ হচ্ছে…" : "Batch সংরক্ষণ করুন"}
+            {saving ? "Saving…" : editing ? "Update Batch" : "Create Batch"}
           </Button>
         </form>
       )}
@@ -227,22 +228,27 @@ export function AdminBatchManager() {
               <div className="mt-4 flex flex-wrap gap-2">
                 {(batch.status === "planned" || batch.status === "active") && (
                   <Button size="sm" variant="outline" onClick={() => startEdit(batch)}>
-                    <Pencil className="size-4" /> সম্পাদনা
+                    <Pencil className="size-4" /> Edit
                   </Button>
+                )}
+                {(batch.status === "planned" || batch.status === "active") && (
+                  <Link href={`/admin/students?batchId=${batch.id}`} className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 text-xs font-semibold text-primary transition-colors hover:bg-secondary">
+                    <Plus className="size-4" /> Add Student
+                  </Link>
                 )}
                 {batch.status === "planned" && (
                   <Button size="sm" onClick={() => void changeStatus(batch, "active")} disabled={saving}>
-                    <CheckCircle2 className="size-4" /> সক্রিয় করুন
+                    <CheckCircle2 className="size-4" /> Activate
                   </Button>
                 )}
                 {batch.status === "active" && (
                   <Button size="sm" variant="outline" onClick={() => void changeStatus(batch, "closed")} disabled={saving}>
-                    বন্ধ করুন
+                    Close
                   </Button>
                 )}
                 {(batch.status === "planned" || batch.status === "closed") && (
                   <Button size="sm" variant="outline" onClick={() => void changeStatus(batch, "archived")} disabled={saving}>
-                    <Archive className="size-4" /> আর্কাইভ
+                    <Archive className="size-4" /> Archive
                   </Button>
                 )}
               </div>
