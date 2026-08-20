@@ -13,32 +13,14 @@ export const batchListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
-export const batchCreateSchema = z
-  .object({
-    organizationId: objectIdSchema,
-    branchId: objectIdSchema,
-    academicSessionId: objectIdSchema,
-    code: z.string().trim().min(2).max(30),
-    name: z.string().trim().min(2).max(120),
-    studentClass: studentClassSchema,
-    capacity: z.coerce.number().int().min(1).max(500),
-    startsAt: z.coerce.date(),
-    endsAt: z.coerce.date(),
-    reason: mutationReasonSchema,
-  })
-  .refine((value) => value.startsAt < value.endsAt, {
-    path: ["endsAt"],
-    message: "Batch end date must be after its start date.",
-  });
+export const batchCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+}).strict();
 
 export const batchUpdateSchema = z
   .object({
     batchId: objectIdSchema,
-    code: z.string().trim().min(2).max(30).optional(),
     name: z.string().trim().min(2).max(120).optional(),
-    capacity: z.coerce.number().int().min(1).max(500).optional(),
-    startsAt: z.coerce.date().optional(),
-    endsAt: z.coerce.date().optional(),
     status: z.enum(["planned", "active", "closed", "archived"]).optional(),
     reason: mutationReasonSchema,
   })
@@ -132,9 +114,9 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("create"),
-      assignmentId: objectIdSchema,
-      teacherId: objectIdSchema.optional(),
-      subject: z.string().trim().min(1).max(100).optional(),
+      batchId: objectIdSchema,
+      teacherId: objectIdSchema,
+      subjectId: objectIdSchema,
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
@@ -155,9 +137,9 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
     .object({
       action: z.literal("update"),
       routineSlotId: objectIdSchema,
-      assignmentId: objectIdSchema,
-      teacherId: objectIdSchema.optional(),
-      subject: z.string().trim().min(1).max(100).optional(),
+      batchId: objectIdSchema,
+      teacherId: objectIdSchema,
+      subjectId: objectIdSchema,
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),

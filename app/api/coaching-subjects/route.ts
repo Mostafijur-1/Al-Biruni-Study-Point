@@ -41,7 +41,11 @@ export async function GET(request: NextRequest) {
     const subjects = await AcademicSubject.find({ _id: { $in: rows.map((row) => row.subjectId) } }).select("code name nameBn").lean();
     const byId = new Map(subjects.map((subject) => [String(subject._id), subject]));
     const availableSubjects = actor.role === "admin"
-      ? await AcademicSubject.find({ organizationId: batch.organizationId, status: "active", classLevels: batch.studentClass }).select("code name nameBn").sort({ code: 1 }).lean()
+      ? await AcademicSubject.find({
+          status: "active",
+          ...(batch.organizationId ? { organizationId: batch.organizationId } : {}),
+          ...(batch.studentClass ? { classLevels: batch.studentClass } : {}),
+        }).select("code name nameBn").sort({ code: 1 }).lean()
       : [];
     return success({
       batchId,
@@ -65,11 +69,17 @@ export async function POST(request: NextRequest) {
       await session.withTransaction(async () => {
         const batch = await Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session);
         if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
-        const validSubjects = await AcademicSubject.find({ _id: { $in: ids }, organizationId: batch.organizationId, status: "active", classLevels: batch.studentClass }).select("_id").session(session).lean();
+        const validSubjects = await AcademicSubject.find({
+          _id: { $in: ids },
+          status: "active",
+          ...(batch.organizationId ? { organizationId: batch.organizationId } : {}),
+          ...(batch.studentClass ? { classLevels: batch.studentClass } : {}),
+        }).select("_id organizationId").session(session).lean();
         if (validSubjects.length !== ids.length) throw new ApiRouteError("One or more subjects are unavailable for this batch.", 409);
+        const subjectOrganizations = new Map(validSubjects.map((subject) => [String(subject._id), subject.organizationId]));
         await Promise.all(input.subjects.map((item, index) => CoachingBatchSubject.findOneAndUpdate(
           { batchId: batch._id, subjectId: item.subjectId },
-          { $set: { organizationId: batch.organizationId, branchId: batch.branchId, monthlyFeeTk: item.monthlyFeeTk, status: "active", sortOrder: index, createdBy: actor.id } },
+          { $set: { organizationId: batch.organizationId ?? subjectOrganizations.get(item.subjectId), branchId: batch.branchId, monthlyFeeTk: item.monthlyFeeTk, status: "active", sortOrder: index, createdBy: actor.id } },
           { upsert: true, runValidators: true, session },
         )));
         await CoachingBatchSubject.updateMany({ batchId: batch._id, subjectId: { $nin: ids }, status: "active" }, { $set: { status: "archived" } }, { session });

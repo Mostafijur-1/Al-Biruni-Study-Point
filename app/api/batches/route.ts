@@ -17,30 +17,30 @@ import { batchCreateSchema, batchListQuerySchema, batchUpdateSchema } from "@/li
 
 function serializeBatch(batch: {
   _id: unknown;
-  organizationId: unknown;
-  branchId: unknown;
-  academicSessionId: unknown;
-  code: string;
+  organizationId?: unknown;
+  branchId?: unknown;
+  academicSessionId?: unknown;
+  code?: string;
   name: string;
-  studentClass: string;
-  capacity: number;
+  studentClass?: string;
+  capacity?: number;
   activeEnrollmentCount: number;
-  startsAt: Date;
-  endsAt: Date;
+  startsAt?: Date;
+  endsAt?: Date;
   status: string;
 }) {
   return {
     id: String(batch._id),
-    organizationId: String(batch.organizationId),
-    branchId: String(batch.branchId),
-    academicSessionId: String(batch.academicSessionId),
+    organizationId: batch.organizationId ? String(batch.organizationId) : undefined,
+    branchId: batch.branchId ? String(batch.branchId) : undefined,
+    academicSessionId: batch.academicSessionId ? String(batch.academicSessionId) : undefined,
     code: batch.code,
     name: batch.name,
     studentClass: batch.studentClass,
     capacity: batch.capacity,
     activeEnrollmentCount: batch.activeEnrollmentCount,
-    startsAt: batch.startsAt.toISOString(),
-    endsAt: batch.endsAt.toISOString(),
+    startsAt: batch.startsAt?.toISOString(),
+    endsAt: batch.endsAt?.toISOString(),
     status: batch.status,
   };
 }
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     if (scope.kind === "assigned") query._id = { $in: scope.batchIds };
 
     const batches = await Batch.find(query)
-      .sort({ startsAt: -1, name: 1 })
+      .sort({ createdAt: -1, name: 1 })
       .limit(parsed.limit)
       .lean();
 
@@ -130,7 +130,12 @@ export async function POST(request: NextRequest) {
       throw new ApiRouteError("Academic write workflows are not enabled.", 503);
     }
     const parsed = batchCreateSchema.parse(await request.json());
-    const batch = await createBatch({ request, actor, ...parsed });
+    const batch = await createBatch({
+      request,
+      actor,
+      name: parsed.name,
+      reason: "অ্যাডমিন কর্তৃক নতুন ব্যাচ তৈরি",
+    });
 
     return success({ batch: serializeBatch(batch) }, { status: 201 });
   } catch (error) {

@@ -14,29 +14,10 @@ import { requiresAcademicRoutineWriteGate } from "../lib/routine-write-gate.ts";
 
 const id = "64f000000000000000000001";
 
-test("batch creation requires a bounded capacity and valid date range", () => {
-  const batch = batchCreateSchema.parse({
-    organizationId: id,
-    branchId: "64f000000000000000000002",
-    academicSessionId: "64f000000000000000000003",
-    code: "HSC-26-A",
-    name: "HSC 2026 A",
-    studentClass: "class-11",
-    capacity: 40,
-    startsAt: "2026-01-01T00:00:00.000Z",
-    endsAt: "2026-12-31T00:00:00.000Z",
-    reason: "Approved annual batch plan",
-  });
-  assert.equal(batch.capacity, 40);
-
-  assert.equal(
-    batchCreateSchema.safeParse({ ...batch, capacity: 0 }).success,
-    false,
-  );
-  assert.equal(
-    batchCreateSchema.safeParse({ ...batch, startsAt: batch.endsAt }).success,
-    false,
-  );
+test("batch creation accepts only a batch name", () => {
+  assert.deepEqual(batchCreateSchema.parse({ name: "HSC 2029" }), { name: "HSC 2029" });
+  assert.equal(batchCreateSchema.safeParse({}).success, false);
+  assert.equal(batchCreateSchema.safeParse({ name: "HSC 2029", capacity: 40 }).success, false);
 });
 
 test("batch management requires an explicit audited change", () => {
@@ -94,7 +75,9 @@ test("teacher assignment history can be requested without enabling writes", () =
 test("routine contracts reject inverted time windows", () => {
   const routine = routineMutationSchema.parse({
     action: "create",
-    assignmentId: id,
+    batchId: id,
+    teacherId: "64f000000000000000000002",
+    subjectId: "64f000000000000000000003",
     weekday: 6,
     startMinute: 9 * 60,
     endMinute: 10 * 60,
@@ -108,11 +91,13 @@ test("routine contracts reject inverted time windows", () => {
   );
 });
 
-test("routine updates require a canonical teacher assignment without participant IDs", () => {
+test("routine updates require independent batch, teacher, and subject fields", () => {
   const routine = routineMutationSchema.parse({
     action: "update",
     routineSlotId: id,
-    assignmentId: id,
+    batchId: id,
+    teacherId: "64f000000000000000000002",
+    subjectId: "64f000000000000000000003",
     weekday: 1,
     startMinute: 600,
     endMinute: 660,
@@ -120,11 +105,13 @@ test("routine updates require a canonical teacher assignment without participant
     reason: "Approved routine update",
   });
   assert.equal(routine.action, "update");
-  assert.equal(routine.assignmentId, id);
+  assert.equal(routine.batchId, id);
+  assert.equal(routine.teacherId, "64f000000000000000000002");
+  assert.equal(routine.subjectId, "64f000000000000000000003");
   assert.equal("studentIds" in routine, false);
 });
 
-test("routine contracts reject legacy teacher-domain writes without a canonical assignment", () => {
+test("routine contracts reject legacy participant targeting", () => {
   const routine = routineMutationSchema.safeParse({
     action: "create",
     teacherId: id,

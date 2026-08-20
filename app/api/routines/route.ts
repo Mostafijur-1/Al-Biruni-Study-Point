@@ -20,7 +20,7 @@ import { requiresAcademicRoutineWriteGate } from "@/lib/routine-write-gate";
 type RoutineContext = {
   teachers: Map<string, string>;
   students: Map<string, { name: string; reference?: string }>;
-  batches: Map<string, { name: string; code: string }>;
+  batches: Map<string, { name: string; code?: string }>;
   subjects: Map<string, { name: string; nameBn: string }>;
   eligibleCounts: Map<string, number>;
 };
@@ -118,7 +118,15 @@ export async function GET(request: NextRequest) {
       subjects: new Map(subjects.map((item) => [String(item._id), { name: item.name, nameBn: item.nameBn }])),
       eligibleCounts: new Map([...eligibleSets].map(([key, ids]) => [key, ids.size])),
     };
-    return success({ routines: routines.map((item) => serializeRoutine(item, context)) });
+    const options = actor.role === "admin" ? {
+      batches: (await Batch.find({ status: { $in: ["planned", "active"] } }).select("name").sort({ name: 1 }).lean())
+        .map((item) => ({ id: String(item._id), name: item.name })),
+      teachers: (await User.find({ role: "teacher", isActive: true, approvalStatus: "approved" }).select("name teacherDomain").sort({ name: 1 }).lean())
+        .map((item) => ({ id: String(item._id), name: item.name, subjects: item.teacherDomain?.subjects ?? [], isAll: item.teacherDomain?.isAll ?? false })),
+      subjects: (await AcademicSubject.find({ status: "active" }).select("name nameBn").sort({ name: 1 }).lean())
+        .map((item) => ({ id: String(item._id), name: item.name, nameBn: item.nameBn })),
+    } : undefined;
+    return success({ routines: routines.map((item) => serializeRoutine(item, context)), options });
   } catch (error) {
     return handleApiError(error);
   }
@@ -133,9 +141,9 @@ export async function POST(request: NextRequest) {
     }
     const previous = parsed.action === "create" ? null : await RoutineSlot.findById(parsed.routineSlotId).select("teacherId studentIds").lean();
     const routine = parsed.action === "create"
-      ? await createRoutineSlot({ request, actor, assignmentId: parsed.assignmentId, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
+      ? await createRoutineSlot({ request, actor, batchId: parsed.batchId, teacherId: parsed.teacherId, subjectId: parsed.subjectId, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
       : parsed.action === "update"
-        ? await updateRoutineSlot({ request, actor, routineSlotId: parsed.routineSlotId, assignmentId: parsed.assignmentId, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
+        ? await updateRoutineSlot({ request, actor, routineSlotId: parsed.routineSlotId, batchId: parsed.batchId, teacherId: parsed.teacherId, subjectId: parsed.subjectId, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
         : await endDomainRoutine({ request, actor, routineSlotId: parsed.routineSlotId, reason: parsed.reason });
     const additionalUserIds = previous ? [String(previous.teacherId), ...(previous.studentIds ?? []).map(String)] : [];
     try {

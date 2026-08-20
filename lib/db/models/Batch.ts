@@ -4,17 +4,17 @@ import { isValidDateRange, type AcademicLifecycleStatus } from "../../academic-r
 import type { StudentClass } from "@/types";
 
 export interface IBatch extends Document {
-  organizationId: Types.ObjectId;
-  branchId: Types.ObjectId;
-  academicSessionId: Types.ObjectId;
-  code: string;
+  organizationId?: Types.ObjectId;
+  branchId?: Types.ObjectId;
+  academicSessionId?: Types.ObjectId;
+  code?: string;
   name: string;
-  studentClass: StudentClass;
-  capacity: number;
+  studentClass?: StudentClass;
+  capacity?: number;
   activeEnrollmentCount: number;
   fullPackageFeeTk?: number;
-  startsAt: Date;
-  endsAt: Date;
+  startsAt?: Date;
+  endsAt?: Date;
   status: AcademicLifecycleStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -22,21 +22,20 @@ export interface IBatch extends Document {
 
 const BatchSchema = new Schema<IBatch>(
   {
-    organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true },
-    branchId: { type: Schema.Types.ObjectId, ref: "Branch", required: true },
-    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession", required: true },
-    code: { type: String, required: true, trim: true, uppercase: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
+    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession" },
+    code: { type: String, trim: true, uppercase: true },
     name: { type: String, required: true, trim: true },
     studentClass: {
       type: String,
       enum: ["class-9", "class-10", "class-11", "class-12"],
-      required: true,
     },
-    capacity: { type: Number, required: true, min: 1, max: 500 },
+    capacity: { type: Number, min: 1, max: 500 },
     activeEnrollmentCount: { type: Number, default: 0, min: 0 },
     fullPackageFeeTk: { type: Number, min: 0, max: 10_000_000 },
-    startsAt: { type: Date, required: true },
-    endsAt: { type: Date, required: true },
+    startsAt: { type: Date },
+    endsAt: { type: Date },
     status: {
       type: String,
       enum: ["planned", "active", "closed", "archived"],

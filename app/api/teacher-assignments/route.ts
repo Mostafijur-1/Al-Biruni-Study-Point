@@ -21,7 +21,7 @@ import {
 } from "@/lib/validations/academic.schema";
 
 type AssignmentContext = {
-  batches: Map<string, { name: string; code: string; studentClass: string }>;
+  batches: Map<string, { name: string; code?: string; studentClass?: string }>;
   subjects: Map<string, { name: string; nameBn: string; code: string }>;
   teachers: Map<string, { name: string }>;
   organizations: Map<string, { name: string; timezone: string }>;

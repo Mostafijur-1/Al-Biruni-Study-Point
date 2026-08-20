@@ -13,25 +13,9 @@ import { cn } from "@/lib/utils";
 type BatchStatus = "planned" | "active" | "closed" | "archived";
 type Batch = {
   id: string;
-  code: string;
   name: string;
-  capacity: number;
   activeEnrollmentCount: number;
-  startsAt: string;
-  endsAt: string;
   status: BatchStatus;
-};
-type Context = {
-  organizations: Array<{ id: string; name: string }>;
-  branches: Array<{ id: string; organizationId: string; name: string }>;
-  academicSessions: Array<{
-    id: string;
-    organizationId: string;
-    name: string;
-    startsAt: string;
-    endsAt: string;
-    status: string;
-  }>;
 };
 
 const statusLabel: Record<BatchStatus, string> = {
@@ -41,29 +25,8 @@ const statusLabel: Record<BatchStatus, string> = {
   archived: "আর্কাইভ",
 };
 
-function batchCode(name: string, existingCodes: string[]) {
-  const base = name
-    .normalize("NFKD")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "BATCH";
-  if (!existingCodes.includes(base)) return base;
-  let suffix = 2;
-  while (existingCodes.includes(`${base}-${suffix}`)) suffix += 1;
-  return `${base}-${suffix}`;
-}
-
-function inferredClass(name: string) {
-  return /SSC|এসএসসি/i.test(name) ? "class-9" : "class-11";
-}
-
 export function AdminBatchManager() {
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [context, setContext] = useState<Context>({
-    organizations: [],
-    branches: [],
-    academicSessions: [],
-  });
   const [name, setName] = useState("");
   const [editing, setEditing] = useState<Batch>();
   const [open, setOpen] = useState(false);
@@ -74,12 +37,11 @@ export function AdminBatchManager() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await apiFetch<{ batches: Batch[]; context: Context }>(
-      "/api/batches?status=all&includeContext=true&limit=100",
+    const result = await apiFetch<{ batches: Batch[] }>(
+      "/api/batches?status=all&limit=100",
     );
     if (result.ok && isApiSuccess(result.payload)) {
       setBatches(result.payload.data.batches);
-      setContext(result.payload.data.context);
     }
     setLoading(false);
   }, []);
@@ -112,43 +74,15 @@ export function AdminBatchManager() {
     setSaving(true);
     setMessage("");
 
-    let body: Record<string, unknown>;
-    if (editing) {
-      body = {
+    const body = editing
+      ? {
         batchId: editing.id,
         name,
         reason: "অ্যাডমিন কর্তৃক ব্যাচের নাম হালনাগাদ",
-      };
-    } else {
-      const organization = context.organizations[0];
-      const branch = context.branches.find(
-        (item) => item.organizationId === organization?.id,
-      );
-      const academicSession = context.academicSessions.find(
-        (item) =>
-          item.organizationId === organization?.id && item.status === "active",
-      ) ?? context.academicSessions.find(
-        (item) => item.organizationId === organization?.id,
-      );
-      if (!organization || !branch || !academicSession) {
-        setError(true);
-        setMessage("Default organization, branch ও academic session configure করা নেই।");
-        setSaving(false);
-        return;
       }
-      body = {
-        organizationId: organization.id,
-        branchId: branch.id,
-        academicSessionId: academicSession.id,
-        code: batchCode(name, batches.map((batch) => batch.code)),
+      : {
         name,
-        studentClass: inferredClass(name),
-        capacity: 100,
-        startsAt: academicSession.startsAt,
-        endsAt: academicSession.endsAt,
-        reason: "অ্যাডমিন কর্তৃক নতুন ব্যাচ তৈরি",
       };
-    }
 
     const result = await apiFetch("/api/batches", {
       method: editing ? "PATCH" : "POST",
@@ -263,9 +197,7 @@ export function AdminBatchManager() {
                   </span>
                   <div>
                     <h3 className="font-black text-primary">{batch.name}</h3>
-                    <p className="text-xs text-muted">
-                      {batch.activeEnrollmentCount}/{batch.capacity} শিক্ষার্থী
-                    </p>
+                    <p className="text-xs text-muted">{batch.activeEnrollmentCount} শিক্ষার্থী</p>
                   </div>
                 </div>
                 <span

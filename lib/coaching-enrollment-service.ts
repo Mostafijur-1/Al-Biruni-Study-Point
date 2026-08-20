@@ -94,7 +94,7 @@ async function syncPaymentProfile(input: {
 }
 
 async function addSubjectRows(input: {
-  enrollment: { _id: mongoose.Types.ObjectId; organizationId: mongoose.Types.ObjectId; branchId: mongoose.Types.ObjectId; batchId: mongoose.Types.ObjectId; studentId: mongoose.Types.ObjectId };
+  enrollment: { _id: mongoose.Types.ObjectId; organizationId?: mongoose.Types.ObjectId; branchId?: mongoose.Types.ObjectId; batchId: mongoose.Types.ObjectId; studentId: mongoose.Types.ObjectId };
   subjectIds: string[];
   effectiveFrom: Date;
   actorId: string;
@@ -126,19 +126,17 @@ export async function createCoachingEnrollment(input: AuditInput & {
     const { batch, selectedSubjectIds, monthlyFeeTk } = await loadSelection(input.batchId, input.subjectIds, session);
     const student = await User.findOne({ _id: input.studentId, role: "student", isActive: true }).session(session);
     if (!student) throw new ApiRouteError("Active student not found.", 404);
-    if (student.studentClass !== batch.studentClass) throw new ApiRouteError("Student class does not match the batch class.", 409);
-    if (input.effectiveFrom < batch.startsAt || input.effectiveFrom > batch.endsAt) {
+    if (batch.studentClass && student.studentClass !== batch.studentClass) throw new ApiRouteError("Student class does not match the batch class.", 409);
+    if (batch.startsAt && batch.endsAt && (input.effectiveFrom < batch.startsAt || input.effectiveFrom > batch.endsAt)) {
       throw new ApiRouteError("Enrollment date must fall within the batch dates.", 409);
     }
     const exists = await BatchEnrollment.exists({
-      organizationId: batch.organizationId,
-      academicSessionId: batch.academicSessionId,
       studentId: student._id,
       status: "active",
     }).session(session);
     if (exists) throw new ApiRouteError("Student already has an active coaching enrollment in this session.", 409);
     const reserved = await Batch.findOneAndUpdate(
-      { _id: batch._id, status: { $in: ["planned", "active"] }, $or: [{ activeEnrollmentCount: { $lt: batch.capacity } }, { activeEnrollmentCount: { $exists: false } }] },
+      { _id: batch._id, status: { $in: ["planned", "active"] }, ...(batch.capacity ? { $or: [{ activeEnrollmentCount: { $lt: batch.capacity } }, { activeEnrollmentCount: { $exists: false } }] } : {}) },
       { $inc: { activeEnrollmentCount: 1 } },
       { new: true, session },
     );
@@ -219,13 +217,8 @@ export async function transferCoachingEnrollment(input: AuditInput & {
     ]);
     if (!currentBatch) throw new ApiRouteError("Current batch not found.", 409);
     const { batch: targetBatch, selectedSubjectIds, monthlyFeeTk } = selection;
-    if (
-      String(targetBatch.organizationId) !== String(current.organizationId) ||
-      String(targetBatch.academicSessionId) !== String(current.academicSessionId) ||
-      targetBatch.studentClass !== currentBatch.studentClass
-    ) throw new ApiRouteError("Transfer target must use the same organization, session, and class.", 409);
     const reserved = await Batch.findOneAndUpdate(
-      { _id: targetBatch._id, status: { $in: ["planned", "active"] }, $or: [{ activeEnrollmentCount: { $lt: targetBatch.capacity } }, { activeEnrollmentCount: { $exists: false } }] },
+      { _id: targetBatch._id, status: { $in: ["planned", "active"] }, ...(targetBatch.capacity ? { $or: [{ activeEnrollmentCount: { $lt: targetBatch.capacity } }, { activeEnrollmentCount: { $exists: false } }] } : {}) },
       { $inc: { activeEnrollmentCount: 1 } },
       { new: true, session },
     );

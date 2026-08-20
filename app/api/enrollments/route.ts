@@ -22,9 +22,9 @@ import {
 
 function serializeEnrollment(enrollment: {
   _id: unknown;
-  organizationId: unknown;
-  branchId: unknown;
-  academicSessionId: unknown;
+  organizationId?: unknown;
+  branchId?: unknown;
+  academicSessionId?: unknown;
   batchId: unknown;
   studentId: unknown;
   status: string;
@@ -35,9 +35,9 @@ function serializeEnrollment(enrollment: {
 }) {
   return {
     id: String(enrollment._id),
-    organizationId: String(enrollment.organizationId),
-    branchId: String(enrollment.branchId),
-    academicSessionId: String(enrollment.academicSessionId),
+    organizationId: enrollment.organizationId ? String(enrollment.organizationId) : undefined,
+    branchId: enrollment.branchId ? String(enrollment.branchId) : undefined,
+    academicSessionId: enrollment.academicSessionId ? String(enrollment.academicSessionId) : undefined,
     batchId: String(enrollment.batchId),
     studentId: String(enrollment.studentId),
     status: enrollment.status,

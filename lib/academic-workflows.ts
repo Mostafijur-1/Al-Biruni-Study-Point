@@ -6,7 +6,6 @@ import {
   canTransitionAcademicLifecycle,
   getZonedSchedulePosition,
   isEffectiveOn,
-  isValidDateRange,
   isValidRoutineWindow,
   type ClassSessionStatus,
 } from "./academic-rules.ts";
@@ -32,15 +31,15 @@ type WorkflowAuditContext = {
 };
 
 type CreateBatchInput = WorkflowAuditContext & {
-  organizationId: string;
-  branchId: string;
-  academicSessionId: string;
-  code: string;
   name: string;
-  studentClass: "class-9" | "class-10" | "class-11" | "class-12";
-  capacity: number;
-  startsAt: Date;
-  endsAt: Date;
+  organizationId?: string;
+  branchId?: string;
+  academicSessionId?: string;
+  code?: string;
+  studentClass?: "class-9" | "class-10" | "class-11" | "class-12";
+  capacity?: number;
+  startsAt?: Date;
+  endsAt?: Date;
 };
 
 type EnrollStudentInput = WorkflowAuditContext & {
@@ -51,11 +50,7 @@ type EnrollStudentInput = WorkflowAuditContext & {
 
 type UpdateBatchInput = WorkflowAuditContext & {
   batchId: string;
-  code?: string;
   name?: string;
-  capacity?: number;
-  startsAt?: Date;
-  endsAt?: Date;
   status?: "planned" | "active" | "closed" | "archived";
 };
 
@@ -78,7 +73,9 @@ type EndTeacherAssignmentInput = WorkflowAuditContext & {
 };
 
 type CreateRoutineSlotInput = WorkflowAuditContext & {
-  assignmentId: string;
+  batchId: string;
+  teacherId: string;
+  subjectId: string;
   weekday: number;
   startMinute: number;
   endMinute: number;
@@ -106,6 +103,17 @@ type TransitionClassSessionInput = WorkflowAuditContext & {
   nextStatus: Extract<ClassSessionStatus, "completed" | "cancelled">;
 };
 
+type LegacyContextBatch = IBatch & Required<Pick<
+  IBatch,
+  | "organizationId"
+  | "branchId"
+  | "academicSessionId"
+  | "studentClass"
+  | "capacity"
+  | "startsAt"
+  | "endsAt"
+>>;
+
 async function runTransaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
   const session = await mongoose.startSession();
   let result: T | undefined;
@@ -124,13 +132,24 @@ async function runTransaction<T>(work: (session: ClientSession) => Promise<T>): 
   return result;
 }
 
-async function loadWritableBatch(batchId: string, session: ClientSession) {
+async function loadWritableBatch(batchId: string, session: ClientSession): Promise<LegacyContextBatch> {
   const batch = await Batch.findOne({
     _id: batchId,
     status: { $in: ["planned", "active"] },
   }).session(session);
 
   if (!batch) throw new ApiRouteError("Batch not found or not open for changes.", 404);
+  if (
+    !batch.organizationId ||
+    !batch.branchId ||
+    !batch.academicSessionId ||
+    !batch.studentClass ||
+    !batch.capacity ||
+    !batch.startsAt ||
+    !batch.endsAt
+  ) {
+    throw new ApiRouteError("This workflow requires legacy academic batch context.", 409);
+  }
 
   const [organization, branch, academicSession] = await Promise.all([
     Organization.findOne({ _id: batch.organizationId, status: "active" }).session(session),
@@ -153,7 +172,7 @@ async function loadWritableBatch(batchId: string, session: ClientSession) {
     throw new ApiRouteError("Batch dates fall outside its academic session.", 409);
   }
 
-  return batch;
+  return batch as LegacyContextBatch;
 }
 
 async function reserveBatchSeat(
@@ -192,34 +211,13 @@ async function lockBranchSchedule(branchId: Types.ObjectId, session: ClientSessi
 
 export async function createBatch(input: CreateBatchInput) {
   return runTransaction(async (session) => {
-    const [organization, branch, academicSession] = await Promise.all([
-      Organization.findOne({ _id: input.organizationId, status: "active" }).session(session),
-      Branch.findOne({
-        _id: input.branchId,
-        organizationId: input.organizationId,
-        status: "active",
-      }).session(session),
-      AcademicSession.findOne({
-        _id: input.academicSessionId,
-        organizationId: input.organizationId,
-        status: { $in: ["planned", "active"] },
-      }).session(session),
-    ]);
-
-    if (!organization || !branch || !academicSession) {
-      throw new ApiRouteError("Academic organization, branch, or session is invalid.", 409);
-    }
-    if (input.startsAt < academicSession.startsAt || input.endsAt > academicSession.endsAt) {
-      throw new ApiRouteError("Batch dates must fall within the academic session.", 409);
-    }
-
     const [batch] = await Batch.create(
       [
         {
-          organizationId: organization._id,
-          branchId: branch._id,
-          academicSessionId: academicSession._id,
-          code: input.code,
+          organizationId: input.organizationId,
+          branchId: input.branchId,
+          academicSessionId: input.academicSessionId,
+          code: input.code ?? `BATCH-${new mongoose.Types.ObjectId().toHexString().slice(-8).toUpperCase()}`,
           name: input.name,
           studentClass: input.studentClass,
           capacity: input.capacity,
@@ -235,19 +233,12 @@ export async function createBatch(input: CreateBatchInput) {
     await writeAuditLog({
       request: input.request,
       actor: input.actor,
-      organizationId: batch.organizationId,
-      branchId: batch.branchId,
       action: "academic.batch.created",
       resourceType: "Batch",
       resourceId: batch._id,
       reason: input.reason,
       after: {
-        organizationId: String(batch.organizationId),
-        branchId: String(batch.branchId),
-        academicSessionId: String(batch.academicSessionId),
-        code: batch.code,
-        studentClass: batch.studentClass,
-        capacity: batch.capacity,
+        name: batch.name,
         status: batch.status,
       },
       session,
@@ -268,12 +259,7 @@ export async function updateBatch(input: UpdateBatchInput) {
       throw new ApiRouteError(`Batch cannot move from ${batch.status} to ${nextStatus}.`, 409);
     }
     if (batch.status === "closed" || batch.status === "archived") {
-      const changingDetails = input.code || input.name || input.capacity !== undefined || input.startsAt || input.endsAt;
-      if (changingDetails) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
-    }
-    const capacity = input.capacity ?? batch.capacity;
-    if (capacity < batch.activeEnrollmentCount) {
-      throw new ApiRouteError("Capacity cannot be lower than the active enrollment count.", 409);
+      if (input.name) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
     }
     if (nextStatus === "closed" || nextStatus === "archived") {
       const [activeEnrollments, activeAssignments, activeRoutines] = await Promise.all([
@@ -285,48 +271,32 @@ export async function updateBatch(input: UpdateBatchInput) {
         throw new ApiRouteError("Active enrollments, teacher assignments, and routines must be ended before closing this batch.", 409);
       }
     }
-    const academicSession = await AcademicSession.findById(batch.academicSessionId).session(session);
-    if (!academicSession) throw new ApiRouteError("Academic session not found.", 409);
-    const startsAt = input.startsAt ?? batch.startsAt;
-    const endsAt = input.endsAt ?? batch.endsAt;
-    if (!isValidDateRange(startsAt, endsAt) || startsAt < academicSession.startsAt || endsAt > academicSession.endsAt) {
-      throw new ApiRouteError("Batch dates must be valid and remain inside the academic session.", 409);
-    }
-    const datesChanged = startsAt.getTime() !== batch.startsAt.getTime() || endsAt.getTime() !== batch.endsAt.getTime();
-    if (datesChanged) {
-      const [hasEnrollments, hasAssignments, hasRoutines, hasSessions] = await Promise.all([
-        BatchEnrollment.exists({ batchId: batch._id }).session(session),
-        TeacherAssignment.exists({ batchId: batch._id }).session(session),
-        RoutineSlot.exists({ batchId: batch._id }).session(session),
-        ClassSession.exists({ batchId: batch._id }).session(session),
-      ]);
-      if (hasEnrollments || hasAssignments || hasRoutines || hasSessions) {
-        throw new ApiRouteError("Batch dates cannot change after enrollment or scheduling history exists.", 409);
-      }
-    }
-    if (batch.status !== "active" && nextStatus === "active") {
-      const [organization, branch] = await Promise.all([
+    if (
+      batch.status !== "active" &&
+      nextStatus === "active" &&
+      batch.organizationId &&
+      batch.branchId &&
+      batch.academicSessionId
+    ) {
+      const [organization, branch, academicSession] = await Promise.all([
         Organization.findOne({ _id: batch.organizationId, status: "active" }).session(session),
         Branch.findOne({ _id: batch.branchId, organizationId: batch.organizationId, status: "active" }).session(session),
+        AcademicSession.findOne({ _id: batch.academicSessionId, status: { $in: ["planned", "active"] } }).session(session),
       ]);
-      if (!organization || !branch || !["planned", "active"].includes(academicSession.status)) {
-        throw new ApiRouteError("Batch academic context must be active before activation.", 409);
+      if (!organization || !branch || !academicSession) {
+        throw new ApiRouteError("Legacy batch academic context must be active before activation.", 409);
       }
     }
-    const before = { code: batch.code, name: batch.name, capacity: batch.capacity, startsAt: batch.startsAt, endsAt: batch.endsAt, status: batch.status };
+    const before = { name: batch.name, status: batch.status };
     batch.set({
-      code: input.code?.toUpperCase() ?? batch.code,
       name: input.name ?? batch.name,
-      capacity,
-      startsAt,
-      endsAt,
       status: nextStatus,
     });
     await batch.save({ session });
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "academic.batch.updated", resourceType: "Batch", resourceId: batch._id, reason: input.reason,
-      before, after: { code: batch.code, name: batch.name, capacity: batch.capacity, startsAt: batch.startsAt, endsAt: batch.endsAt, status: batch.status }, session,
+      before, after: { name: batch.name, status: batch.status }, session,
     });
     return batch;
   });
@@ -603,40 +573,39 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
     if (!isValidRoutineWindow(input.startMinute, input.endMinute)) {
       throw new ApiRouteError("Routine time window is invalid.", 400, "VALIDATION_ERROR");
     }
-    const assignment = await TeacherAssignment.findOne({
-      _id: input.assignmentId,
-      status: "active",
-    }).session(session);
-    if (!assignment) throw new ApiRouteError("Active teacher assignment not found.", 404);
     if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
-
-    const batch = await loadWritableBatch(String(assignment.batchId), session);
-    const maximumEffectiveTo = assignment.effectiveTo && assignment.effectiveTo < batch.endsAt
-      ? assignment.effectiveTo
-      : batch.endsAt;
-    const effectiveTo = input.effectiveTo ?? maximumEffectiveTo;
+    const [batch, teacher, subject] = await Promise.all([
+      Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
+      User.findOne({ _id: input.teacherId, role: "teacher", isActive: true, approvalStatus: "approved" }).session(session),
+      AcademicSubject.findOne({ _id: input.subjectId, status: "active" }).session(session),
+    ]);
+    if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
+    if (!teacher) throw new ApiRouteError("Active teacher not found.", 404);
+    if (!subject) throw new ApiRouteError("Active subject not found.", 404);
     if (
-      !isEffectiveOn(assignment.effectiveFrom, assignment.effectiveTo, input.effectiveFrom) ||
-      input.effectiveFrom < batch.startsAt ||
-      effectiveTo > maximumEffectiveTo ||
-      input.effectiveFrom > effectiveTo
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)
     ) {
-      throw new ApiRouteError("Routine dates fall outside the assignment or batch.", 409);
+      throw new ApiRouteError("Selected teacher is not authorized for this subject.", 409);
     }
-
-    await lockBranchSchedule(batch.branchId, session);
+    const effectiveTo = input.effectiveTo;
     const conflict = await RoutineSlot.findOne({
-      branchId: batch.branchId,
       status: "active",
       weekday: input.weekday,
       startMinute: { $lt: input.endMinute },
       endMinute: { $gt: input.startMinute },
-      effectiveFrom: { $lte: effectiveTo },
+      ...(effectiveTo ? { effectiveFrom: { $lte: effectiveTo } } : {}),
       $or: [
-        { effectiveTo: { $exists: false } },
-        { effectiveTo: null },
-        { effectiveTo: { $gte: input.effectiveFrom } },
+        { batchId: batch._id },
+        { teacherId: teacher._id },
       ],
+      $and: [{
+        $or: [
+          { effectiveTo: { $exists: false } },
+          { effectiveTo: null },
+          { effectiveTo: { $gte: input.effectiveFrom } },
+        ],
+      }],
     }).session(session);
     if (conflict) throw new ApiRouteError("Routine conflicts with an existing slot.", 409);
 
@@ -646,10 +615,9 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
           organizationId: batch.organizationId,
           branchId: batch.branchId,
           academicSessionId: batch.academicSessionId,
-          batchId: assignment.batchId,
-          subjectId: assignment.subjectId,
-          teacherId: assignment.teacherId,
-          teacherAssignmentId: assignment._id,
+          batchId: batch._id,
+          subjectId: subject._id,
+          teacherId: teacher._id,
           studentIds: [],
           weekday: input.weekday,
           startMinute: input.startMinute,
@@ -674,8 +642,9 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       resourceId: routineSlot._id,
       reason: input.reason,
       after: {
-        assignmentId: String(assignment._id),
-        batchId: String(assignment.batchId),
+        batchId: String(batch._id),
+        teacherId: String(teacher._id),
+        subjectId: String(subject._id),
         targeting: "batch-subject",
         weekday: routineSlot.weekday,
         startMinute: routineSlot.startMinute,
@@ -696,33 +665,39 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     if (!isValidRoutineWindow(input.startMinute, input.endMinute)) {
       throw new ApiRouteError("Routine time window is invalid.", 400, "VALIDATION_ERROR");
     }
-    const [routineSlot, assignment] = await Promise.all([
+    const [routineSlot, batch, teacher, subject] = await Promise.all([
       RoutineSlot.findOne({ _id: input.routineSlotId, status: "active" }).session(session),
-      TeacherAssignment.findOne({ _id: input.assignmentId, status: "active" }).session(session),
+      Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
+      User.findOne({ _id: input.teacherId, role: "teacher", isActive: true, approvalStatus: "approved" }).session(session),
+      AcademicSubject.findOne({ _id: input.subjectId, status: "active" }).session(session),
     ]);
     if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
-    if (!assignment) throw new ApiRouteError("Active teacher assignment not found.", 404);
+    if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
+    if (!teacher) throw new ApiRouteError("Active teacher not found.", 404);
+    if (!subject) throw new ApiRouteError("Active subject not found.", 404);
+    if (
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)
+    ) {
+      throw new ApiRouteError("Selected teacher is not authorized for this subject.", 409);
+    }
     const linkedSession = await ClassSession.exists({ routineSlotId: routineSlot._id, status: "scheduled" }).session(session);
     if (linkedSession) throw new ApiRouteError("This legacy routine has a scheduled class session and cannot be edited.", 409);
 
-    const batch = await loadWritableBatch(String(assignment.batchId), session);
-    const maximumEffectiveTo = assignment.effectiveTo && assignment.effectiveTo < batch.endsAt ? assignment.effectiveTo : batch.endsAt;
-    const effectiveTo = input.effectiveTo ?? maximumEffectiveTo;
-    if (!isEffectiveOn(assignment.effectiveFrom, assignment.effectiveTo, input.effectiveFrom) || input.effectiveFrom < batch.startsAt || effectiveTo > maximumEffectiveTo || input.effectiveFrom > effectiveTo) {
-      throw new ApiRouteError("Routine dates fall outside the assignment or batch.", 409);
-    }
-    await lockBranchSchedule(batch.branchId, session);
+    const effectiveTo = input.effectiveTo;
     const conflict = await RoutineSlot.findOne({
-      _id: { $ne: routineSlot._id }, branchId: batch.branchId, status: "active", weekday: input.weekday,
-      startMinute: { $lt: input.endMinute }, endMinute: { $gt: input.startMinute }, effectiveFrom: { $lte: effectiveTo },
-      $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
+      _id: { $ne: routineSlot._id }, status: "active", weekday: input.weekday,
+      startMinute: { $lt: input.endMinute }, endMinute: { $gt: input.startMinute },
+      ...(effectiveTo ? { effectiveFrom: { $lte: effectiveTo } } : {}),
+      $or: [{ batchId: batch._id }, { teacherId: teacher._id }],
+      $and: [{ $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }] }],
     }).session(session);
     if (conflict) throw new ApiRouteError("Routine conflicts with an existing slot.", 409);
 
     const before = { teacherId: String(routineSlot.teacherId), studentIds: (routineSlot.studentIds ?? []).map(String), weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute };
     routineSlot.set({
       organizationId: batch.organizationId, branchId: batch.branchId, academicSessionId: batch.academicSessionId,
-      batchId: assignment.batchId, subjectId: assignment.subjectId, teacherId: assignment.teacherId, teacherAssignmentId: assignment._id,
+      batchId: batch._id, subjectId: subject._id, teacherId: teacher._id, teacherAssignmentId: undefined,
       studentIds: [], weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
       room: input.room?.trim() || undefined, effectiveFrom: input.effectiveFrom, effectiveTo,
     });

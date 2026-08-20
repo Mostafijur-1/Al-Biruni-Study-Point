@@ -177,7 +177,9 @@ try {
   const routine = await createRoutineSlot({
     request,
     actor,
-    assignmentId: String(assignment._id),
+    batchId: String(secondBatch._id),
+    teacherId: String(teacher._id),
+    subjectId: String(subject._id),
     weekday: 1,
     startMinute: 9 * 60,
     endMinute: 10 * 60,
@@ -190,7 +192,9 @@ try {
     createRoutineSlot({
       request,
       actor,
-      assignmentId: String(assignment._id),
+      batchId: String(secondBatch._id),
+      teacherId: String(teacher._id),
+      subjectId: String(subject._id),
       weekday: 1,
       startMinute: 9 * 60 + 30,
       endMinute: 10 * 60 + 30,

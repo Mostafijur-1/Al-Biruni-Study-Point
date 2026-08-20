@@ -3,9 +3,9 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import type { EnrollmentStatus } from "@/lib/academic-rules";
 
 export interface IBatchEnrollment extends Document {
-  organizationId: Types.ObjectId;
-  branchId: Types.ObjectId;
-  academicSessionId: Types.ObjectId;
+  organizationId?: Types.ObjectId;
+  branchId?: Types.ObjectId;
+  academicSessionId?: Types.ObjectId;
   batchId: Types.ObjectId;
   studentId: Types.ObjectId;
   status: EnrollmentStatus;
@@ -21,9 +21,9 @@ export interface IBatchEnrollment extends Document {
 
 const BatchEnrollmentSchema = new Schema<IBatchEnrollment>(
   {
-    organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true },
-    branchId: { type: Schema.Types.ObjectId, ref: "Branch", required: true },
-    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession", required: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
+    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession" },
     batchId: { type: Schema.Types.ObjectId, ref: "Batch", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: {

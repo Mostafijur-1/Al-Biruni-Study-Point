@@ -8,6 +8,9 @@ import { cn } from "@/lib/utils";
 
 export type RoutineView = {
   id: string;
+  batchId?: string;
+  subjectId?: string;
+  teacherId: string;
   teacherAssignmentId?: string;
   targeting?: "batch-subject" | "legacy-students";
   eligibleStudentCount?: number;
@@ -19,7 +22,7 @@ export type RoutineView = {
   effectiveTo?: string;
   teacher: { id: string; name: string };
   students: Array<{ id: string; name: string; reference?: string }>;
-  batch?: { name: string; code: string };
+  batch?: { name: string; code?: string };
   subject?: { name: string; nameBn: string };
 };
 
