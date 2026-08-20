@@ -28,7 +28,9 @@ function minutes(value: string) { const [hour, minute] = value.split(":").map(Nu
 export function AdminRoutinePlanner() {
   const [routines, setRoutines] = useState<RoutineView[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [assignmentId, setAssignmentId] = useState("");
+  const [batchId, setBatchId] = useState("");
+  const [teacherId, setTeacherId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
   const [editingId, setEditingId] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1]);
   const [start, setStart] = useState("09:00");
@@ -54,18 +56,21 @@ export function AdminRoutinePlanner() {
     return () => window.clearTimeout(task);
   }, [load]);
 
-  const selectedAssignment = useMemo(() => assignments.find((item) => item.id === assignmentId), [assignments, assignmentId]);
+  const batchOptions = useMemo(() => [...new Map(assignments.map((item) => [item.batchId, { id: item.batchId, ...item.batch }])).values()], [assignments]);
+  const teacherOptions = useMemo(() => [...new Map(assignments.filter((item) => item.batchId === batchId).map((item) => [item.teacherId, { id: item.teacherId, ...item.teacher }])).values()], [assignments, batchId]);
+  const subjectOptions = useMemo(() => assignments.filter((item) => item.batchId === batchId && item.teacherId === teacherId), [assignments, batchId, teacherId]);
+  const selectedAssignment = useMemo(() => assignments.find((item) => item.batchId === batchId && item.teacherId === teacherId && item.subjectId === subjectId), [assignments, batchId, teacherId, subjectId]);
 
   async function saveRoutine(event: FormEvent) {
     event.preventDefault();
-    if (!assignmentId || weekdays.length === 0) { setError(true); setMessage("ব্যাচ, বিষয় ও শিক্ষক নির্বাচন করুন।"); return; }
+    if (!selectedAssignment || weekdays.length === 0) { setError(true); setMessage("ব্যাচ, শিক্ষক ও বিষয় নির্বাচন করুন।"); return; }
     setSaving(true); setMessage("");
     const days = editingId ? [weekdays[0]] : weekdays;
     const results = await Promise.all(days.map((weekday) => apiFetch<{ routine: RoutineView }>("/api/routines", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: editingId ? "update" : "create", routineSlotId: editingId || undefined,
-        assignmentId, weekday, startMinute: minutes(start), endMinute: minutes(end), room: room || undefined,
+        assignmentId: selectedAssignment.id, weekday, startMinute: minutes(start), endMinute: minutes(end), room: room || undefined,
         reason: editingId ? "ব্যাচ ও বিষয়ভিত্তিক রুটিন আপডেট" : "ব্যাচ ও বিষয়ভিত্তিক রুটিন প্রকাশ",
       }),
     })));
@@ -73,7 +78,7 @@ export function AdminRoutinePlanner() {
     if (failed) { setError(true); setMessage(getApiErrorMessage(failed.payload, "রুটিন সংরক্ষণ করা যায়নি।")); }
     else {
       setError(false); setMessage(editingId ? "রুটিন আপডেট হয়েছে।" : "রুটিন প্রকাশ হয়েছে। সংশ্লিষ্ট শিক্ষার্থীরা স্বয়ংক্রিয়ভাবে এটি দেখবে।");
-      setEditingId(""); setAssignmentId(""); await load();
+      setEditingId(""); setBatchId(""); setTeacherId(""); setSubjectId(""); await load();
     }
     setSaving(false);
   }
@@ -88,7 +93,8 @@ export function AdminRoutinePlanner() {
   }
 
   function editRoutine(routine: RoutineView) {
-    setEditingId(routine.id); setAssignmentId(routine.teacherAssignmentId || ""); setWeekdays([routine.weekday]);
+    const assignment = assignments.find((item) => item.id === routine.teacherAssignmentId);
+    setEditingId(routine.id); setBatchId(assignment?.batchId || ""); setTeacherId(assignment?.teacherId || ""); setSubjectId(assignment?.subjectId || ""); setWeekdays([routine.weekday]);
     setStart(`${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`);
     setEnd(`${String(Math.floor(routine.endMinute / 60)).padStart(2, "0")}:${String(routine.endMinute % 60).padStart(2, "0")}`);
     setRoom(routine.room || ""); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -103,9 +109,11 @@ export function AdminRoutinePlanner() {
     {message && <Alert variant={error ? "destructive" : "success"}>{message}</Alert>}
     <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
       <form onSubmit={saveRoutine} className="h-fit space-y-5 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-md)] xl:sticky xl:top-24">
-        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary text-white"><CalendarPlus className="size-5" /></span><div><h2 className="font-black text-primary">{editingId ? "রুটিন সম্পাদনা" : "নতুন রুটিন"}</h2><p className="text-xs text-muted">Batch + Subject + Teacher</p></div></div>
-        <div className="space-y-2"><Label htmlFor="assignment">১. ব্যাচ, বিষয় ও শিক্ষক</Label><select id="assignment" className={fieldClass} required value={assignmentId} onChange={(event) => setAssignmentId(event.target.value)}><option value="">নির্বাচন করুন</option>{assignments.map((item) => <option key={item.id} value={item.id}>{item.batch?.name} — {item.subject?.nameBn || item.subject?.name} — {item.teacher?.name}</option>)}</select>{selectedAssignment && <p className="rounded-xl bg-secondary p-3 text-xs text-primary">এই ব্যাচে নির্বাচিত বিষয়ের বর্তমান enrolled শিক্ষার্থীরা স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত হবে।</p>}</div>
-        <fieldset><legend className="text-sm font-bold text-primary">২. সাপ্তাহিক দিন</legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" aria-label={day} aria-pressed={weekdays.includes(index)} onClick={() => setWeekdays((current) => editingId ? [index] : current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort())} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekdays.includes(index) ? "border-primary bg-primary text-white" : "border-border bg-white text-primary")}>{shortDays[index]}</button>)}</div></fieldset>
+        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary text-white"><CalendarPlus className="size-5" /></span><div><h2 className="font-black text-primary">{editingId ? "রুটিন সম্পাদনা" : "নতুন রুটিন"}</h2><p className="text-xs text-muted">Batch → Teacher → Subject</p></div></div>
+        <div className="space-y-2"><Label htmlFor="routine-batch">১. ব্যাচ</Label><select id="routine-batch" className={fieldClass} required value={batchId} onChange={(event) => { setBatchId(event.target.value); setTeacherId(""); setSubjectId(""); }}><option value="">ব্যাচ নির্বাচন করুন</option>{batchOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
+        <div className="space-y-2"><Label htmlFor="routine-teacher">২. শিক্ষক</Label><select id="routine-teacher" className={fieldClass} required disabled={!batchId} value={teacherId} onChange={(event) => { setTeacherId(event.target.value); setSubjectId(""); }}><option value="">শিক্ষক নির্বাচন করুন</option>{teacherOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{batchId && teacherOptions.length === 0 && <p className="text-xs text-amber-700">এই ব্যাচে কোনো active teacher assignment নেই।</p>}</div>
+        <div className="space-y-2"><Label htmlFor="routine-subject">৩. বিষয়</Label><select id="routine-subject" className={fieldClass} required disabled={!teacherId} value={subjectId} onChange={(event) => setSubjectId(event.target.value)}><option value="">বিষয় নির্বাচন করুন</option>{subjectOptions.map((item) => <option key={item.id} value={item.subjectId}>{item.subject?.nameBn || item.subject?.name}</option>)}</select>{selectedAssignment && <p className="rounded-xl bg-secondary p-3 text-xs text-primary">এই ব্যাচে নির্বাচিত বিষয়ের enrolled শিক্ষার্থীরা স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত হবে।</p>}</div>
+        <fieldset><legend className="text-sm font-bold text-primary">৪. সাপ্তাহিক দিন</legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" aria-label={day} aria-pressed={weekdays.includes(index)} onClick={() => setWeekdays((current) => editingId ? [index] : current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort())} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekdays.includes(index) ? "border-primary bg-primary text-white" : "border-border bg-white text-primary")}>{shortDays[index]}</button>)}</div></fieldset>
         <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="start">শুরু</Label><Input id="start" type="time" required value={start} onChange={(event) => setStart(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="end">শেষ</Label><Input id="end" type="time" required value={end} onChange={(event) => setEnd(event.target.value)} /></div></div>
         <div className="space-y-2"><Label htmlFor="room">কক্ষ (ঐচ্ছিক)</Label><Input id="room" value={room} onChange={(event) => setRoom(event.target.value)} placeholder="যেমন: রুম ২" /></div>
         <Button className="w-full" size="lg" disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ করুন" : "রুটিন প্রকাশ করুন"}</Button>

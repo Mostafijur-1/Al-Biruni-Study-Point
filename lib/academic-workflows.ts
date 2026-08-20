@@ -3,8 +3,10 @@ import type { NextRequest } from "next/server";
 
 import {
   canTransitionClassSession,
+  canTransitionAcademicLifecycle,
   getZonedSchedulePosition,
   isEffectiveOn,
+  isValidDateRange,
   isValidRoutineWindow,
   type ClassSessionStatus,
 } from "./academic-rules.ts";
@@ -45,6 +47,16 @@ type EnrollStudentInput = WorkflowAuditContext & {
   batchId: string;
   studentId: string;
   effectiveFrom: Date;
+};
+
+type UpdateBatchInput = WorkflowAuditContext & {
+  batchId: string;
+  code?: string;
+  name?: string;
+  capacity?: number;
+  startsAt?: Date;
+  endsAt?: Date;
+  status?: "planned" | "active" | "closed" | "archived";
 };
 
 type TransferStudentInput = WorkflowAuditContext & {
@@ -241,6 +253,81 @@ export async function createBatch(input: CreateBatchInput) {
       session,
     });
 
+    return batch;
+  });
+}
+
+export async function updateBatch(input: UpdateBatchInput) {
+  return runTransaction(async (session) => {
+    const batch = await Batch.findById(input.batchId).session(session);
+    if (!batch) throw new ApiRouteError("Batch not found.", 404);
+    if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage batches.", 403);
+
+    const nextStatus = input.status ?? batch.status;
+    if (!canTransitionAcademicLifecycle(batch.status, nextStatus)) {
+      throw new ApiRouteError(`Batch cannot move from ${batch.status} to ${nextStatus}.`, 409);
+    }
+    if (batch.status === "closed" || batch.status === "archived") {
+      const changingDetails = input.code || input.name || input.capacity !== undefined || input.startsAt || input.endsAt;
+      if (changingDetails) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
+    }
+    const capacity = input.capacity ?? batch.capacity;
+    if (capacity < batch.activeEnrollmentCount) {
+      throw new ApiRouteError("Capacity cannot be lower than the active enrollment count.", 409);
+    }
+    if (nextStatus === "closed" || nextStatus === "archived") {
+      const [activeEnrollments, activeAssignments, activeRoutines] = await Promise.all([
+        BatchEnrollment.exists({ batchId: batch._id, status: "active" }).session(session),
+        TeacherAssignment.exists({ batchId: batch._id, status: "active" }).session(session),
+        RoutineSlot.exists({ batchId: batch._id, status: "active" }).session(session),
+      ]);
+      if (activeEnrollments || activeAssignments || activeRoutines) {
+        throw new ApiRouteError("Active enrollments, teacher assignments, and routines must be ended before closing this batch.", 409);
+      }
+    }
+    const academicSession = await AcademicSession.findById(batch.academicSessionId).session(session);
+    if (!academicSession) throw new ApiRouteError("Academic session not found.", 409);
+    const startsAt = input.startsAt ?? batch.startsAt;
+    const endsAt = input.endsAt ?? batch.endsAt;
+    if (!isValidDateRange(startsAt, endsAt) || startsAt < academicSession.startsAt || endsAt > academicSession.endsAt) {
+      throw new ApiRouteError("Batch dates must be valid and remain inside the academic session.", 409);
+    }
+    const datesChanged = startsAt.getTime() !== batch.startsAt.getTime() || endsAt.getTime() !== batch.endsAt.getTime();
+    if (datesChanged) {
+      const [hasEnrollments, hasAssignments, hasRoutines, hasSessions] = await Promise.all([
+        BatchEnrollment.exists({ batchId: batch._id }).session(session),
+        TeacherAssignment.exists({ batchId: batch._id }).session(session),
+        RoutineSlot.exists({ batchId: batch._id }).session(session),
+        ClassSession.exists({ batchId: batch._id }).session(session),
+      ]);
+      if (hasEnrollments || hasAssignments || hasRoutines || hasSessions) {
+        throw new ApiRouteError("Batch dates cannot change after enrollment or scheduling history exists.", 409);
+      }
+    }
+    if (batch.status !== "active" && nextStatus === "active") {
+      const [organization, branch] = await Promise.all([
+        Organization.findOne({ _id: batch.organizationId, status: "active" }).session(session),
+        Branch.findOne({ _id: batch.branchId, organizationId: batch.organizationId, status: "active" }).session(session),
+      ]);
+      if (!organization || !branch || !["planned", "active"].includes(academicSession.status)) {
+        throw new ApiRouteError("Batch academic context must be active before activation.", 409);
+      }
+    }
+    const before = { code: batch.code, name: batch.name, capacity: batch.capacity, startsAt: batch.startsAt, endsAt: batch.endsAt, status: batch.status };
+    batch.set({
+      code: input.code?.toUpperCase() ?? batch.code,
+      name: input.name ?? batch.name,
+      capacity,
+      startsAt,
+      endsAt,
+      status: nextStatus,
+    });
+    await batch.save({ session });
+    await writeAuditLog({
+      request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
+      action: "academic.batch.updated", resourceType: "Batch", resourceId: batch._id, reason: input.reason,
+      before, after: { code: batch.code, name: batch.name, capacity: batch.capacity, startsAt: batch.startsAt, endsAt: batch.endsAt, status: batch.status }, session,
+    });
     return batch;
   });
 }

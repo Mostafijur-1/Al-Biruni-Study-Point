@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   batchCreateSchema,
+  batchUpdateSchema,
   classSessionMutationSchema,
   enrollmentMutationSchema,
   routineMutationSchema,
@@ -36,6 +37,12 @@ test("batch creation requires a bounded capacity and valid date range", () => {
     batchCreateSchema.safeParse({ ...batch, startsAt: batch.endsAt }).success,
     false,
   );
+});
+
+test("batch management requires an explicit audited change", () => {
+  assert.equal(batchUpdateSchema.parse({ batchId: id, status: "active", reason: "Approved batch activation" }).status, "active");
+  assert.equal(batchUpdateSchema.safeParse({ batchId: id, reason: "No actual batch change" }).success, false);
+  assert.equal(batchUpdateSchema.safeParse({ batchId: id, status: "deleted", reason: "Invalid destructive state" }).success, false);
 });
 
 test("enrollment mutations require explicit actions, valid IDs, and audit reasons", () => {

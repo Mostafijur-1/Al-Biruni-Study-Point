@@ -9,7 +9,7 @@ export const batchListQuerySchema = z.object({
   branchId: objectIdSchema.optional(),
   academicSessionId: objectIdSchema.optional(),
   studentClass: studentClassSchema.optional(),
-  status: z.enum(["planned", "active", "closed", "archived"]).default("active"),
+  status: z.enum(["planned", "active", "closed", "archived", "all"]).default("active"),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
@@ -29,6 +29,21 @@ export const batchCreateSchema = z
   .refine((value) => value.startsAt < value.endsAt, {
     path: ["endsAt"],
     message: "Batch end date must be after its start date.",
+  });
+
+export const batchUpdateSchema = z
+  .object({
+    batchId: objectIdSchema,
+    code: z.string().trim().min(2).max(30).optional(),
+    name: z.string().trim().min(2).max(120).optional(),
+    capacity: z.coerce.number().int().min(1).max(500).optional(),
+    startsAt: z.coerce.date().optional(),
+    endsAt: z.coerce.date().optional(),
+    status: z.enum(["planned", "active", "closed", "archived"]).optional(),
+    reason: mutationReasonSchema,
+  })
+  .refine((value) => Object.keys(value).some((key) => !["batchId", "reason"].includes(key)), {
+    message: "At least one batch field must change.",
   });
 
 export const enrollmentListQuerySchema = z.object({
