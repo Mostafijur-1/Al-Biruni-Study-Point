@@ -30,6 +30,7 @@ import { trackStudentEvent } from "@/lib/analytics/client";
 import { DailyLearningPlanCard } from "@/components/learning/DailyLearningPlanCard";
 import { useSession } from "@/lib/hooks/use-session";
 import { cn } from "@/lib/utils";
+import { RoutineDashboard } from "@/components/routine/RoutineDashboard";
 
 type GameProfileData = {
   profile: {
@@ -260,6 +261,7 @@ export function StudentHomeDashboard() {
 
   return (
     <section className="space-y-6">
+      <RoutineDashboard />
       <div className="relative overflow-hidden rounded-3xl bg-primary px-5 py-6 text-primary-foreground shadow-[var(--shadow-lg)] sm:px-7 sm:py-8">
         <div
           className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-brand-blue/20"

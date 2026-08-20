@@ -66,6 +66,7 @@ type EndTeacherAssignmentInput = WorkflowAuditContext & {
 
 type CreateRoutineSlotInput = WorkflowAuditContext & {
   assignmentId: string;
+  studentIds: string[];
   weekday: number;
   startMinute: number;
   endMinute: number;
@@ -512,8 +513,27 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       status: "active",
     }).session(session);
     if (!assignment) throw new ApiRouteError("Active teacher assignment not found.", 404);
-    if (input.actor.role === "teacher" && String(assignment.teacherId) !== input.actor.id) {
-      throw new ApiRouteError("You cannot manage another teacher's routine.", 403);
+    if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
+
+    const studentIds = [...new Set(input.studentIds)];
+    const students = await User.find({
+      _id: { $in: studentIds },
+      role: "student",
+      isActive: true,
+      approvalStatus: "approved",
+    }).select("_id").session(session).lean();
+    if (students.length !== studentIds.length) {
+      throw new ApiRouteError("One or more selected students are unavailable.", 409);
+    }
+    const enrolledStudentIds = await BatchEnrollment.distinct("studentId", {
+      batchId: assignment.batchId,
+      studentId: { $in: studentIds },
+      status: "active",
+      effectiveFrom: { $lte: input.effectiveFrom },
+      $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
+    }).session(session);
+    if (enrolledStudentIds.length !== studentIds.length) {
+      throw new ApiRouteError("Every selected student must be actively enrolled in this batch.", 409);
     }
 
     const batch = await loadWritableBatch(String(assignment.batchId), session);
@@ -564,6 +584,7 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
           subjectId: assignment.subjectId,
           teacherId: assignment.teacherId,
           teacherAssignmentId: assignment._id,
+          studentIds,
           weekday: input.weekday,
           startMinute: input.startMinute,
           endMinute: input.endMinute,
@@ -589,6 +610,7 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       after: {
         assignmentId: String(assignment._id),
         batchId: String(assignment.batchId),
+        studentIds,
         weekday: routineSlot.weekday,
         startMinute: routineSlot.startMinute,
         endMinute: routineSlot.endMinute,
@@ -609,9 +631,7 @@ export async function endRoutineSlot(input: EndRoutineSlotInput) {
       status: "active",
     }).session(session);
     if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
-    if (input.actor.role === "teacher" && String(routineSlot.teacherId) !== input.actor.id) {
-      throw new ApiRouteError("You cannot manage another teacher's routine.", 403);
-    }
+    if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
     if (input.effectiveAt < routineSlot.effectiveFrom) {
       throw new ApiRouteError("Routine end date cannot precede its start date.", 409);
     }

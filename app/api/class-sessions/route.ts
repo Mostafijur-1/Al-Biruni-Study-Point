@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const actor = await requireAuth(request, ["admin", "teacher"]);
+    const actor = await requireAuth(request, ["admin"]);
     if (!areAcademicWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED)) {
       throw new ApiRouteError("Academic write workflows are not enabled.", 503);
     }

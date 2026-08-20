@@ -87,6 +87,7 @@ test("routine contracts reject inverted time windows", () => {
   const routine = routineMutationSchema.parse({
     action: "create",
     assignmentId: id,
+    studentIds: [id],
     weekday: 6,
     startMinute: 9 * 60,
     endMinute: 10 * 60,

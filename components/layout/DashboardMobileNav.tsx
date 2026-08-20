@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpen,
   Brain,
+  CalendarDays,
   FileQuestion,
   GraduationCap,
   Home,
@@ -34,6 +35,7 @@ type NavItem = {
 
 const navigationByRole: Record<UserRole, NavItem[]> = {
   student: [
+    { href: "/student", label: "হোম", icon: Home, mobilePrimary: true },
     { href: "/student/profile", label: "প্রোফাইল", icon: UserCircle, mobilePrimary: true },
     {
       href: "/student/practice",
@@ -90,6 +92,12 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       href: "/admin/teachers",
       label: "শিক্ষক",
       icon: GraduationCap,
+      mobilePrimary: true,
+    },
+    {
+      href: "/admin/routine",
+      label: "ক্লাস রুটিন",
+      icon: CalendarDays,
       mobilePrimary: true,
     },
     {

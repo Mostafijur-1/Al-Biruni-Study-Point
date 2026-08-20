@@ -103,6 +103,7 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
     .object({
       action: z.literal("create"),
       assignmentId: objectIdSchema,
+      studentIds: z.array(objectIdSchema).min(1).max(500),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),

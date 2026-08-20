@@ -6,8 +6,9 @@ import {
   isTopLevelDashboardRoute,
 } from "../lib/dashboard-navigation.ts";
 
-test("student navigation restores the focused four-item menu", () => {
+test("student navigation includes the schedule-first dashboard", () => {
   assert.deepEqual(dashboardTopLevelRoutes.student, [
+    "/student",
     "/student/profile",
     "/student/practice",
     "/student/exams",
@@ -27,5 +28,6 @@ test("teacher navigation exposes class content without routine sessions", () => 
 
 test("admin navigation exposes academic operations without exceeding six destinations", () => {
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/academic"), false);
-  assert.equal(dashboardTopLevelRoutes.admin.length, 5);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/routine"), true);
+  assert.equal(dashboardTopLevelRoutes.admin.length, 6);
 });

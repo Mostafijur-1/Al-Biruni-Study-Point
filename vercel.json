@@ -6,8 +6,8 @@
   "regions": ["bom1"],
   "crons": [
     {
-      "path": "/api/cron/evening-reminder",
-      "schedule": "0 14 * * *"
+      "path": "/api/cron/class-reminders",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

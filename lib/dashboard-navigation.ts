@@ -2,6 +2,7 @@ import type { UserRole } from "../types";
 
 export const dashboardTopLevelRoutes = {
   student: [
+    "/student",
     "/student/profile",
     "/student/practice",
     "/student/exams",
@@ -19,6 +20,7 @@ export const dashboardTopLevelRoutes = {
     "/admin",
     "/admin/students",
     "/admin/teachers",
+    "/admin/routine",
     "/admin/practice-mcqs",
     "/admin/profile",
   ],

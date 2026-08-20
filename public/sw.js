@@ -101,7 +101,9 @@ self.addEventListener("push", (event) => {
     vibrate: [100, 50, 100],
     data: {
       url: data.url || "/"
-    }
+    },
+    tag: data.tag,
+    renotify: false
   };
 
   event.waitUntil(
