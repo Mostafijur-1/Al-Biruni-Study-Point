@@ -13,6 +13,11 @@ const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 
 const mutationSchema = z.discriminatedUnion("action", [
   z.object({
+    action: z.literal("set-membership"),
+    userId: objectId,
+    included: z.boolean(),
+  }),
+  z.object({
     action: z.literal("set-profile"),
     userId: objectId,
     defaultAmountTk: z.coerce.number().int().min(0).max(10_000_000),
@@ -44,12 +49,24 @@ export async function GET(request: NextRequest) {
     const month = request.nextUrl.searchParams.get("month") || new Date().toISOString().slice(0, 7);
     const roleParam = request.nextUrl.searchParams.get("role") || "all";
     const q = request.nextUrl.searchParams.get("q")?.trim() || "";
+    const mode = request.nextUrl.searchParams.get("mode");
     if (!monthPattern.test(month)) return fail("Invalid month.", 400);
     if (!['all', 'student', 'teacher'].includes(roleParam)) return fail("Invalid role.", 400);
     const requestedRole = roleParam === "student" || roleParam === "teacher" ? roleParam : undefined;
     const search = q ? new RegExp(escapeRegex(q), "i") : undefined;
+    if (mode === "candidates") {
+      if (!requestedRole || q.length < 1) return success({ users: [] });
+      const candidates = await User.find({
+        role: requestedRole,
+        isAbspMember: { $ne: true },
+        approvalStatus: "approved",
+        $or: [{ name: search }, { reference: search }],
+      }).select("name reference phone studentClass role").sort({ name: 1 }).limit(20).lean();
+      return success({ users: candidates.map((user) => ({ id: String(user._id), name: user.name, reference: user.reference, phone: user.phone, studentClass: user.studentClass, role: user.role })) });
+    }
     const users = await User.find({
       role: requestedRole ?? { $in: ["student", "teacher"] },
+      isAbspMember: true,
       approvalStatus: "approved",
       ...(search ? { $or: [{ name: search }, { reference: search }, { phone: search }] } : {}),
     }).select("name reference phone email role studentClass isActive").sort({ role: 1, name: 1 }).limit(500).lean();
@@ -96,6 +113,13 @@ export async function POST(request: NextRequest) {
     const user = await User.findOne({ _id: input.userId, role: { $in: ["student", "teacher"] } }).select("role").lean();
     if (!user) return fail("Student or teacher not found.", 404);
     const role = user.role as "student" | "teacher";
+    if (input.action === "set-membership") {
+      await User.updateOne({ _id: input.userId }, { $set: { isAbspMember: input.included } });
+      await PaymentProfile.updateOne({ userId: input.userId }, { $set: { isActive: input.included } });
+      return success({ membership: { userId: input.userId, included: input.included } });
+    }
+    const member = await User.exists({ _id: input.userId, isAbspMember: true });
+    if (!member) return fail("This user is not included as an ABSP member.", 403);
     if (input.action === "set-profile") {
       const profile = await PaymentProfile.findOneAndUpdate(
         { userId: input.userId },

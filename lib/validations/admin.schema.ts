@@ -5,6 +5,7 @@ export const adminUpdateUserSchema = z
     isActive: z.boolean().optional(),
     approvalStatus: z.enum(["pending", "approved", "rejected"]).optional(),
     refreshCharge: z.boolean().optional(),
+    isAbspMember: z.boolean().optional(),
     teacherDomain: z
       .object({
         isAll: z.boolean(),
@@ -19,6 +20,7 @@ export const adminUpdateUserSchema = z
       value.isActive !== undefined ||
       value.approvalStatus !== undefined ||
       value.refreshCharge !== undefined ||
+      value.isAbspMember !== undefined ||
       value.teacherDomain !== undefined,
     {
       message: "No changes provided.",

@@ -22,6 +22,7 @@ type AdminUserRow = {
   isActive: boolean;
   approvalStatus: ApprovalStatus;
   reference?: string;
+  isAbspMember: boolean;
   teacherDomain?: {
     isAll: boolean;
     classes: StudentClass[];
@@ -115,6 +116,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
         isActive?: boolean;
         approvalStatus?: ApprovalStatus;
         refreshCharge?: boolean;
+        isAbspMember?: boolean;
         teacherDomain?: { isAll: boolean; classes: string[]; subjects: string[]; students?: string[] };
       },
     ) => {
@@ -313,6 +315,9 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                         {user.approvalStatus}
                       </span>
                     )}
+                    {role === "teacher" && user.isAbspMember && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-black text-white">ABSP শিক্ষক</span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted">
                     {user.phone || user.email || "—"}
@@ -397,6 +402,16 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                       ? "Deactivate"
                       : "Activate"}
                   </Button>
+                  {role === "teacher" && (
+                    <Button
+                      size="sm"
+                      variant={user.isAbspMember ? "secondary" : "outline"}
+                      loading={pendingId === user.id}
+                      onClick={() => updateUser(user.id, { isAbspMember: !user.isAbspMember })}
+                    >
+                      {user.isAbspMember ? "ABSP থেকে বাদ দিন" : "ABSP শিক্ষক করুন"}
+                    </Button>
+                  )}
                   {role === "teacher" && (
                     <Button
                       size="sm"

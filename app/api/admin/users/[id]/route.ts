@@ -40,6 +40,10 @@ export async function PATCH(request: NextRequest, context: AdminUserRouteContext
       user.isActive = parsed.isActive;
     }
 
+    if (parsed.isAbspMember !== undefined) {
+      user.isAbspMember = parsed.isAbspMember;
+    }
+
     if (parsed.refreshCharge === true) {
       if (user.role !== "teacher") {
         return fail("Charge refresh is only available for teachers.", 400);

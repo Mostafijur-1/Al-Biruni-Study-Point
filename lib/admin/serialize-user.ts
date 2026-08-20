@@ -15,6 +15,7 @@ export function serializeAdminUser(user: IUser | Record<string, unknown>) {
     isActive: doc.isActive,
     approvalStatus: doc.approvalStatus,
     reference: doc.reference,
+    isAbspMember: !!doc.isAbspMember,
     teacherUsage: doc.role === "teacher" ? getTeacherMonthlyUsage(doc.teacherUsage) : undefined,
     teacherDomain: doc.teacherDomain
       ? {

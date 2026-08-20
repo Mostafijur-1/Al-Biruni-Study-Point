@@ -14,6 +14,7 @@ export interface IUser extends Document {
   isActive: boolean;
   approvalStatus: ApprovalStatus;
   reference?: string;
+  isAbspMember: boolean;
   teacherDomain?: {
     isAll: boolean;
     classes: StudentClass[];
@@ -75,6 +76,7 @@ const UserSchema = new Schema<IUser>(
       lastChargeRefreshedAt: { type: Date },
     },
     reference: { type: String, trim: true },
+    isAbspMember: { type: Boolean, default: false },
     refreshTokenHash: { type: String, select: false },
     sessionVersion: { type: Number, default: 0, min: 0 },
     aiProfile: { type: Schema.Types.Mixed, default: {} },
@@ -102,6 +104,7 @@ if (
     !ExistingUserModel.schema.path("sessionVersion") ||
     !ExistingUserModel.schema.path("schoolCollege") ||
     !ExistingUserModel.schema.path("reference") ||
+    !ExistingUserModel.schema.path("isAbspMember") ||
     ExistingUserModel.schema.path("phone")?.options.required)
 ) {
   mongoose.deleteModel("User");

@@ -33,6 +33,8 @@ export function FinanceWorkspace() {
   const [month, setSelectedMonth] = useState(monthNow);
   const [role, setRole] = useState<"all" | "student" | "teacher">("all");
   const [query, setQuery] = useState("");
+  const [candidateQuery, setCandidateQuery] = useState("");
+  const [candidates, setCandidates] = useState<Array<{ id: string; name: string; reference?: string; phone?: string; studentClass?: string }>>([]);
   const [selected, setSelected] = useState<FinanceRecord>();
   const [defaultAmount, setDefaultAmount] = useState(0);
   const [monthAmount, setMonthAmount] = useState(0);
@@ -51,6 +53,15 @@ export function FinanceWorkspace() {
   }, [month, query, role]);
 
   useEffect(() => { const timer = window.setTimeout(() => { void load(); }, 250); return () => window.clearTimeout(timer); }, [load]);
+
+  useEffect(() => {
+    if (!candidateQuery.trim()) return;
+    const timer = window.setTimeout(async () => {
+      const result = await apiFetch<{ users: Array<{ id: string; name: string; reference?: string; phone?: string; studentClass?: string }> }>(`/api/admin/finance?mode=candidates&role=student&q=${encodeURIComponent(candidateQuery)}`);
+      if (result.ok && isApiSuccess(result.payload)) setCandidates(result.payload.data.users);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [candidateQuery]);
 
   function choose(record: FinanceRecord) {
     setSelected(record); setDefaultAmount(record.profile.defaultAmountTk); setMonthAmount(record.payment.amountTk); setSubjects(record.profile.subjects.join(", ")); setNote(record.payment.note || ""); setMessage("");
@@ -75,11 +86,23 @@ export function FinanceWorkspace() {
     await save({ action: "set-month", userId: selected.user.id, month, amountTk: monthAmount, status, note: note || undefined }, status === "clear" ? "এই মাসের পেমেন্ট ক্লিয়ার করা হয়েছে।" : "এই মাসের পেমেন্ট বাকি হিসেবে রাখা হয়েছে।");
   }
 
+  async function setMembership(userId: string, included: boolean) {
+    await save({ action: "set-membership", userId, included }, included ? "শিক্ষার্থীকে ABSP ফাইন্যান্সে যুক্ত করা হয়েছে।" : "সদস্যকে ABSP ফাইন্যান্স থেকে বাদ দেওয়া হয়েছে।");
+    setCandidates([]); setCandidateQuery(""); if (!included) setSelected(undefined);
+  }
+
   const records = data?.records ?? [];
   const monthLabel = useMemo(() => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("bn-BD", { month: "long", year: "numeric", timeZone: "UTC" }), [month]);
 
   return <div className="space-y-6">
-    <header className="overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#0b2545,#123a6b_70%,#174d82)] p-6 text-white shadow-lg sm:p-8"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="text-xs font-black uppercase tracking-[.22em] text-brand-yellow">Finance command center</p><h1 className="mt-2 text-3xl font-black">মাসিক পেমেন্ট ও আর্থিক হিসাব</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">শিক্ষার্থী ফি, শিক্ষক পেমেন্ট, মাসিক ক্লিয়ারেন্স এবং নগদ প্রবাহ—একটি নির্ভরযোগ্য লেজারে।</p></div><div><Label htmlFor="finance-month" className="text-xs text-white/70">হিসাবের মাস</Label><Input id="finance-month" type="month" value={month} onChange={(e) => { setMonth(e.target.value); setSelected(undefined); setLoading(true); }} className="mt-1 border-white/20 bg-white text-primary" /></div></div></header>
+    <header className="overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#0b2545,#123a6b_70%,#174d82)] p-6 text-white shadow-lg sm:p-8"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="text-xs font-black uppercase tracking-[.22em] text-brand-yellow">Finance command center</p><h1 className="mt-2 text-3xl font-black">মাসিক পেমেন্ট ও আর্থিক হিসাব</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">শুধু ABSP-এর নিজস্ব শিক্ষার্থী ও শিক্ষকদের ফি, পেমেন্ট, ক্লিয়ারেন্স এবং নগদ প্রবাহ।</p></div><div><Label htmlFor="finance-month" className="text-xs text-white/70">হিসাবের মাস</Label><Input id="finance-month" type="month" value={month} onChange={(e) => { setMonth(e.target.value); setSelected(undefined); setLoading(true); }} className="mt-1 border-white/20 bg-white text-primary" /></div></div></header>
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1"><Label htmlFor="absp-student-search">ABSP শিক্ষার্থী যুক্ত করুন</Label><div className="relative mt-1.5"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="absp-student-search" value={candidateQuery} onChange={(e) => setCandidateQuery(e.target.value)} className="pl-9" placeholder="নাম বা রেফারেন্স লিখুন" /></div></div>
+        <p className="max-w-sm text-xs leading-5 text-muted">শুধু এখানে যুক্ত শিক্ষার্থী এবং শিক্ষক তালিকায় “ABSP শিক্ষক” হিসেবে চিহ্নিত শিক্ষকরা আর্থিক হিসাবে আসবেন।</p>
+      </div>
+      {candidateQuery.trim() && candidates.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{candidates.map((candidate) => <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"><div className="min-w-0"><p className="truncate text-sm font-black text-primary">{candidate.name}</p><p className="truncate text-xs text-muted">{candidate.reference ? `#${candidate.reference}` : candidate.phone || candidate.studentClass}</p></div><Button size="sm" onClick={() => void setMembership(candidate.id, true)} disabled={saving}>যুক্ত করুন</Button></div>)}</div>}
+    </section>
     {message && <Alert variant={hasError ? "destructive" : "success"}>{message}</Alert>}
     {data && <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><SummaryCard label="শিক্ষার্থী থেকে আদায়" value={data.summary.studentCollectedTk} hint={`${money(data.summary.studentDueTk)} বাকি • মোট ${money(data.summary.studentExpectedTk)}`} icon={CircleDollarSign} tone="bg-emerald-100 text-emerald-700" /><SummaryCard label="শিক্ষককে পরিশোধ" value={data.summary.teacherPaidTk} hint={`${money(data.summary.teacherDueTk)} বাকি • মোট ${money(data.summary.teacherPayrollTk)}`} icon={WalletCards} tone="bg-violet-100 text-violet-700" /><SummaryCard label="বর্তমান নেট ক্যাশ" value={data.summary.netCashTk} hint="আদায় থেকে পরিশোধ বাদ দিয়ে" icon={TrendingUp} tone={data.summary.netCashTk >= 0 ? "bg-sky-100 text-sky-700" : "bg-red-100 text-red-700"} /><SummaryCard label="ক্লিয়ার রেকর্ড" value={data.summary.studentClearCount + data.summary.teacherClearCount} hint={`${data.summary.studentDueCount + data.summary.teacherDueCount}টি রেকর্ড এখনো বাকি`} icon={UserRoundCheck} tone="bg-amber-100 text-amber-700" /></section>}
 
