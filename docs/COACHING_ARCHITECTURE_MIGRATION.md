@@ -12,7 +12,7 @@ New routines store `batchId` and `subjectId`; they do not copy student IDs. Subm
 
 ## Pricing source
 
-`CoachingBatchSubject.monthlyFeeTk` and `Batch.fullPackageFeeTk` are the operational source of truth. Enrollment changes calculate `BatchEnrollment.monthlyFeeTk` and synchronize the existing `PaymentProfile`; already-created `MonthlyPayment` records are not rewritten.
+Batch configuration stores subjects only. Student fees are owned by each student's `PaymentProfile.defaultAmountTk` and are managed from Admin Finance; enrollment or subject changes never overwrite that amount.
 
 The migration recognizes only exact HSC 2028 Physics, Chemistry, Higher Math, and ICT definitions. It uses the published subject fees (1300, 1300, 1500, 1000) and preserves the former finance default/published conditional offer of 3500 for the all-subject package. Because that offer says conditions apply, an operator must review it in **Admin → ব্যাচ ও ফি** before applying in production. No price is inferred for other batches.
 

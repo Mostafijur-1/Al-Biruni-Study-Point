@@ -1,28 +1,5 @@
-export type CoachingSubjectPrice = { subjectId: string; monthlyFeeTk: number };
-
 export function normalizeSubjectIds(subjectIds: readonly string[]) {
   return [...new Set(subjectIds.map(String).filter(Boolean))].sort();
-}
-
-export function calculateCoachingFee(
-  available: readonly CoachingSubjectPrice[],
-  selectedSubjectIds: readonly string[],
-  fullPackageFeeTk?: number,
-) {
-  const selected = normalizeSubjectIds(selectedSubjectIds);
-  const priceBySubject = new Map(available.map((item) => [String(item.subjectId), item.monthlyFeeTk]));
-  if (selected.length === 0) return 0;
-  if (selected.some((subjectId) => !priceBySubject.has(subjectId))) {
-    throw new Error("Selected coaching subject has no active batch pricing.");
-  }
-  if (
-    fullPackageFeeTk !== undefined &&
-    selected.length === available.length &&
-    available.every((item) => selected.includes(String(item.subjectId)))
-  ) {
-    return fullPackageFeeTk;
-  }
-  return selected.reduce((total, subjectId) => total + (priceBySubject.get(subjectId) ?? 0), 0);
 }
 
 export function isRoutineEligible(input: {

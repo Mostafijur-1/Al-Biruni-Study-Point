@@ -31,7 +31,6 @@ function serializeEnrollment(enrollment: {
   effectiveFrom: Date;
   effectiveTo?: Date;
   endReason?: string;
-  monthlyFeeTk?: number;
 }) {
   return {
     id: String(enrollment._id),
@@ -44,7 +43,6 @@ function serializeEnrollment(enrollment: {
     effectiveFrom: enrollment.effectiveFrom.toISOString(),
     effectiveTo: enrollment.effectiveTo?.toISOString(),
     endReason: enrollment.endReason,
-    monthlyFeeTk: enrollment.monthlyFeeTk,
   };
 }
 
@@ -122,7 +120,6 @@ export async function GET(request: NextRequest) {
           subjects: subjectRows
             .filter((row) => String(row.enrollmentId) === String(enrollment._id))
             .map((row) => ({ id: String(row.subjectId), ...subjectById.get(String(row.subjectId)) })),
-          monthlyFeeTk: enrollment.monthlyFeeTk,
           status: enrollment.status,
           effectiveFrom: enrollment.effectiveFrom.toISOString(),
           effectiveTo: enrollment.effectiveTo?.toISOString(),

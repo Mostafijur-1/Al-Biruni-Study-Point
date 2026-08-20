@@ -13,8 +13,11 @@ import { routineDays, routineTime, type RoutineView } from "./RoutineDashboard";
 
 type RoutineOptions = {
   batches: Array<{ id: string; name: string }>;
-  teachers: Array<{ id: string; name: string; subjectIds: string[] }>;
-  subjects: Array<{ id: string; name: string; nameBn: string }>;
+  teachers: Array<{
+    id: string;
+    name: string;
+    subjects: Array<{ key: string; id?: string; name: string; nameBn: string }>;
+  }>;
 };
 type RoutineResponse = {
   routines: RoutineView[];
@@ -32,8 +35,7 @@ function minutes(value: string) { const [hour, minute] = value.split(":").map(Nu
 export function AdminRoutinePlanner() {
   const [routines, setRoutines] = useState<RoutineView[]>([]);
   const [batches, setBatches] = useState<RoutineSelection[]>([]);
-  const [teachers, setTeachers] = useState<Array<RoutineSelection & { subjectIds: string[] }>>([]);
-  const [subjects, setSubjects] = useState<Array<RoutineSelection & { nameBn: string }>>([]);
+  const [teachers, setTeachers] = useState<RoutineOptions["teachers"]>([]);
   const [batchId, setBatchId] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -54,7 +56,6 @@ export function AdminRoutinePlanner() {
       setRoutines(result.payload.data.routines);
       setBatches(result.payload.data.options?.batches ?? []);
       setTeachers(result.payload.data.options?.teachers ?? []);
-      setSubjects(result.payload.data.options?.subjects ?? []);
     }
     setLoading(false);
   }, []);
@@ -64,20 +65,21 @@ export function AdminRoutinePlanner() {
   }, [load]);
 
   const subjectOptions = useMemo(() => {
-    const allowed = teachers.find((teacher) => teacher.id === teacherId)?.subjectIds ?? [];
-    return subjects.filter((subject) => allowed.includes(subject.id));
-  }, [subjects, teacherId, teachers]);
+    return teachers.find((teacher) => teacher.id === teacherId)?.subjects ?? [];
+  }, [teacherId, teachers]);
 
   async function saveRoutine(event: FormEvent) {
     event.preventDefault();
     if (!batchId || !teacherId || !subjectId || weekdays.length === 0) { setError(true); setMessage("ব্যাচ, শিক্ষক ও বিষয় নির্বাচন করুন।"); return; }
     setSaving(true); setMessage("");
+    const selectedSubject = subjectOptions.find((subject) => subject.key === subjectId);
+    if (!selectedSubject) { setError(true); setMessage("শিক্ষকের domain থেকে বিষয় নির্বাচন করুন।"); setSaving(false); return; }
     const days = editingId ? [weekdays[0]] : weekdays;
     const results = await Promise.all(days.map((weekday) => apiFetch<{ routine: RoutineView }>("/api/routines", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: editingId ? "update" : "create", routineSlotId: editingId || undefined,
-        batchId, teacherId, subjectId, weekday, startMinute: minutes(start), endMinute: minutes(end), room: room || undefined,
+        batchId, teacherId, subjectId: selectedSubject.id, subjectName: selectedSubject.id ? undefined : selectedSubject.name, weekday, startMinute: minutes(start), endMinute: minutes(end), room: room || undefined,
         reason: editingId ? "ব্যাচ ও বিষয়ভিত্তিক রুটিন আপডেট" : "ব্যাচ ও বিষয়ভিত্তিক রুটিন প্রকাশ",
       }),
     })));
@@ -100,7 +102,7 @@ export function AdminRoutinePlanner() {
   }
 
   function editRoutine(routine: RoutineView) {
-    setEditingId(routine.id); setBatchId(routine.batchId || ""); setTeacherId(routine.teacherId); setSubjectId(routine.subjectId || ""); setWeekdays([routine.weekday]);
+    setEditingId(routine.id); setBatchId(routine.batchId || ""); setTeacherId(routine.teacherId); setSubjectId(routine.subjectId || (routine.subjectName ? `domain:${routine.subjectName}` : "")); setWeekdays([routine.weekday]);
     setStart(`${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`);
     setEnd(`${String(Math.floor(routine.endMinute / 60)).padStart(2, "0")}:${String(routine.endMinute % 60).padStart(2, "0")}`);
     setRoom(routine.room || ""); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -118,7 +120,7 @@ export function AdminRoutinePlanner() {
         <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary text-white"><CalendarPlus className="size-5" /></span><div><h2 className="font-black text-primary">{editingId ? "রুটিন সম্পাদনা" : "নতুন রুটিন"}</h2><p className="text-xs text-muted">Batch → Teacher → Subject</p></div></div>
         <div className="space-y-2"><Label htmlFor="routine-batch">১. ব্যাচ</Label><select id="routine-batch" className={fieldClass} required value={batchId} onChange={(event) => setBatchId(event.target.value)}><option value="">ব্যাচ নির্বাচন করুন</option>{batches.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
         <div className="space-y-2"><Label htmlFor="routine-teacher">২. শিক্ষক</Label><select id="routine-teacher" className={fieldClass} required value={teacherId} onChange={(event) => { setTeacherId(event.target.value); setSubjectId(""); }}><option value="">শিক্ষক নির্বাচন করুন</option>{teachers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{teachers.length === 0 && <p className="text-xs text-amber-700">কোনো active ABSP শিক্ষক পাওয়া যায়নি।</p>}</div>
-        <div className="space-y-2"><Label htmlFor="routine-subject">৩. বিষয়</Label><select id="routine-subject" className={fieldClass} required disabled={!teacherId} value={subjectId} onChange={(event) => setSubjectId(event.target.value)}><option value="">বিষয় নির্বাচন করুন</option>{subjectOptions.map((item) => <option key={item.id} value={item.id}>{item.nameBn || item.name}</option>)}</select>{teacherId && subjectOptions.length === 0 && <p className="text-xs text-amber-700">এই শিক্ষকের domain-এ কোনো configured academic subject পাওয়া যায়নি।</p>}{batchId && subjectId && <p className="rounded-xl bg-secondary p-3 text-xs text-primary">এই ব্যাচে নির্বাচিত বিষয়ের enrolled শিক্ষার্থীরা স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত হবে।</p>}</div>
+        <div className="space-y-2"><Label htmlFor="routine-subject">৩. বিষয়</Label><select id="routine-subject" className={fieldClass} required disabled={!teacherId} value={subjectId} onChange={(event) => setSubjectId(event.target.value)}><option value="">বিষয় নির্বাচন করুন</option>{subjectOptions.map((item) => <option key={item.key} value={item.key}>{item.nameBn || item.name}</option>)}</select>{teacherId && subjectOptions.length === 0 && <p className="text-xs text-amber-700">এই শিক্ষকের domain-এ কোনো বিষয় configured নেই।</p>}{batchId && subjectId && <p className="rounded-xl bg-secondary p-3 text-xs text-primary">এই ব্যাচে নির্বাচিত বিষয়ের enrolled শিক্ষার্থীরা স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত হবে।</p>}</div>
         <fieldset><legend className="text-sm font-bold text-primary">৪. সাপ্তাহিক দিন</legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" aria-label={day} aria-pressed={weekdays.includes(index)} onClick={() => setWeekdays((current) => editingId ? [index] : current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort())} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekdays.includes(index) ? "border-primary bg-primary text-white" : "border-border bg-white text-primary")}>{shortDays[index]}</button>)}</div></fieldset>
         <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="start">শুরু</Label><Input id="start" type="time" required value={start} onChange={(event) => setStart(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="end">শেষ</Label><Input id="end" type="time" required value={end} onChange={(event) => setEnd(event.target.value)} /></div></div>
         <div className="space-y-2"><Label htmlFor="room">কক্ষ (ঐচ্ছিক)</Label><Input id="room" value={room} onChange={(event) => setRoom(event.target.value)} placeholder="যেমন: রুম ২" /></div>

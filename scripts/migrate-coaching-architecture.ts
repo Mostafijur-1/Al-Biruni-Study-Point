@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-import { calculateCoachingFee } from "../lib/coaching-rules.ts";
 import { connectDB } from "../lib/db/connect.ts";
 import { AcademicSubject } from "../lib/db/models/AcademicSubject.ts";
 import { Batch } from "../lib/db/models/Batch.ts";
@@ -14,9 +13,7 @@ import { User } from "../lib/db/models/User.ts";
 const migrationId = "2026-08-coaching-enrollment-subjects-v1";
 const apply = process.argv.includes("--apply");
 const actorId = process.argv.find((argument) => argument.startsWith("--actor="))?.slice("--actor=".length);
-const publishedFees = new Map([
-  ["PHYSICS", 1300], ["CHEMISTRY", 1300], ["HIGHER MATH", 1500], ["ICT", 1000],
-]);
+const configuredSubjectNames = new Set(["PHYSICS", "CHEMISTRY", "HIGHER MATH", "ICT"]);
 
 function normalizedName(value: string) { return value.trim().toUpperCase(); }
 
@@ -46,8 +43,8 @@ for (const batch of batches) {
     status: "active",
     classLevels: batch.studentClass,
   }).lean();
-  const matches = subjects.filter((subject) => publishedFees.has(normalizedName(subject.name)));
-  if (matches.length !== publishedFees.size) {
+  const matches = subjects.filter((subject) => configuredSubjectNames.has(normalizedName(subject.name)));
+  if (matches.length !== configuredSubjectNames.size) {
     summary.unresolved.push(`Batch ${batch.code}: expected exact Physics, Chemistry, Higher Math and ICT subject definitions; found ${matches.length}.`);
     continue;
   }
@@ -55,13 +52,9 @@ for (const batch of batches) {
   if (!apply) continue;
   await Promise.all(matches.map((subject, sortOrder) => CoachingBatchSubject.findOneAndUpdate(
     { batchId: batch._id, subjectId: subject._id },
-    { $setOnInsert: { organizationId: batch.organizationId, branchId: batch.branchId, createdBy: actorId }, $set: { monthlyFeeTk: publishedFees.get(normalizedName(subject.name)), status: "active", sortOrder } },
+    { $setOnInsert: { organizationId: batch.organizationId, branchId: batch.branchId, createdBy: actorId }, $set: { status: "active", sortOrder } },
     { upsert: true, runValidators: true },
   )));
-  // 3500 preserves the former finance default and the published conditional offer.
-  // Operators must change it in Admin > ব্যাচ ও ফি if the offer is not applicable.
-  await Batch.updateOne({ _id: batch._id, fullPackageFeeTk: { $exists: false } }, { $set: { fullPackageFeeTk: 3500 } });
-  const configured = matches.map((subject) => ({ subjectId: String(subject._id), monthlyFeeTk: publishedFees.get(normalizedName(subject.name))! }));
   const enrollments = await BatchEnrollment.find({ batchId: batch._id, status: "active" });
   for (const enrollment of enrollments) {
     const existing = await CoachingEnrollmentSubject.exists({ enrollmentId: enrollment._id });
@@ -71,8 +64,6 @@ for (const batch of batches) {
       enrollmentId: enrollment._id, studentId: enrollment.studentId, subjectId: subject._id,
       status: "active", effectiveFrom: enrollment.effectiveFrom, createdBy: enrollment.createdBy,
     })));
-    enrollment.monthlyFeeTk = calculateCoachingFee(configured, configured.map((item) => item.subjectId), 3500);
-    enrollment.feeCalculatedAt = new Date();
     await enrollment.save();
     summary.migratedEnrollments += 1;
   }

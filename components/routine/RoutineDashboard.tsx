@@ -10,6 +10,7 @@ export type RoutineView = {
   id: string;
   batchId?: string;
   subjectId?: string;
+  subjectName?: string;
   teacherId: string;
   teacherAssignmentId?: string;
   targeting?: "batch-subject" | "legacy-students";

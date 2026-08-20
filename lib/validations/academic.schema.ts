@@ -116,7 +116,8 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       action: z.literal("create"),
       batchId: objectIdSchema,
       teacherId: objectIdSchema,
-      subjectId: objectIdSchema,
+      subjectId: objectIdSchema.optional(),
+      subjectName: z.string().trim().min(1).max(100).optional(),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
@@ -129,6 +130,10 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       path: ["endMinute"],
       message: "Routine end time must be after its start time.",
     })
+    .refine((value) => Boolean(value.subjectId || value.subjectName), {
+      path: ["subjectName"],
+      message: "A routine subject is required.",
+    })
     .refine((value) => !value.effectiveTo || !value.effectiveFrom || value.effectiveFrom <= value.effectiveTo, {
       path: ["effectiveTo"],
       message: "Routine end date cannot precede its start date.",
@@ -139,7 +144,8 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       routineSlotId: objectIdSchema,
       batchId: objectIdSchema,
       teacherId: objectIdSchema,
-      subjectId: objectIdSchema,
+      subjectId: objectIdSchema.optional(),
+      subjectName: z.string().trim().min(1).max(100).optional(),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
@@ -149,6 +155,7 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       reason: mutationReasonSchema,
     })
     .refine((value) => value.startMinute < value.endMinute, { path: ["endMinute"], message: "Routine end time must be after its start time." })
+    .refine((value) => Boolean(value.subjectId || value.subjectName), { path: ["subjectName"], message: "A routine subject is required." })
     .refine((value) => !value.effectiveTo || !value.effectiveFrom || value.effectiveFrom <= value.effectiveTo, { path: ["effectiveTo"], message: "Routine end date cannot precede its start date." }),
   z.object({
     action: z.literal("end"),

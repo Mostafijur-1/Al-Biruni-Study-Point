@@ -35,6 +35,7 @@ function serializeRoutine(slot: IRoutineSlot | Record<string, unknown>, context?
     academicSessionId: item.academicSessionId ? String(item.academicSessionId) : undefined,
     batchId: item.batchId ? String(item.batchId) : undefined,
     subjectId: item.subjectId ? String(item.subjectId) : undefined,
+    subjectName: item.subjectName,
     teacherId: String(item.teacherId),
     teacherAssignmentId: item.teacherAssignmentId ? String(item.teacherAssignmentId) : undefined,
     studentIds: (item.studentIds ?? []).map(String),
@@ -76,13 +77,19 @@ export async function GET(request: NextRequest) {
     } else if (actor.role === "student") {
       const enrollments = await BatchEnrollment.find({ studentId: actor.id, status: "active" }).select("_id batchId").lean();
       const subjectRows = await CoachingEnrollmentSubject.find({ enrollmentId: { $in: enrollments.map((item) => item._id) }, status: "active" }).select("enrollmentId subjectId").lean();
+      const enrolledSubjects = await AcademicSubject.find({ _id: { $in: subjectRows.map((item) => item.subjectId) } }).select("name nameBn").lean();
+      const subjectNamesById = new Map(enrolledSubjects.map((subject) => [String(subject._id), [subject.name, subject.nameBn].filter(Boolean)]));
       const subjectsByEnrollment = new Map<string, string[]>();
       for (const row of subjectRows) {
         const key = String(row.enrollmentId);
         subjectsByEnrollment.set(key, [...(subjectsByEnrollment.get(key) ?? []), String(row.subjectId)]);
       }
       query.$or = [
-        ...enrollments.map((enrollment) => ({ batchId: enrollment.batchId, subjectId: { $in: subjectsByEnrollment.get(String(enrollment._id)) ?? [] } })),
+        ...enrollments.map((enrollment) => {
+          const subjectIds = subjectsByEnrollment.get(String(enrollment._id)) ?? [];
+          const subjectNames = subjectIds.flatMap((subjectId) => subjectNamesById.get(subjectId) ?? []);
+          return { batchId: enrollment.batchId, $or: [{ subjectId: { $in: subjectIds } }, { subjectName: { $in: subjectNames } }] };
+        }),
         { studentIds: actor.id },
       ];
     } else if (parsed.teacherId) {
@@ -133,21 +140,34 @@ export async function GET(request: NextRequest) {
       ]);
       options = {
         batches: optionBatches.map((item) => ({ id: String(item._id), name: item.name })),
-        teachers: optionTeachers.map((teacher) => ({
-          id: String(teacher._id),
-          name: teacher.name,
-          subjectIds: optionSubjects
+        teachers: optionTeachers.map((teacher) => {
+          const canonical = optionSubjects
             .filter((subject) =>
               isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) ||
               isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn),
             )
-            .map((subject) => String(subject._id)),
-        })),
-        subjects: optionSubjects.map((item) => ({
-          id: String(item._id),
-          name: item.name,
-          nameBn: item.nameBn,
-        })),
+            .map((subject) => ({
+              key: String(subject._id),
+              id: String(subject._id),
+              name: subject.name,
+              nameBn: subject.nameBn,
+            }));
+          const domainOnly = (teacher.teacherDomain?.subjects ?? [])
+            .filter((domainSubject) => !canonical.some((subject) =>
+              isSubjectWithinTeacherDomain({ isAll: false, classes: [], subjects: [domainSubject] }, subject.name) ||
+              isSubjectWithinTeacherDomain({ isAll: false, classes: [], subjects: [domainSubject] }, subject.nameBn),
+            ))
+            .map((domainSubject) => ({
+              key: `domain:${domainSubject}`,
+              name: domainSubject,
+              nameBn: domainSubject,
+            }));
+          return {
+            id: String(teacher._id),
+            name: teacher.name,
+            subjects: [...canonical, ...domainOnly],
+          };
+        }),
       };
     }
     return success({ routines: routines.map((item) => serializeRoutine(item, context)), options });
@@ -165,9 +185,9 @@ export async function POST(request: NextRequest) {
     }
     const previous = parsed.action === "create" ? null : await RoutineSlot.findById(parsed.routineSlotId).select("teacherId studentIds").lean();
     const routine = parsed.action === "create"
-      ? await createRoutineSlot({ request, actor, batchId: parsed.batchId, teacherId: parsed.teacherId, subjectId: parsed.subjectId, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
+      ? await createRoutineSlot({ request, actor, batchId: parsed.batchId, teacherId: parsed.teacherId, subjectId: parsed.subjectId, subjectName: parsed.subjectName, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
       : parsed.action === "update"
-        ? await updateRoutineSlot({ request, actor, routineSlotId: parsed.routineSlotId, batchId: parsed.batchId, teacherId: parsed.teacherId, subjectId: parsed.subjectId, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
+        ? await updateRoutineSlot({ request, actor, routineSlotId: parsed.routineSlotId, batchId: parsed.batchId, teacherId: parsed.teacherId, subjectId: parsed.subjectId, subjectName: parsed.subjectName, weekday: parsed.weekday, startMinute: parsed.startMinute, endMinute: parsed.endMinute, room: parsed.room, effectiveFrom: parsed.effectiveFrom ?? new Date(), effectiveTo: parsed.effectiveTo, reason: parsed.reason })
         : await endDomainRoutine({ request, actor, routineSlotId: parsed.routineSlotId, reason: parsed.reason });
     const additionalUserIds = previous ? [String(previous.teacherId), ...(previous.studentIds ?? []).map(String)] : [];
     try {

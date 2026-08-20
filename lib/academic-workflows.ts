@@ -63,7 +63,8 @@ type TransferStudentInput = WorkflowAuditContext & {
 type AssignTeacherInput = WorkflowAuditContext & {
   batchId: string;
   teacherId: string;
-  subjectId: string;
+  subjectId?: string;
+  subjectName?: string;
   effectiveFrom: Date;
 };
 
@@ -75,7 +76,8 @@ type EndTeacherAssignmentInput = WorkflowAuditContext & {
 type CreateRoutineSlotInput = WorkflowAuditContext & {
   batchId: string;
   teacherId: string;
-  subjectId: string;
+  subjectId?: string;
+  subjectName?: string;
   weekday: number;
   startMinute: number;
   endMinute: number;
@@ -577,14 +579,17 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
     const [batch, teacher, subject] = await Promise.all([
       Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
       User.findOne({ _id: input.teacherId, role: "teacher", isAbspMember: true, isActive: true, approvalStatus: "approved" }).session(session),
-      AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session),
+      input.subjectId
+        ? AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session)
+        : Promise.resolve(null),
     ]);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
     if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
-    if (!subject) throw new ApiRouteError("Active subject not found.", 404);
+    const subjectName = subject?.nameBn || subject?.name || input.subjectName;
+    if (!subjectName) throw new ApiRouteError("Routine subject not found.", 404);
     if (
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.name ?? subjectName) &&
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.nameBn ?? subjectName)
     ) {
       throw new ApiRouteError("Selected teacher is not authorized for this subject.", 409);
     }
@@ -616,7 +621,8 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
           branchId: batch.branchId,
           academicSessionId: batch.academicSessionId,
           batchId: batch._id,
-          subjectId: subject._id,
+          subjectId: subject?._id,
+          subjectName,
           teacherId: teacher._id,
           studentIds: [],
           weekday: input.weekday,
@@ -644,7 +650,8 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       after: {
         batchId: String(batch._id),
         teacherId: String(teacher._id),
-        subjectId: String(subject._id),
+        subjectId: subject ? String(subject._id) : undefined,
+        subjectName,
         targeting: "batch-subject",
         weekday: routineSlot.weekday,
         startMinute: routineSlot.startMinute,
@@ -669,15 +676,18 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
       RoutineSlot.findOne({ _id: input.routineSlotId, status: "active" }).session(session),
       Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
       User.findOne({ _id: input.teacherId, role: "teacher", isAbspMember: true, isActive: true, approvalStatus: "approved" }).session(session),
-      AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session),
+      input.subjectId
+        ? AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session)
+        : Promise.resolve(null),
     ]);
     if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
     if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
-    if (!subject) throw new ApiRouteError("Active subject not found.", 404);
+    const subjectName = subject?.nameBn || subject?.name || input.subjectName;
+    if (!subjectName) throw new ApiRouteError("Routine subject not found.", 404);
     if (
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.name ?? subjectName) &&
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.nameBn ?? subjectName)
     ) {
       throw new ApiRouteError("Selected teacher is not authorized for this subject.", 409);
     }
@@ -697,7 +707,7 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     const before = { teacherId: String(routineSlot.teacherId), studentIds: (routineSlot.studentIds ?? []).map(String), weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute };
     routineSlot.set({
       organizationId: batch.organizationId, branchId: batch.branchId, academicSessionId: batch.academicSessionId,
-      batchId: batch._id, subjectId: subject._id, teacherId: teacher._id, teacherAssignmentId: undefined,
+      batchId: batch._id, subjectId: subject?._id, subjectName, teacherId: teacher._id, teacherAssignmentId: undefined,
       studentIds: [], weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
       room: input.room?.trim() || undefined, effectiveFrom: input.effectiveFrom, effectiveTo,
     });

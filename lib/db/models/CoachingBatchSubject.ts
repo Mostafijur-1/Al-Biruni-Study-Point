@@ -5,7 +5,6 @@ export interface ICoachingBatchSubject extends Document {
   branchId?: Types.ObjectId;
   batchId: Types.ObjectId;
   subjectId: Types.ObjectId;
-  monthlyFeeTk: number;
   status: "active" | "archived";
   sortOrder: number;
   createdBy: Types.ObjectId;
@@ -19,7 +18,6 @@ const CoachingBatchSubjectSchema = new Schema<ICoachingBatchSubject>(
     branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
     batchId: { type: Schema.Types.ObjectId, ref: "Batch", required: true },
     subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject", required: true },
-    monthlyFeeTk: { type: Number, required: true, min: 0, max: 10_000_000 },
     status: { type: String, enum: ["active", "archived"], default: "active" },
     sortOrder: { type: Number, default: 0, min: 0, max: 10_000 },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
