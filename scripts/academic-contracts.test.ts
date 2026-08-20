@@ -9,6 +9,7 @@ import {
   teacherAssignmentListQuerySchema,
   teacherAssignmentMutationSchema,
 } from "../lib/validations/academic.schema.ts";
+import { requiresAcademicRoutineWriteGate } from "../lib/routine-write-gate.ts";
 
 const id = "64f000000000000000000001";
 
@@ -131,6 +132,13 @@ test("routine contracts accept an approved teacher-domain subject without a seco
   assert.equal(routine.action, "create");
   assert.equal(routine.subject, "Physics");
   assert.equal(routine.assignmentId, undefined);
+});
+
+test("domain routines publish independently while legacy assignments retain the academic write gate", () => {
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "create" }), false);
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "update" }), false);
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "create", assignmentId: id }), true);
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "end" }), false);
 });
 
 test("class-session contracts use explicit create and terminal actions", () => {

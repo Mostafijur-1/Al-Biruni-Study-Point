@@ -13,6 +13,7 @@ import { RoutineSlot, type IRoutineSlot } from "@/lib/db/models/RoutineSlot";
 import { routineListQuerySchema, routineMutationSchema } from "@/lib/validations/academic.schema";
 import { notifyRoutineChange } from "@/lib/push/routine-notifications";
 import { createDomainRoutine, endDomainRoutine, updateDomainRoutine } from "@/lib/routine-workflows";
+import { requiresAcademicRoutineWriteGate } from "@/lib/routine-write-gate";
 
 type RoutineContext = {
   teachers: Map<string, string>;
@@ -97,10 +98,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin"]);
-    if (!areAcademicWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED)) {
+    const parsed = routineMutationSchema.parse(await request.json());
+    if (requiresAcademicRoutineWriteGate(parsed) && !areAcademicWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED)) {
       throw new ApiRouteError("Academic write workflows are not enabled.", 503);
     }
-    const parsed = routineMutationSchema.parse(await request.json());
     const previous = parsed.action === "create" ? null : await RoutineSlot.findById(parsed.routineSlotId).select("teacherId studentIds").lean();
     const routine = parsed.action === "create"
       ? parsed.assignmentId
