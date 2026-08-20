@@ -6,6 +6,7 @@ import { createRoutineSlot, updateRoutineSlot } from "@/lib/academic-workflows";
 import { ApiRouteError } from "@/lib/api-error";
 import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
+import { isSubjectWithinTeacherDomain } from "@/lib/auth/teacher-domain-rules";
 import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
 import { Batch } from "@/lib/db/models/Batch";
 import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
@@ -118,14 +119,37 @@ export async function GET(request: NextRequest) {
       subjects: new Map(subjects.map((item) => [String(item._id), { name: item.name, nameBn: item.nameBn }])),
       eligibleCounts: new Map([...eligibleSets].map(([key, ids]) => [key, ids.size])),
     };
-    const options = actor.role === "admin" ? {
-      batches: (await Batch.find({ status: { $in: ["planned", "active"] } }).select("name").sort({ name: 1 }).lean())
-        .map((item) => ({ id: String(item._id), name: item.name })),
-      teachers: (await User.find({ role: "teacher", isActive: true, approvalStatus: "approved" }).select("name teacherDomain").sort({ name: 1 }).lean())
-        .map((item) => ({ id: String(item._id), name: item.name, subjects: item.teacherDomain?.subjects ?? [], isAll: item.teacherDomain?.isAll ?? false })),
-      subjects: (await AcademicSubject.find({ status: "active" }).select("name nameBn").sort({ name: 1 }).lean())
-        .map((item) => ({ id: String(item._id), name: item.name, nameBn: item.nameBn })),
-    } : undefined;
+    let options;
+    if (actor.role === "admin") {
+      const [optionBatches, optionTeachers, optionSubjects] = await Promise.all([
+        Batch.find({ status: { $in: ["planned", "active"] } }).select("name").sort({ name: 1 }).lean(),
+        User.find({
+          role: "teacher",
+          isAbspMember: true,
+          isActive: true,
+          approvalStatus: "approved",
+        }).select("name teacherDomain").sort({ name: 1 }).lean(),
+        AcademicSubject.find({ status: { $ne: "archived" } }).select("name nameBn").sort({ name: 1 }).lean(),
+      ]);
+      options = {
+        batches: optionBatches.map((item) => ({ id: String(item._id), name: item.name })),
+        teachers: optionTeachers.map((teacher) => ({
+          id: String(teacher._id),
+          name: teacher.name,
+          subjectIds: optionSubjects
+            .filter((subject) =>
+              isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) ||
+              isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn),
+            )
+            .map((subject) => String(subject._id)),
+        })),
+        subjects: optionSubjects.map((item) => ({
+          id: String(item._id),
+          name: item.name,
+          nameBn: item.nameBn,
+        })),
+      };
+    }
     return success({ routines: routines.map((item) => serializeRoutine(item, context)), options });
   } catch (error) {
     return handleApiError(error);

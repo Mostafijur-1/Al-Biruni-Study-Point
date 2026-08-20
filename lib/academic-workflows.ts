@@ -576,11 +576,11 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
     if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
     const [batch, teacher, subject] = await Promise.all([
       Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
-      User.findOne({ _id: input.teacherId, role: "teacher", isActive: true, approvalStatus: "approved" }).session(session),
-      AcademicSubject.findOne({ _id: input.subjectId, status: "active" }).session(session),
+      User.findOne({ _id: input.teacherId, role: "teacher", isAbspMember: true, isActive: true, approvalStatus: "approved" }).session(session),
+      AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session),
     ]);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
-    if (!teacher) throw new ApiRouteError("Active teacher not found.", 404);
+    if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
     if (!subject) throw new ApiRouteError("Active subject not found.", 404);
     if (
       !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
@@ -668,12 +668,12 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     const [routineSlot, batch, teacher, subject] = await Promise.all([
       RoutineSlot.findOne({ _id: input.routineSlotId, status: "active" }).session(session),
       Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
-      User.findOne({ _id: input.teacherId, role: "teacher", isActive: true, approvalStatus: "approved" }).session(session),
-      AcademicSubject.findOne({ _id: input.subjectId, status: "active" }).session(session),
+      User.findOne({ _id: input.teacherId, role: "teacher", isAbspMember: true, isActive: true, approvalStatus: "approved" }).session(session),
+      AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session),
     ]);
     if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
-    if (!teacher) throw new ApiRouteError("Active teacher not found.", 404);
+    if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
     if (!subject) throw new ApiRouteError("Active subject not found.", 404);
     if (
       !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
