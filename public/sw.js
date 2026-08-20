@@ -1,11 +1,10 @@
-const CACHE_NAME = "absp-cache-v1";
+const CACHE_NAME = "absp-cache-v3-logo-20260820b";
 const ASSETS_TO_CACHE = [
   "/",
   "/favicon.ico",
   "/icon.png",
   "/apple-icon.png",
-  "/absp-logo.png",
-  "/absp-emblem.png"
+  "/absp-logo.png"
 ];
 
 // Install Event - cache core static assets

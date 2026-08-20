@@ -18,15 +18,9 @@ export default function manifest(): MetadataRoute.Manifest {
       },
       {
         src: "/absp-logo.png",
-        sizes: "512x512",
+        sizes: "1254x1254",
         type: "image/png",
         purpose: "any",
-      },
-      {
-        src: "/absp-emblem.png",
-        sizes: "512x512",
-        type: "image/png",
-        purpose: "maskable",
       },
       {
         src: "/apple-icon.png",

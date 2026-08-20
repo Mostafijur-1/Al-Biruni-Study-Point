@@ -27,21 +27,21 @@ export const metadata: Metadata = {
     siteName: "Al-Biruni Study Point",
     title: "ABSP - Al-Biruni Study Point",
     description: "Science coaching and learning support for SSC and HSC students.",
-    images: [{ url: "/icon.png", width: 512, height: 512, alt: "ABSP" }],
+    images: [{ url: "/absp-logo.png", width: 1254, height: 1254, alt: "ABSP logo" }],
   },
   twitter: {
     card: "summary",
     title: "ABSP - Al-Biruni Study Point",
     description: "Science coaching and learning support for SSC and HSC students.",
-    images: ["/icon.png"],
+    images: ["/absp-logo.png"],
   },
   icons: {
     icon: [
-      { url: "/favicon.ico?v=20260603b", sizes: "any" },
-      { url: "/icon.png?v=20260603b", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico?v=20260820b", sizes: "any" },
+      { url: "/icon.png?v=20260820b", type: "image/png", sizes: "512x512" },
     ],
-    apple: [{ url: "/apple-icon.png?v=20260603b", type: "image/png", sizes: "180x180" }],
-    shortcut: "/favicon.ico?v=20260603b",
+    apple: [{ url: "/apple-icon.png?v=20260820b", type: "image/png", sizes: "180x180" }],
+    shortcut: "/favicon.ico?v=20260820b",
   },
   appleWebApp: {
     capable: true,
@@ -71,7 +71,7 @@ export default function RootLayout({
         name: "Al-Biruni Study Point",
         alternateName: "ABSP",
         url: siteOrigin,
-        logo: `${siteOrigin}/icon.png`,
+        logo: `${siteOrigin}/absp-logo.png`,
         description: "Science coaching and learning support for SSC and HSC students.",
       },
       {
