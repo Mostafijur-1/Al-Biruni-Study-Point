@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 import { assignTeacher, endTeacherAssignment } from "@/lib/academic-workflows";
 import { areAcademicWritesEnabled } from "@/lib/academic-rules";
+import { isSubjectWithinTeacherDomain } from "@/lib/auth/teacher-domain-rules";
 import { ApiRouteError } from "@/lib/api-error";
 import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
     const parsed = teacherAssignmentListQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
     );
+    const domainOnly = request.nextUrl.searchParams.get("domainOnly") === "true";
     const query: QueryFilter<ITeacherAssignment> =
       parsed.status === "all" ? {} : { status: parsed.status };
 
@@ -92,7 +94,7 @@ export async function GET(request: NextRequest) {
         .select("name nameBn code")
         .lean(),
       User.find({ _id: { $in: assignments.map((item) => item.teacherId) } })
-        .select("name")
+        .select("name teacherDomain")
         .lean(),
       Organization.find({ _id: { $in: assignments.map((item) => item.organizationId) } })
         .select("name timezone")
@@ -116,7 +118,20 @@ export async function GET(request: NextRequest) {
       }])),
     };
 
-    return success({ assignments: assignments.map((item) => serializeAssignment(item, context)) });
+    const visibleAssignments = domainOnly
+      ? assignments.filter((assignment) => {
+          const teacher = teachers.find((item) => String(item._id) === String(assignment.teacherId));
+          const subject = context.subjects.get(String(assignment.subjectId));
+          return Boolean(
+            teacher &&
+            subject &&
+            (isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) ||
+              isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)),
+          );
+        })
+      : assignments;
+
+    return success({ assignments: visibleAssignments.map((item) => serializeAssignment(item, context)) });
   } catch (error) {
     return handleApiError(error);
   }

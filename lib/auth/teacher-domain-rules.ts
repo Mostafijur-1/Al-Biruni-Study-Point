@@ -1,5 +1,5 @@
 import type { StudentClass } from "../../types";
-import { COURSE_TO_MCQ_SUBJECT_MAP } from "../content/syllabus.ts";
+import { COURSE_TO_MCQ_SUBJECT_MAP, getSubjectAliases } from "../content/syllabus.ts";
 
 export type TeacherDomainRuleInput = {
   isAll: boolean;
@@ -45,4 +45,24 @@ export function isExamWithinTeacherDomain(
     }
   }
   return allowedSubjects.has(subject);
+}
+
+export function isSubjectWithinTeacherDomain(
+  domain: TeacherDomainRuleInput | null | undefined,
+  subject: string,
+): boolean {
+  if (domain?.isAll) return true;
+  if (!domain?.subjects?.length) return false;
+
+  const allowedSubjects = new Set<string>();
+  for (const domainSubject of domain.subjects) {
+    for (const alias of getSubjectAliases(domainSubject)) allowedSubjects.add(alias);
+    for (const level of ["ssc", "hsc"] as const) {
+      for (const mappedSubject of COURSE_TO_MCQ_SUBJECT_MAP[level]?.[domainSubject] ?? []) {
+        for (const alias of getSubjectAliases(mappedSubject)) allowedSubjects.add(alias);
+      }
+    }
+  }
+
+  return getSubjectAliases(subject).some((alias) => allowedSubjects.has(alias));
 }

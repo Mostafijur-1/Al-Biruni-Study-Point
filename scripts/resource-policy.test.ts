@@ -6,6 +6,7 @@ import {
   areClassesWithinTeacherDomain,
   doTargetClassesMatchLevel,
   isExamWithinTeacherDomain,
+  isSubjectWithinTeacherDomain,
 } from "../lib/auth/teacher-domain-rules.ts";
 
 test("admin can manage any teacher-owned resource", () => {
@@ -78,6 +79,26 @@ test("class-only content stays inside the teacher's assigned classes", () => {
   assert.equal(
     areClassesWithinTeacherDomain({ ...domain, classes: [...domain.classes] }, ["class-12"]),
     false,
+  );
+});
+
+test("routine subjects follow the selected teacher's domain aliases", () => {
+  const physicsDomain = {
+    isAll: false,
+    classes: ["class-11"] as const,
+    subjects: ["Physics"],
+  };
+  assert.equal(
+    isSubjectWithinTeacherDomain({ ...physicsDomain, classes: [...physicsDomain.classes] }, "পদার্থবিজ্ঞান ১ম পত্র"),
+    true,
+  );
+  assert.equal(
+    isSubjectWithinTeacherDomain({ ...physicsDomain, classes: [...physicsDomain.classes] }, "রসায়ন ১ম পত্র"),
+    false,
+  );
+  assert.equal(
+    isSubjectWithinTeacherDomain({ isAll: true, classes: [], subjects: [] }, "রসায়ন"),
+    true,
   );
 });
 
