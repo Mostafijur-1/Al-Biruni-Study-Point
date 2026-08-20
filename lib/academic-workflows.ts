@@ -542,25 +542,17 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
     }
 
     await lockBranchSchedule(batch.branchId, session);
-    const resourceConflicts: QueryFilter<unknown>[] = [
-      { teacherId: assignment.teacherId },
-      { batchId: assignment.batchId },
-    ];
-    if (input.room?.trim()) resourceConflicts.push({ branchId: batch.branchId, room: input.room.trim() });
     const conflict = await RoutineSlot.findOne({
+      branchId: batch.branchId,
+      status: "active",
       weekday: input.weekday,
       startMinute: { $lt: input.endMinute },
       endMinute: { $gt: input.startMinute },
       effectiveFrom: { $lte: effectiveTo },
-      $and: [
-        { $or: resourceConflicts },
-        {
-          $or: [
-            { effectiveTo: { $exists: false } },
-            { effectiveTo: null },
-            { effectiveTo: { $gte: input.effectiveFrom } },
-          ],
-        },
+      $or: [
+        { effectiveTo: { $exists: false } },
+        { effectiveTo: null },
+        { effectiveTo: { $gte: input.effectiveFrom } },
       ],
     }).session(session);
     if (conflict) throw new ApiRouteError("Routine conflicts with an existing slot.", 409);
@@ -642,12 +634,10 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
       throw new ApiRouteError("Every selected student must be active and approved.", 409);
     }
     await lockBranchSchedule(batch.branchId, session);
-    const resourceConflicts: QueryFilter<unknown>[] = [{ teacherId: assignment.teacherId }, { batchId: assignment.batchId }];
-    if (input.room?.trim()) resourceConflicts.push({ branchId: batch.branchId, room: input.room.trim() });
     const conflict = await RoutineSlot.findOne({
-      _id: { $ne: routineSlot._id }, status: "active", weekday: input.weekday,
+      _id: { $ne: routineSlot._id }, branchId: batch.branchId, status: "active", weekday: input.weekday,
       startMinute: { $lt: input.endMinute }, endMinute: { $gt: input.startMinute }, effectiveFrom: { $lte: effectiveTo },
-      $and: [{ $or: resourceConflicts }, { $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }] }],
+      $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
     }).session(session);
     if (conflict) throw new ApiRouteError("Routine conflicts with an existing slot.", 409);
 

@@ -93,7 +93,6 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       href: "/admin/teachers",
       label: "শিক্ষক",
       icon: GraduationCap,
-      mobilePrimary: true,
     },
     {
       href: "/admin/routine",
@@ -111,7 +110,6 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       href: "/admin/practice-mcqs",
       label: "সেটিংস",
       icon: Brain,
-      mobilePrimary: true,
     },
     { href: "/admin/profile", label: "প্রোফাইল", icon: UserCircle },
   ],
@@ -169,7 +167,8 @@ export function DashboardMobileNav() {
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const primaryLinks = links.filter((item) => item.mobilePrimary).slice(0, 4);
-  const secondaryLinks = links.filter((item) => !item.mobilePrimary);
+  const primaryHrefs = new Set(primaryLinks.map((item) => item.href));
+  const secondaryLinks = links.filter((item) => !primaryHrefs.has(item.href));
   const secondaryActive = secondaryLinks
     .some((item) => isNavActive(pathname, item.href, role));
 
