@@ -1,8 +1,7 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { Archive, Check, CheckCircle2, Layers3, Pencil, Plus, X } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Archive, Check, CheckCircle2, Layers3, Pencil, Plus, Search, UserPlus, X } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,8 @@ type Batch = {
   status: BatchStatus;
 };
 type CatalogSubject = { code: string; name: string; nameBn: string };
+type Student = { id: string; name: string; reference?: string; isActive: boolean };
+type ActiveEnrollment = { student: { id: string } };
 
 const statusLabel: Record<BatchStatus, string> = {
   planned: "পরিকল্পিত",
@@ -32,6 +33,8 @@ export function AdminBatchManager() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [name, setName] = useState("");
   const [subjects, setSubjects] = useState<CatalogSubject[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [activeEnrollments, setActiveEnrollments] = useState<ActiveEnrollment[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [editing, setEditing] = useState<Batch>();
   const [open, setOpen] = useState(false);
@@ -39,16 +42,23 @@ export function AdminBatchManager() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
+  const [addingToBatch, setAddingToBatch] = useState<Batch>();
+  const [studentQuery, setStudentQuery] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState<Student>();
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await apiFetch<{ batches: Batch[]; context?: { subjects: CatalogSubject[] } }>(
-      "/api/batches?status=all&limit=100&includeContext=true",
-    );
-    if (result.ok && isApiSuccess(result.payload)) {
-      setBatches(result.payload.data.batches);
-      setSubjects(result.payload.data.context?.subjects ?? []);
+    const [batchResult, studentResult, enrollmentResult] = await Promise.all([
+      apiFetch<{ batches: Batch[]; context?: { subjects: CatalogSubject[] } }>("/api/batches?status=all&limit=100&includeContext=true"),
+      apiFetch<{ users: Student[] }>("/api/admin/users?role=student"),
+      apiFetch<{ enrollments: ActiveEnrollment[] }>("/api/enrollments?status=active&limit=200"),
+    ]);
+    if (batchResult.ok && isApiSuccess(batchResult.payload)) {
+      setBatches(batchResult.payload.data.batches);
+      setSubjects(batchResult.payload.data.context?.subjects ?? []);
     }
+    if (studentResult.ok && isApiSuccess(studentResult.payload)) setStudents(studentResult.payload.data.users);
+    if (enrollmentResult.ok && isApiSuccess(enrollmentResult.payload)) setActiveEnrollments(enrollmentResult.payload.data.enrollments);
     setLoading(false);
   }, []);
 
@@ -76,6 +86,57 @@ export function AdminBatchManager() {
     setEditing(undefined);
     setName("");
     setSelectedSubjects([]);
+  }
+
+  const availableStudents = useMemo(() => {
+    const enrolledStudentIds = new Set(activeEnrollments.map((enrollment) => enrollment.student.id));
+    const term = studentQuery.trim().toLowerCase();
+    return students
+      .filter((student) => student.isActive && !enrolledStudentIds.has(student.id))
+      .filter((student) => !term || `${student.name} ${student.reference ?? ""}`.toLowerCase().includes(term))
+      .slice(0, 8);
+  }, [activeEnrollments, studentQuery, students]);
+
+  function openAddStudent(batch: Batch) {
+    setAddingToBatch(batch);
+    setStudentQuery("");
+    setSelectedStudent(undefined);
+    setMessage("");
+  }
+
+  function closeAddStudent() {
+    setAddingToBatch(undefined);
+    setStudentQuery("");
+    setSelectedStudent(undefined);
+  }
+
+  async function addStudentToBatch(event: FormEvent) {
+    event.preventDefault();
+    if (!addingToBatch || !selectedStudent) return;
+    setSaving(true);
+    setMessage("");
+    const result = await apiFetch("/api/enrollments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "enroll",
+        studentId: selectedStudent.id,
+        batchId: addingToBatch.id,
+        subjectIds: addingToBatch.subjects.map((subject) => subject.id),
+        feeTk: 0,
+        reason: "Admin added student from Batch management",
+      }),
+    });
+    if (!result.ok || !isApiSuccess(result.payload)) {
+      setError(true);
+      setMessage(getApiErrorMessage(result.payload, "Student could not be added to this batch."));
+    } else {
+      setError(false);
+      setMessage(`${selectedStudent.name} was added with this batch's default subjects and fee.`);
+      closeAddStudent();
+      await load();
+    }
+    setSaving(false);
   }
 
   async function save(event: FormEvent) {
@@ -192,6 +253,23 @@ export function AdminBatchManager() {
         </form>
       )}
 
+      {addingToBatch && (
+        <form onSubmit={addStudentToBatch} className="mx-auto max-w-xl rounded-3xl border border-primary/30 bg-card p-5 shadow-[var(--shadow-md)]">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Add student</p><h3 className="mt-1 text-xl font-black text-primary">{addingToBatch.name}</h3></div>
+            <button type="button" aria-label="Close add student form" onClick={closeAddStudent}><X className="size-5 text-muted" /></button>
+          </div>
+          <p className="mb-4 text-sm text-muted">Search by student name or reference. The batch subjects and default fee will be applied first; you can edit them later.</p>
+          <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input autoFocus value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="pl-9" placeholder="Search by name or reference" /></div>
+          <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
+            {availableStudents.map((student) => <button key={student.id} type="button" onClick={() => setSelectedStudent(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
+            {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
+          </div>
+          {selectedStudent && <p className="mt-4 rounded-xl bg-secondary p-3 text-sm text-primary"><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a ৳0 default fee.</p>}
+          <Button className="mt-5 w-full" type="submit" disabled={saving || !selectedStudent}>{saving ? "Adding…" : "Add Student"}</Button>
+        </form>
+      )}
+
       {loading ? (
         <div className="h-40 animate-pulse rounded-3xl bg-secondary" />
       ) : batches.length === 0 ? (
@@ -232,9 +310,9 @@ export function AdminBatchManager() {
                   </Button>
                 )}
                 {(batch.status === "planned" || batch.status === "active") && (
-                  <Link href={`/admin/students?batchId=${batch.id}`} className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-input bg-background px-3 text-xs font-semibold text-primary transition-colors hover:bg-secondary">
-                    <Plus className="size-4" /> Add Student
-                  </Link>
+                  <Button size="sm" variant="outline" onClick={() => openAddStudent(batch)}>
+                    <UserPlus className="size-4" /> Add Student
+                  </Button>
                 )}
                 {batch.status === "planned" && (
                   <Button size="sm" onClick={() => void changeStatus(batch, "active")} disabled={saving}>
