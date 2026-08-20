@@ -669,6 +669,7 @@ export async function endRoutineSlot(input: EndRoutineSlotInput) {
       throw new ApiRouteError("Routine end date cannot extend its approved window.", 409);
     }
 
+    if (!routineSlot.branchId) throw new ApiRouteError("Legacy academic branch is unavailable.", 409);
     await lockBranchSchedule(routineSlot.branchId, session);
     const laterClassSession = await ClassSession.exists({
       routineSlotId: routineSlot._id,

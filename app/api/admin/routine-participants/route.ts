@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       ...(search ? { $or: [{ name: search }, { reference: search }] } : {}),
       ...(enrolledStudentIds ? { _id: { $in: enrolledStudentIds } } : {}),
     })
-      .select("name reference studentClass")
+      .select("name reference studentClass teacherDomain")
       .sort({ name: 1 })
       .limit(30)
       .lean();
@@ -41,6 +41,11 @@ export async function GET(request: NextRequest) {
         name: user.name,
         reference: user.reference,
         studentClass: user.studentClass,
+        domainSubjects: role === "teacher"
+          ? user.teacherDomain?.isAll
+            ? ["Physics", "Chemistry", "Math", "Higher Math", "Physics 1st Paper", "Physics 2nd Paper", "Chemistry 1st Paper", "Chemistry 2nd Paper", "Higher Math 1st Paper", "Higher Math 2nd Paper", "ICT"]
+            : user.teacherDomain?.subjects ?? []
+          : undefined,
       })),
     });
   } catch (error) {

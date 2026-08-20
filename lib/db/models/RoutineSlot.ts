@@ -3,13 +3,14 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { isValidRoutineWindow } from "../../academic-rules.ts";
 
 export interface IRoutineSlot extends Document {
-  organizationId: Types.ObjectId;
-  branchId: Types.ObjectId;
-  academicSessionId: Types.ObjectId;
-  batchId: Types.ObjectId;
-  subjectId: Types.ObjectId;
+  organizationId?: Types.ObjectId;
+  branchId?: Types.ObjectId;
+  academicSessionId?: Types.ObjectId;
+  batchId?: Types.ObjectId;
+  subjectId?: Types.ObjectId;
+  subjectName?: string;
   teacherId: Types.ObjectId;
-  teacherAssignmentId: Types.ObjectId;
+  teacherAssignmentId?: Types.ObjectId;
   studentIds: Types.ObjectId[];
   weekday: number;
   startMinute: number;
@@ -25,16 +26,16 @@ export interface IRoutineSlot extends Document {
 
 const RoutineSlotSchema = new Schema<IRoutineSlot>(
   {
-    organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true },
-    branchId: { type: Schema.Types.ObjectId, ref: "Branch", required: true },
-    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession", required: true },
-    batchId: { type: Schema.Types.ObjectId, ref: "Batch", required: true },
-    subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject", required: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
+    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession" },
+    batchId: { type: Schema.Types.ObjectId, ref: "Batch" },
+    subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
+    subjectName: { type: String, trim: true, maxlength: 100 },
     teacherId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     teacherAssignmentId: {
       type: Schema.Types.ObjectId,
       ref: "TeacherAssignment",
-      required: true,
     },
     studentIds: [{ type: Schema.Types.ObjectId, ref: "User", required: true }],
     weekday: { type: Number, required: true, min: 0, max: 6 },

@@ -21,14 +21,14 @@ export async function notifyRoutineChange(routine: IRoutineSlot, event: RoutineE
   if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return 0;
   const userIds = [...new Set([String(routine.teacherId), ...(routine.studentIds ?? []).map(String), ...additionalUserIds])];
   const [batch, subject, subscriptions, users] = await Promise.all([
-    Batch.findById(routine.batchId).select("name").lean(),
-    AcademicSubject.findById(routine.subjectId).select("name nameBn").lean(),
+    routine.batchId ? Batch.findById(routine.batchId).select("name").lean() : null,
+    routine.subjectId ? AcademicSubject.findById(routine.subjectId).select("name nameBn").lean() : null,
     PushSubscription.find({ userId: { $in: userIds } }).lean(),
     User.find({ _id: { $in: userIds } }).select("role").lean(),
   ]);
   const roles = new Map(users.map((user) => [String(user._id), user.role]));
   const title = event === "created" ? "নতুন ক্লাস রুটিন প্রকাশ হয়েছে" : event === "updated" ? "ক্লাস রুটিন পরিবর্তন হয়েছে" : "ক্লাস রুটিন বাতিল হয়েছে";
-  const body = `${subject?.nameBn || subject?.name || "ক্লাস"} • ${batch?.name || "ব্যাচ"} • ${days[routine.weekday]} • ${time(routine.startMinute)}–${time(routine.endMinute)}${routine.room ? ` • ${routine.room}` : ""}`;
+  const body = `${routine.subjectName || subject?.nameBn || subject?.name || "ক্লাস"}${batch?.name ? ` • ${batch.name}` : ""} • ${days[routine.weekday]} • ${time(routine.startMinute)}–${time(routine.endMinute)}`;
   let sent = 0;
   await Promise.all(subscriptions.map(async (subscription) => {
     try {

@@ -117,6 +117,22 @@ test("routine updates require a complete admin-controlled participant schedule",
   assert.equal(routine.studentIds.length, 1);
 });
 
+test("routine contracts accept an approved teacher-domain subject without a second assignment", () => {
+  const routine = routineMutationSchema.parse({
+    action: "create",
+    teacherId: id,
+    subject: "Physics",
+    studentIds: [id],
+    weekday: 2,
+    startMinute: 540,
+    endMinute: 600,
+    reason: "Approved domain routine",
+  });
+  assert.equal(routine.action, "create");
+  assert.equal(routine.subject, "Physics");
+  assert.equal(routine.assignmentId, undefined);
+});
+
 test("class-session contracts use explicit create and terminal actions", () => {
   const classSession = classSessionMutationSchema.parse({
     action: "create",

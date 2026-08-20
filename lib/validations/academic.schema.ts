@@ -102,13 +102,15 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("create"),
-      assignmentId: objectIdSchema,
+      assignmentId: objectIdSchema.optional(),
+      teacherId: objectIdSchema.optional(),
+      subject: z.string().trim().min(1).max(100).optional(),
       studentIds: z.array(objectIdSchema).min(1).max(500),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
       room: z.string().trim().min(1).max(80).optional(),
-      effectiveFrom: z.coerce.date(),
+      effectiveFrom: z.coerce.date().optional(),
       effectiveTo: z.coerce.date().optional(),
       reason: mutationReasonSchema,
     })
@@ -116,7 +118,11 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       path: ["endMinute"],
       message: "Routine end time must be after its start time.",
     })
-    .refine((value) => !value.effectiveTo || value.effectiveFrom <= value.effectiveTo, {
+    .refine((value) => Boolean(value.assignmentId || (value.teacherId && value.subject)), {
+      path: ["subject"],
+      message: "An assignment or a teacher domain subject is required.",
+    })
+    .refine((value) => !value.effectiveTo || !value.effectiveFrom || value.effectiveFrom <= value.effectiveTo, {
       path: ["effectiveTo"],
       message: "Routine end date cannot precede its start date.",
     }),
@@ -124,18 +130,21 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
     .object({
       action: z.literal("update"),
       routineSlotId: objectIdSchema,
-      assignmentId: objectIdSchema,
+      assignmentId: objectIdSchema.optional(),
+      teacherId: objectIdSchema.optional(),
+      subject: z.string().trim().min(1).max(100).optional(),
       studentIds: z.array(objectIdSchema).min(1).max(500),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
       room: z.string().trim().min(1).max(80).optional(),
-      effectiveFrom: z.coerce.date(),
+      effectiveFrom: z.coerce.date().optional(),
       effectiveTo: z.coerce.date().optional(),
       reason: mutationReasonSchema,
     })
     .refine((value) => value.startMinute < value.endMinute, { path: ["endMinute"], message: "Routine end time must be after its start time." })
-    .refine((value) => !value.effectiveTo || value.effectiveFrom <= value.effectiveTo, { path: ["effectiveTo"], message: "Routine end date cannot precede its start date." }),
+    .refine((value) => Boolean(value.assignmentId || (value.teacherId && value.subject)), { path: ["subject"], message: "An assignment or a teacher domain subject is required." })
+    .refine((value) => !value.effectiveTo || !value.effectiveFrom || value.effectiveFrom <= value.effectiveTo, { path: ["effectiveTo"], message: "Routine end date cannot precede its start date." }),
   z.object({
     action: z.literal("end"),
     routineSlotId: objectIdSchema,

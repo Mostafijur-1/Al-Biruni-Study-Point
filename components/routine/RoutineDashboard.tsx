@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export type RoutineView = {
   id: string;
-  teacherAssignmentId: string;
+  teacherAssignmentId?: string;
   weekday: number;
   startMinute: number;
   endMinute: number;
@@ -70,7 +70,7 @@ export function RoutineDashboard({ compact = false }: { compact?: boolean }) {
               <div>
                 <p className="text-xs font-bold text-brand-red">পরবর্তী ক্লাস</p>
                 <p className="mt-1 text-lg font-black">{nextToday.subject?.nameBn || nextToday.subject?.name || "ক্লাস"}</p>
-                <p className="mt-1 text-sm text-muted">{nextToday.batch?.name} • {nextToday.teacher.name}</p>
+                <p className="mt-1 text-sm text-muted">{nextToday.batch?.name ? `${nextToday.batch.name} • ` : ""}{nextToday.teacher.name}</p>
               </div>
               <div className="flex items-center gap-2 rounded-xl bg-secondary px-3 py-2 font-black">
                 <Clock3 className="size-4" /> {routineTime(nextToday.startMinute)}
@@ -95,7 +95,7 @@ export function RoutineDashboard({ compact = false }: { compact?: boolean }) {
                   return <article key={day} className={cn("rounded-2xl border p-4", dayIndex === today ? "border-brand-blue bg-brand-blue-light/60" : "border-border bg-surface")}>
                     <div className="flex items-center justify-between"><h4 className="font-black text-primary">{day}</h4>{dayIndex === today && <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-black text-white">আজ</span>}</div>
                     <div className="mt-3 space-y-3">{items.map((item) => <div key={item.id} className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-border/70">
-                      <div className="flex items-start justify-between gap-3"><div><p className="font-black text-primary">{item.subject?.nameBn || item.subject?.name}</p><p className="mt-0.5 text-xs text-muted">{item.batch?.name} • {item.teacher.name}</p></div><span className="whitespace-nowrap text-sm font-black text-brand-red">{routineTime(item.startMinute)}–{routineTime(item.endMinute)}</span></div>
+                      <div className="flex items-start justify-between gap-3"><div><p className="font-black text-primary">{item.subject?.nameBn || item.subject?.name}</p><p className="mt-0.5 text-xs text-muted">{item.batch?.name ? `${item.batch.name} • ` : ""}{item.teacher.name}</p></div><span className="whitespace-nowrap text-sm font-black text-brand-red">{routineTime(item.startMinute)}–{routineTime(item.endMinute)}</span></div>
                       <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">{item.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{item.room}</span>}<span className="inline-flex items-center gap-1"><Users className="size-3.5" />{item.students.length} জন শিক্ষার্থী</span></div>
                     </div>)}</div>
                   </article>;

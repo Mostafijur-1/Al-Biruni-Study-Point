@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { Banknote, Building2, CheckCircle2, CircleDollarSign, Search, TrendingUp, UserRoundCheck, UsersRound, WalletCards, XCircle, Zap } from "lucide-react";
+import { Banknote, Building2, CheckCircle2, ChevronDown, CircleDollarSign, Search, TrendingUp, UserRoundCheck, UsersRound, WalletCards, XCircle, Zap } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export function FinanceWorkspace() {
   const [monthAmount, setMonthAmount] = useState(0);
   const [subjects, setSubjects] = useState("");
   const [note, setNote] = useState("");
+  const [expandedExpense, setExpandedExpense] = useState<ExpenseCategory>();
   const [expenseDrafts, setExpenseDrafts] = useState<Record<ExpenseCategory, ExpenseDraft>>({
     "room-rent": { amountTk: 0, status: "due", note: "" },
     electricity: { amountTk: 0, status: "due", note: "" },
@@ -110,6 +111,7 @@ export function FinanceWorkspace() {
   async function saveExpense(category: ExpenseCategory, status: "due" | "clear") {
     const draft = expenseDrafts[category];
     await save({ action: "set-expense", month, category, amountTk: draft.amountTk, status, note: draft.note || undefined }, status === "clear" ? "পরিচালন ব্যয় পরিশোধ হিসেবে সংরক্ষিত হয়েছে।" : "পরিচালন ব্যয় বাকি হিসেবে সংরক্ষিত হয়েছে।");
+    setExpandedExpense(undefined);
   }
 
   const records = data?.records ?? [];
@@ -127,16 +129,16 @@ export function FinanceWorkspace() {
     {message && <Alert variant={hasError ? "destructive" : "success"}>{message}</Alert>}
     {data && <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><SummaryCard label="শিক্ষার্থী থেকে আদায়" value={data.summary.studentCollectedTk} hint={`${money(data.summary.studentDueTk)} বাকি • মোট ${money(data.summary.studentExpectedTk)}`} icon={CircleDollarSign} tone="bg-emerald-100 text-emerald-700" /><SummaryCard label="শিক্ষককে পরিশোধ" value={data.summary.teacherPaidTk} hint={`${money(data.summary.teacherDueTk)} বাকি • মোট ${money(data.summary.teacherPayrollTk)}`} icon={WalletCards} tone="bg-violet-100 text-violet-700" /><SummaryCard label="পরিচালন ব্যয়" value={data.summary.operatingPaidTk} hint={`${money(data.summary.operatingDueTk)} বাকি • মোট ${money(data.summary.operatingExpenseTk)}`} icon={Building2} tone="bg-orange-100 text-orange-700" /><SummaryCard label="বর্তমান নেট ক্যাশ" value={data.summary.netCashTk} hint="আদায় থেকে শিক্ষক ও পরিচালন ব্যয় বাদ দিয়ে" icon={TrendingUp} tone={data.summary.netCashTk >= 0 ? "bg-sky-100 text-sky-700" : "bg-red-100 text-red-700"} /><SummaryCard label="ক্লিয়ার রেকর্ড" value={data.summary.studentClearCount + data.summary.teacherClearCount} hint={`${data.summary.studentDueCount + data.summary.teacherDueCount}টি রেকর্ড এখনো বাকি`} icon={UserRoundCheck} tone="bg-amber-100 text-amber-700" /></section>}
 
-    {data && <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
-      <div className="mb-4"><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Operating expenses</p><h2 className="mt-1 text-xl font-black text-primary">রুম ভাড়া ও বিদ্যুৎ বিল</h2><p className="mt-1 text-sm text-muted">প্রতি মাসের পরিমাণ ও পরিশোধের অবস্থা আলাদাভাবে রাখুন। পরিশোধিত ব্যয় নেট ক্যাশে স্বয়ংক্রিয়ভাবে হিসাব হবে।</p></div>
-      <div className="grid gap-4 lg:grid-cols-2">{(["room-rent", "electricity"] as const).map((category) => {
+    {data && <section className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="mb-3"><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Operating expenses</p><h2 className="mt-1 text-lg font-black text-primary">পরিচালন ব্যয়</h2></div>
+      <div className="space-y-2">{(["room-rent", "electricity"] as const).map((category) => {
         const draft = expenseDrafts[category];
         const isRent = category === "room-rent";
         const Icon = isRent ? Building2 : Zap;
-        return <article key={category} className="rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center gap-3"><span className={cn("grid size-10 place-items-center rounded-xl", isRent ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700")}><Icon className="size-5" /></span><div><h3 className="font-black text-primary">{isRent ? "রুম ভাড়া" : "বিদ্যুৎ বিল"}</h3><p className="text-xs text-muted">{monthLabel}</p></div><span className={cn("ml-auto rounded-full px-2.5 py-1 text-[11px] font-black", draft.status === "clear" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>{draft.status === "clear" ? "ক্লিয়ার" : "বাকি"}</span></div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="space-y-1.5"><Label htmlFor={`${category}-amount`}>পরিমাণ (৳)</Label><Input id={`${category}-amount`} type="number" min={0} value={draft.amountTk} onChange={(event) => updateExpense(category, { amountTk: Number(event.target.value) })} /></div><div className="space-y-1.5"><Label htmlFor={`${category}-note`}>নোট (ঐচ্ছিক)</Label><Input id={`${category}-note`} value={draft.note} onChange={(event) => updateExpense(category, { note: event.target.value })} placeholder="রসিদ/মিটারের তথ্য" /></div></div>
-          <div className="mt-3 grid grid-cols-2 gap-2"><Button type="button" variant="outline" disabled={saving} onClick={() => void saveExpense(category, "due")}><XCircle className="size-4" /> বাকি রাখুন</Button><Button type="button" disabled={saving} onClick={() => void saveExpense(category, "clear")}><CheckCircle2 className="size-4" /> ক্লিয়ার করুন</Button></div>
+        const expanded = expandedExpense === category;
+        return <article key={category} className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <button type="button" aria-expanded={expanded} onClick={() => setExpandedExpense(expanded ? undefined : category)} className="flex w-full items-center gap-3 p-3 text-left sm:p-4"><span className={cn("grid size-9 place-items-center rounded-xl", isRent ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700")}><Icon className="size-4.5" /></span><div className="min-w-0"><h3 className="font-black text-primary">{isRent ? "রুম ভাড়া" : "বিদ্যুৎ বিল"}</h3><p className={cn("text-[11px] font-bold", draft.status === "clear" ? "text-emerald-700" : "text-red-700")}>{draft.status === "clear" ? "ক্লিয়ার" : "বাকি"}</p></div><p className="ml-auto text-lg font-black text-primary">{money(draft.amountTk)}</p><ChevronDown className={cn("size-4 text-muted transition-transform", expanded && "rotate-180")} /></button>
+          {expanded && <div className="border-t border-border p-3 sm:p-4"><div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1.5"><Label htmlFor={`${category}-amount`}>পরিমাণ (৳)</Label><Input id={`${category}-amount`} type="number" min={0} value={draft.amountTk} onChange={(event) => updateExpense(category, { amountTk: Number(event.target.value) })} /></div><div className="space-y-1.5"><Label htmlFor={`${category}-note`}>নোট (ঐচ্ছিক)</Label><Input id={`${category}-note`} value={draft.note} onChange={(event) => updateExpense(category, { note: event.target.value })} placeholder="রসিদ/মিটারের তথ্য" /></div></div><div className="mt-3 grid grid-cols-2 gap-2"><Button type="button" variant="outline" disabled={saving} onClick={() => void saveExpense(category, "due")}><XCircle className="size-4" /> বাকি রাখুন</Button><Button type="button" disabled={saving} onClick={() => void saveExpense(category, "clear")}><CheckCircle2 className="size-4" /> ক্লিয়ার করুন</Button></div></div>}
         </article>;
       })}</div>
     </section>}

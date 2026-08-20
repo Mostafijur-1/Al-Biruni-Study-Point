@@ -101,9 +101,9 @@ async function handle(request: NextRequest) {
       $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: now } }],
     }).lean();
     const [organizations, batches, subjects] = await Promise.all([
-      Organization.find({ _id: { $in: routines.map((item) => item.organizationId) } }).select("timezone").lean(),
-      Batch.find({ _id: { $in: routines.map((item) => item.batchId) } }).select("name code").lean(),
-      AcademicSubject.find({ _id: { $in: routines.map((item) => item.subjectId) } }).select("name nameBn").lean(),
+      Organization.find({ _id: { $in: routines.map((item) => item.organizationId).filter((id): id is NonNullable<typeof id> => Boolean(id)) } }).select("timezone").lean(),
+      Batch.find({ _id: { $in: routines.map((item) => item.batchId).filter((id): id is NonNullable<typeof id> => Boolean(id)) } }).select("name code").lean(),
+      AcademicSubject.find({ _id: { $in: routines.map((item) => item.subjectId).filter((id): id is NonNullable<typeof id> => Boolean(id)) } }).select("name nameBn").lean(),
     ]);
     const zones = new Map(organizations.map((item) => [String(item._id), item.timezone]));
     const batchNames = new Map(batches.map((item) => [String(item._id), item.name]));
@@ -123,7 +123,8 @@ async function handle(request: NextRequest) {
         const start = zonedScheduleDateTimeToUtc(candidate.date, `${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`, zone);
         if (start < routine.effectiveFrom || (routine.effectiveTo && start > routine.effectiveTo)) continue;
         const title = candidate.kind === "previous-night" ? "আগামীকাল আপনার ক্লাস আছে" : "আজ আপনার ক্লাস আছে";
-        const body = `${subjectNames.get(String(routine.subjectId)) || "ক্লাস"} • ${batchNames.get(String(routine.batchId)) || "ব্যাচ"} • ${timeLabel(routine.startMinute)}–${timeLabel(routine.endMinute)}${routine.room ? ` • ${routine.room}` : ""}`;
+        const batchName = batchNames.get(String(routine.batchId));
+        const body = `${routine.subjectName || subjectNames.get(String(routine.subjectId)) || "ক্লাস"}${batchName ? ` • ${batchName}` : ""} • ${timeLabel(routine.startMinute)}–${timeLabel(routine.endMinute)}`;
         const userIds = [...new Set([String(routine.teacherId), ...(routine.studentIds ?? []).map(String)])];
         reminders += userIds.length;
         devices += (await Promise.all(userIds.map((id) => {
