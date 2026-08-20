@@ -6,8 +6,10 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "ABSP",
     description: "Science coaching center (offline/online) and LMS for SSC and HSC students.",
     start_url: "/",
+    id: "/",
+    scope: "/",
     display: "standalone",
-    background_color: "#ffffff",
+    background_color: "#0b2545",
     theme_color: "#0b2545",
     icons: [
       {

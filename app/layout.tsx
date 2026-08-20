@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { PwaInstallPrompt } from "@/components/shared/PwaInstallPrompt";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
@@ -108,7 +107,6 @@ export default function RootLayout({
             contact={dict.contact}
           />
         </div>
-        <PwaInstallPrompt />
       </body>
     </html>
   );

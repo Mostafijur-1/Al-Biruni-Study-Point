@@ -1,4 +1,4 @@
-const CACHE_NAME = "absp-cache-v3-logo-20260820b";
+const CACHE_NAME = "absp-cache-v4-home-app-actions";
 const ASSETS_TO_CACHE = [
   "/",
   "/favicon.ico",
