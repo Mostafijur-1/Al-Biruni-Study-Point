@@ -15,6 +15,7 @@ export const batchListQuerySchema = z.object({
 
 export const batchCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
+  subjectNames: z.array(z.string().trim().min(1).max(100)).min(1).max(30),
 }).strict();
 
 export const batchUpdateSchema = z
@@ -44,6 +45,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     batchId: objectIdSchema,
     studentId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
+    feeTk: z.coerce.number().int().min(0).max(10_000_000),
     effectiveFrom: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),
@@ -52,6 +54,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     enrollmentId: objectIdSchema,
     targetBatchId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
+    feeTk: z.coerce.number().int().min(0).max(10_000_000),
     effectiveAt: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),
@@ -59,6 +62,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     action: z.literal("update-subjects"),
     enrollmentId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30),
+    feeTk: z.coerce.number().int().min(0).max(10_000_000),
     effectiveAt: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Archive, CheckCircle2, Layers3, Pencil, Plus, X } from "lucide-react";
+import { Archive, Check, CheckCircle2, Layers3, Pencil, Plus, X } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ type Batch = {
   activeEnrollmentCount: number;
   status: BatchStatus;
 };
+type CatalogSubject = { code: string; name: string; nameBn: string };
 
 const statusLabel: Record<BatchStatus, string> = {
   planned: "পরিকল্পিত",
@@ -28,6 +29,8 @@ const statusLabel: Record<BatchStatus, string> = {
 export function AdminBatchManager() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [name, setName] = useState("");
+  const [subjects, setSubjects] = useState<CatalogSubject[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [editing, setEditing] = useState<Batch>();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,11 +40,12 @@ export function AdminBatchManager() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await apiFetch<{ batches: Batch[] }>(
-      "/api/batches?status=all&limit=100",
+    const result = await apiFetch<{ batches: Batch[]; context?: { subjects: CatalogSubject[] } }>(
+      "/api/batches?status=all&limit=100&includeContext=true",
     );
     if (result.ok && isApiSuccess(result.payload)) {
       setBatches(result.payload.data.batches);
+      setSubjects(result.payload.data.context?.subjects ?? []);
     }
     setLoading(false);
   }, []);
@@ -54,6 +58,7 @@ export function AdminBatchManager() {
   function startCreate() {
     setEditing(undefined);
     setName("");
+    setSelectedSubjects([]);
     setOpen(true);
   }
 
@@ -67,6 +72,7 @@ export function AdminBatchManager() {
     setOpen(false);
     setEditing(undefined);
     setName("");
+    setSelectedSubjects([]);
   }
 
   async function save(event: FormEvent) {
@@ -82,6 +88,7 @@ export function AdminBatchManager() {
       }
       : {
         name,
+        subjectNames: selectedSubjects,
       };
 
     const result = await apiFetch("/api/batches", {
@@ -97,7 +104,7 @@ export function AdminBatchManager() {
       setMessage(
         editing
           ? "ব্যাচের নাম আপডেট হয়েছে।"
-          : "নতুন ব্যাচ তৈরি হয়েছে। এখন বিষয় ও fee configure করুন।",
+          : "নতুন ব্যাচ ও এর বিষয়সমূহ তৈরি হয়েছে।",
       );
       closeForm();
       await load();
@@ -174,7 +181,8 @@ export function AdminBatchManager() {
               placeholder="যেমন: HSC 2029"
             />
           </div>
-          <Button className="mt-5 w-full" type="submit" disabled={saving}>
+          {!editing && <fieldset className="mt-5"><legend className="text-sm font-bold text-primary">Batch subjects</legend><p className="mt-1 text-xs text-muted">ভর্তির সময় এগুলো default হিসেবে নির্বাচিত থাকবে; শিক্ষার্থী অনুযায়ী পরিবর্তন করা যাবে।</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{subjects.map((subject) => { const checked = selectedSubjects.includes(subject.name); return <button key={subject.code} type="button" aria-pressed={checked} onClick={() => setSelectedSubjects((current) => checked ? current.filter((name) => name !== subject.name) : [...current, subject.name])} className={cn("flex items-center gap-2 rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><span className="text-sm font-bold text-primary">{subject.nameBn || subject.name}</span></button>; })}</div></fieldset>}
+          <Button className="mt-5 w-full" type="submit" disabled={saving || (!editing && selectedSubjects.length === 0)}>
             {saving ? "সংরক্ষণ হচ্ছে…" : "ব্যাচ সংরক্ষণ করুন"}
           </Button>
         </form>

@@ -3,7 +3,7 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import type { StudentClass } from "@/types";
 
 export interface IAcademicSubject extends Document {
-  organizationId: Types.ObjectId;
+  organizationId?: Types.ObjectId;
   code: string;
   name: string;
   nameBn: string;
@@ -16,7 +16,7 @@ export interface IAcademicSubject extends Document {
 
 const AcademicSubjectSchema = new Schema<IAcademicSubject>(
   {
-    organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true },
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
     code: { type: String, required: true, trim: true, uppercase: true },
     name: { type: String, required: true, trim: true },
     nameBn: { type: String, required: true, trim: true },

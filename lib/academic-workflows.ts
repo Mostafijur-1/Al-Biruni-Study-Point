@@ -10,12 +10,14 @@ import {
   type ClassSessionStatus,
 } from "./academic-rules.ts";
 import { ApiRouteError } from "./api-error.ts";
+import { findCatalogSubject } from "./academic-subject-catalog.ts";
 import { writeAuditLog } from "./audit/write-audit-log.ts";
 import { isSubjectWithinTeacherDomain } from "./auth/teacher-domain-rules.ts";
 import { AcademicSession } from "./db/models/AcademicSession.ts";
 import { AcademicSubject } from "./db/models/AcademicSubject.ts";
 import { Batch, type IBatch } from "./db/models/Batch.ts";
 import { BatchEnrollment } from "./db/models/BatchEnrollment.ts";
+import { CoachingBatchSubject } from "./db/models/CoachingBatchSubject.ts";
 import { Branch } from "./db/models/Branch.ts";
 import { ClassSession } from "./db/models/ClassSession.ts";
 import { Organization } from "./db/models/Organization.ts";
@@ -32,6 +34,7 @@ type WorkflowAuditContext = {
 
 type CreateBatchInput = WorkflowAuditContext & {
   name: string;
+  subjectNames: string[];
   organizationId?: string;
   branchId?: string;
   academicSessionId?: string;
@@ -213,6 +216,14 @@ async function lockBranchSchedule(branchId: Types.ObjectId, session: ClientSessi
 
 export async function createBatch(input: CreateBatchInput) {
   return runTransaction(async (session) => {
+    const selectedCatalogSubjects = input.subjectNames.map((name) => findCatalogSubject(name));
+    if (selectedCatalogSubjects.some((subject) => !subject)) {
+      throw new ApiRouteError("One or more selected batch subjects are invalid.", 400, "VALIDATION_ERROR");
+    }
+    const uniqueSubjects = [...new Map(selectedCatalogSubjects.map((subject) => [subject!.code, subject!])).values()];
+    if (uniqueSubjects.length !== input.subjectNames.length) {
+      throw new ApiRouteError("Duplicate batch subjects are not allowed.", 400, "VALIDATION_ERROR");
+    }
     const [batch] = await Batch.create(
       [
         {
@@ -232,6 +243,30 @@ export async function createBatch(input: CreateBatchInput) {
       { session },
     );
 
+    const subjectDocuments = await Promise.all(uniqueSubjects.map((subject) => AcademicSubject.findOneAndUpdate(
+      { code: subject.code },
+      {
+        $set: { status: "active" },
+        $setOnInsert: {
+          code: subject.code,
+          name: subject.name,
+          nameBn: subject.nameBn,
+          classLevels: ["class-9", "class-10", "class-11", "class-12"],
+          aliases: [subject.name, subject.nameBn],
+        },
+      },
+      { upsert: true, new: true, runValidators: true, session },
+    )));
+    await CoachingBatchSubject.insertMany(subjectDocuments.map((subject, index) => ({
+      organizationId: batch.organizationId,
+      branchId: batch.branchId,
+      batchId: batch._id,
+      subjectId: subject._id,
+      status: "active",
+      sortOrder: index,
+      createdBy: input.actor.id,
+    })), { session });
+
     await writeAuditLog({
       request: input.request,
       actor: input.actor,
@@ -242,6 +277,7 @@ export async function createBatch(input: CreateBatchInput) {
       after: {
         name: batch.name,
         status: batch.status,
+        subjects: uniqueSubjects.map((subject) => subject.name),
       },
       session,
     });

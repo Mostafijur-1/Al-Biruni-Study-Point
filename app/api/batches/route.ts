@@ -6,6 +6,7 @@ import { areAcademicWritesEnabled } from "@/lib/academic-rules";
 import { ApiRouteError } from "@/lib/api-error";
 import { handleApiError, success } from "@/lib/api/response";
 import { resolveAcademicBatchReadScope } from "@/lib/academic-scope";
+import { ACADEMIC_SUBJECT_CATALOG } from "@/lib/academic-subject-catalog";
 import { requireAuth } from "@/lib/auth/session";
 import { Batch, type IBatch } from "@/lib/db/models/Batch";
 import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
@@ -106,6 +107,7 @@ export async function GET(request: NextRequest) {
         organizations: organizations.map((item) => ({ id: String(item._id), name: item.name, slug: item.slug })),
         branches: branches.map((item) => ({ id: String(item._id), organizationId: String(item.organizationId), name: item.name, code: item.code })),
         academicSessions: academicSessions.map((item) => ({ id: String(item._id), organizationId: String(item.organizationId), name: item.name, startsAt: item.startsAt.toISOString(), endsAt: item.endsAt.toISOString(), status: item.status })),
+        subjects: ACADEMIC_SUBJECT_CATALOG,
       } : undefined,
     });
   } catch (error) {
@@ -134,6 +136,7 @@ export async function POST(request: NextRequest) {
       request,
       actor,
       name: parsed.name,
+      subjectNames: parsed.subjectNames,
       reason: "অ্যাডমিন কর্তৃক নতুন ব্যাচ তৈরি",
     });
 

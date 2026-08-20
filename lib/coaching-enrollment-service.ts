@@ -63,6 +63,7 @@ async function loadSelection(
 async function syncPaymentProfile(input: {
   studentId: mongoose.Types.ObjectId;
   subjectIds: string[];
+  feeTk?: number;
   actorId: string;
   session: ClientSession;
   active?: boolean;
@@ -77,10 +78,11 @@ async function syncPaymentProfile(input: {
       $set: {
         role: "student",
         subjects: subjects.map((subject) => subject.nameBn || subject.name),
+        ...(input.feeTk !== undefined ? { defaultAmountTk: input.feeTk } : {}),
         isActive: input.active ?? true,
         updatedBy: input.actorId,
       },
-      $setOnInsert: { defaultAmountTk: 0 },
+      ...(input.feeTk === undefined ? { $setOnInsert: { defaultAmountTk: 0 } } : {}),
     },
     { upsert: true, runValidators: true, session: input.session, setDefaultsOnInsert: true },
   );
@@ -114,6 +116,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
   studentId: string;
   subjectIds?: string[];
   effectiveFrom: Date;
+  feeTk: number;
 }) {
   return inTransaction(async (session) => {
     const { batch, selectedSubjectIds } = await loadSelection(input.batchId, input.subjectIds, session);
@@ -145,12 +148,12 @@ export async function createCoachingEnrollment(input: AuditInput & {
       createdBy: input.actor.id,
     }], { session });
     await addSubjectRows({ enrollment, subjectIds: selectedSubjectIds, effectiveFrom: input.effectiveFrom, actorId: input.actor.id, session });
-    await syncPaymentProfile({ studentId: student._id, subjectIds: selectedSubjectIds, actorId: input.actor.id, session });
+    await syncPaymentProfile({ studentId: student._id, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
     await User.updateOne({ _id: student._id }, { $set: { isAbspMember: true } }, { session });
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "coaching.enrollment.created", resourceType: "BatchEnrollment", resourceId: enrollment._id, reason: input.reason,
-      after: { batchId: String(batch._id), studentId: String(student._id), subjectIds: selectedSubjectIds }, session,
+      after: { batchId: String(batch._id), studentId: String(student._id), subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
     });
     return enrollment;
   });
@@ -160,6 +163,7 @@ export async function updateCoachingSubjects(input: AuditInput & {
   enrollmentId: string;
   subjectIds: string[];
   effectiveAt: Date;
+  feeTk: number;
 }) {
   return inTransaction(async (session) => {
     const enrollment = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
@@ -178,12 +182,12 @@ export async function updateCoachingSubjects(input: AuditInput & {
     }
     if (added.length) await addSubjectRows({ enrollment, subjectIds: added, effectiveFrom: input.effectiveAt, actorId: input.actor.id, session });
     await enrollment.save({ session });
-    await syncPaymentProfile({ studentId: enrollment.studentId, subjectIds: selectedSubjectIds, actorId: input.actor.id, session });
+    await syncPaymentProfile({ studentId: enrollment.studentId, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: enrollment.organizationId, branchId: enrollment.branchId,
       action: "coaching.enrollment.subjects-updated", resourceType: "BatchEnrollment", resourceId: enrollment._id, reason: input.reason,
       before: { subjectIds: currentIds },
-      after: { subjectIds: selectedSubjectIds }, session,
+      after: { subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
     });
     return enrollment;
   });
@@ -194,6 +198,7 @@ export async function transferCoachingEnrollment(input: AuditInput & {
   targetBatchId: string;
   subjectIds?: string[];
   effectiveAt: Date;
+  feeTk: number;
 }) {
   return inTransaction(async (session) => {
     const current = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
@@ -225,12 +230,12 @@ export async function transferCoachingEnrollment(input: AuditInput & {
       createdBy: input.actor.id,
     }], { session });
     await addSubjectRows({ enrollment: next, subjectIds: selectedSubjectIds, effectiveFrom: input.effectiveAt, actorId: input.actor.id, session });
-    await syncPaymentProfile({ studentId: current.studentId, subjectIds: selectedSubjectIds, actorId: input.actor.id, session });
+    await syncPaymentProfile({ studentId: current.studentId, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: current.organizationId, branchId: targetBatch.branchId,
       action: "coaching.enrollment.transferred", resourceType: "BatchEnrollment", resourceId: current._id, reason: input.reason,
       before: { batchId: String(current.batchId), status: "active" },
-      after: { batchId: String(targetBatch._id), nextEnrollmentId: String(next._id), subjectIds: selectedSubjectIds }, session,
+      after: { batchId: String(targetBatch._id), nextEnrollmentId: String(next._id), subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
     });
     return next;
   });

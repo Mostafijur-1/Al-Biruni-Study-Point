@@ -15,6 +15,7 @@ import { User } from "@/lib/db/models/User";
 import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
 import { Batch } from "@/lib/db/models/Batch";
 import { CoachingEnrollmentSubject } from "@/lib/db/models/CoachingEnrollmentSubject";
+import { PaymentProfile } from "@/lib/db/models/PaymentProfile";
 import {
   enrollmentListQuerySchema,
   enrollmentMutationSchema,
@@ -90,15 +91,17 @@ export async function GET(request: NextRequest) {
       .lean();
     const studentIds = [...new Set(enrollments.map((item) => String(item.studentId)))];
     const enrollmentIds = enrollments.map((item) => item._id);
-    const [students, subjectRows, batches] = await Promise.all([
+    const [students, subjectRows, batches, paymentProfiles] = await Promise.all([
       User.find({ _id: { $in: studentIds } }).select("name studentClass reference isActive").lean(),
       CoachingEnrollmentSubject.find({ enrollmentId: { $in: enrollmentIds }, status: "active" }).lean(),
       Batch.find({ _id: { $in: enrollments.map((item) => item.batchId) } }).select("name code").lean(),
+      PaymentProfile.find({ userId: { $in: studentIds }, role: "student" }).select("userId defaultAmountTk").lean(),
     ]);
     const subjects = await AcademicSubject.find({ _id: { $in: subjectRows.map((item) => item.subjectId) } }).select("name nameBn code").lean();
     const studentById = new Map(students.map((student) => [String(student._id), student]));
     const subjectById = new Map(subjects.map((subject) => [String(subject._id), subject]));
     const batchById = new Map(batches.map((batch) => [String(batch._id), batch]));
+    const feeByStudentId = new Map(paymentProfiles.map((profile) => [String(profile.userId), profile.defaultAmountTk]));
 
     return success({
       enrollments: enrollments.map((enrollment) => {
@@ -120,6 +123,7 @@ export async function GET(request: NextRequest) {
           subjects: subjectRows
             .filter((row) => String(row.enrollmentId) === String(enrollment._id))
             .map((row) => ({ id: String(row.subjectId), ...subjectById.get(String(row.subjectId)) })),
+          feeTk: feeByStudentId.get(String(enrollment.studentId)) ?? 0,
           status: enrollment.status,
           effectiveFrom: enrollment.effectiveFrom.toISOString(),
           effectiveTo: enrollment.effectiveTo?.toISOString(),
@@ -148,6 +152,7 @@ export async function POST(request: NextRequest) {
             studentId: parsed.studentId,
             subjectIds: parsed.subjectIds,
             effectiveFrom: parsed.effectiveFrom ?? new Date(),
+            feeTk: parsed.feeTk,
             reason: parsed.reason,
           })
         : parsed.action === "transfer" ? await transferCoachingEnrollment({
@@ -157,10 +162,12 @@ export async function POST(request: NextRequest) {
             targetBatchId: parsed.targetBatchId,
             subjectIds: parsed.subjectIds,
             effectiveAt: parsed.effectiveAt ?? new Date(),
+            feeTk: parsed.feeTk,
             reason: parsed.reason,
           }) : parsed.action === "update-subjects" ? await updateCoachingSubjects({
             request, actor, enrollmentId: parsed.enrollmentId, subjectIds: parsed.subjectIds,
             effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,
+            feeTk: parsed.feeTk,
           }) : await withdrawCoachingEnrollment({
             request, actor, enrollmentId: parsed.enrollmentId,
             effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,

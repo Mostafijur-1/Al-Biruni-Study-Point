@@ -14,10 +14,10 @@ import { requiresAcademicRoutineWriteGate } from "../lib/routine-write-gate.ts";
 
 const id = "64f000000000000000000001";
 
-test("batch creation accepts only a batch name", () => {
-  assert.deepEqual(batchCreateSchema.parse({ name: "HSC 2029" }), { name: "HSC 2029" });
+test("batch creation accepts a name and its default subjects", () => {
+  assert.deepEqual(batchCreateSchema.parse({ name: "HSC 2029", subjectNames: ["Physics", "Chemistry"] }), { name: "HSC 2029", subjectNames: ["Physics", "Chemistry"] });
   assert.equal(batchCreateSchema.safeParse({}).success, false);
-  assert.equal(batchCreateSchema.safeParse({ name: "HSC 2029", capacity: 40 }).success, false);
+  assert.equal(batchCreateSchema.safeParse({ name: "HSC 2029", subjectNames: [], capacity: 40 }).success, false);
 });
 
 test("batch management requires an explicit audited change", () => {
@@ -31,6 +31,7 @@ test("enrollment mutations require explicit actions, valid IDs, and audit reason
     action: "enroll",
     batchId: id,
     studentId: "64f000000000000000000002",
+    feeTk: 2500,
     reason: "Confirmed admission roster",
   });
   assert.equal(enrollment.action, "enroll");

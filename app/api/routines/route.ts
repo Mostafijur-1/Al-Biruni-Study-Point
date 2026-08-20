@@ -2,6 +2,7 @@ import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
 import { areAcademicWritesEnabled } from "@/lib/academic-rules";
+import { ACADEMIC_SUBJECT_CATALOG } from "@/lib/academic-subject-catalog";
 import { createRoutineSlot, updateRoutineSlot } from "@/lib/academic-workflows";
 import { ApiRouteError } from "@/lib/api-error";
 import { handleApiError, success } from "@/lib/api/response";
@@ -162,10 +163,20 @@ export async function GET(request: NextRequest) {
               name: domainSubject,
               nameBn: domainSubject,
             }));
+          const catalogOnly = (teacher.teacherDomain?.isAll ? ACADEMIC_SUBJECT_CATALOG : [])
+            .filter((catalogSubject) => !canonical.some((subject) =>
+              isSubjectWithinTeacherDomain({ isAll: false, classes: [], subjects: [catalogSubject.name] }, subject.name) ||
+              isSubjectWithinTeacherDomain({ isAll: false, classes: [], subjects: [catalogSubject.name] }, subject.nameBn),
+            ))
+            .map((catalogSubject) => ({
+              key: `domain:${catalogSubject.name}`,
+              name: catalogSubject.name,
+              nameBn: catalogSubject.nameBn,
+            }));
           return {
             id: String(teacher._id),
             name: teacher.name,
-            subjects: [...canonical, ...domainOnly],
+            subjects: [...canonical, ...domainOnly, ...catalogOnly],
           };
         }),
       };
