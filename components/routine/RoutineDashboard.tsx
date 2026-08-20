@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 export type RoutineView = {
   id: string;
+  teacherAssignmentId: string;
   weekday: number;
   startMinute: number;
   endMinute: number;

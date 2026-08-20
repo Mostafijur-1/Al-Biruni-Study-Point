@@ -9,6 +9,7 @@ import {
   CalendarDays,
   FileQuestion,
   GraduationCap,
+  HandCoins,
   Home,
   LayoutDashboard,
   LineChart,
@@ -98,6 +99,12 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       href: "/admin/routine",
       label: "ক্লাস রুটিন",
       icon: CalendarDays,
+      mobilePrimary: true,
+    },
+    {
+      href: "/admin/finance",
+      label: "ফাইন্যান্স",
+      icon: HandCoins,
       mobilePrimary: true,
     },
     {

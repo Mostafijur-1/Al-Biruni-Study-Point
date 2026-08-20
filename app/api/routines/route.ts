@@ -2,7 +2,7 @@ import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
 import { areAcademicWritesEnabled } from "@/lib/academic-rules";
-import { createRoutineSlot, endRoutineSlot } from "@/lib/academic-workflows";
+import { createRoutineSlot, endRoutineSlot, updateRoutineSlot } from "@/lib/academic-workflows";
 import { ApiRouteError } from "@/lib/api-error";
 import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
@@ -11,6 +11,7 @@ import { Batch } from "@/lib/db/models/Batch";
 import { User } from "@/lib/db/models/User";
 import { RoutineSlot, type IRoutineSlot } from "@/lib/db/models/RoutineSlot";
 import { routineListQuerySchema, routineMutationSchema } from "@/lib/validations/academic.schema";
+import { notifyRoutineChange } from "@/lib/push/routine-notifications";
 
 type RoutineContext = {
   teachers: Map<string, string>;
@@ -99,15 +100,24 @@ export async function POST(request: NextRequest) {
       throw new ApiRouteError("Academic write workflows are not enabled.", 503);
     }
     const parsed = routineMutationSchema.parse(await request.json());
+    const previous = parsed.action === "create" ? null : await RoutineSlot.findById(parsed.routineSlotId).select("teacherId studentIds").lean();
     const routine = parsed.action === "create"
       ? await createRoutineSlot({ request, actor, ...parsed })
-      : await endRoutineSlot({
+      : parsed.action === "update"
+        ? await updateRoutineSlot({ request, actor, ...parsed })
+        : await endRoutineSlot({
           request,
           actor,
           routineSlotId: parsed.routineSlotId,
           effectiveAt: parsed.effectiveAt ?? new Date(),
           reason: parsed.reason,
         });
+    const additionalUserIds = previous ? [String(previous.teacherId), ...(previous.studentIds ?? []).map(String)] : [];
+    try {
+      await notifyRoutineChange(routine, parsed.action === "end" ? "cancelled" : parsed.action === "update" ? "updated" : "created", additionalUserIds);
+    } catch (notificationError) {
+      console.error("Routine change notification failed:", notificationError);
+    }
 
     return success(
       { routine: serializeRoutine(routine) },

@@ -120,6 +120,22 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       path: ["effectiveTo"],
       message: "Routine end date cannot precede its start date.",
     }),
+  z
+    .object({
+      action: z.literal("update"),
+      routineSlotId: objectIdSchema,
+      assignmentId: objectIdSchema,
+      studentIds: z.array(objectIdSchema).min(1).max(500),
+      weekday: z.coerce.number().int().min(0).max(6),
+      startMinute: z.coerce.number().int().min(0).max(1439),
+      endMinute: z.coerce.number().int().min(1).max(1440),
+      room: z.string().trim().min(1).max(80).optional(),
+      effectiveFrom: z.coerce.date(),
+      effectiveTo: z.coerce.date().optional(),
+      reason: mutationReasonSchema,
+    })
+    .refine((value) => value.startMinute < value.endMinute, { path: ["endMinute"], message: "Routine end time must be after its start time." })
+    .refine((value) => !value.effectiveTo || value.effectiveFrom <= value.effectiveTo, { path: ["effectiveTo"], message: "Routine end date cannot precede its start date." }),
   z.object({
     action: z.literal("end"),
     routineSlotId: objectIdSchema,

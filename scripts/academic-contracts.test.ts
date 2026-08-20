@@ -101,6 +101,22 @@ test("routine contracts reject inverted time windows", () => {
   );
 });
 
+test("routine updates require a complete admin-controlled participant schedule", () => {
+  const routine = routineMutationSchema.parse({
+    action: "update",
+    routineSlotId: id,
+    assignmentId: id,
+    studentIds: [id],
+    weekday: 1,
+    startMinute: 600,
+    endMinute: 660,
+    effectiveFrom: "2026-01-01T00:00:00.000Z",
+    reason: "Approved routine update",
+  });
+  assert.equal(routine.action, "update");
+  assert.equal(routine.studentIds.length, 1);
+});
+
 test("class-session contracts use explicit create and terminal actions", () => {
   const classSession = classSessionMutationSchema.parse({
     action: "create",

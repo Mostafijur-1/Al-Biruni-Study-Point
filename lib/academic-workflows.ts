@@ -80,6 +80,8 @@ type EndRoutineSlotInput = WorkflowAuditContext & {
   effectiveAt: Date;
 };
 
+type UpdateRoutineSlotInput = CreateRoutineSlotInput & { routineSlotId: string };
+
 type CreateClassSessionInput = WorkflowAuditContext & {
   assignmentId: string;
   routineSlotId?: string;
@@ -620,6 +622,61 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       session,
     });
 
+    return routineSlot;
+  });
+}
+
+export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
+  return runTransaction(async (session) => {
+    if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
+    if (!isValidRoutineWindow(input.startMinute, input.endMinute)) {
+      throw new ApiRouteError("Routine time window is invalid.", 400, "VALIDATION_ERROR");
+    }
+    const [routineSlot, assignment] = await Promise.all([
+      RoutineSlot.findOne({ _id: input.routineSlotId, status: "active" }).session(session),
+      TeacherAssignment.findOne({ _id: input.assignmentId, status: "active" }).session(session),
+    ]);
+    if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
+    if (!assignment) throw new ApiRouteError("Active teacher assignment not found.", 404);
+    const linkedSession = await ClassSession.exists({ routineSlotId: routineSlot._id, status: "scheduled" }).session(session);
+    if (linkedSession) throw new ApiRouteError("This legacy routine has a scheduled class session and cannot be edited.", 409);
+
+    const batch = await loadWritableBatch(String(assignment.batchId), session);
+    const maximumEffectiveTo = assignment.effectiveTo && assignment.effectiveTo < batch.endsAt ? assignment.effectiveTo : batch.endsAt;
+    const effectiveTo = input.effectiveTo ?? maximumEffectiveTo;
+    if (!isEffectiveOn(assignment.effectiveFrom, assignment.effectiveTo, input.effectiveFrom) || input.effectiveFrom < batch.startsAt || effectiveTo > maximumEffectiveTo || input.effectiveFrom > effectiveTo) {
+      throw new ApiRouteError("Routine dates fall outside the assignment or batch.", 409);
+    }
+    const studentIds = [...new Set(input.studentIds)];
+    const [students, enrolledStudentIds] = await Promise.all([
+      User.find({ _id: { $in: studentIds }, role: "student", isActive: true, approvalStatus: "approved" }).select("_id").session(session).lean(),
+      BatchEnrollment.distinct("studentId", {
+        batchId: assignment.batchId, studentId: { $in: studentIds }, status: "active", effectiveFrom: { $lte: input.effectiveFrom },
+        $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
+      }).session(session),
+    ]);
+    if (students.length !== studentIds.length || enrolledStudentIds.length !== studentIds.length) {
+      throw new ApiRouteError("Every selected student must be active and enrolled in this batch.", 409);
+    }
+    await lockBranchSchedule(batch.branchId, session);
+    const resourceConflicts: QueryFilter<unknown>[] = [{ teacherId: assignment.teacherId }, { batchId: assignment.batchId }];
+    if (input.room?.trim()) resourceConflicts.push({ branchId: batch.branchId, room: input.room.trim() });
+    const conflict = await RoutineSlot.findOne({
+      _id: { $ne: routineSlot._id }, status: "active", weekday: input.weekday,
+      startMinute: { $lt: input.endMinute }, endMinute: { $gt: input.startMinute }, effectiveFrom: { $lte: effectiveTo },
+      $and: [{ $or: resourceConflicts }, { $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }] }],
+    }).session(session);
+    if (conflict) throw new ApiRouteError("Routine conflicts with an existing slot.", 409);
+
+    const before = { teacherId: String(routineSlot.teacherId), studentIds: (routineSlot.studentIds ?? []).map(String), weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute };
+    routineSlot.set({
+      organizationId: batch.organizationId, branchId: batch.branchId, academicSessionId: batch.academicSessionId,
+      batchId: assignment.batchId, subjectId: assignment.subjectId, teacherId: assignment.teacherId, teacherAssignmentId: assignment._id,
+      studentIds, weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
+      room: input.room?.trim() || undefined, effectiveFrom: input.effectiveFrom, effectiveTo,
+    });
+    await routineSlot.save({ session });
+    await writeAuditLog({ request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId, action: "academic.routine-slot.updated", resourceType: "RoutineSlot", resourceId: routineSlot._id, reason: input.reason, before, after: { teacherId: String(routineSlot.teacherId), studentIds, weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute }, session });
     return routineSlot;
   });
 }

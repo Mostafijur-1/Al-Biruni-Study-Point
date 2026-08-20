@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarPlus, Check, Clock3, MapPin, Search, Trash2, UserRound, Users, X } from "lucide-react";
+import { CalendarPlus, Check, Clock3, MapPin, Pencil, Search, Trash2, UserRound, Users, X } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export function AdminRoutinePlanner() {
   const [teacherQuery, setTeacherQuery] = useState("");
   const [studentQuery, setStudentQuery] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [editingId, setEditingId] = useState("");
   const [assignmentId, setAssignmentId] = useState("");
   const [weekday, setWeekday] = useState(1);
   const [start, setStart] = useState("09:00");
@@ -97,7 +98,8 @@ export function AdminRoutinePlanner() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "create",
+        action: editingId ? "update" : "create",
+        routineSlotId: editingId || undefined,
         assignmentId,
         studentIds: selectedStudents.map((item) => item.id),
         weekday,
@@ -112,8 +114,8 @@ export function AdminRoutinePlanner() {
     if (!result.ok || !isApiSuccess(result.payload)) {
       setError(true); setMessage(getApiErrorMessage(result.payload, "রুটিনটি তৈরি করা যায়নি।"));
     } else {
-      setError(false); setMessage("রুটিন প্রকাশ হয়েছে—সংশ্লিষ্ট শিক্ষক ও শিক্ষার্থীরা এখনই দেখতে পারবেন।");
-      setSelectedStudents([]); setStudentQuery(""); await load();
+      setError(false); setMessage(editingId ? "রুটিন আপডেট হয়েছে এবং সবাইকে তাৎক্ষণিক নোটিফিকেশন পাঠানো হয়েছে।" : "রুটিন প্রকাশ হয়েছে এবং সবাইকে তাৎক্ষণিক নোটিফিকেশন পাঠানো হয়েছে।");
+      setEditingId(""); setSelectedStudents([]); setStudentQuery(""); await load();
     }
     setSaving(false);
   }
@@ -135,6 +137,21 @@ export function AdminRoutinePlanner() {
     setStudentQuery(""); setStudents([]);
   }
 
+  function editRoutine(routine: RoutineView) {
+    setEditingId(routine.id);
+    setTeacherId(routine.teacher.id);
+    setTeacherQuery(routine.teacher.name);
+    setAssignmentId(routine.teacherAssignmentId);
+    setSelectedStudents(routine.students);
+    setWeekday(routine.weekday);
+    setStart(`${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`);
+    setEnd(`${String(Math.floor(routine.endMinute / 60)).padStart(2, "0")}:${String(routine.endMinute % 60).padStart(2, "0")}`);
+    setRoom(routine.room || "");
+    setEffectiveFrom(routine.effectiveFrom.slice(0, 10));
+    setEffectiveTo(routine.effectiveTo?.slice(0, 10) || "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <div className="space-y-6">
       <header className="overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#0b2545,#123a6b_70%,#174d82)] p-6 text-white shadow-lg sm:p-8">
@@ -145,7 +162,7 @@ export function AdminRoutinePlanner() {
 
       <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
         <form onSubmit={createRoutine} className="h-fit space-y-5 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-md)] xl:sticky xl:top-24">
-          <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary text-white"><CalendarPlus className="size-5" /></span><div><h2 className="font-black text-primary">নতুন রুটিন</h2><p className="text-xs text-muted">প্রয়োজনীয় তথ্য ধাপে ধাপে দিন</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary text-white"><CalendarPlus className="size-5" /></span><div><h2 className="font-black text-primary">{editingId ? "রুটিন সম্পাদনা" : "নতুন রুটিন"}</h2><p className="text-xs text-muted">{editingId ? "পরিবর্তন করলে সংশ্লিষ্ট সবাই নোটিফিকেশন পাবেন" : "প্রয়োজনীয় তথ্য ধাপে ধাপে দিন"}</p></div></div>
 
           <div className="space-y-2"><Label htmlFor="teacher-search">১. শিক্ষক খুঁজুন</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="teacher-search" value={teacherQuery} onChange={(e) => setTeacherQuery(e.target.value)} className="pl-9" placeholder="নাম বা রেফারেন্স" /></div><div className="max-h-40 space-y-1 overflow-y-auto">{teachers.map((person) => <button key={person.id} type="button" onClick={() => { setTeacherId(person.id); setAssignmentId(""); setTeacherQuery(person.name); setTeachers([]); }} className={cn("flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm", teacherId === person.id ? "border-primary bg-secondary" : "border-border hover:bg-secondary/50")}><UserRound className="size-4" /><span className="min-w-0 flex-1"><b>{person.name}</b>{person.reference && <small className="ml-2 text-muted">#{person.reference}</small>}</span>{teacherId === person.id && <Check className="size-4" />}</button>)}</div></div>
 
@@ -158,11 +175,11 @@ export function AdminRoutinePlanner() {
           <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="start">শুরু</Label><Input id="start" type="time" required value={start} onChange={(e) => setStart(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="end">শেষ</Label><Input id="end" type="time" required value={end} onChange={(e) => setEnd(e.target.value)} /></div></div>
           <div className="space-y-2"><Label htmlFor="room">কক্ষ/লিংক (ঐচ্ছিক)</Label><Input id="room" value={room} maxLength={80} onChange={(e) => setRoom(e.target.value)} placeholder="যেমন: রুম ২০১" /></div>
           <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="from">কার্যকর শুরু</Label><Input id="from" type="date" required value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="to">শেষ (ঐচ্ছিক)</Label><Input id="to" type="date" value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} /></div></div>
-          <Button className="w-full" size="lg" disabled={saving}>{saving ? "প্রকাশ হচ্ছে…" : "রুটিন প্রকাশ করুন"}</Button>
+          <Button className="w-full" size="lg" disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ করুন" : "রুটিন প্রকাশ করুন"}</Button>
           <p className="text-center text-[11px] leading-5 text-muted">প্রকাশের পর শিক্ষক ও শিক্ষার্থীরা সঙ্গে সঙ্গে দেখতে পাবেন। আগের রাত ৯:৩০ এবং ক্লাসের ২ ঘণ্টা আগে পুশ রিমাইন্ডার যাবে।</p>
         </form>
 
-        <section className="space-y-4"><div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Live timetable</p><h2 className="mt-1 text-xl font-black text-primary">বর্তমান সাপ্তাহিক রুটিন</h2></div>{loading ? <div className="h-64 animate-pulse rounded-3xl bg-secondary" /> : routines.length === 0 ? <div className="grid min-h-64 place-items-center rounded-3xl border border-dashed border-border bg-card p-8 text-center"><div><CalendarPlus className="mx-auto size-10 text-muted" /><p className="mt-3 font-black text-primary">এখনো কোনো রুটিন নেই</p><p className="mt-1 text-sm text-muted">বাম পাশের ফর্ম থেকে প্রথম রুটিন তৈরি করুন।</p></div></div> : <div className="space-y-4">{routineDays.map((day, index) => { const items = routines.filter((item) => item.weekday === index); if (!items.length) return null; return <div key={day} className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5"><div className="mb-3 flex items-center justify-between"><h3 className="font-black text-primary">{day}</h3><span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold text-primary">{items.length} ক্লাস</span></div><div className="space-y-3">{items.map((item) => <article key={item.id} className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[110px_1fr_auto] sm:items-center"><div><p className="text-lg font-black text-brand-red">{routineTime(item.startMinute)}</p><p className="text-xs text-muted">থেকে {routineTime(item.endMinute)}</p></div><div className="min-w-0 border-t border-border pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0"><p className="font-black text-primary">{item.subject?.nameBn || item.subject?.name}</p><p className="mt-1 text-sm text-muted">{item.batch?.name} • {item.teacher.name}</p><div className="mt-2 flex flex-wrap gap-3 text-xs text-muted"><span className="inline-flex items-center gap-1"><Users className="size-3.5" />{item.students.length} জন</span>{item.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{item.room}</span>}<span className="inline-flex items-center gap-1"><Clock3 className="size-3.5" />সাপ্তাহিক</span></div></div><Button type="button" variant="outline" size="sm" onClick={() => void endRoutine(item.id)} disabled={saving}><Trash2 className="size-4" /> বন্ধ</Button></article>)}</div></div>; })}</div>}</section>
+        <section className="space-y-4"><div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Live timetable</p><h2 className="mt-1 text-xl font-black text-primary">বর্তমান সাপ্তাহিক রুটিন</h2></div>{loading ? <div className="h-64 animate-pulse rounded-3xl bg-secondary" /> : routines.length === 0 ? <div className="grid min-h-64 place-items-center rounded-3xl border border-dashed border-border bg-card p-8 text-center"><div><CalendarPlus className="mx-auto size-10 text-muted" /><p className="mt-3 font-black text-primary">এখনো কোনো রুটিন নেই</p><p className="mt-1 text-sm text-muted">বাম পাশের ফর্ম থেকে প্রথম রুটিন তৈরি করুন।</p></div></div> : <div className="space-y-4">{routineDays.map((day, index) => { const items = routines.filter((item) => item.weekday === index); if (!items.length) return null; return <div key={day} className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5"><div className="mb-3 flex items-center justify-between"><h3 className="font-black text-primary">{day}</h3><span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold text-primary">{items.length} ক্লাস</span></div><div className="space-y-3">{items.map((item) => <article key={item.id} className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[110px_1fr_auto] sm:items-center"><div><p className="text-lg font-black text-brand-red">{routineTime(item.startMinute)}</p><p className="text-xs text-muted">থেকে {routineTime(item.endMinute)}</p></div><div className="min-w-0 border-t border-border pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0"><p className="font-black text-primary">{item.subject?.nameBn || item.subject?.name}</p><p className="mt-1 text-sm text-muted">{item.batch?.name} • {item.teacher.name}</p><div className="mt-2 flex flex-wrap gap-3 text-xs text-muted"><span className="inline-flex items-center gap-1"><Users className="size-3.5" />{item.students.length} জন</span>{item.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{item.room}</span>}<span className="inline-flex items-center gap-1"><Clock3 className="size-3.5" />সাপ্তাহিক</span></div></div><div className="flex gap-2"><Button type="button" variant="outline" size="sm" onClick={() => editRoutine(item)} disabled={saving}><Pencil className="size-4" /> সম্পাদনা</Button><Button type="button" variant="outline" size="sm" onClick={() => void endRoutine(item.id)} disabled={saving}><Trash2 className="size-4" /> বন্ধ</Button></div></article>)}</div></div>; })}</div>}</section>
       </div>
     </div>
   );
