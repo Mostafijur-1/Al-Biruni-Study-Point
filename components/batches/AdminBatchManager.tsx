@@ -14,6 +14,7 @@ type BatchStatus = "planned" | "active" | "closed" | "archived";
 type Batch = {
   id: string;
   name: string;
+  subjects: Array<{ id: string; name: string; nameBn: string; code: string }>;
   activeEnrollmentCount: number;
   status: BatchStatus;
 };
@@ -65,6 +66,7 @@ export function AdminBatchManager() {
   function startEdit(batch: Batch) {
     setEditing(batch);
     setName(batch.name);
+    setSelectedSubjects(batch.subjects.map((subject) => subject.name));
     setOpen(true);
   }
 
@@ -84,7 +86,8 @@ export function AdminBatchManager() {
       ? {
         batchId: editing.id,
         name,
-        reason: "অ্যাডমিন কর্তৃক ব্যাচের নাম হালনাগাদ",
+        subjectNames: selectedSubjects,
+        reason: "অ্যাডমিন কর্তৃক Batch-এর নাম ও বিষয় হালনাগাদ",
       }
       : {
         name,
@@ -103,8 +106,8 @@ export function AdminBatchManager() {
       setError(false);
       setMessage(
         editing
-          ? "ব্যাচের নাম আপডেট হয়েছে।"
-          : "নতুন ব্যাচ ও এর বিষয়সমূহ তৈরি হয়েছে।",
+          ? "Batch-এর নাম ও বিষয়সমূহ হালনাগাদ হয়েছে।"
+          : "নতুন Batch ও এর বিষয়সমূহ তৈরি হয়েছে।",
       );
       closeForm();
       await load();
@@ -142,14 +145,14 @@ export function AdminBatchManager() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-accent-foreground">
-            Batch operations
+            Batch management
           </p>
           <h2 id="batch-management-title" className="mt-1 text-2xl font-black text-primary">
-            ব্যাচ তৈরি ও ব্যবস্থাপনা
+            Batch তৈরি ও ব্যবস্থাপনা
           </h2>
         </div>
         <Button onClick={startCreate}>
-          <Plus className="size-4" /> নতুন ব্যাচ
+          <Plus className="size-4" /> নতুন Batch
         </Button>
       </div>
 
@@ -162,14 +165,14 @@ export function AdminBatchManager() {
         >
           <div className="mb-5 flex items-center justify-between">
             <h3 className="text-xl font-black text-primary">
-              {editing ? "ব্যাচের নাম সম্পাদনা" : "নতুন ব্যাচ"}
+              {editing ? "Batch সম্পাদনা" : "নতুন Batch"}
             </h3>
             <button type="button" aria-label="ফর্ম বন্ধ করুন" onClick={closeForm}>
               <X className="size-5 text-muted" />
             </button>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="batch-name">Batch name</Label>
+            <Label htmlFor="batch-name">Batch-এর নাম</Label>
             <Input
               id="batch-name"
               required
@@ -181,9 +184,9 @@ export function AdminBatchManager() {
               placeholder="যেমন: HSC 2029"
             />
           </div>
-          {!editing && <fieldset className="mt-5"><legend className="text-sm font-bold text-primary">Batch subjects</legend><p className="mt-1 text-xs text-muted">ভর্তির সময় এগুলো default হিসেবে নির্বাচিত থাকবে; শিক্ষার্থী অনুযায়ী পরিবর্তন করা যাবে।</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{subjects.map((subject) => { const checked = selectedSubjects.includes(subject.name); return <button key={subject.code} type="button" aria-pressed={checked} onClick={() => setSelectedSubjects((current) => checked ? current.filter((name) => name !== subject.name) : [...current, subject.name])} className={cn("flex items-center gap-2 rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><span className="text-sm font-bold text-primary">{subject.nameBn || subject.name}</span></button>; })}</div></fieldset>}
-          <Button className="mt-5 w-full" type="submit" disabled={saving || (!editing && selectedSubjects.length === 0)}>
-            {saving ? "সংরক্ষণ হচ্ছে…" : "ব্যাচ সংরক্ষণ করুন"}
+          <fieldset className="mt-5"><legend className="text-sm font-bold text-primary">Batch-এর বিষয়সমূহ</legend><p className="mt-1 text-xs text-muted">ভর্তির সময় এগুলো শুরুতে নির্বাচিত থাকবে; শিক্ষার্থী অনুযায়ী বিষয় ও ফি পরিবর্তন করা যাবে।</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{subjects.map((subject) => { const checked = selectedSubjects.includes(subject.name); return <button key={subject.code} type="button" aria-pressed={checked} onClick={() => setSelectedSubjects((current) => checked ? current.filter((name) => name !== subject.name) : [...current, subject.name])} className={cn("flex items-center gap-2 rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><span className="text-sm font-bold text-primary">{subject.nameBn || subject.name}</span></button>; })}</div></fieldset>
+          <Button className="mt-5 w-full" type="submit" disabled={saving || selectedSubjects.length === 0}>
+            {saving ? "সংরক্ষণ হচ্ছে…" : "Batch সংরক্ষণ করুন"}
           </Button>
         </form>
       )}
@@ -224,7 +227,7 @@ export function AdminBatchManager() {
               <div className="mt-4 flex flex-wrap gap-2">
                 {(batch.status === "planned" || batch.status === "active") && (
                   <Button size="sm" variant="outline" onClick={() => startEdit(batch)}>
-                    <Pencil className="size-4" /> নাম সম্পাদনা
+                    <Pencil className="size-4" /> সম্পাদনা
                   </Button>
                 )}
                 {batch.status === "planned" && (

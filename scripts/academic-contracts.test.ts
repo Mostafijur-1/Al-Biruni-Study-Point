@@ -22,6 +22,7 @@ test("batch creation accepts a name and its default subjects", () => {
 
 test("batch management requires an explicit audited change", () => {
   assert.equal(batchUpdateSchema.parse({ batchId: id, status: "active", reason: "Approved batch activation" }).status, "active");
+  assert.deepEqual(batchUpdateSchema.parse({ batchId: id, subjectNames: ["Physics"], reason: "Update batch subjects" }).subjectNames, ["Physics"]);
   assert.equal(batchUpdateSchema.safeParse({ batchId: id, reason: "No actual batch change" }).success, false);
   assert.equal(batchUpdateSchema.safeParse({ batchId: id, status: "deleted", reason: "Invalid destructive state" }).success, false);
 });

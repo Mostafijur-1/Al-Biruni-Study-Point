@@ -10,6 +10,8 @@ import { ACADEMIC_SUBJECT_CATALOG } from "@/lib/academic-subject-catalog";
 import { requireAuth } from "@/lib/auth/session";
 import { Batch, type IBatch } from "@/lib/db/models/Batch";
 import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
+import { CoachingBatchSubject } from "@/lib/db/models/CoachingBatchSubject";
+import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
 import { AcademicSession } from "@/lib/db/models/AcademicSession";
 import { Branch } from "@/lib/db/models/Branch";
 import { Organization } from "@/lib/db/models/Organization";
@@ -94,6 +96,11 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1, name: 1 })
       .limit(parsed.limit)
       .lean();
+    const configuredRows = user.role === "admin"
+      ? await CoachingBatchSubject.find({ batchId: { $in: batches.map((batch) => batch._id) }, status: "active" }).sort({ sortOrder: 1 }).lean()
+      : [];
+    const configuredSubjects = await AcademicSubject.find({ _id: { $in: configuredRows.map((row) => row.subjectId) } }).select("name nameBn code").lean();
+    const configuredSubjectMap = new Map(configuredSubjects.map((subject) => [String(subject._id), subject]));
 
     const includeContext = user.role === "admin" && request.nextUrl.searchParams.get("includeContext") === "true";
     const [organizations, branches, academicSessions] = includeContext ? await Promise.all([
@@ -102,7 +109,12 @@ export async function GET(request: NextRequest) {
       AcademicSession.find({ status: { $in: ["planned", "active"] } }).select("organizationId name startsAt endsAt status").sort({ startsAt: -1 }).lean(),
     ]) : [[], [], []];
     return success({
-      batches: batches.map(serializeBatch),
+      batches: batches.map((batch) => ({
+        ...serializeBatch(batch),
+        subjects: configuredRows
+          .filter((row) => String(row.batchId) === String(batch._id))
+          .map((row) => ({ id: String(row.subjectId), ...configuredSubjectMap.get(String(row.subjectId)) })),
+      })),
       context: includeContext ? {
         organizations: organizations.map((item) => ({ id: String(item._id), name: item.name, slug: item.slug })),
         branches: branches.map((item) => ({ id: String(item._id), organizationId: String(item.organizationId), name: item.name, code: item.code })),

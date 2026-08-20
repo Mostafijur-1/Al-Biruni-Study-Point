@@ -54,6 +54,7 @@ type EnrollStudentInput = WorkflowAuditContext & {
 type UpdateBatchInput = WorkflowAuditContext & {
   batchId: string;
   name?: string;
+  subjectNames?: string[];
   status?: "planned" | "active" | "closed" | "archived";
 };
 
@@ -214,16 +215,40 @@ async function lockBranchSchedule(branchId: Types.ObjectId, session: ClientSessi
   }
 }
 
+async function syncBatchSubjects(input: {
+  batch: Pick<IBatch, "_id" | "organizationId" | "branchId">;
+  subjectNames: string[];
+  actorId: string;
+  session: ClientSession;
+}) {
+  const selected = input.subjectNames.map((name) => findCatalogSubject(name));
+  if (selected.some((subject) => !subject)) {
+    throw new ApiRouteError("One or more selected batch subjects are invalid.", 400, "VALIDATION_ERROR");
+  }
+  const unique = [...new Map(selected.map((subject) => [subject!.code, subject!])).values()];
+  if (unique.length !== input.subjectNames.length) {
+    throw new ApiRouteError("Duplicate batch subjects are not allowed.", 400, "VALIDATION_ERROR");
+  }
+  const documents = await Promise.all(unique.map((subject) => AcademicSubject.findOneAndUpdate(
+    { code: subject.code },
+    { $set: { status: "active" }, $setOnInsert: { code: subject.code, name: subject.name, nameBn: subject.nameBn, classLevels: ["class-9", "class-10", "class-11", "class-12"], aliases: [subject.name, subject.nameBn] } },
+    { upsert: true, new: true, runValidators: true, session: input.session },
+  )));
+  await Promise.all(documents.map((subject, index) => CoachingBatchSubject.findOneAndUpdate(
+    { batchId: input.batch._id, subjectId: subject._id },
+    { $set: { organizationId: input.batch.organizationId, branchId: input.batch.branchId, status: "active", sortOrder: index, createdBy: input.actorId } },
+    { upsert: true, runValidators: true, session: input.session },
+  )));
+  await CoachingBatchSubject.updateMany(
+    { batchId: input.batch._id, subjectId: { $nin: documents.map((subject) => subject._id) }, status: "active" },
+    { $set: { status: "archived" } },
+    { session: input.session },
+  );
+  return unique;
+}
+
 export async function createBatch(input: CreateBatchInput) {
   return runTransaction(async (session) => {
-    const selectedCatalogSubjects = input.subjectNames.map((name) => findCatalogSubject(name));
-    if (selectedCatalogSubjects.some((subject) => !subject)) {
-      throw new ApiRouteError("One or more selected batch subjects are invalid.", 400, "VALIDATION_ERROR");
-    }
-    const uniqueSubjects = [...new Map(selectedCatalogSubjects.map((subject) => [subject!.code, subject!])).values()];
-    if (uniqueSubjects.length !== input.subjectNames.length) {
-      throw new ApiRouteError("Duplicate batch subjects are not allowed.", 400, "VALIDATION_ERROR");
-    }
     const [batch] = await Batch.create(
       [
         {
@@ -243,29 +268,7 @@ export async function createBatch(input: CreateBatchInput) {
       { session },
     );
 
-    const subjectDocuments = await Promise.all(uniqueSubjects.map((subject) => AcademicSubject.findOneAndUpdate(
-      { code: subject.code },
-      {
-        $set: { status: "active" },
-        $setOnInsert: {
-          code: subject.code,
-          name: subject.name,
-          nameBn: subject.nameBn,
-          classLevels: ["class-9", "class-10", "class-11", "class-12"],
-          aliases: [subject.name, subject.nameBn],
-        },
-      },
-      { upsert: true, new: true, runValidators: true, session },
-    )));
-    await CoachingBatchSubject.insertMany(subjectDocuments.map((subject, index) => ({
-      organizationId: batch.organizationId,
-      branchId: batch.branchId,
-      batchId: batch._id,
-      subjectId: subject._id,
-      status: "active",
-      sortOrder: index,
-      createdBy: input.actor.id,
-    })), { session });
+    const uniqueSubjects = await syncBatchSubjects({ batch, subjectNames: input.subjectNames, actorId: input.actor.id, session });
 
     await writeAuditLog({
       request: input.request,
@@ -297,7 +300,7 @@ export async function updateBatch(input: UpdateBatchInput) {
       throw new ApiRouteError(`Batch cannot move from ${batch.status} to ${nextStatus}.`, 409);
     }
     if (batch.status === "closed" || batch.status === "archived") {
-      if (input.name) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
+      if (input.name || input.subjectNames) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
     }
     if (nextStatus === "closed" || nextStatus === "archived") {
       const [activeEnrollments, activeAssignments, activeRoutines] = await Promise.all([
@@ -331,10 +334,13 @@ export async function updateBatch(input: UpdateBatchInput) {
       status: nextStatus,
     });
     await batch.save({ session });
+    if (input.subjectNames) {
+      await syncBatchSubjects({ batch, subjectNames: input.subjectNames, actorId: input.actor.id, session });
+    }
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "academic.batch.updated", resourceType: "Batch", resourceId: batch._id, reason: input.reason,
-      before, after: { name: batch.name, status: batch.status }, session,
+      before, after: { name: batch.name, status: batch.status, subjectNames: input.subjectNames }, session,
     });
     return batch;
   });

@@ -22,6 +22,7 @@ export const batchUpdateSchema = z
   .object({
     batchId: objectIdSchema,
     name: z.string().trim().min(2).max(120).optional(),
+    subjectNames: z.array(z.string().trim().min(1).max(100)).min(1).max(30).optional(),
     status: z.enum(["planned", "active", "closed", "archived"]).optional(),
     reason: mutationReasonSchema,
   })
