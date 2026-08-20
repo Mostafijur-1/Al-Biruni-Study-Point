@@ -4,7 +4,7 @@ export interface IRoutineReminder extends Document {
   routineSlotId: Types.ObjectId;
   userId: Types.ObjectId;
   occurrenceDate: string;
-  kind: "previous-night" | "two-hours-before";
+  kind: "previous-night" | "day-of";
   sentAt: Date;
 }
 
@@ -13,7 +13,7 @@ const RoutineReminderSchema = new Schema<IRoutineReminder>(
     routineSlotId: { type: Schema.Types.ObjectId, ref: "RoutineSlot", required: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     occurrenceDate: { type: String, required: true },
-    kind: { type: String, enum: ["previous-night", "two-hours-before"], required: true },
+    kind: { type: String, enum: ["previous-night", "day-of"], required: true },
     sentAt: { type: Date, default: Date.now },
   },
   { timestamps: true },

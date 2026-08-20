@@ -19,7 +19,7 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
 }
 
-type ReminderKind = "previous-night" | "two-hours-before";
+type ReminderKind = "previous-night" | "day-of";
 
 function localParts(date: Date, timeZone: string) {
   const values = Object.fromEntries(
@@ -93,9 +93,11 @@ async function handle(request: NextRequest) {
     }
     await connectDB();
     const now = new Date();
+    const window = request.nextUrl.searchParams.get("window");
+    if (window !== "night" && window !== "day") return fail("Invalid reminder window.", 400);
     const routines = await RoutineSlot.find({
       status: "active",
-      effectiveFrom: { $lte: new Date(now.getTime() + 26 * 60 * 60 * 1000) },
+      effectiveFrom: { $lte: new Date(now.getTime() + 36 * 60 * 60 * 1000) },
       $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: now } }],
     }).lean();
     const [organizations, batches, subjects] = await Promise.all([
@@ -112,19 +114,15 @@ async function handle(request: NextRequest) {
     for (const routine of routines) {
       const zone = zones.get(String(routine.organizationId)) || "Asia/Dhaka";
       const local = localParts(now, zone);
-      const candidates: Array<{ kind: ReminderKind; date: string }> = [];
-      const tomorrowDate = addLocalDays(local.date, 1);
-      const tomorrowWeekday = (local.weekday + 1) % 7;
-      if (local.minute >= 21 * 60 + 30 && local.minute < 21 * 60 + 45 && routine.weekday === tomorrowWeekday) {
-        candidates.push({ kind: "previous-night", date: tomorrowDate });
-      }
-      if (routine.weekday === local.weekday) {
-        const start = zonedScheduleDateTimeToUtc(local.date, `${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`, zone);
-        const minutesUntil = (start.getTime() - now.getTime()) / 60000;
-        if (minutesUntil > 105 && minutesUntil <= 120) candidates.push({ kind: "two-hours-before", date: local.date });
-      }
+      const targetDate = window === "night" ? addLocalDays(local.date, 1) : local.date;
+      const targetWeekday = window === "night" ? (local.weekday + 1) % 7 : local.weekday;
+      const candidates: Array<{ kind: ReminderKind; date: string }> = routine.weekday === targetWeekday
+        ? [{ kind: window === "night" ? "previous-night" : "day-of", date: targetDate }]
+        : [];
       for (const candidate of candidates) {
-        const title = candidate.kind === "previous-night" ? "আগামীকাল আপনার ক্লাস আছে" : "২ ঘণ্টা পর আপনার ক্লাস";
+        const start = zonedScheduleDateTimeToUtc(candidate.date, `${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`, zone);
+        if (start < routine.effectiveFrom || (routine.effectiveTo && start > routine.effectiveTo)) continue;
+        const title = candidate.kind === "previous-night" ? "আগামীকাল আপনার ক্লাস আছে" : "আজ আপনার ক্লাস আছে";
         const body = `${subjectNames.get(String(routine.subjectId)) || "ক্লাস"} • ${batchNames.get(String(routine.batchId)) || "ব্যাচ"} • ${timeLabel(routine.startMinute)}–${timeLabel(routine.endMinute)}${routine.room ? ` • ${routine.room}` : ""}`;
         const userIds = [...new Set([String(routine.teacherId), ...(routine.studentIds ?? []).map(String)])];
         reminders += userIds.length;
