@@ -527,17 +527,6 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
     if (students.length !== studentIds.length) {
       throw new ApiRouteError("One or more selected students are unavailable.", 409);
     }
-    const enrolledStudentIds = await BatchEnrollment.distinct("studentId", {
-      batchId: assignment.batchId,
-      studentId: { $in: studentIds },
-      status: "active",
-      effectiveFrom: { $lte: input.effectiveFrom },
-      $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
-    }).session(session);
-    if (enrolledStudentIds.length !== studentIds.length) {
-      throw new ApiRouteError("Every selected student must be actively enrolled in this batch.", 409);
-    }
-
     const batch = await loadWritableBatch(String(assignment.batchId), session);
     const maximumEffectiveTo = assignment.effectiveTo && assignment.effectiveTo < batch.endsAt
       ? assignment.effectiveTo
@@ -648,15 +637,9 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
       throw new ApiRouteError("Routine dates fall outside the assignment or batch.", 409);
     }
     const studentIds = [...new Set(input.studentIds)];
-    const [students, enrolledStudentIds] = await Promise.all([
-      User.find({ _id: { $in: studentIds }, role: "student", isActive: true, approvalStatus: "approved" }).select("_id").session(session).lean(),
-      BatchEnrollment.distinct("studentId", {
-        batchId: assignment.batchId, studentId: { $in: studentIds }, status: "active", effectiveFrom: { $lte: input.effectiveFrom },
-        $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
-      }).session(session),
-    ]);
-    if (students.length !== studentIds.length || enrolledStudentIds.length !== studentIds.length) {
-      throw new ApiRouteError("Every selected student must be active and enrolled in this batch.", 409);
+    const students = await User.find({ _id: { $in: studentIds }, role: "student", isActive: true, approvalStatus: "approved" }).select("_id").session(session).lean();
+    if (students.length !== studentIds.length) {
+      throw new ApiRouteError("Every selected student must be active and approved.", 409);
     }
     await lockBranchSchedule(batch.branchId, session);
     const resourceConflicts: QueryFilter<unknown>[] = [{ teacherId: assignment.teacherId }, { batchId: assignment.batchId }];

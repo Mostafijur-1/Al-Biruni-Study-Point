@@ -23,6 +23,7 @@ type Assignment = {
 };
 
 const fieldClass = "h-11 w-full rounded-xl border border-input bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
+const routineDayLabels = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহস্পতি", "শুক্র", "শনি"];
 function minutes(value: string) {
   const [hour, minute] = value.split(":").map(Number);
   return hour * 60 + minute;
@@ -49,11 +50,7 @@ export function AdminRoutinePlanner() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [assignmentResult, routineResult] = await Promise.all([
-      apiFetch<{ assignments: Assignment[] }>("/api/teacher-assignments?status=active&limit=200"),
-      apiFetch<{ routines: RoutineView[] }>("/api/routines?status=active&limit=200"),
-    ]);
-    if (assignmentResult.ok && isApiSuccess(assignmentResult.payload)) setAssignments(assignmentResult.payload.data.assignments);
+    const routineResult = await apiFetch<{ routines: RoutineView[] }>("/api/routines?status=active&limit=200");
     if (routineResult.ok && isApiSuccess(routineResult.payload)) setRoutines(routineResult.payload.data.routines);
     setLoading(false);
   }, []);
@@ -72,14 +69,23 @@ export function AdminRoutinePlanner() {
   }, [teacherQuery]);
 
   useEffect(() => {
-    const batchId = assignments.find((item) => item.id === assignmentId)?.batchId;
-    if (studentQuery.trim().length < 1 || !batchId) return;
+    if (!teacherId) return;
     const timer = window.setTimeout(async () => {
-      const result = await apiFetch<{ users: Person[] }>(`/api/admin/routine-participants?role=student&batchId=${batchId}&q=${encodeURIComponent(studentQuery)}`);
+      const result = await apiFetch<{ assignments: Assignment[] }>(`/api/teacher-assignments?status=active&teacherId=${teacherId}&limit=200`);
+      if (result.ok && isApiSuccess(result.payload)) setAssignments(result.payload.data.assignments);
+      else setAssignments([]);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (studentQuery.trim().length < 1) return;
+    const timer = window.setTimeout(async () => {
+      const result = await apiFetch<{ users: Person[] }>(`/api/admin/routine-participants?role=student&q=${encodeURIComponent(studentQuery)}`);
       if (result.ok && isApiSuccess(result.payload)) setStudents(result.payload.data.users);
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [assignmentId, assignments, studentQuery]);
+  }, [studentQuery]);
 
   const teacherAssignments = useMemo(() => assignments.filter((item) => item.teacherId === teacherId), [assignments, teacherId]);
 
@@ -157,13 +163,13 @@ export function AdminRoutinePlanner() {
         <form onSubmit={createRoutine} className="h-fit space-y-5 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-md)] xl:sticky xl:top-24">
           <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary text-white"><CalendarPlus className="size-5" /></span><div><h2 className="font-black text-primary">{editingId ? "রুটিন সম্পাদনা" : "নতুন রুটিন"}</h2><p className="text-xs text-muted">{editingId ? "পরিবর্তন করলে সংশ্লিষ্ট সবাই নোটিফিকেশন পাবেন" : "প্রয়োজনীয় তথ্য ধাপে ধাপে দিন"}</p></div></div>
 
-          <div className="space-y-2"><Label htmlFor="teacher-search">১. শিক্ষক খুঁজুন</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="teacher-search" value={teacherQuery} onChange={(e) => setTeacherQuery(e.target.value)} className="pl-9" placeholder="নাম বা রেফারেন্স" /></div><div className="max-h-40 space-y-1 overflow-y-auto">{teachers.map((person) => <button key={person.id} type="button" onClick={() => { setTeacherId(person.id); setAssignmentId(""); setTeacherQuery(person.name); setTeachers([]); }} className={cn("flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm", teacherId === person.id ? "border-primary bg-secondary" : "border-border hover:bg-secondary/50")}><UserRound className="size-4" /><span className="min-w-0 flex-1"><b>{person.name}</b>{person.reference && <small className="ml-2 text-muted">#{person.reference}</small>}</span>{teacherId === person.id && <Check className="size-4" />}</button>)}</div></div>
+          <div className="space-y-2"><Label htmlFor="teacher-search">১. শিক্ষক খুঁজুন</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="teacher-search" value={teacherQuery} onChange={(e) => setTeacherQuery(e.target.value)} className="pl-9" placeholder="নাম বা রেফারেন্স" /></div><div className="max-h-40 space-y-1 overflow-y-auto">{teachers.map((person) => <button key={person.id} type="button" onClick={() => { setTeacherId(person.id); setAssignmentId(""); setAssignments([]); setTeacherQuery(person.name); setTeachers([]); }} className={cn("flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm", teacherId === person.id ? "border-primary bg-secondary" : "border-border hover:bg-secondary/50")}><UserRound className="size-4" /><span className="min-w-0 flex-1"><b>{person.name}</b>{person.reference && <small className="ml-2 text-muted">#{person.reference}</small>}</span>{teacherId === person.id && <Check className="size-4" />}</button>)}</div></div>
 
-          <div className="space-y-2"><Label htmlFor="assignment">২. বিষয় ও ব্যাচ</Label><select id="assignment" className={fieldClass} value={assignmentId} onChange={(e) => setAssignmentId(e.target.value)} disabled={!teacherId}><option value="">নির্বাচন করুন</option>{teacherAssignments.map((item) => <option key={item.id} value={item.id}>{item.subject?.nameBn || item.subject?.name} • {item.batch?.name} ({item.batch?.code})</option>)}</select>{teacherId && !teacherAssignments.length && <p className="text-xs text-brand-red">এই শিক্ষকের কোনো সক্রিয় বিষয়/ব্যাচ অ্যাসাইনমেন্ট নেই।</p>}</div>
+          <div className="space-y-2"><Label htmlFor="assignment">২. বিষয় নির্বাচন করুন</Label><select id="assignment" className={fieldClass} value={assignmentId} onChange={(e) => setAssignmentId(e.target.value)} disabled={!teacherId}><option value="">বিষয় নির্বাচন করুন</option>{teacherAssignments.map((item) => <option key={item.id} value={item.id}>{item.subject?.nameBn || item.subject?.name}{item.batch?.name ? ` • ${item.batch.name}` : ""}</option>)}</select>{teacherId && !teacherAssignments.length && <p className="text-xs text-brand-red">এই ABSP শিক্ষকের কোনো সক্রিয় বিষয় অ্যাসাইনমেন্ট নেই। অ্যাকাডেমিক সেটিংস থেকে বিষয় অ্যাসাইন করুন।</p>}</div>
 
-          <div className="space-y-2"><Label htmlFor="student-search">৩. শিক্ষার্থী যোগ করুন</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="student-search" value={studentQuery} onChange={(e) => setStudentQuery(e.target.value)} className="pl-9" placeholder="নাম বা রেফারেন্স লিখুন" /></div>{students.length > 0 && <div className="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-border bg-white p-1">{students.map((student) => <button key={student.id} type="button" onClick={() => addStudent(student)} className="flex w-full items-center justify-between rounded-lg p-2.5 text-left text-sm hover:bg-secondary"><span><b>{student.name}</b><small className="ml-2 text-muted">{student.reference ? `#${student.reference}` : student.studentClass}</small></span><span className="text-xs font-bold text-primary">যোগ করুন</span></button>)}</div>}<div className="flex flex-wrap gap-2">{selectedStudents.map((student) => <span key={student.id} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white">{student.name}{student.reference && ` · ${student.reference}`}<button type="button" aria-label={`${student.name} বাদ দিন`} onClick={() => setSelectedStudents((items) => items.filter((item) => item.id !== student.id))}><X className="size-3.5" /></button></span>)}</div></div>
+          <div className="space-y-2"><Label htmlFor="student-search">৩. শিক্ষার্থী যোগ করুন</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="student-search" value={studentQuery} onChange={(e) => { setStudentQuery(e.target.value); if (!e.target.value.trim()) setStudents([]); }} className="pl-9" placeholder="নাম বা রেফারেন্স লিখুন" /></div>{students.length > 0 && <div className="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-border bg-white p-1">{students.map((student) => <button key={student.id} type="button" onClick={() => addStudent(student)} className="flex w-full items-center justify-between rounded-lg p-2.5 text-left text-sm hover:bg-secondary"><span><b>{student.name}</b><small className="ml-2 text-muted">{student.reference ? `#${student.reference}` : student.studentClass}</small></span><span className="text-xs font-bold text-primary">যোগ করুন</span></button>)}</div>}<div className="flex flex-wrap gap-2">{selectedStudents.map((student) => <span key={student.id} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white">{student.name}{student.reference && ` · ${student.reference}`}<button type="button" aria-label={`${student.name} বাদ দিন`} onClick={() => setSelectedStudents((items) => items.filter((item) => item.id !== student.id))}><X className="size-3.5" /></button></span>)}</div></div>
 
-          <fieldset><legend className="text-sm font-bold text-primary">৪. সাপ্তাহিক দিন <span className="font-normal text-muted">({editingId ? "একটি নির্বাচন করুন" : "একাধিক নির্বাচন করা যাবে"})</span></legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" aria-pressed={weekdays.includes(index)} onClick={() => setWeekdays((current) => editingId ? [index] : current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort())} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekdays.includes(index) ? "border-primary bg-primary text-white" : "border-border bg-white text-primary hover:bg-secondary")}>{day.slice(0, 3)}</button>)}</div>{editingId && <p className="mt-2 text-xs text-muted">একাধিক দিনের নতুন রুটিন তৈরি করতে নতুন রুটিন ব্যবহার করুন।</p>}</fieldset>
+          <fieldset><legend className="text-sm font-bold text-primary">৪. সাপ্তাহিক দিন <span className="font-normal text-muted">({editingId ? "একটি নির্বাচন করুন" : "একাধিক নির্বাচন করা যাবে"})</span></legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" aria-label={day} aria-pressed={weekdays.includes(index)} onClick={() => setWeekdays((current) => editingId ? [index] : current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort())} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekdays.includes(index) ? "border-primary bg-primary text-white" : "border-border bg-white text-primary hover:bg-secondary")}>{routineDayLabels[index]}</button>)}</div>{editingId && <p className="mt-2 text-xs text-muted">একাধিক দিনের নতুন রুটিন তৈরি করতে নতুন রুটিন ব্যবহার করুন।</p>}</fieldset>
 
           <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="start">শুরু</Label><Input id="start" type="time" required value={start} onChange={(e) => setStart(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="end">শেষ</Label><Input id="end" type="time" required value={end} onChange={(e) => setEnd(e.target.value)} /></div></div>
           <Button className="w-full" size="lg" disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ করুন" : "রুটিন প্রকাশ করুন"}</Button>
