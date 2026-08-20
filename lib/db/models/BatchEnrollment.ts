@@ -12,6 +12,8 @@ export interface IBatchEnrollment extends Document {
   effectiveFrom: Date;
   effectiveTo?: Date;
   endReason?: string;
+  monthlyFeeTk?: number;
+  feeCalculatedAt?: Date;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +34,8 @@ const BatchEnrollmentSchema = new Schema<IBatchEnrollment>(
     effectiveFrom: { type: Date, required: true, default: Date.now },
     effectiveTo: { type: Date },
     endReason: { type: String, trim: true },
+    monthlyFeeTk: { type: Number, min: 0, max: 10_000_000 },
+    feeCalculatedAt: { type: Date },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true },

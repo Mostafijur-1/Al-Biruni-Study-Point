@@ -46,6 +46,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     action: z.literal("enroll"),
     batchId: objectIdSchema,
     studentId: objectIdSchema,
+    subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
     effectiveFrom: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),
@@ -53,6 +54,20 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     action: z.literal("transfer"),
     enrollmentId: objectIdSchema,
     targetBatchId: objectIdSchema,
+    subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
+    effectiveAt: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+  z.object({
+    action: z.literal("update-subjects"),
+    enrollmentId: objectIdSchema,
+    subjectIds: z.array(objectIdSchema).min(1).max(30),
+    effectiveAt: z.coerce.date().optional(),
+    reason: mutationReasonSchema,
+  }),
+  z.object({
+    action: z.literal("withdraw"),
+    enrollmentId: objectIdSchema,
     effectiveAt: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),
@@ -102,10 +117,9 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("create"),
-      assignmentId: objectIdSchema.optional(),
+      assignmentId: objectIdSchema,
       teacherId: objectIdSchema.optional(),
       subject: z.string().trim().min(1).max(100).optional(),
-      studentIds: z.array(objectIdSchema).min(1).max(500),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
@@ -118,10 +132,6 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       path: ["endMinute"],
       message: "Routine end time must be after its start time.",
     })
-    .refine((value) => Boolean(value.assignmentId || (value.teacherId && value.subject)), {
-      path: ["subject"],
-      message: "An assignment or a teacher domain subject is required.",
-    })
     .refine((value) => !value.effectiveTo || !value.effectiveFrom || value.effectiveFrom <= value.effectiveTo, {
       path: ["effectiveTo"],
       message: "Routine end date cannot precede its start date.",
@@ -130,10 +140,9 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
     .object({
       action: z.literal("update"),
       routineSlotId: objectIdSchema,
-      assignmentId: objectIdSchema.optional(),
+      assignmentId: objectIdSchema,
       teacherId: objectIdSchema.optional(),
       subject: z.string().trim().min(1).max(100).optional(),
-      studentIds: z.array(objectIdSchema).min(1).max(500),
       weekday: z.coerce.number().int().min(0).max(6),
       startMinute: z.coerce.number().int().min(0).max(1439),
       endMinute: z.coerce.number().int().min(1).max(1440),
@@ -143,7 +152,6 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
       reason: mutationReasonSchema,
     })
     .refine((value) => value.startMinute < value.endMinute, { path: ["endMinute"], message: "Routine end time must be after its start time." })
-    .refine((value) => Boolean(value.assignmentId || (value.teacherId && value.subject)), { path: ["subject"], message: "An assignment or a teacher domain subject is required." })
     .refine((value) => !value.effectiveTo || !value.effectiveFrom || value.effectiveFrom <= value.effectiveTo, { path: ["effectiveTo"], message: "Routine end date cannot precede its start date." }),
   z.object({
     action: z.literal("end"),

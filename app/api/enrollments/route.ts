@@ -2,7 +2,7 @@ import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
 import { handleApiError, success } from "@/lib/api/response";
-import { enrollStudent, transferStudent } from "@/lib/academic-workflows";
+import { createCoachingEnrollment, transferCoachingEnrollment, updateCoachingSubjects, withdrawCoachingEnrollment } from "@/lib/coaching-enrollment-service";
 import { areAcademicWritesEnabled } from "@/lib/academic-rules";
 import { ApiRouteError } from "@/lib/api-error";
 import { requireAuth } from "@/lib/auth/session";
@@ -12,6 +12,9 @@ import {
 } from "@/lib/db/models/BatchEnrollment";
 import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
 import { User } from "@/lib/db/models/User";
+import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
+import { Batch } from "@/lib/db/models/Batch";
+import { CoachingEnrollmentSubject } from "@/lib/db/models/CoachingEnrollmentSubject";
 import {
   enrollmentListQuerySchema,
   enrollmentMutationSchema,
@@ -28,6 +31,7 @@ function serializeEnrollment(enrollment: {
   effectiveFrom: Date;
   effectiveTo?: Date;
   endReason?: string;
+  monthlyFeeTk?: number;
 }) {
   return {
     id: String(enrollment._id),
@@ -40,6 +44,7 @@ function serializeEnrollment(enrollment: {
     effectiveFrom: enrollment.effectiveFrom.toISOString(),
     effectiveTo: enrollment.effectiveTo?.toISOString(),
     endReason: enrollment.endReason,
+    monthlyFeeTk: enrollment.monthlyFeeTk,
   };
 }
 
@@ -86,10 +91,16 @@ export async function GET(request: NextRequest) {
       .limit(parsed.limit)
       .lean();
     const studentIds = [...new Set(enrollments.map((item) => String(item.studentId)))];
-    const students = await User.find({ _id: { $in: studentIds } })
-      .select("name studentClass")
-      .lean();
+    const enrollmentIds = enrollments.map((item) => item._id);
+    const [students, subjectRows, batches] = await Promise.all([
+      User.find({ _id: { $in: studentIds } }).select("name studentClass reference isActive").lean(),
+      CoachingEnrollmentSubject.find({ enrollmentId: { $in: enrollmentIds }, status: "active" }).lean(),
+      Batch.find({ _id: { $in: enrollments.map((item) => item.batchId) } }).select("name code").lean(),
+    ]);
+    const subjects = await AcademicSubject.find({ _id: { $in: subjectRows.map((item) => item.subjectId) } }).select("name nameBn code").lean();
     const studentById = new Map(students.map((student) => [String(student._id), student]));
+    const subjectById = new Map(subjects.map((subject) => [String(subject._id), subject]));
+    const batchById = new Map(batches.map((batch) => [String(batch._id), batch]));
 
     return success({
       enrollments: enrollments.map((enrollment) => {
@@ -104,7 +115,14 @@ export async function GET(request: NextRequest) {
             id: String(enrollment.studentId),
             name: student?.name ?? "Unknown student",
             studentClass: student?.studentClass,
+            reference: student?.reference,
+            isActive: student?.isActive,
           },
+          batch: batchById.get(String(enrollment.batchId)),
+          subjects: subjectRows
+            .filter((row) => String(row.enrollmentId) === String(enrollment._id))
+            .map((row) => ({ id: String(row.subjectId), ...subjectById.get(String(row.subjectId)) })),
+          monthlyFeeTk: enrollment.monthlyFeeTk,
           status: enrollment.status,
           effectiveFrom: enrollment.effectiveFrom.toISOString(),
           effectiveTo: enrollment.effectiveTo?.toISOString(),
@@ -125,23 +143,30 @@ export async function POST(request: NextRequest) {
     }
     const parsed = enrollmentMutationSchema.parse(await request.json());
 
-    const enrollment =
-      parsed.action === "enroll"
-        ? await enrollStudent({
+    const enrollment = parsed.action === "enroll"
+        ? await createCoachingEnrollment({
             request,
             actor,
             batchId: parsed.batchId,
             studentId: parsed.studentId,
+            subjectIds: parsed.subjectIds,
             effectiveFrom: parsed.effectiveFrom ?? new Date(),
             reason: parsed.reason,
           })
-        : await transferStudent({
+        : parsed.action === "transfer" ? await transferCoachingEnrollment({
             request,
             actor,
             enrollmentId: parsed.enrollmentId,
             targetBatchId: parsed.targetBatchId,
+            subjectIds: parsed.subjectIds,
             effectiveAt: parsed.effectiveAt ?? new Date(),
             reason: parsed.reason,
+          }) : parsed.action === "update-subjects" ? await updateCoachingSubjects({
+            request, actor, enrollmentId: parsed.enrollmentId, subjectIds: parsed.subjectIds,
+            effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,
+          }) : await withdrawCoachingEnrollment({
+            request, actor, enrollmentId: parsed.enrollmentId,
+            effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,
           });
 
     return success(

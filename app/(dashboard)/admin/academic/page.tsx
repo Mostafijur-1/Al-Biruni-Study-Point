@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { BatchSubjectSetupPanel } from "@/components/coaching/BatchSubjectSetupPanel";
 
 export default function AdminAcademicPage() {
-  redirect("/admin");
+  return <BatchSubjectSetupPanel />;
 }

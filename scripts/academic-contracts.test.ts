@@ -88,7 +88,6 @@ test("routine contracts reject inverted time windows", () => {
   const routine = routineMutationSchema.parse({
     action: "create",
     assignmentId: id,
-    studentIds: [id],
     weekday: 6,
     startMinute: 9 * 60,
     endMinute: 10 * 60,
@@ -102,12 +101,11 @@ test("routine contracts reject inverted time windows", () => {
   );
 });
 
-test("routine updates require a complete admin-controlled participant schedule", () => {
+test("routine updates require a canonical teacher assignment without participant IDs", () => {
   const routine = routineMutationSchema.parse({
     action: "update",
     routineSlotId: id,
     assignmentId: id,
-    studentIds: [id],
     weekday: 1,
     startMinute: 600,
     endMinute: 660,
@@ -115,11 +113,12 @@ test("routine updates require a complete admin-controlled participant schedule",
     reason: "Approved routine update",
   });
   assert.equal(routine.action, "update");
-  assert.equal(routine.studentIds.length, 1);
+  assert.equal(routine.assignmentId, id);
+  assert.equal("studentIds" in routine, false);
 });
 
-test("routine contracts accept an approved teacher-domain subject without a second assignment", () => {
-  const routine = routineMutationSchema.parse({
+test("routine contracts reject legacy teacher-domain writes without a canonical assignment", () => {
+  const routine = routineMutationSchema.safeParse({
     action: "create",
     teacherId: id,
     subject: "Physics",
@@ -129,16 +128,14 @@ test("routine contracts accept an approved teacher-domain subject without a seco
     endMinute: 600,
     reason: "Approved domain routine",
   });
-  assert.equal(routine.action, "create");
-  assert.equal(routine.subject, "Physics");
-  assert.equal(routine.assignmentId, undefined);
+  assert.equal(routine.success, false);
 });
 
-test("domain routines publish independently while legacy assignments retain the academic write gate", () => {
-  assert.equal(requiresAcademicRoutineWriteGate({ action: "create" }), false);
-  assert.equal(requiresAcademicRoutineWriteGate({ action: "update" }), false);
+test("every routine mutation remains behind the academic write gate", () => {
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "create" }), true);
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "update" }), true);
   assert.equal(requiresAcademicRoutineWriteGate({ action: "create", assignmentId: id }), true);
-  assert.equal(requiresAcademicRoutineWriteGate({ action: "end" }), false);
+  assert.equal(requiresAcademicRoutineWriteGate({ action: "end" }), true);
 });
 
 test("class-session contracts use explicit create and terminal actions", () => {

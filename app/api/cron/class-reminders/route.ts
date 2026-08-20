@@ -10,6 +10,7 @@ import { Organization } from "@/lib/db/models/Organization";
 import { PushSubscription } from "@/lib/db/models/PushSubscription";
 import { RoutineReminder } from "@/lib/db/models/RoutineReminder";
 import { RoutineSlot } from "@/lib/db/models/RoutineSlot";
+import { CoachingEnrollmentSubject } from "@/lib/db/models/CoachingEnrollmentSubject";
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -125,7 +126,10 @@ async function handle(request: NextRequest) {
         const title = candidate.kind === "previous-night" ? "আগামীকাল আপনার ক্লাস আছে" : "আজ আপনার ক্লাস আছে";
         const batchName = batchNames.get(String(routine.batchId));
         const body = `${routine.subjectName || subjectNames.get(String(routine.subjectId)) || "ক্লাস"}${batchName ? ` • ${batchName}` : ""} • ${timeLabel(routine.startMinute)}–${timeLabel(routine.endMinute)}`;
-        const userIds = [...new Set([String(routine.teacherId), ...(routine.studentIds ?? []).map(String)])];
+        const eligibleStudentIds = routine.batchId && routine.subjectId
+          ? await CoachingEnrollmentSubject.distinct("studentId", { batchId: routine.batchId, subjectId: routine.subjectId, status: "active" })
+          : [];
+        const userIds = [...new Set([String(routine.teacherId), ...eligibleStudentIds.map(String), ...(routine.studentIds ?? []).map(String)])];
         reminders += userIds.length;
         devices += (await Promise.all(userIds.map((id) => {
           const payload = JSON.stringify({

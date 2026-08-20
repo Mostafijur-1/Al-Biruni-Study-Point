@@ -101,6 +101,11 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       mobilePrimary: true,
     },
     {
+      href: "/admin/academic",
+      label: "ব্যাচ ও ফি",
+      icon: BookOpen,
+    },
+    {
       href: "/admin/finance",
       label: "ফাইন্যান্স",
       icon: HandCoins,

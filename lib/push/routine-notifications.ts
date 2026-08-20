@@ -5,6 +5,7 @@ import { Batch } from "@/lib/db/models/Batch";
 import { PushSubscription } from "@/lib/db/models/PushSubscription";
 import type { IRoutineSlot } from "@/lib/db/models/RoutineSlot";
 import { User } from "@/lib/db/models/User";
+import { CoachingEnrollmentSubject } from "@/lib/db/models/CoachingEnrollmentSubject";
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails("mailto:admin@albirunistudypoint.com", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
@@ -19,7 +20,10 @@ function time(minute: number) {
 
 export async function notifyRoutineChange(routine: IRoutineSlot, event: RoutineEvent, additionalUserIds: string[] = []) {
   if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return 0;
-  const userIds = [...new Set([String(routine.teacherId), ...(routine.studentIds ?? []).map(String), ...additionalUserIds])];
+  const eligibleStudentIds = routine.batchId && routine.subjectId
+    ? await CoachingEnrollmentSubject.distinct("studentId", { batchId: routine.batchId, subjectId: routine.subjectId, status: "active" })
+    : [];
+  const userIds = [...new Set([String(routine.teacherId), ...eligibleStudentIds.map(String), ...(routine.studentIds ?? []).map(String), ...additionalUserIds])];
   const [batch, subject, subscriptions, users] = await Promise.all([
     routine.batchId ? Batch.findById(routine.batchId).select("name").lean() : null,
     routine.subjectId ? AcademicSubject.findById(routine.subjectId).select("name nameBn").lean() : null,

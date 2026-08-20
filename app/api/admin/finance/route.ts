@@ -8,7 +8,6 @@ import { MonthlyExpense, type ExpenseCategory } from "@/lib/db/models/MonthlyExp
 import { PaymentProfile } from "@/lib/db/models/PaymentProfile";
 import { User } from "@/lib/db/models/User";
 
-const DEFAULT_STUDENT_SUBJECTS = ["পদার্থবিজ্ঞান", "রসায়ন", "উচ্চতর গণিত", "আইসিটি"];
 const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 
@@ -48,7 +47,7 @@ function escapeRegex(value: string) {
 
 function defaultProfile(role: "student" | "teacher") {
   return role === "student"
-    ? { subjects: DEFAULT_STUDENT_SUBJECTS, defaultAmountTk: 3500 }
+    ? { subjects: [], defaultAmountTk: 0 }
     : { subjects: [], defaultAmountTk: 0 };
 }
 
@@ -147,9 +146,12 @@ export async function POST(request: NextRequest) {
     const member = await User.exists({ _id: input.userId, isAbspMember: true });
     if (!member) return fail("This user is not included as an ABSP member.", 403);
     if (input.action === "set-profile") {
+      if (role === "student") {
+        return fail("শিক্ষার্থীর coaching subjects ও fee Enrollment ব্যবস্থাপনা থেকে পরিবর্তন করুন।", 409);
+      }
       const profile = await PaymentProfile.findOneAndUpdate(
         { userId: input.userId },
-        { $set: { role, subjects: role === "student" ? [...new Set(input.subjects)] : [], defaultAmountTk: input.defaultAmountTk, isActive: true, updatedBy: actor.id } },
+        { $set: { role, subjects: [], defaultAmountTk: input.defaultAmountTk, isActive: true, updatedBy: actor.id } },
         { upsert: true, new: true, runValidators: true },
       );
       return success({ profile: { userId: String(profile.userId), subjects: profile.subjects, defaultAmountTk: profile.defaultAmountTk } });

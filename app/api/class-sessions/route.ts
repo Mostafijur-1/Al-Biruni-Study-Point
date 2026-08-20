@@ -7,6 +7,7 @@ import { ApiRouteError } from "@/lib/api-error";
 import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
+import { CoachingEnrollmentSubject } from "@/lib/db/models/CoachingEnrollmentSubject";
 import { ClassSession, type IClassSession } from "@/lib/db/models/ClassSession";
 import {
   classSessionListQuerySchema,
@@ -65,16 +66,15 @@ export async function GET(request: NextRequest) {
           { effectiveTo: { $gte: now } },
         ],
       })
-        .select("batchId")
+        .select("_id batchId")
         .lean();
-      const batchIds = enrollments.map((item) => String(item.batchId));
-      query.batchId = {
-        $in: parsed.batchId
-          ? batchIds.includes(parsed.batchId)
-            ? [parsed.batchId]
-            : []
-          : batchIds,
-      };
+      const subjectRows = await CoachingEnrollmentSubject.find({ enrollmentId: { $in: enrollments.map((item) => item._id) }, status: "active" }).select("enrollmentId subjectId").lean();
+      query.$or = enrollments
+        .filter((enrollment) => !parsed.batchId || String(enrollment.batchId) === parsed.batchId)
+        .map((enrollment) => ({
+          batchId: enrollment.batchId,
+          subjectId: { $in: subjectRows.filter((row) => String(row.enrollmentId) === String(enrollment._id)).map((row) => row.subjectId) },
+        }));
     } else if (parsed.teacherId) {
       query.teacherId = parsed.teacherId;
     }

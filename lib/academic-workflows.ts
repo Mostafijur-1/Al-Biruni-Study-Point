@@ -10,6 +10,7 @@ import {
 } from "./academic-rules.ts";
 import { ApiRouteError } from "./api-error.ts";
 import { writeAuditLog } from "./audit/write-audit-log.ts";
+import { isSubjectWithinTeacherDomain } from "./auth/teacher-domain-rules.ts";
 import { AcademicSession } from "./db/models/AcademicSession.ts";
 import { AcademicSubject } from "./db/models/AcademicSubject.ts";
 import { Batch, type IBatch } from "./db/models/Batch.ts";
@@ -66,7 +67,6 @@ type EndTeacherAssignmentInput = WorkflowAuditContext & {
 
 type CreateRoutineSlotInput = WorkflowAuditContext & {
   assignmentId: string;
-  studentIds: string[];
   weekday: number;
   startMinute: number;
   endMinute: number;
@@ -413,6 +413,12 @@ export async function assignTeacher(input: AssignTeacherInput) {
 
     if (!teacher) throw new ApiRouteError("Approved active teacher not found.", 404);
     if (!subject) throw new ApiRouteError("Subject is not active for this batch class.", 409);
+    if (
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
+      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)
+    ) {
+      throw new ApiRouteError("Teacher is not authorized for the selected subject.", 409);
+    }
     if (input.effectiveFrom < batch.startsAt || input.effectiveFrom > batch.endsAt) {
       throw new ApiRouteError("Assignment date must fall within the batch dates.", 409);
     }
@@ -517,16 +523,6 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
     if (!assignment) throw new ApiRouteError("Active teacher assignment not found.", 404);
     if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
 
-    const studentIds = [...new Set(input.studentIds)];
-    const students = await User.find({
-      _id: { $in: studentIds },
-      role: "student",
-      isActive: true,
-      approvalStatus: "approved",
-    }).select("_id").session(session).lean();
-    if (students.length !== studentIds.length) {
-      throw new ApiRouteError("One or more selected students are unavailable.", 409);
-    }
     const batch = await loadWritableBatch(String(assignment.batchId), session);
     const maximumEffectiveTo = assignment.effectiveTo && assignment.effectiveTo < batch.endsAt
       ? assignment.effectiveTo
@@ -567,7 +563,7 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
           subjectId: assignment.subjectId,
           teacherId: assignment.teacherId,
           teacherAssignmentId: assignment._id,
-          studentIds,
+          studentIds: [],
           weekday: input.weekday,
           startMinute: input.startMinute,
           endMinute: input.endMinute,
@@ -593,7 +589,7 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       after: {
         assignmentId: String(assignment._id),
         batchId: String(assignment.batchId),
-        studentIds,
+        targeting: "batch-subject",
         weekday: routineSlot.weekday,
         startMinute: routineSlot.startMinute,
         endMinute: routineSlot.endMinute,
@@ -628,11 +624,6 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     if (!isEffectiveOn(assignment.effectiveFrom, assignment.effectiveTo, input.effectiveFrom) || input.effectiveFrom < batch.startsAt || effectiveTo > maximumEffectiveTo || input.effectiveFrom > effectiveTo) {
       throw new ApiRouteError("Routine dates fall outside the assignment or batch.", 409);
     }
-    const studentIds = [...new Set(input.studentIds)];
-    const students = await User.find({ _id: { $in: studentIds }, role: "student", isActive: true, approvalStatus: "approved" }).select("_id").session(session).lean();
-    if (students.length !== studentIds.length) {
-      throw new ApiRouteError("Every selected student must be active and approved.", 409);
-    }
     await lockBranchSchedule(batch.branchId, session);
     const conflict = await RoutineSlot.findOne({
       _id: { $ne: routineSlot._id }, branchId: batch.branchId, status: "active", weekday: input.weekday,
@@ -645,11 +636,11 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     routineSlot.set({
       organizationId: batch.organizationId, branchId: batch.branchId, academicSessionId: batch.academicSessionId,
       batchId: assignment.batchId, subjectId: assignment.subjectId, teacherId: assignment.teacherId, teacherAssignmentId: assignment._id,
-      studentIds, weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
+      studentIds: [], weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
       room: input.room?.trim() || undefined, effectiveFrom: input.effectiveFrom, effectiveTo,
     });
     await routineSlot.save({ session });
-    await writeAuditLog({ request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId, action: "academic.routine-slot.updated", resourceType: "RoutineSlot", resourceId: routineSlot._id, reason: input.reason, before, after: { teacherId: String(routineSlot.teacherId), studentIds, weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute }, session });
+    await writeAuditLog({ request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId, action: "academic.routine-slot.updated", resourceType: "RoutineSlot", resourceId: routineSlot._id, reason: input.reason, before, after: { teacherId: String(routineSlot.teacherId), targeting: "batch-subject", weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute }, session });
     return routineSlot;
   });
 }

@@ -11,6 +11,7 @@ export interface IRoutineSlot extends Document {
   subjectName?: string;
   teacherId: Types.ObjectId;
   teacherAssignmentId?: Types.ObjectId;
+  /** @deprecated Legacy-only participant snapshot. New routines resolve by batch + subject. */
   studentIds: Types.ObjectId[];
   weekday: number;
   startMinute: number;
@@ -37,7 +38,7 @@ const RoutineSlotSchema = new Schema<IRoutineSlot>(
       type: Schema.Types.ObjectId,
       ref: "TeacherAssignment",
     },
-    studentIds: [{ type: Schema.Types.ObjectId, ref: "User", required: true }],
+    studentIds: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
     weekday: { type: Number, required: true, min: 0, max: 6 },
     startMinute: { type: Number, required: true, min: 0, max: 1439 },
     endMinute: { type: Number, required: true, min: 1, max: 1440 },
@@ -57,6 +58,7 @@ RoutineSlotSchema.pre("validate", function () {
 });
 
 RoutineSlotSchema.index({ batchId: 1, weekday: 1, startMinute: 1, status: 1 });
+RoutineSlotSchema.index({ batchId: 1, subjectId: 1, weekday: 1, status: 1 });
 RoutineSlotSchema.index({ teacherId: 1, weekday: 1, startMinute: 1, status: 1 });
 RoutineSlotSchema.index({ studentIds: 1, weekday: 1, status: 1 });
 RoutineSlotSchema.index({ branchId: 1, academicSessionId: 1, status: 1 });

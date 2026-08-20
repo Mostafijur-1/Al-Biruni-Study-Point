@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 export type RoutineView = {
   id: string;
   teacherAssignmentId?: string;
+  targeting?: "batch-subject" | "legacy-students";
+  eligibleStudentCount?: number;
   weekday: number;
   startMinute: number;
   endMinute: number;
