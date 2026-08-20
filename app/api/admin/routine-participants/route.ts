@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       role,
       isActive: true,
       approvalStatus: "approved",
+      ...(role === "teacher" ? { isAbspMember: true } : {}),
       ...(search ? { $or: [{ name: search }, { reference: search }] } : {}),
       ...(enrolledStudentIds ? { _id: { $in: enrolledStudentIds } } : {}),
     })

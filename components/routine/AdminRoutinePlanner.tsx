@@ -23,8 +23,6 @@ type Assignment = {
 };
 
 const fieldClass = "h-11 w-full rounded-xl border border-input bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
-const today = new Date().toISOString().slice(0, 10);
-
 function minutes(value: string) {
   const [hour, minute] = value.split(":").map(Number);
   return hour * 60 + minute;
@@ -41,12 +39,9 @@ export function AdminRoutinePlanner() {
   const [teacherId, setTeacherId] = useState("");
   const [editingId, setEditingId] = useState("");
   const [assignmentId, setAssignmentId] = useState("");
-  const [weekday, setWeekday] = useState(1);
+  const [weekdays, setWeekdays] = useState<number[]>([1]);
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("10:00");
-  const [room, setRoom] = useState("");
-  const [effectiveFrom, setEffectiveFrom] = useState(today);
-  const [effectiveTo, setEffectiveTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -90,11 +85,13 @@ export function AdminRoutinePlanner() {
 
   async function createRoutine(event: FormEvent) {
     event.preventDefault();
-    if (!assignmentId || !selectedStudents.length) {
+    const assignment = assignments.find((item) => item.id === assignmentId);
+    if (!assignment || !selectedStudents.length || !weekdays.length) {
       setError(true); setMessage("শিক্ষকের বিষয়/ব্যাচ এবং অন্তত একজন শিক্ষার্থী নির্বাচন করুন।"); return;
     }
     setSaving(true); setMessage("");
-    const result = await apiFetch<{ routine: RoutineView }>("/api/routines", {
+    const selectedDays = editingId ? [weekdays[0]] : weekdays;
+    const results = await Promise.all(selectedDays.map((weekday) => apiFetch<{ routine: RoutineView }>("/api/routines", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -105,14 +102,13 @@ export function AdminRoutinePlanner() {
         weekday,
         startMinute: minutes(start),
         endMinute: minutes(end),
-        room: room || undefined,
-        effectiveFrom: `${effectiveFrom}T00:00:00.000Z`,
-        effectiveTo: effectiveTo ? `${effectiveTo}T00:00:00.000Z` : undefined,
+        effectiveFrom: assignment.effectiveFrom,
         reason: "অ্যাডমিন অনুমোদিত সাপ্তাহিক রুটিন",
       }),
-    });
-    if (!result.ok || !isApiSuccess(result.payload)) {
-      setError(true); setMessage(getApiErrorMessage(result.payload, "রুটিনটি তৈরি করা যায়নি।"));
+    })));
+    const failed = results.find((result) => !result.ok || !isApiSuccess(result.payload));
+    if (failed) {
+      setError(true); setMessage(getApiErrorMessage(failed.payload, "রুটিনটি তৈরি করা যায়নি।"));
     } else {
       setError(false); setMessage(editingId ? "রুটিন আপডেট হয়েছে এবং সবাইকে তাৎক্ষণিক নোটিফিকেশন পাঠানো হয়েছে।" : "রুটিন প্রকাশ হয়েছে এবং সবাইকে তাৎক্ষণিক নোটিফিকেশন পাঠানো হয়েছে।");
       setEditingId(""); setSelectedStudents([]); setStudentQuery(""); await load();
@@ -143,12 +139,9 @@ export function AdminRoutinePlanner() {
     setTeacherQuery(routine.teacher.name);
     setAssignmentId(routine.teacherAssignmentId);
     setSelectedStudents(routine.students);
-    setWeekday(routine.weekday);
+    setWeekdays([routine.weekday]);
     setStart(`${String(Math.floor(routine.startMinute / 60)).padStart(2, "0")}:${String(routine.startMinute % 60).padStart(2, "0")}`);
     setEnd(`${String(Math.floor(routine.endMinute / 60)).padStart(2, "0")}:${String(routine.endMinute % 60).padStart(2, "0")}`);
-    setRoom(routine.room || "");
-    setEffectiveFrom(routine.effectiveFrom.slice(0, 10));
-    setEffectiveTo(routine.effectiveTo?.slice(0, 10) || "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -170,11 +163,9 @@ export function AdminRoutinePlanner() {
 
           <div className="space-y-2"><Label htmlFor="student-search">৩. শিক্ষার্থী যোগ করুন</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input id="student-search" value={studentQuery} onChange={(e) => setStudentQuery(e.target.value)} className="pl-9" placeholder="নাম বা রেফারেন্স লিখুন" /></div>{students.length > 0 && <div className="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-border bg-white p-1">{students.map((student) => <button key={student.id} type="button" onClick={() => addStudent(student)} className="flex w-full items-center justify-between rounded-lg p-2.5 text-left text-sm hover:bg-secondary"><span><b>{student.name}</b><small className="ml-2 text-muted">{student.reference ? `#${student.reference}` : student.studentClass}</small></span><span className="text-xs font-bold text-primary">যোগ করুন</span></button>)}</div>}<div className="flex flex-wrap gap-2">{selectedStudents.map((student) => <span key={student.id} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white">{student.name}{student.reference && ` · ${student.reference}`}<button type="button" aria-label={`${student.name} বাদ দিন`} onClick={() => setSelectedStudents((items) => items.filter((item) => item.id !== student.id))}><X className="size-3.5" /></button></span>)}</div></div>
 
-          <fieldset><legend className="text-sm font-bold text-primary">৪. সাপ্তাহিক দিন</legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" onClick={() => setWeekday(index)} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekday === index ? "border-primary bg-primary text-white" : "border-border bg-white text-primary hover:bg-secondary")}>{day.slice(0, 3)}</button>)}</div></fieldset>
+          <fieldset><legend className="text-sm font-bold text-primary">৪. সাপ্তাহিক দিন <span className="font-normal text-muted">({editingId ? "একটি নির্বাচন করুন" : "একাধিক নির্বাচন করা যাবে"})</span></legend><div className="mt-2 grid grid-cols-4 gap-2">{routineDays.map((day, index) => <button key={day} type="button" aria-pressed={weekdays.includes(index)} onClick={() => setWeekdays((current) => editingId ? [index] : current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort())} className={cn("rounded-xl border px-2 py-2.5 text-xs font-bold", weekdays.includes(index) ? "border-primary bg-primary text-white" : "border-border bg-white text-primary hover:bg-secondary")}>{day.slice(0, 3)}</button>)}</div>{editingId && <p className="mt-2 text-xs text-muted">একাধিক দিনের নতুন রুটিন তৈরি করতে নতুন রুটিন ব্যবহার করুন।</p>}</fieldset>
 
           <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="start">শুরু</Label><Input id="start" type="time" required value={start} onChange={(e) => setStart(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="end">শেষ</Label><Input id="end" type="time" required value={end} onChange={(e) => setEnd(e.target.value)} /></div></div>
-          <div className="space-y-2"><Label htmlFor="room">কক্ষ/লিংক (ঐচ্ছিক)</Label><Input id="room" value={room} maxLength={80} onChange={(e) => setRoom(e.target.value)} placeholder="যেমন: রুম ২০১" /></div>
-          <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="from">কার্যকর শুরু</Label><Input id="from" type="date" required value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="to">শেষ (ঐচ্ছিক)</Label><Input id="to" type="date" value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} /></div></div>
           <Button className="w-full" size="lg" disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ করুন" : "রুটিন প্রকাশ করুন"}</Button>
           <p className="text-center text-[11px] leading-5 text-muted">প্রকাশের পর শিক্ষক ও শিক্ষার্থীরা সঙ্গে সঙ্গে দেখতে পাবেন। আগের রাতে এবং ক্লাসের দিন সকালে পুশ রিমাইন্ডার যাবে।</p>
         </form>

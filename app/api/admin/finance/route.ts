@@ -4,6 +4,7 @@ import { z } from "zod";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { MonthlyPayment } from "@/lib/db/models/MonthlyPayment";
+import { MonthlyExpense, type ExpenseCategory } from "@/lib/db/models/MonthlyExpense";
 import { PaymentProfile } from "@/lib/db/models/PaymentProfile";
 import { User } from "@/lib/db/models/User";
 
@@ -27,6 +28,14 @@ const mutationSchema = z.discriminatedUnion("action", [
     action: z.literal("set-month"),
     userId: objectId,
     month: z.string().regex(monthPattern),
+    amountTk: z.coerce.number().int().min(0).max(10_000_000),
+    status: z.enum(["due", "clear"]),
+    note: z.string().trim().max(300).optional(),
+  }),
+  z.object({
+    action: z.literal("set-expense"),
+    month: z.string().regex(monthPattern),
+    category: z.enum(["room-rent", "electricity"]),
     amountTk: z.coerce.number().int().min(0).max(10_000_000),
     status: z.enum(["due", "clear"]),
     note: z.string().trim().max(300).optional(),
@@ -71,9 +80,10 @@ export async function GET(request: NextRequest) {
       ...(search ? { $or: [{ name: search }, { reference: search }, { phone: search }] } : {}),
     }).select("name reference phone email role studentClass isActive").sort({ role: 1, name: 1 }).limit(500).lean();
     const userIds = users.map((item) => item._id);
-    const [profiles, payments] = await Promise.all([
+    const [profiles, payments, savedExpenses] = await Promise.all([
       PaymentProfile.find({ userId: { $in: userIds } }).lean(),
       MonthlyPayment.find({ userId: { $in: userIds }, month }).lean(),
+      MonthlyExpense.find({ month }).lean(),
     ]);
     const profileMap = new Map(profiles.map((item) => [String(item.userId), item]));
     const paymentMap = new Map(payments.map((item) => [String(item.userId), item]));
@@ -94,10 +104,18 @@ export async function GET(request: NextRequest) {
     const studentCollectedTk = students.filter((item) => item.payment.status === "clear").reduce((sum, item) => sum + item.payment.amountTk, 0);
     const teacherPayrollTk = teachers.reduce((sum, item) => sum + item.payment.amountTk, 0);
     const teacherPaidTk = teachers.filter((item) => item.payment.status === "clear").reduce((sum, item) => sum + item.payment.amountTk, 0);
-    return success({ month, records, summary: {
+    const expenseMap = new Map(savedExpenses.map((item) => [item.category, item]));
+    const expenses = (["room-rent", "electricity"] as ExpenseCategory[]).map((category) => {
+      const expense = expenseMap.get(category);
+      return { category, amountTk: expense?.amountTk ?? 0, status: expense?.status ?? "due", clearedAt: expense?.clearedAt?.toISOString(), note: expense?.note, saved: Boolean(expense) };
+    });
+    const operatingExpenseTk = expenses.reduce((sum, item) => sum + item.amountTk, 0);
+    const operatingPaidTk = expenses.filter((item) => item.status === "clear").reduce((sum, item) => sum + item.amountTk, 0);
+    return success({ month, records, expenses, summary: {
       studentExpectedTk, studentCollectedTk, studentDueTk: studentExpectedTk - studentCollectedTk,
       teacherPayrollTk, teacherPaidTk, teacherDueTk: teacherPayrollTk - teacherPaidTk,
-      netCashTk: studentCollectedTk - teacherPaidTk,
+      operatingExpenseTk, operatingPaidTk, operatingDueTk: operatingExpenseTk - operatingPaidTk,
+      netCashTk: studentCollectedTk - teacherPaidTk - operatingPaidTk,
       studentClearCount: students.filter((item) => item.payment.status === "clear").length,
       studentDueCount: students.filter((item) => item.payment.status === "due").length,
       teacherClearCount: teachers.filter((item) => item.payment.status === "clear").length,
@@ -110,6 +128,14 @@ export async function POST(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin"]);
     const input = mutationSchema.parse(await request.json());
+    if (input.action === "set-expense") {
+      const expense = await MonthlyExpense.findOneAndUpdate(
+        { month: input.month, category: input.category },
+        { $set: { amountTk: input.amountTk, status: input.status, clearedAt: input.status === "clear" ? new Date() : undefined, note: input.note || undefined, updatedBy: actor.id } },
+        { upsert: true, new: true, runValidators: true },
+      );
+      return success({ expense: { month: expense.month, category: expense.category, amountTk: expense.amountTk, status: expense.status, clearedAt: expense.clearedAt?.toISOString() } });
+    }
     const user = await User.findOne({ _id: input.userId, role: { $in: ["student", "teacher"] } }).select("role").lean();
     if (!user) return fail("Student or teacher not found.", 404);
     const role = user.role as "student" | "teacher";

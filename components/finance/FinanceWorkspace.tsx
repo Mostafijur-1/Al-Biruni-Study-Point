@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { Banknote, CheckCircle2, CircleDollarSign, Search, TrendingUp, UserRoundCheck, UsersRound, WalletCards, XCircle } from "lucide-react";
+import { Banknote, Building2, CheckCircle2, CircleDollarSign, Search, TrendingUp, UserRoundCheck, UsersRound, WalletCards, XCircle, Zap } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,12 @@ type FinanceRecord = {
 type FinanceData = {
   month: string;
   records: FinanceRecord[];
-  summary: { studentExpectedTk: number; studentCollectedTk: number; studentDueTk: number; teacherPayrollTk: number; teacherPaidTk: number; teacherDueTk: number; netCashTk: number; studentClearCount: number; studentDueCount: number; teacherClearCount: number; teacherDueCount: number };
+  expenses: Array<{ category: ExpenseCategory; amountTk: number; status: "due" | "clear"; clearedAt?: string; note?: string; saved: boolean }>;
+  summary: { studentExpectedTk: number; studentCollectedTk: number; studentDueTk: number; teacherPayrollTk: number; teacherPaidTk: number; teacherDueTk: number; operatingExpenseTk: number; operatingPaidTk: number; operatingDueTk: number; netCashTk: number; studentClearCount: number; studentDueCount: number; teacherClearCount: number; teacherDueCount: number };
 };
+
+type ExpenseCategory = "room-rent" | "electricity";
+type ExpenseDraft = { amountTk: number; status: "due" | "clear"; note: string };
 
 const monthNow = new Date().toISOString().slice(0, 7);
 const money = (value: number) => `${value.toLocaleString("bn-BD")} ৳`;
@@ -40,6 +44,10 @@ export function FinanceWorkspace() {
   const [monthAmount, setMonthAmount] = useState(0);
   const [subjects, setSubjects] = useState("");
   const [note, setNote] = useState("");
+  const [expenseDrafts, setExpenseDrafts] = useState<Record<ExpenseCategory, ExpenseDraft>>({
+    "room-rent": { amountTk: 0, status: "due", note: "" },
+    electricity: { amountTk: 0, status: "due", note: "" },
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -47,7 +55,11 @@ export function FinanceWorkspace() {
 
   const load = useCallback(async () => {
     const result = await apiFetch<FinanceData>(`/api/admin/finance?month=${month}&role=${role}&q=${encodeURIComponent(query)}`);
-    if (result.ok && isApiSuccess(result.payload)) { setData(result.payload.data); setHasError(false); }
+    if (result.ok && isApiSuccess(result.payload)) {
+      setData(result.payload.data);
+      setExpenseDrafts(Object.fromEntries(result.payload.data.expenses.map((expense) => [expense.category, { amountTk: expense.amountTk, status: expense.status, note: expense.note || "" }])) as Record<ExpenseCategory, ExpenseDraft>);
+      setHasError(false);
+    }
     else { setHasError(true); setMessage(getApiErrorMessage(result.payload, "আর্থিক তথ্য লোড করা যায়নি।")); }
     setLoading(false);
   }, [month, query, role]);
@@ -91,6 +103,15 @@ export function FinanceWorkspace() {
     setCandidates([]); setCandidateQuery(""); if (!included) setSelected(undefined);
   }
 
+  function updateExpense(category: ExpenseCategory, values: Partial<ExpenseDraft>) {
+    setExpenseDrafts((current) => ({ ...current, [category]: { ...current[category], ...values } }));
+  }
+
+  async function saveExpense(category: ExpenseCategory, status: "due" | "clear") {
+    const draft = expenseDrafts[category];
+    await save({ action: "set-expense", month, category, amountTk: draft.amountTk, status, note: draft.note || undefined }, status === "clear" ? "পরিচালন ব্যয় পরিশোধ হিসেবে সংরক্ষিত হয়েছে।" : "পরিচালন ব্যয় বাকি হিসেবে সংরক্ষিত হয়েছে।");
+  }
+
   const records = data?.records ?? [];
   const monthLabel = useMemo(() => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("bn-BD", { month: "long", year: "numeric", timeZone: "UTC" }), [month]);
 
@@ -104,7 +125,21 @@ export function FinanceWorkspace() {
       {candidateQuery.trim() && candidates.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{candidates.map((candidate) => <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"><div className="min-w-0"><p className="truncate text-sm font-black text-primary">{candidate.name}</p><p className="truncate text-xs text-muted">{candidate.reference ? `#${candidate.reference}` : candidate.phone || candidate.studentClass}</p></div><Button size="sm" onClick={() => void setMembership(candidate.id, true)} disabled={saving}>যুক্ত করুন</Button></div>)}</div>}
     </section>
     {message && <Alert variant={hasError ? "destructive" : "success"}>{message}</Alert>}
-    {data && <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><SummaryCard label="শিক্ষার্থী থেকে আদায়" value={data.summary.studentCollectedTk} hint={`${money(data.summary.studentDueTk)} বাকি • মোট ${money(data.summary.studentExpectedTk)}`} icon={CircleDollarSign} tone="bg-emerald-100 text-emerald-700" /><SummaryCard label="শিক্ষককে পরিশোধ" value={data.summary.teacherPaidTk} hint={`${money(data.summary.teacherDueTk)} বাকি • মোট ${money(data.summary.teacherPayrollTk)}`} icon={WalletCards} tone="bg-violet-100 text-violet-700" /><SummaryCard label="বর্তমান নেট ক্যাশ" value={data.summary.netCashTk} hint="আদায় থেকে পরিশোধ বাদ দিয়ে" icon={TrendingUp} tone={data.summary.netCashTk >= 0 ? "bg-sky-100 text-sky-700" : "bg-red-100 text-red-700"} /><SummaryCard label="ক্লিয়ার রেকর্ড" value={data.summary.studentClearCount + data.summary.teacherClearCount} hint={`${data.summary.studentDueCount + data.summary.teacherDueCount}টি রেকর্ড এখনো বাকি`} icon={UserRoundCheck} tone="bg-amber-100 text-amber-700" /></section>}
+    {data && <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><SummaryCard label="শিক্ষার্থী থেকে আদায়" value={data.summary.studentCollectedTk} hint={`${money(data.summary.studentDueTk)} বাকি • মোট ${money(data.summary.studentExpectedTk)}`} icon={CircleDollarSign} tone="bg-emerald-100 text-emerald-700" /><SummaryCard label="শিক্ষককে পরিশোধ" value={data.summary.teacherPaidTk} hint={`${money(data.summary.teacherDueTk)} বাকি • মোট ${money(data.summary.teacherPayrollTk)}`} icon={WalletCards} tone="bg-violet-100 text-violet-700" /><SummaryCard label="পরিচালন ব্যয়" value={data.summary.operatingPaidTk} hint={`${money(data.summary.operatingDueTk)} বাকি • মোট ${money(data.summary.operatingExpenseTk)}`} icon={Building2} tone="bg-orange-100 text-orange-700" /><SummaryCard label="বর্তমান নেট ক্যাশ" value={data.summary.netCashTk} hint="আদায় থেকে শিক্ষক ও পরিচালন ব্যয় বাদ দিয়ে" icon={TrendingUp} tone={data.summary.netCashTk >= 0 ? "bg-sky-100 text-sky-700" : "bg-red-100 text-red-700"} /><SummaryCard label="ক্লিয়ার রেকর্ড" value={data.summary.studentClearCount + data.summary.teacherClearCount} hint={`${data.summary.studentDueCount + data.summary.teacherDueCount}টি রেকর্ড এখনো বাকি`} icon={UserRoundCheck} tone="bg-amber-100 text-amber-700" /></section>}
+
+    {data && <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+      <div className="mb-4"><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Operating expenses</p><h2 className="mt-1 text-xl font-black text-primary">রুম ভাড়া ও বিদ্যুৎ বিল</h2><p className="mt-1 text-sm text-muted">প্রতি মাসের পরিমাণ ও পরিশোধের অবস্থা আলাদাভাবে রাখুন। পরিশোধিত ব্যয় নেট ক্যাশে স্বয়ংক্রিয়ভাবে হিসাব হবে।</p></div>
+      <div className="grid gap-4 lg:grid-cols-2">{(["room-rent", "electricity"] as const).map((category) => {
+        const draft = expenseDrafts[category];
+        const isRent = category === "room-rent";
+        const Icon = isRent ? Building2 : Zap;
+        return <article key={category} className="rounded-2xl border border-border bg-surface p-4">
+          <div className="flex items-center gap-3"><span className={cn("grid size-10 place-items-center rounded-xl", isRent ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700")}><Icon className="size-5" /></span><div><h3 className="font-black text-primary">{isRent ? "রুম ভাড়া" : "বিদ্যুৎ বিল"}</h3><p className="text-xs text-muted">{monthLabel}</p></div><span className={cn("ml-auto rounded-full px-2.5 py-1 text-[11px] font-black", draft.status === "clear" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>{draft.status === "clear" ? "ক্লিয়ার" : "বাকি"}</span></div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="space-y-1.5"><Label htmlFor={`${category}-amount`}>পরিমাণ (৳)</Label><Input id={`${category}-amount`} type="number" min={0} value={draft.amountTk} onChange={(event) => updateExpense(category, { amountTk: Number(event.target.value) })} /></div><div className="space-y-1.5"><Label htmlFor={`${category}-note`}>নোট (ঐচ্ছিক)</Label><Input id={`${category}-note`} value={draft.note} onChange={(event) => updateExpense(category, { note: event.target.value })} placeholder="রসিদ/মিটারের তথ্য" /></div></div>
+          <div className="mt-3 grid grid-cols-2 gap-2"><Button type="button" variant="outline" disabled={saving} onClick={() => void saveExpense(category, "due")}><XCircle className="size-4" /> বাকি রাখুন</Button><Button type="button" disabled={saving} onClick={() => void saveExpense(category, "clear")}><CheckCircle2 className="size-4" /> ক্লিয়ার করুন</Button></div>
+        </article>;
+      })}</div>
+    </section>}
 
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       <section className="space-y-4"><div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center"><div className="relative flex-1"><Search className="absolute left-3 top-3 size-4 text-muted" /><Input value={query} onChange={(e) => { setQuery(e.target.value); setLoading(true); }} className="pl-9" placeholder="নাম, রেফারেন্স বা ফোন দিয়ে খুঁজুন" /></div><div className="flex rounded-xl bg-secondary p-1">{(["all", "student", "teacher"] as const).map((value) => <button key={value} onClick={() => { setRole(value); setSelected(undefined); setLoading(true); }} className={cn("rounded-lg px-3 py-2 text-xs font-black", role === value ? "bg-primary text-white shadow-sm" : "text-primary")}>{value === "all" ? "সবাই" : value === "student" ? "শিক্ষার্থী" : "শিক্ষক"}</button>)}</div></div>
