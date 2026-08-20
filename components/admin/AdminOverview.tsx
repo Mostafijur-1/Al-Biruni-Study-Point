@@ -105,6 +105,7 @@ export function AdminOverview() {
   const stats = data?.stats;
 
   const quickLinks = [
+    { href: "/admin/academic", label:"ব্যাচ ব্যবস্থাপনা" },
     { href: "/admin/students", label:"Students" },
     { href: "/admin/teachers", label:"Teachers" },
     // { href: "/admin/courses", label: "কোর্স" },
