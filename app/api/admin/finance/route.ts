@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
     if (batchId && !objectId.safeParse(batchId).success) return fail("Invalid batch.", 400);
     const requestedRole = roleParam === "student" || roleParam === "teacher" ? roleParam : undefined;
     const search = q ? new RegExp(escapeRegex(q), "i") : undefined;
-    const allActiveEnrollments = requestedRole === "teacher" ? [] : await BatchEnrollment.find({
+    // The role, batch, and search controls only filter the ledger rows. Common
+    // finance totals must always describe the full month.
+    const allActiveEnrollments = await BatchEnrollment.find({
       status: "active",
     }).select("studentId batchId").lean();
     const activeEnrollments = batchId
@@ -72,26 +74,36 @@ export async function GET(request: NextRequest) {
       : requestedRole === "teacher"
         ? [{ role: "teacher", isAbspMember: true }]
         : [{ role: "student", _id: { $in: studentIds } }, { role: "teacher", isAbspMember: true }];
-    const users = await User.find({
-      approvalStatus: "approved",
-      $and: [
-        { $or: accessFilters },
-        ...(search ? [{ $or: [{ name: search }, { reference: search }, { phone: search }] }] : []),
-      ],
-    }).select("name reference phone email role studentClass isActive").sort({ role: 1, name: 1 }).limit(500).lean();
-    const userIds = users.map((item) => item._id);
+    const commonFinanceFilters: QueryFilter<IUser>[] = [
+      { role: "student", _id: { $in: allActiveEnrollments.map((item) => item.studentId) } },
+      { role: "teacher", isAbspMember: true },
+    ];
+    const [users, financeUsers] = await Promise.all([
+      User.find({
+        approvalStatus: "approved",
+        $and: [
+          { $or: accessFilters },
+          ...(search ? [{ $or: [{ name: search }, { reference: search }, { phone: search }] }] : []),
+        ],
+      }).select("name reference phone email role studentClass isActive").sort({ role: 1, name: 1 }).limit(500).lean(),
+      User.find({ approvalStatus: "approved", $or: commonFinanceFilters })
+        .select("name reference phone email role studentClass isActive")
+        .sort({ role: 1, name: 1 })
+        .lean(),
+    ]);
+    const financeUserIds = financeUsers.map((item) => item._id);
     const enrollmentBatchIds = [...new Set(allActiveEnrollments.map((item) => String(item.batchId)))];
     const [profiles, payments, savedExpenses, batches] = await Promise.all([
-      PaymentProfile.find({ userId: { $in: userIds } }).lean(),
-      MonthlyPayment.find({ userId: { $in: userIds }, month }).lean(),
+      PaymentProfile.find({ userId: { $in: financeUserIds } }).lean(),
+      MonthlyPayment.find({ userId: { $in: financeUserIds }, month }).lean(),
       MonthlyExpense.find({ month }).lean(),
       Batch.find({ _id: { $in: enrollmentBatchIds } }).select("name status").sort({ name: 1 }).lean(),
     ]);
     const batchMap = new Map(batches.map((item) => [String(item._id), item]));
-    const studentBatchMap = new Map(activeEnrollments.map((item) => [String(item.studentId), String(item.batchId)]));
+    const studentBatchMap = new Map(allActiveEnrollments.map((item) => [String(item.studentId), String(item.batchId)]));
     const profileMap = new Map(profiles.map((item) => [String(item.userId), item]));
     const paymentMap = new Map(payments.map((item) => [String(item.userId), item]));
-    const records = users.map((user) => {
+    const toRecord = (user: (typeof financeUsers)[number]) => {
       const role = user.role as "student" | "teacher";
       const fallback = defaultProfile(role);
       const profile = profileMap.get(String(user._id));
@@ -101,9 +113,11 @@ export async function GET(request: NextRequest) {
         profile: { subjects: profile?.subjects ?? fallback.subjects, defaultAmountTk: profile?.defaultAmountTk ?? fallback.defaultAmountTk, configured: Boolean(profile) },
         payment: { amountTk: payment?.amountTk ?? profile?.defaultAmountTk ?? fallback.defaultAmountTk, status: payment?.status ?? "due", clearedAt: payment?.clearedAt?.toISOString(), note: payment?.note, saved: Boolean(payment) },
       };
-    });
-    const students = records.filter((item) => item.user.role === "student");
-    const teachers = records.filter((item) => item.user.role === "teacher");
+    };
+    const records = users.map(toRecord);
+    const financeRecords = financeUsers.map(toRecord);
+    const students = financeRecords.filter((item) => item.user.role === "student");
+    const teachers = financeRecords.filter((item) => item.user.role === "teacher");
     const studentExpectedTk = students.reduce((sum, item) => sum + item.payment.amountTk, 0);
     const studentCollectedTk = students.filter((item) => item.payment.status === "clear").reduce((sum, item) => sum + item.payment.amountTk, 0);
     const teacherPayrollTk = teachers.reduce((sum, item) => sum + item.payment.amountTk, 0);
