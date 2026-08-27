@@ -10,7 +10,7 @@ import {
   teacherAssignmentListQuerySchema,
   teacherAssignmentMutationSchema,
 } from "../lib/validations/academic.schema.ts";
-import { requiresAcademicRoutineWriteGate } from "../lib/routine-write-gate.ts";
+import { isRoutineMutationEnabled, requiresAcademicRoutineWriteGate } from "../lib/routine-write-gate.ts";
 
 const id = "64f000000000000000000001";
 
@@ -132,6 +132,17 @@ test("every routine mutation remains behind the academic write gate", () => {
   assert.equal(requiresAcademicRoutineWriteGate({ action: "update" }), true);
   assert.equal(requiresAcademicRoutineWriteGate({ action: "create", assignmentId: id }), true);
   assert.equal(requiresAcademicRoutineWriteGate({ action: "end" }), true);
+});
+
+test("routine publishing can be enabled without enabling edit or end", () => {
+  const publishOnly = { academicWrites: "false", routinePublishing: " true " };
+  assert.equal(isRoutineMutationEnabled({ action: "create" }, publishOnly), true);
+  assert.equal(isRoutineMutationEnabled({ action: "update" }, publishOnly), false);
+  assert.equal(isRoutineMutationEnabled({ action: "end" }, publishOnly), false);
+  assert.equal(isRoutineMutationEnabled(
+    { action: "update" },
+    { academicWrites: "true", routinePublishing: "false" },
+  ), true);
 });
 
 test("class-session contracts use explicit create and terminal actions", () => {

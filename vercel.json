@@ -4,6 +4,9 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "regions": ["bom1"],
+  "env": {
+    "ROUTINE_PUBLISHING_ENABLED": "true"
+  },
   "crons": [
     {
       "path": "/api/cron/evening-reminder",

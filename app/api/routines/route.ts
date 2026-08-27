@@ -1,7 +1,6 @@
 import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
-import { areAcademicWritesEnabled } from "@/lib/academic-rules";
 import { ACADEMIC_SUBJECT_CATALOG } from "@/lib/academic-subject-catalog";
 import { createRoutineSlot, updateRoutineSlot } from "@/lib/academic-workflows";
 import { ApiRouteError } from "@/lib/api-error";
@@ -17,7 +16,7 @@ import { RoutineSlot, type IRoutineSlot } from "@/lib/db/models/RoutineSlot";
 import { routineListQuerySchema, routineMutationSchema } from "@/lib/validations/academic.schema";
 import { notifyRoutineChange } from "@/lib/push/routine-notifications";
 import { endDomainRoutine } from "@/lib/routine-workflows";
-import { requiresAcademicRoutineWriteGate } from "@/lib/routine-write-gate";
+import { isRoutineMutationEnabled, requiresAcademicRoutineWriteGate } from "@/lib/routine-write-gate";
 
 type RoutineContext = {
   teachers: Map<string, string>;
@@ -191,8 +190,11 @@ export async function POST(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin"]);
     const parsed = routineMutationSchema.parse(await request.json());
-    if (requiresAcademicRoutineWriteGate(parsed) && !areAcademicWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED)) {
-      throw new ApiRouteError("Academic write workflows are not enabled.", 503);
+    if (requiresAcademicRoutineWriteGate(parsed) && !isRoutineMutationEnabled(parsed, {
+      academicWrites: process.env.ACADEMIC_WRITES_ENABLED,
+      routinePublishing: process.env.ROUTINE_PUBLISHING_ENABLED,
+    })) {
+      throw new ApiRouteError("This routine action is not enabled on this deployment.", 503);
     }
     const previous = parsed.action === "create" ? null : await RoutineSlot.findById(parsed.routineSlotId).select("teacherId studentIds").lean();
     const routine = parsed.action === "create"
