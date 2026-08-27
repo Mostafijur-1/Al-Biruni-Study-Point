@@ -51,6 +51,8 @@ async function handleCronTrigger(request: NextRequest) {
     // 1. Find all student user IDs who have taken a test today
     const activeStudentIds = await PracticeAttempt.distinct("student", {
       createdAt: { $gte: startOfTodayUTC },
+      isCancelled: { $ne: true },
+      voidedAt: { $exists: false },
     });
 
     // 2. Exclude teachers/admins so they don't get student test reminders
@@ -76,6 +78,7 @@ async function handleCronTrigger(request: NextRequest) {
       title: "সময়মতো পরীক্ষা দাও! 📝",
       body: "তুমি আজকের MCQ প্র্যাকটিস পরীক্ষাটি এখনো দাওনি। এখনই অ্যাপে ঢুকে পরীক্ষা সম্পন্ন করো!",
       url: "/student/practice",
+      tag: `daily-exam-${startOfTodayBD.toISOString().slice(0, 10)}`,
     });
 
     const sendPromises = subscriptions.map((sub) =>

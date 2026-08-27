@@ -180,7 +180,7 @@ export function PwaInstallPrompt() {
         const subscribed = await subscribeToPushNotifications();
         setStatusMessage(
           subscribed
-            ? "নোটিফিকেশন চালু হয়েছে। ক্লাস ও পরীক্ষার আপডেট এখানে পাবে।"
+            ? "নোটিফিকেশন চালু হয়েছে। প্রতিদিনের পরীক্ষার রিমাইন্ডার এখানে পাবে।"
             : "অনুমতি দেওয়া হয়েছে, কিন্তু সাবস্ক্রিপশন সম্পন্ন হয়নি। পরে আবার চেষ্টা করো।",
         );
       } else if (permission === "denied") {
@@ -226,8 +226,8 @@ export function PwaInstallPrompt() {
                   </div>
                 </div>
                 <p className="mt-5 max-w-xl text-sm leading-7 text-white/75 sm:text-base">
-                  অ্যাপ ইনস্টল করলে দ্রুত খুলবে, আর নোটিফিকেশন চালু রাখলে ক্লাস,
-                  পরীক্ষা ও গুরুত্বপূর্ণ ঘোষণার আপডেট সময়মতো পাবে।
+                  অ্যাপ ইনস্টল করলে দ্রুত খুলবে, আর নোটিফিকেশন চালু রাখলে প্রতিদিনের
+                  MCQ প্র্যাকটিস পরীক্ষার রিমাইন্ডার সময়মতো পাবে।
                 </p>
               </div>
               <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-white/70">
@@ -312,7 +312,7 @@ export function PwaInstallPrompt() {
                     ? "অনুমতি বন্ধ আছে। ব্রাউজার সেটিংস থেকে ABSP-এর নোটিফিকেশন চালু করুন।"
                     : notificationUnsupported
                       ? "এই ব্রাউজারে ওয়েব নোটিফিকেশন সমর্থিত নয়।"
-                      : "ক্লাস, পরীক্ষা ও জরুরি ঘোষণার আপডেট সরাসরি পান।"}
+                      : "প্রতিদিনের MCQ প্র্যাকটিস পরীক্ষার রিমাইন্ডার সরাসরি পান।"}
                 </p>
                 <Button
                   type="button"
