@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { getPushDeviceId, syncPushSubscription } from "@/lib/push/client-subscription";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -25,15 +26,6 @@ interface BeforeInstallPromptEvent extends Event {
 
 type NotificationState = NotificationPermission | "unsupported";
 
-function getDeviceId() {
-  let deviceId = localStorage.getItem("absp_pwa_device_id");
-  if (!deviceId) {
-    deviceId = window.crypto.randomUUID();
-    localStorage.setItem("absp_pwa_device_id", deviceId);
-  }
-  return deviceId;
-}
-
 export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = React.useState(false);
@@ -46,43 +38,7 @@ export function PwaInstallPrompt() {
   const [statusMessage, setStatusMessage] = React.useState("");
 
   const subscribeToPushNotifications = React.useCallback(async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      return false;
-    }
-
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidPublicKey) return false;
-
-    const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
-
-    if (!subscription) {
-      const padding = "=".repeat((4 - (vapidPublicKey.length % 4)) % 4);
-      const base64 = (vapidPublicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-      const rawData = window.atob(base64);
-      const applicationServerKey = Uint8Array.from(rawData, (character) =>
-        character.charCodeAt(0),
-      );
-
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      });
-    }
-
-    const response = await fetch("/api/pwa/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        deviceId: getDeviceId(),
-        subscription,
-        isInstalledApp:
-          window.matchMedia("(display-mode: standalone)").matches ||
-          Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone),
-      }),
-    });
-
-    return response.ok;
+    return syncPushSubscription();
   }, []);
 
   React.useEffect(() => {
@@ -102,13 +58,7 @@ export function PwaInstallPrompt() {
       );
     }, 0);
 
-    const deviceId = getDeviceId();
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch((error) => {
-        console.error("Service Worker registration failed:", error);
-      });
-    }
+    const deviceId = getPushDeviceId();
 
     if (standalone && !sessionStorage.getItem("absp_pwa_launch_logged")) {
       fetch("/api/pwa/track", {
@@ -145,12 +95,6 @@ export function PwaInstallPrompt() {
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
-
-  React.useEffect(() => {
-    if (notificationPermission === "granted") {
-      void subscribeToPushNotifications();
-    }
-  }, [notificationPermission, subscribeToPushNotifications]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;

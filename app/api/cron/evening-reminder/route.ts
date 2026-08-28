@@ -7,15 +7,6 @@ import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PushSubscription } from "@/lib/db/models/PushSubscription";
 import { User } from "@/lib/db/models/User";
 
-// Set up VAPID details conditionally (prevents errors during Next.js build phase if keys are missing)
-if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    "mailto:admin@albirunistudypoint.com",
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-}
-
 export async function POST(request: NextRequest) {
   return handleCronTrigger(request);
 }
@@ -31,10 +22,18 @@ async function handleCronTrigger(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET?.trim();
     if (!cronSecret) return fail("Cron trigger is not configured.", 503);
     if (authHeader !== `Bearer ${cronSecret}`) return fail("Unauthorized", 401);
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY?.trim();
+    if (!vapidPublicKey || !vapidPrivateKey) {
       return fail("Push notification delivery is not configured.", 503);
     }
+    webpush.setVapidDetails(
+      "mailto:admin@albirunistudypoint.com",
+      vapidPublicKey,
+      vapidPrivateKey,
+    );
 
+    console.info("Daily exam reminder started");
     await connectDB();
 
     const now = new Date();
@@ -81,31 +80,58 @@ async function handleCronTrigger(request: NextRequest) {
       tag: `daily-exam-${startOfTodayBD.toISOString().slice(0, 10)}`,
     });
 
-    const sendPromises = subscriptions.map((sub) =>
-      webpush
-        .sendNotification(
-          {
-            endpoint: sub.subscription.endpoint,
-            keys: {
-              p256dh: sub.subscription.keys.p256dh,
-              auth: sub.subscription.keys.auth,
+    const deliveryResults = await Promise.all(
+      subscriptions.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: sub.subscription.endpoint,
+              keys: {
+                p256dh: sub.subscription.keys.p256dh,
+                auth: sub.subscription.keys.auth,
+              },
             },
-          },
-          payload
-        )
-        .catch(async (err) => {
-          if (err.statusCode === 410 || err.statusCode === 404) {
+            payload,
+          );
+          return true;
+        } catch (error) {
+          const statusCode =
+            typeof error === "object" && error !== null && "statusCode" in error
+              ? Number(error.statusCode)
+              : undefined;
+          if (statusCode === 410 || statusCode === 404) {
             await PushSubscription.deleteOne({ _id: sub._id });
           }
-          console.error("Cron notification error for endpoint:", sub.subscription.endpoint, err.message);
-        })
+          console.error("Daily exam reminder delivery failed", {
+            subscriptionId: String(sub._id),
+            statusCode,
+            message: error instanceof Error ? error.message : String(error),
+          });
+          return false;
+        }
+      }),
     );
 
-    await Promise.all(sendPromises);
+    const delivered = deliveryResults.filter(Boolean).length;
+    const failed = deliveryResults.length - delivered;
+    console.info("Daily exam reminder completed", {
+      subscriptions: subscriptions.length,
+      delivered,
+      failed,
+    });
+
+    if (delivered === 0) {
+      return fail("Daily reminder delivery failed for every target device.", 502, {
+        subscriptions: subscriptions.length,
+        delivered,
+        failed,
+      });
+    }
 
     return success({
-      message: `Daily reminder notifications dispatched to ${subscriptions.length} devices.`,
-      count: subscriptions.length,
+      message: `Daily reminder delivered to ${delivered} devices.`,
+      count: delivered,
+      failed,
     });
   } catch (error) {
     return handleApiError(error);

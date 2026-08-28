@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { PushNotificationSync } from "@/components/shared/PushNotificationSync";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { siteOrigin, siteUrl } from "@/lib/site";
 
@@ -85,6 +86,7 @@ export default function RootLayout({
   return (
     <html lang="bn" className="h-full antialiased">
       <body className="min-h-full bg-background text-foreground transition-colors duration-200">
+        <PushNotificationSync />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
