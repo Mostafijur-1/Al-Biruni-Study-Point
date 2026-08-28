@@ -6,6 +6,7 @@ import { PushSubscription } from "@/lib/db/models/PushSubscription";
 import type { IRoutineSlot } from "@/lib/db/models/RoutineSlot";
 import { User } from "@/lib/db/models/User";
 import { CoachingEnrollmentSubject } from "@/lib/db/models/CoachingEnrollmentSubject";
+import { formatRoutineTime } from "@/lib/format/routine-time";
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails("mailto:admin@albirunistudypoint.com", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
@@ -13,10 +14,6 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 type RoutineEvent = "created" | "updated" | "cancelled";
 const days = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
-
-function time(minute: number) {
-  return new Date(Date.UTC(2020, 0, 1, Math.floor(minute / 60), minute % 60)).toLocaleTimeString("bn-BD", { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
-}
 
 export async function notifyRoutineChange(routine: IRoutineSlot, event: RoutineEvent, additionalUserIds: string[] = []) {
   if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return 0;
@@ -32,7 +29,7 @@ export async function notifyRoutineChange(routine: IRoutineSlot, event: RoutineE
   ]);
   const roles = new Map(users.map((user) => [String(user._id), user.role]));
   const title = event === "created" ? "নতুন ক্লাস রুটিন প্রকাশ হয়েছে" : event === "updated" ? "ক্লাস রুটিন পরিবর্তন হয়েছে" : "ক্লাস রুটিন বাতিল হয়েছে";
-  const body = `${routine.subjectName || subject?.nameBn || subject?.name || "ক্লাস"}${batch?.name ? ` • ${batch.name}` : ""} • ${days[routine.weekday]} • ${time(routine.startMinute)}–${time(routine.endMinute)}`;
+  const body = `${routine.subjectName || subject?.nameBn || subject?.name || "ক্লাস"}${batch?.name ? ` • ${batch.name}` : ""} • ${days[routine.weekday]} • ${formatRoutineTime(routine.startMinute)}–${formatRoutineTime(routine.endMinute)}`;
   let sent = 0;
   await Promise.all(subscriptions.map(async (subscription) => {
     try {

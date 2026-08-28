@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Clock3, MapPin, Users } from "lucide-react";
 
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
+import { formatRoutineTime } from "@/lib/format/routine-time";
 import { cn } from "@/lib/utils";
 
 export type RoutineView = {
@@ -30,11 +31,7 @@ export type RoutineView = {
 export const routineDays = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
 
 export function routineTime(minute: number) {
-  return new Date(Date.UTC(2020, 0, 1, Math.floor(minute / 60), minute % 60)).toLocaleTimeString("bn-BD", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  });
+  return formatRoutineTime(minute);
 }
 
 export function RoutineDashboard({ compact = false }: { compact?: boolean }) {
@@ -102,7 +99,7 @@ export function RoutineDashboard({ compact = false }: { compact?: boolean }) {
                     <div className="flex items-center justify-between"><h4 className="font-black text-primary">{day}</h4>{dayIndex === today && <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-black text-white">আজ</span>}</div>
                     <div className="mt-3 space-y-3">{items.map((item) => <div key={item.id} className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-border/70">
                       <div className="flex items-start justify-between gap-3"><div><p className="font-black text-primary">{item.subject?.nameBn || item.subject?.name}</p><p className="mt-0.5 text-xs text-muted">{item.batch?.name ? `${item.batch.name} • ` : ""}{item.teacher.name}</p></div><span className="whitespace-nowrap text-sm font-black text-brand-red">{routineTime(item.startMinute)}–{routineTime(item.endMinute)}</span></div>
-                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">{item.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{item.room}</span>}<span className="inline-flex items-center gap-1"><Users className="size-3.5" />{item.students.length} জন শিক্ষার্থী</span></div>
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">{item.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{item.room}</span>}<span className="inline-flex items-center gap-1"><Users className="size-3.5" />{item.eligibleStudentCount ?? item.students.length} জন শিক্ষার্থী</span></div>
                     </div>)}</div>
                   </article>;
                 })}
