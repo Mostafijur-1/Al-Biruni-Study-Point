@@ -28,3 +28,17 @@ test("normal dependency installs do not use the MongoDB binary postinstall packa
   assert.equal(packageJson.devDependencies?.["mongodb-memory-server"], undefined);
   assert.equal(packageJson.devDependencies?.["mongodb-memory-server-core"], "^11.2.0");
 });
+
+test("routine transaction reads remain sequential on their shared session", async () => {
+  const source = await readFile("lib/academic-workflows.ts", "utf8");
+  const createRoutine = source.slice(
+    source.indexOf("export async function createRoutineSlot"),
+    source.indexOf("export async function updateRoutineSlot"),
+  );
+  const updateRoutine = source.slice(
+    source.indexOf("export async function updateRoutineSlot"),
+    source.indexOf("export async function endRoutineSlot"),
+  );
+  assert.doesNotMatch(createRoutine, /Promise\.all/);
+  assert.doesNotMatch(updateRoutine, /Promise\.all/);
+});

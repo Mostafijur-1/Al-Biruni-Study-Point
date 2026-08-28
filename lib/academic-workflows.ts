@@ -618,13 +618,25 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       throw new ApiRouteError("Routine time window is invalid.", 400, "VALIDATION_ERROR");
     }
     if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can manage routines.", 403);
-    const [batch, teacher, subject] = await Promise.all([
-      Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
-      User.findOne({ _id: input.teacherId, role: "teacher", isAbspMember: true, isActive: true, approvalStatus: "approved" }).session(session),
-      input.subjectId
-        ? AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session)
-        : Promise.resolve(null),
-    ]);
+    // MongoDB sessions do not support parallel operations within one
+    // transaction. Keep these reads ordered on the shared session.
+    const batch = await Batch.findOne({
+      _id: input.batchId,
+      status: { $in: ["planned", "active"] },
+    }).session(session);
+    const teacher = await User.findOne({
+      _id: input.teacherId,
+      role: "teacher",
+      isAbspMember: true,
+      isActive: true,
+      approvalStatus: "approved",
+    }).session(session);
+    const subject = input.subjectId
+      ? await AcademicSubject.findOne({
+          _id: input.subjectId,
+          status: { $ne: "archived" },
+        }).session(session)
+      : null;
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
     if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
     const subjectName = subject?.nameBn || subject?.name || input.subjectName;
@@ -714,14 +726,27 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     if (!isValidRoutineWindow(input.startMinute, input.endMinute)) {
       throw new ApiRouteError("Routine time window is invalid.", 400, "VALIDATION_ERROR");
     }
-    const [routineSlot, batch, teacher, subject] = await Promise.all([
-      RoutineSlot.findOne({ _id: input.routineSlotId, status: "active" }).session(session),
-      Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session),
-      User.findOne({ _id: input.teacherId, role: "teacher", isAbspMember: true, isActive: true, approvalStatus: "approved" }).session(session),
-      input.subjectId
-        ? AcademicSubject.findOne({ _id: input.subjectId, status: { $ne: "archived" } }).session(session)
-        : Promise.resolve(null),
-    ]);
+    const routineSlot = await RoutineSlot.findOne({
+      _id: input.routineSlotId,
+      status: "active",
+    }).session(session);
+    const batch = await Batch.findOne({
+      _id: input.batchId,
+      status: { $in: ["planned", "active"] },
+    }).session(session);
+    const teacher = await User.findOne({
+      _id: input.teacherId,
+      role: "teacher",
+      isAbspMember: true,
+      isActive: true,
+      approvalStatus: "approved",
+    }).session(session);
+    const subject = input.subjectId
+      ? await AcademicSubject.findOne({
+          _id: input.subjectId,
+          status: { $ne: "archived" },
+        }).session(session)
+      : null;
     if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
     if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);

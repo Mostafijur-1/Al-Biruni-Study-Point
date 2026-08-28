@@ -66,7 +66,11 @@ export function handleApiError(error: unknown) {
   console.error("API request failed", {
     requestId,
     name: error instanceof Error ? error.name : "UnknownError",
-    message: "Unhandled server error.",
+    code: typeof error === "object" && error !== null && "code" in error
+      ? String(error.code)
+      : undefined,
+    message: error instanceof Error ? error.message : "Unhandled server error.",
+    stack: error instanceof Error ? error.stack : undefined,
   });
 
   return fail("Internal server error.", 500, undefined, "INTERNAL_ERROR", requestId);
