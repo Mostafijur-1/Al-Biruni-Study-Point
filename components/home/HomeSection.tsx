@@ -199,60 +199,44 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
           </div>
 
           {/* Special Combo Package Card */}
-          <div className="relative mt-8 overflow-hidden rounded-[2rem] border-2 border-brand-yellow bg-card shadow-[0_28px_70px_-32px_rgba(11,37,69,0.55)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_34px_80px_-32px_rgba(220,38,38,0.48)]">
-            <header className="relative min-h-40 overflow-hidden bg-linear-to-br from-primary via-[#123c68] to-[#1e5b89] p-6 pr-48 text-white sm:min-h-36 sm:p-8 sm:pr-60">
-              <span className="absolute -bottom-24 left-1/3 size-52 rounded-full bg-sky-300/10 blur-2xl" aria-hidden />
-              <p className="relative hidden text-[10px] font-black uppercase tracking-[0.24em] text-brand-yellow sm:block">HSC 2028 · Limited admission offer</p>
-              <h3 className="relative mt-5 max-w-xl font-display text-2xl font-black leading-tight sm:mt-3 sm:text-3xl">
-                <span className="sm:hidden">স্মার্ট<br />কম্বো অফার</span>
-                <span className="hidden sm:inline">সব বিষয়, এক স্মার্ট কম্বো</span>
-              </h3>
-              <p className="relative mt-2 hidden max-w-lg text-sm font-medium text-white/75 sm:block">পূর্ণ প্রস্তুতি, কম মাসিক খরচ—ICT একদম ফ্রি।</p>
-
-              <div className="absolute right-0 top-0 flex h-full w-44 flex-col items-center justify-center overflow-hidden rounded-bl-[2.5rem] bg-linear-to-br from-brand-red via-red-600 to-orange-500 px-4 text-center shadow-2xl ring-4 ring-inset ring-white/10 sm:w-52" aria-label="500 taka discount every month until 10 October">
-                <span className="absolute -right-10 -top-10 size-32 rounded-full bg-white/15" aria-hidden />
-                <span className="absolute -bottom-12 -left-8 size-28 rounded-full bg-brand-yellow/20" aria-hidden />
-                <p className="relative text-4xl font-black leading-none tracking-tight sm:text-5xl">500 ৳</p>
-                <p className="relative mt-2 text-xs font-black uppercase tracking-[0.18em] text-brand-yellow">প্রতি মাসে ছাড়</p>
-                <p className="relative mt-3 rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold">10 October পর্যন্ত</p>
-              </div>
-            </header>
-
-            <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="p-6 sm:p-8 lg:p-10">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-brand-yellow px-3 py-1 text-[10px] font-black uppercase tracking-wider text-accent-foreground">{dict.hsc2028.combo.badge}</span>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">ICT সম্পূর্ণ ফ্রি</span>
-                </div>
-                <h4 className="mt-4 font-display text-2xl font-black text-primary sm:text-3xl">{dict.hsc2028.combo.title}</h4>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">{dict.hsc2028.combo.description}</p>
-
-                <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {["Physics", "Chemistry", "Higher Math", "ICT · FREE"].map((subject, index) => (
-                    <div key={subject} className={cn("rounded-xl border px-3 py-3 text-center text-xs font-black", index === 3 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-sky-100 bg-sky-50/70 text-primary")}>
-                      <CheckCircle2 className={cn("mx-auto mb-1.5 size-4", index === 3 ? "text-emerald-600" : "text-sky-600")} />
-                      {subject}
-                    </div>
+          <div className="mx-auto mt-8 max-w-4xl overflow-hidden rounded-[1.65rem] border-2 border-brand-yellow bg-primary shadow-[0_24px_55px_-24px_rgba(11,37,69,0.65)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_65px_-24px_rgba(220,38,38,0.5)]">
+            <div className="grid sm:grid-cols-[0.9fr_1.1fr]">
+              <section className="relative overflow-hidden bg-linear-to-br from-[#071d38] via-primary to-[#0b315a] p-6 text-white sm:p-8" aria-label="Combo package subjects">
+                <span className="absolute -bottom-16 -right-16 size-44 rounded-full bg-sky-300/10 blur-xl" aria-hidden />
+                <p className="relative font-display text-2xl font-black leading-none sm:text-3xl">
+                  <span className="block text-white">স্মার্ট</span>
+                  <span className="mt-1.5 block text-brand-yellow">কম্বো অফার</span>
+                </p>
+                <ul className="relative mt-6 space-y-2.5 text-sm font-bold" aria-label="Included subjects">
+                  {["Physics", "Chemistry", "Higher Math", "ICT FREE"].map((subject, index) => (
+                    <li key={subject} className={cn("flex items-center gap-2", index === 3 && "text-brand-yellow")}>
+                      <CheckCircle2 className="size-4 shrink-0" strokeWidth={3} />
+                      <span>{subject}</span>
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </section>
 
-              <aside className="border-t border-border bg-linear-to-br from-secondary/75 to-brand-yellow/10 p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-                <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-brand-red">{dict.hsc2028.combo.offerFeeLabel}</p>
-                <div className="mt-4 rounded-2xl border border-white bg-white/85 p-5 text-center shadow-sm">
-                  <p className="text-xs font-bold text-muted">{dict.hsc2028.combo.regularFeeLabel}</p>
-                  <p className="mt-1 text-xl font-black text-muted/55 line-through decoration-2 decoration-brand-red">{dict.hsc2028.combo.regularFee}</p>
-                  <div className="mx-auto my-4 h-px w-16 bg-brand-yellow" />
-                  <p className="text-xs font-black uppercase tracking-wider text-emerald-700">অফার মূল্য</p>
-                  <p className="mt-1 text-4xl font-black tracking-tight text-primary sm:text-5xl">{dict.hsc2028.combo.offerFee}</p>
-                  <p className="mt-1 text-xs font-bold text-muted">প্রতি মাস</p>
-                </div>
-                <p className="mt-3 text-center text-xs font-black text-emerald-700">আপনার সাশ্রয়: প্রতি মাসে 500 ৳</p>
-                <Link href={"/contact"} className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-5 w-full justify-center rounded-xl shadow-lg shadow-red-900/15 transition-all hover:scale-[1.02]")}>
-                  {dict.hsc2028.combo.cta} <ArrowRight className="size-5" />
-                </Link>
-              </aside>
+              <section className="relative flex flex-col items-center justify-center overflow-hidden bg-linear-to-br from-red-600 via-brand-red to-[#f12a12] p-6 text-center text-white sm:p-8" aria-label="Combo offer price">
+                <span className="absolute -right-14 -top-14 size-40 rounded-full bg-white/10" aria-hidden />
+                <p className="relative text-xs font-bold">{dict.hsc2028.combo.regularFeeLabel}</p>
+                <p className="relative mt-0.5 text-2xl font-black line-through decoration-2 decoration-white/80">{dict.hsc2028.combo.regularFee}</p>
+                <div className="relative my-3 w-full border-t border-dashed border-white/60" />
+                <p className="relative text-xs font-bold">অফার মূল্য</p>
+                <p className="relative mt-1 text-5xl font-black leading-none tracking-tight sm:text-6xl">{dict.hsc2028.combo.offerFee}</p>
+                <p className="relative mt-1 text-base font-bold">প্রতি মাসে</p>
+              </section>
             </div>
+
+            <footer className="grid items-center gap-3 bg-brand-yellow px-5 py-3 text-primary sm:grid-cols-[1fr_auto] sm:px-7">
+              <p className="flex items-center justify-center gap-2 text-sm font-black sm:justify-start">
+                <Percent className="size-5" strokeWidth={3} />
+                সাশ্রয় 500 ৳ প্রতি মাসে!
+              </p>
+              <Link href={"/contact"} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-black text-primary-foreground shadow-md transition hover:scale-[1.02] hover:bg-primary/90">
+                এখনই ভর্তি হন · 10 October পর্যন্ত <ArrowRight className="size-4" />
+              </Link>
+            </footer>
           </div>
 
         </div>

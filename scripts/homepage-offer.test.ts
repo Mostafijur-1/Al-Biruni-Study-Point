@@ -32,12 +32,13 @@ test("install and notification actions live only in the footer", async () => {
   assert.match(actions, /Enable notifications/);
 });
 
-test("combo discount is a prominent corner offer", async () => {
+test("combo discount uses a compact split offer layout", async () => {
   const home = await readFile("components/home/HomeSection.tsx", "utf8");
 
-  assert.match(home, /absolute right-0 top-0/);
-  assert.match(home, />500 ৳</);
-  assert.match(home, /প্রতি মাসে ছাড়/);
+  assert.match(home, /sm:grid-cols-\[0\.9fr_1\.1fr\]/);
+  assert.match(home, /সাশ্রয় 500 ৳ প্রতি মাসে!/);
+  assert.match(home, /dict\.hsc2028\.combo\.regularFee/);
+  assert.match(home, /dict\.hsc2028\.combo\.offerFee/);
   assert.match(home, /10 October পর্যন্ত/);
-  assert.match(home, /ICT · FREE/);
+  assert.match(home, /ICT FREE/);
 });
