@@ -137,6 +137,32 @@ async function assignPermanentStudentCode(input: {
   return input.student.studentCode;
 }
 
+export async function assignStudentCodeForBatch(input: AuditInput & {
+  batchId: string;
+  studentId: string;
+}) {
+  if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can assign student IDs.", 403);
+  return inTransaction(async (session) => {
+    const student = await User.findOne({ _id: input.studentId, role: "student", isActive: true }).session(session);
+    const batch = await Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session);
+    if (!student) throw new ApiRouteError("Active student not found.", 404);
+    if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
+    if (batch.studentClass && student.studentClass !== batch.studentClass) {
+      throw new ApiRouteError("Student class does not match the batch class.", 409);
+    }
+    const existingCode = student.studentCode;
+    const studentCode = await assignPermanentStudentCode({ student, batch, session });
+    if (!existingCode) {
+      await writeAuditLog({
+        request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
+        action: "coaching.student-code.assigned", resourceType: "User", resourceId: student._id, reason: input.reason,
+        after: { batchId: String(batch._id), studentCode }, session,
+      });
+    }
+    return { studentCode, newlyAssigned: !existingCode };
+  });
+}
+
 export async function createCoachingEnrollment(input: AuditInput & {
   batchId: string;
   studentId: string;
@@ -149,8 +175,11 @@ export async function createCoachingEnrollment(input: AuditInput & {
     const student = await User.findOne({ _id: input.studentId, role: "student", isActive: true }).session(session);
     if (!student) throw new ApiRouteError("Active student not found.", 404);
     if (batch.studentClass && student.studentClass !== batch.studentClass) throw new ApiRouteError("Student class does not match the batch class.", 409);
-    if (batch.startsAt && batch.endsAt && (input.effectiveFrom < batch.startsAt || input.effectiveFrom > batch.endsAt)) {
-      throw new ApiRouteError("Enrollment date must fall within the batch dates.", 409);
+    const effectiveFrom = batch.startsAt && input.effectiveFrom < batch.startsAt
+      ? batch.startsAt
+      : input.effectiveFrom;
+    if (batch.endsAt && effectiveFrom > batch.endsAt) {
+      throw new ApiRouteError("Enrollment date cannot be after the batch end date.", 409);
     }
     const exists = await BatchEnrollment.exists({
       studentId: student._id,
@@ -171,16 +200,16 @@ export async function createCoachingEnrollment(input: AuditInput & {
       batchId: batch._id,
       studentId: student._id,
       status: "active",
-      effectiveFrom: input.effectiveFrom,
+      effectiveFrom,
       createdBy: input.actor.id,
     }], { session });
-    await addSubjectRows({ enrollment, subjectIds: selectedSubjectIds, effectiveFrom: input.effectiveFrom, actorId: input.actor.id, session });
+    await addSubjectRows({ enrollment, subjectIds: selectedSubjectIds, effectiveFrom, actorId: input.actor.id, session });
     await syncPaymentProfile({ studentId: student._id, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
     await User.updateOne({ _id: student._id }, { $set: { isAbspMember: true } }, { session });
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "coaching.enrollment.created", resourceType: "BatchEnrollment", resourceId: enrollment._id, reason: input.reason,
-      after: { batchId: String(batch._id), studentId: String(student._id), studentCode, subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
+      after: { batchId: String(batch._id), studentId: String(student._id), studentCode, subjectIds: selectedSubjectIds, feeTk: input.feeTk, effectiveFrom: effectiveFrom.toISOString() }, session,
     });
     return enrollment;
   });

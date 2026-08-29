@@ -47,6 +47,12 @@ export const enrollmentListQuerySchema = z.object({
 
 export const enrollmentMutationSchema = z.discriminatedUnion("action", [
   z.object({
+    action: z.literal("assign-student-code"),
+    batchId: objectIdSchema,
+    studentId: objectIdSchema,
+    reason: mutationReasonSchema,
+  }),
+  z.object({
     action: z.literal("enroll"),
     batchId: objectIdSchema,
     studentId: objectIdSchema,

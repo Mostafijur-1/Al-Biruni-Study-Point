@@ -2,7 +2,7 @@ import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
 import { handleApiError, success } from "@/lib/api/response";
-import { createCoachingEnrollment, transferCoachingEnrollment, updateCoachingSubjects, withdrawCoachingEnrollment } from "@/lib/coaching-enrollment-service";
+import { assignStudentCodeForBatch, createCoachingEnrollment, transferCoachingEnrollment, updateCoachingSubjects, withdrawCoachingEnrollment } from "@/lib/coaching-enrollment-service";
 import { areAcademicWritesEnabled } from "@/lib/academic-rules";
 import { ApiRouteError } from "@/lib/api-error";
 import { requireAuth } from "@/lib/auth/session";
@@ -144,6 +144,11 @@ export async function POST(request: NextRequest) {
       throw new ApiRouteError("Academic write workflows are not enabled.", 503);
     }
     const parsed = enrollmentMutationSchema.parse(await request.json());
+
+    if (parsed.action === "assign-student-code") {
+      const assignment = await assignStudentCodeForBatch({ request, actor, ...parsed });
+      return success(assignment);
+    }
 
     const enrollment = parsed.action === "enroll"
         ? await createCoachingEnrollment({

@@ -44,13 +44,13 @@ test("combo discount uses a compact split offer layout", async () => {
   assert.match(home, /ICT FREE/);
 });
 
-test("homepage and batches page load only real active batches from the public API", async () => {
+test("homepage keeps its curated static batches while the full batches page can load live records", async () => {
   const home = await readFile("components/home/HomeSection.tsx", "utf8");
   const list = await readFile("components/batches/BatchesList.tsx", "utf8");
   const route = await readFile("app/api/public/batches/route.ts", "utf8");
 
-  assert.match(home, /fetch\("\/api\/public\/batches\?limit=4"/);
-  assert.doesNotMatch(home, /dict\.batches\.sample\.map/);
+  assert.doesNotMatch(home, /fetch\("\/api\/public\/batches/);
+  assert.match(home, /dict\.batches\.sample\.map/);
   assert.match(list, /fetch\("\/api\/public\/batches\?limit=50"/);
   assert.doesNotMatch(list, /dict\.sample\.filter/);
   assert.match(route, /Batch\.find\(\{ status: "active" \}\)/);

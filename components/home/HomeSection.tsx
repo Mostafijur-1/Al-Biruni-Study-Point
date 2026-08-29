@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
@@ -15,37 +15,8 @@ type HomeSectionProps = {
   brand: Dictionary["brand"];
 };
 
-type PublicBatch = {
-  id: string;
-  name: string;
-  mode: "online" | "offline";
-  defaultFeeTk: number;
-  capacity?: number;
-  activeEnrollmentCount: number;
-  startsAt?: string;
-  subjects: Array<{ id: string; name: string; nameBn?: string }>;
-};
-
 export function HomeSection({ dict, brand }: HomeSectionProps) {
     const [videoLoaded, setVideoLoaded] = useState(false);
-    const [publicBatches, setPublicBatches] = useState<PublicBatch[]>([]);
-    const [batchesLoading, setBatchesLoading] = useState(true);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 10_000);
-    void fetch("/api/public/batches?limit=4", { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Batch request failed");
-        return response.json() as Promise<{ success: true; data: { batches: PublicBatch[] } }>;
-      })
-      .then((payload) => setPublicBatches(payload.data.batches))
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) setPublicBatches([]);
-      })
-      .finally(() => setBatchesLoading(false));
-    return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, []);
 
   return (
     <>
@@ -286,13 +257,9 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
           </div>
 
           <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-2">
-            {batchesLoading ? (
-              [0, 1].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl bg-card" />)
-            ) : publicBatches.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-muted md:col-span-2">এখন কোনো সক্রিয় ব্যাচ নেই।</p>
-            ) : publicBatches.map((batch) => (
+            {dict.batches.sample.map((batch) => (
               <article
-                key={batch.id}
+                key={batch.name}
                 className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -307,15 +274,13 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                     {batch.mode === "online" ? dict.batches.online : dict.batches.offline}
                   </span>
                   <span className="text-xs font-medium text-muted">
-                    {dict.batches.seats}: {batch.capacity ? `${batch.activeEnrollmentCount}/${batch.capacity}` : batch.activeEnrollmentCount}
+                    {dict.batches.seats}: {batch.seats}
                   </span>
                 </div>
                 <h3 className="mt-3 text-base font-bold text-foreground sm:text-lg">{batch.name}</h3>
                 <p className="mt-1 text-sm text-muted">
-                  {dict.batches.schedule}: {batch.startsAt ? new Date(batch.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "শিগগির জানানো হবে"}
+                  {dict.batches.schedule}: {batch.schedule}
                 </p>
-                <p className="mt-2 text-sm font-bold text-primary">{batch.defaultFeeTk.toLocaleString("en-US")} ৳ / মাস</p>
-                {batch.subjects.length > 0 && <p className="mt-1 text-xs text-muted">{batch.subjects.map((subject) => subject.nameBn || subject.name).join(" • ")}</p>}
               </article>
             ))}
           </div>

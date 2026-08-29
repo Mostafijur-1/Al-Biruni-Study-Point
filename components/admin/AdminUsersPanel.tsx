@@ -414,9 +414,10 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                     </Button>
                   )}
                   {role === "student" && (
-                    <p className="mt-1.5 w-fit rounded border border-sky-200/60 bg-sky-50 px-2 py-0.5 font-mono text-xs font-bold text-primary">
-                      Student ID: {user.studentCode ?? "ব্যাচে ভর্তি হলে স্বয়ংক্রিয় হবে"}
-                    </p>
+                    <div className="mt-2 max-w-xs space-y-1">
+                      <label className="text-xs font-bold text-primary" htmlFor={`student-id-${user.id}`}>Permanent Student ID</label>
+                      <Input id={`student-id-${user.id}`} readOnly value={user.studentCode ?? "ব্যাচ নির্বাচন করলে স্বয়ংক্রিয় হবে"} className="h-9 bg-sky-50 font-mono text-xs font-bold" />
+                    </div>
                   )}
                   {role === "teacher" && (
                     <Button

@@ -50,6 +50,7 @@ export function AdminBatchManager() {
   const [addingToBatch, setAddingToBatch] = useState<Batch>();
   const [studentQuery, setStudentQuery] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student>();
+  const [assigningStudentId, setAssigningStudentId] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -119,6 +120,35 @@ export function AdminBatchManager() {
     setAddingToBatch(undefined);
     setStudentQuery("");
     setSelectedStudent(undefined);
+    setAssigningStudentId(false);
+  }
+
+  async function selectStudentForBatch(student: Student) {
+    if (!addingToBatch) return;
+    setSelectedStudent(student);
+    setMessage("");
+    if (student.studentCode) return;
+    setAssigningStudentId(true);
+    const result = await apiFetch<{ studentCode: string }>("/api/enrollments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "assign-student-code",
+        studentId: student.id,
+        batchId: addingToBatch.id,
+        reason: "Admin assigned permanent Student ID before batch enrollment",
+      }),
+    });
+    if (!result.ok || !isApiSuccess(result.payload)) {
+      setError(true);
+      setMessage(getApiErrorMessage(result.payload, "Permanent Student ID could not be assigned."));
+    } else {
+      const studentCode = result.payload.data.studentCode;
+      setError(false);
+      setSelectedStudent((current) => current?.id === student.id ? { ...current, studentCode } : current);
+      setStudents((current) => current.map((item) => item.id === student.id ? { ...item, studentCode } : item));
+    }
+    setAssigningStudentId(false);
   }
 
   async function addStudentToBatch(event: FormEvent) {
@@ -279,14 +309,14 @@ export function AdminBatchManager() {
             <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Add student</p><h3 className="mt-1 text-xl font-black text-primary">{addingToBatch.name}</h3></div>
             <button type="button" aria-label="Close add student form" onClick={closeAddStudent}><X className="size-5 text-muted" /></button>
           </div>
-          <p className="mb-4 text-sm text-muted">Search by student name or reference. The batch subjects and default fee will be applied first; you can edit them later.</p>
-          <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input autoFocus value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="pl-9" placeholder="Search by name or reference" /></div>
+          <p className="mb-4 text-sm text-muted">Search by Student ID, name, or reference. The exact permanent ID is assigned and shown before enrollment.</p>
+          <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input autoFocus value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="pl-9" placeholder="Search by Student ID, name, or reference" /></div>
           <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
-            {availableStudents.map((student) => <button key={student.id} type="button" onClick={() => setSelectedStudent(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
+            {availableStudents.map((student) => <button key={student.id} type="button" disabled={assigningStudentId} onClick={() => void selectStudentForBatch(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
             {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
           </div>
-          {selectedStudent && <div className="mt-4 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><p className="mt-2 font-bold">{selectedStudent.studentCode ? `Permanent Student ID: ${selectedStudent.studentCode}` : `A permanent ID in the ${addingToBatch.name.match(/(?:19|20)\d{2}/)?.[0]?.slice(-2) ?? "year"}00${addingToBatch.studentIdGroup ?? 1}… series will be assigned automatically after enrollment.`}</p></div>}
-          <Button className="mt-5 w-full" type="submit" disabled={saving || !selectedStudent}>{saving ? "Adding…" : "Add Student"}</Button>
+          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">Permanent Student ID</Label><Input id="assigned-student-id" readOnly value={selectedStudent.studentCode ?? (assigningStudentId ? "Assigning…" : "Assignment failed")} className="font-mono font-black" /></div></div>}
+          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent?.studentCode}>{saving ? "Adding…" : assigningStudentId ? "Assigning Student ID…" : "Add Student"}</Button>
         </form>
       )}
 

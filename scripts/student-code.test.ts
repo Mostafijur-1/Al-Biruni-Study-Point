@@ -27,11 +27,14 @@ test("student codes are assigned only when absent and attendance is admin-wide",
 
   assert.match(enrollment, /if \(input\.student\.studentCode\) return/);
   assert.match(enrollment, /StudentCodeCounter\.findOneAndUpdate/);
+  assert.match(enrollment, /assignStudentCodeForBatch/);
+  assert.match(enrollment, /input\.effectiveFrom < batch\.startsAt/);
   assert.match(userModel, /immutable: true/);
   assert.match(userModel, /unique: true, sparse: true/);
   assert.match(attendanceApi, /requireAuth\(request, \["admin"\]\)/);
   assert.match(attendanceApi, /backfill-student-codes/);
   assert.match(batchManager, /Permanent Student ID/);
+  assert.match(batchManager, /assign-student-code/);
   assert.match(batchManager, /defaultFeeTk/);
   assert.match(teacherAttendance, /row\.studentCode/);
   for (const column of ["Student ID", "Student name", "Date", "Attendance status"]) {

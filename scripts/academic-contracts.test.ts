@@ -33,6 +33,13 @@ test("batch management requires an explicit audited change", () => {
 });
 
 test("enrollment mutations require explicit actions, valid IDs, and audit reasons", () => {
+  const studentCode = enrollmentMutationSchema.parse({
+    action: "assign-student-code",
+    batchId: id,
+    studentId: "64f000000000000000000002",
+    reason: "Assign permanent ID before enrollment",
+  });
+  assert.equal(studentCode.action, "assign-student-code");
   const enrollment = enrollmentMutationSchema.parse({
     action: "enroll",
     batchId: id,

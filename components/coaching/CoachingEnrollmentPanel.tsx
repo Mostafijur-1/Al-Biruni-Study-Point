@@ -66,6 +66,33 @@ export function CoachingEnrollmentPanel() {
     });
   }, [batchId, selectedEnrollment]);
 
+  useEffect(() => {
+    if (!selectedStudent || !batchId || selectedStudent.studentCode || selectedEnrollment) return;
+    let cancelled = false;
+    void apiFetch<{ studentCode: string }>("/api/enrollments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "assign-student-code",
+        studentId: selectedStudent.id,
+        batchId,
+        reason: "Admin assigned permanent Student ID before coaching enrollment",
+      }),
+    }).then((result) => {
+      if (cancelled) return;
+      if (!result.ok || !isApiSuccess(result.payload)) {
+        setError(true);
+        setMessage(getApiErrorMessage(result.payload, "Permanent Student ID could not be assigned."));
+        return;
+      }
+      const studentCode = result.payload.data.studentCode;
+      setError(false);
+      setSelectedStudent((current) => current?.id === selectedStudent.id ? { ...current, studentCode } : current);
+      setStudents((current) => current.map((student) => student.id === selectedStudent.id ? { ...student, studentCode } : student));
+    });
+    return () => { cancelled = true; };
+  }, [batchId, selectedEnrollment, selectedStudent]);
+
   const visibleEnrollments = useMemo(() => enrollments.filter((item) => {
     const text = `${item.student.name} ${item.student.studentCode || ""} ${item.student.reference || ""}`.toLowerCase();
     return (!query || text.includes(query.toLowerCase())) && (!batchFilter || item.batchId === batchFilter);
@@ -112,6 +139,7 @@ export function CoachingEnrollmentPanel() {
   return <section className="space-y-5" aria-labelledby="coaching-enrollment-title">
     <header className="rounded-3xl bg-[linear-gradient(125deg,#0b2545,#123a6b_70%,#174d82)] p-6 text-white shadow-lg sm:p-8"><p className="text-xs font-black uppercase tracking-[.22em] text-brand-yellow">Student enrollment</p><h1 id="coaching-enrollment-title" className="mt-2 text-3xl font-black">শিক্ষার্থী ভর্তি ব্যবস্থাপনা</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-white/75">Website-এ নিবন্ধন ও কোচিংয়ে ভর্তি আলাদা। একটি Batch-এ ভর্তি করার সময় শিক্ষার্থীর বিষয় ও মাসিক ফি নির্ধারণ করুন।</p></header>
     {message && <Alert variant={error ? "destructive" : "success"}>{message}</Alert>}
+    {selectedStudent && <div className="rounded-2xl border border-primary/20 bg-card p-3"><Label htmlFor="coaching-student-id">Permanent Student ID</Label><Input id="coaching-student-id" className="mt-1.5 font-mono font-black" readOnly value={selectedStudent.studentCode ?? (batchId ? "Assigning…" : "Select a batch to assign ID")} /></div>}
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
       <div className="space-y-4"><div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[1fr_220px]"><div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="নাম, Student ID বা reference দিয়ে খুঁজুন" /></div><select className={selectClass} value={batchFilter} onChange={(event) => setBatchFilter(event.target.value)}><option value="">সব ব্যাচ</option>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select></div>
         {candidates.length > 0 && <div className="rounded-2xl border border-dashed border-primary/40 bg-secondary/30 p-3"><p className="mb-2 text-xs font-black text-primary">Website-এ নিবন্ধিত, কিন্তু কোচিংয়ে ভর্তি নয়</p>{candidates.map((student) => <button type="button" key={student.id} onClick={() => chooseStudent(student)} className="flex w-full items-center justify-between rounded-xl p-3 text-left hover:bg-white"><span><b>{student.name}</b><small className="ml-2 text-muted">{student.studentCode ? `ID ${student.studentCode}` : "ID ভর্তি হলে স্বয়ংক্রিয় হবে"}{student.reference && ` • #${student.reference}`}</small></span><span className="inline-flex items-center gap-1 text-xs font-bold text-primary"><UserPlus className="size-4" /> ভর্তি করুন</span></button>)}</div>}
