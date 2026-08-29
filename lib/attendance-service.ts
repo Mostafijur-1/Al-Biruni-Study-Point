@@ -316,7 +316,7 @@ export async function openAttendanceSheet(
         _id: { $in: roster.map((item) => item.studentId) },
         role: "student",
       })
-        .select("name studentClass")
+        .select("name studentCode studentClass")
         .session(session)
         .lean();
       const studentById = new Map(students.map((student) => [String(student._id), student]));
@@ -369,6 +369,7 @@ export async function openAttendanceSheet(
             enrollmentId: enrollment._id,
             studentId: enrollment.studentId,
             studentNameSnapshot: student.name,
+            studentCodeSnapshot: student.studentCode,
             studentClassSnapshot: student.studentClass,
             status: "unmarked",
             workflowVersion: 1,

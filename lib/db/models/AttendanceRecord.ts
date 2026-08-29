@@ -10,6 +10,7 @@ export interface IAttendanceRecord extends Document {
   enrollmentId: Types.ObjectId;
   studentId: Types.ObjectId;
   studentNameSnapshot: string;
+  studentCodeSnapshot?: string;
   studentClassSnapshot?: string;
   status: AttendanceRecordStatus;
   minutesLate?: number;
@@ -31,6 +32,7 @@ const AttendanceRecordSchema = new Schema<IAttendanceRecord>(
     enrollmentId: { type: Schema.Types.ObjectId, ref: "BatchEnrollment", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     studentNameSnapshot: { type: String, required: true, trim: true, maxlength: 160 },
+    studentCodeSnapshot: { type: String, trim: true, maxlength: 32 },
     studentClassSnapshot: { type: String, trim: true, maxlength: 40 },
     status: {
       type: String,

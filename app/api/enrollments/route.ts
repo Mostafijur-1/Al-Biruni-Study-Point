@@ -174,8 +174,11 @@ export async function POST(request: NextRequest) {
             effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,
           });
 
+    const enrolledStudent = parsed.action === "enroll"
+      ? await User.findById(enrollment.studentId).select("studentCode").lean()
+      : undefined;
     return success(
-      { enrollment: serializeEnrollment(enrollment) },
+      { enrollment: serializeEnrollment(enrollment), studentCode: enrolledStudent?.studentCode },
       parsed.action === "enroll" ? { status: 201 } : undefined,
     );
   } catch (error) {

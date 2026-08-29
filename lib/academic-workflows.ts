@@ -34,6 +34,8 @@ type WorkflowAuditContext = {
 
 type CreateBatchInput = WorkflowAuditContext & {
   name: string;
+  mode: "online" | "offline";
+  defaultFeeTk: number;
   subjectNames: string[];
   organizationId?: string;
   branchId?: string;
@@ -54,6 +56,8 @@ type EnrollStudentInput = WorkflowAuditContext & {
 type UpdateBatchInput = WorkflowAuditContext & {
   batchId: string;
   name?: string;
+  mode?: "online" | "offline";
+  defaultFeeTk?: number;
   subjectNames?: string[];
   status?: "planned" | "active" | "closed" | "archived";
 };
@@ -257,6 +261,8 @@ export async function createBatch(input: CreateBatchInput) {
           academicSessionId: input.academicSessionId,
           code: input.code ?? `BATCH-${new mongoose.Types.ObjectId().toHexString().slice(-8).toUpperCase()}`,
           name: input.name,
+          mode: input.mode,
+          defaultFeeTk: input.defaultFeeTk,
           studentClass: input.studentClass,
           capacity: input.capacity,
           activeEnrollmentCount: 0,
@@ -279,6 +285,8 @@ export async function createBatch(input: CreateBatchInput) {
       reason: input.reason,
       after: {
         name: batch.name,
+        mode: batch.mode,
+        defaultFeeTk: batch.defaultFeeTk,
         status: batch.status,
         subjects: uniqueSubjects.map((subject) => subject.name),
       },
@@ -300,7 +308,7 @@ export async function updateBatch(input: UpdateBatchInput) {
       throw new ApiRouteError(`Batch cannot move from ${batch.status} to ${nextStatus}.`, 409);
     }
     if (batch.status === "closed" || batch.status === "archived") {
-      if (input.name || input.subjectNames) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
+      if (input.name || input.mode || input.defaultFeeTk !== undefined || input.subjectNames) throw new ApiRouteError("Closed or archived batch details are immutable.", 409);
     }
     if (nextStatus === "closed" || nextStatus === "archived") {
       const [activeEnrollments, activeAssignments, activeRoutines] = await Promise.all([
@@ -328,9 +336,11 @@ export async function updateBatch(input: UpdateBatchInput) {
         throw new ApiRouteError("Legacy batch academic context must be active before activation.", 409);
       }
     }
-    const before = { name: batch.name, status: batch.status };
+    const before = { name: batch.name, mode: batch.mode, defaultFeeTk: batch.defaultFeeTk, status: batch.status };
     batch.set({
       name: input.name ?? batch.name,
+      mode: input.mode ?? batch.mode,
+      defaultFeeTk: input.defaultFeeTk ?? batch.defaultFeeTk,
       status: nextStatus,
     });
     await batch.save({ session });
@@ -340,7 +350,7 @@ export async function updateBatch(input: UpdateBatchInput) {
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "academic.batch.updated", resourceType: "Batch", resourceId: batch._id, reason: input.reason,
-      before, after: { name: batch.name, status: batch.status, subjectNames: input.subjectNames }, session,
+      before, after: { name: batch.name, mode: batch.mode, defaultFeeTk: batch.defaultFeeTk, status: batch.status, subjectNames: input.subjectNames }, session,
     });
     return batch;
   });

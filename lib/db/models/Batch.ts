@@ -9,6 +9,8 @@ export interface IBatch extends Document {
   academicSessionId?: Types.ObjectId;
   code?: string;
   name: string;
+  mode: "online" | "offline";
+  defaultFeeTk: number;
   studentClass?: StudentClass;
   capacity?: number;
   activeEnrollmentCount: number;
@@ -27,6 +29,8 @@ const BatchSchema = new Schema<IBatch>(
     academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession" },
     code: { type: String, trim: true, uppercase: true },
     name: { type: String, required: true, trim: true },
+    mode: { type: String, enum: ["online", "offline"], default: "offline" },
+    defaultFeeTk: { type: Number, default: 0, min: 0, max: 10_000_000 },
     studentClass: {
       type: String,
       enum: ["class-9", "class-10", "class-11", "class-12"],

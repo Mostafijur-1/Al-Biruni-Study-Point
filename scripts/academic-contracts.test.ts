@@ -14,15 +14,20 @@ import { isRoutineMutationEnabled, requiresAcademicRoutineWriteGate } from "../l
 
 const id = "64f000000000000000000001";
 
-test("batch creation accepts a name and its default subjects", () => {
-  assert.deepEqual(batchCreateSchema.parse({ name: "HSC 2029", subjectNames: ["Physics", "Chemistry"] }), { name: "HSC 2029", subjectNames: ["Physics", "Chemistry"] });
+test("batch creation accepts a name, type, default subjects, and default fee", () => {
+  assert.deepEqual(
+    batchCreateSchema.parse({ name: "HSC 2029", mode: "offline", defaultFeeTk: 3500, subjectNames: ["Physics", "Chemistry"] }),
+    { name: "HSC 2029", mode: "offline", defaultFeeTk: 3500, subjectNames: ["Physics", "Chemistry"] },
+  );
   assert.equal(batchCreateSchema.safeParse({}).success, false);
-  assert.equal(batchCreateSchema.safeParse({ name: "HSC 2029", subjectNames: [], capacity: 40 }).success, false);
+  assert.equal(batchCreateSchema.safeParse({ name: "Science Batch", mode: "offline", defaultFeeTk: 3500, subjectNames: ["Physics"] }).success, false);
+  assert.equal(batchCreateSchema.safeParse({ name: "HSC 2029", mode: "offline", defaultFeeTk: 3500, subjectNames: [] }).success, false);
 });
 
 test("batch management requires an explicit audited change", () => {
   assert.equal(batchUpdateSchema.parse({ batchId: id, status: "active", reason: "Approved batch activation" }).status, "active");
   assert.deepEqual(batchUpdateSchema.parse({ batchId: id, subjectNames: ["Physics"], reason: "Update batch subjects" }).subjectNames, ["Physics"]);
+  assert.equal(batchUpdateSchema.parse({ batchId: id, mode: "online", defaultFeeTk: 4000, reason: "Update batch delivery and fee" }).defaultFeeTk, 4000);
   assert.equal(batchUpdateSchema.safeParse({ batchId: id, reason: "No actual batch change" }).success, false);
   assert.equal(batchUpdateSchema.safeParse({ batchId: id, status: "deleted", reason: "Invalid destructive state" }).success, false);
 });

@@ -14,6 +14,9 @@ type BatchStatus = "planned" | "active" | "closed" | "archived";
 type Batch = {
   id: string;
   name: string;
+  mode: "online" | "offline";
+  defaultFeeTk: number;
+  studentIdGroup: number;
   subjects: Array<{ id: string; name: string; nameBn: string; code: string }>;
   activeEnrollmentCount: number;
   status: BatchStatus;
@@ -32,6 +35,8 @@ const statusLabel: Record<BatchStatus, string> = {
 export function AdminBatchManager() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [name, setName] = useState("");
+  const [mode, setMode] = useState<"online" | "offline">("offline");
+  const [defaultFeeTk, setDefaultFeeTk] = useState(0);
   const [subjects, setSubjects] = useState<CatalogSubject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [activeEnrollments, setActiveEnrollments] = useState<ActiveEnrollment[]>([]);
@@ -70,6 +75,8 @@ export function AdminBatchManager() {
   function startCreate() {
     setEditing(undefined);
     setName("");
+    setMode("offline");
+    setDefaultFeeTk(0);
     setSelectedSubjects([]);
     setOpen(true);
   }
@@ -77,6 +84,8 @@ export function AdminBatchManager() {
   function startEdit(batch: Batch) {
     setEditing(batch);
     setName(batch.name);
+    setMode(batch.mode);
+    setDefaultFeeTk(batch.defaultFeeTk);
     setSelectedSubjects(batch.subjects.map((subject) => subject.name));
     setOpen(true);
   }
@@ -85,6 +94,8 @@ export function AdminBatchManager() {
     setOpen(false);
     setEditing(undefined);
     setName("");
+    setMode("offline");
+    setDefaultFeeTk(0);
     setSelectedSubjects([]);
   }
 
@@ -115,7 +126,7 @@ export function AdminBatchManager() {
     if (!addingToBatch || !selectedStudent) return;
     setSaving(true);
     setMessage("");
-    const result = await apiFetch("/api/enrollments", {
+    const result = await apiFetch<{ studentCode?: string }>("/api/enrollments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -123,7 +134,7 @@ export function AdminBatchManager() {
         studentId: selectedStudent.id,
         batchId: addingToBatch.id,
         subjectIds: addingToBatch.subjects.map((subject) => subject.id),
-        feeTk: 0,
+        feeTk: addingToBatch.defaultFeeTk,
         reason: "Admin added student from Batch management",
       }),
     });
@@ -132,7 +143,8 @@ export function AdminBatchManager() {
       setMessage(getApiErrorMessage(result.payload, "Student could not be added to this batch."));
     } else {
       setError(false);
-      setMessage(`${selectedStudent.name} was added with this batch's default subjects and fee.`);
+      const assignedCode = result.payload.data.studentCode ?? selectedStudent.studentCode;
+      setMessage(`${selectedStudent.name} was added. Permanent Student ID: ${assignedCode ?? "assigned"}.`);
       closeAddStudent();
       await load();
     }
@@ -148,11 +160,15 @@ export function AdminBatchManager() {
       ? {
         batchId: editing.id,
         name,
+        mode,
+        defaultFeeTk,
         subjectNames: selectedSubjects,
         reason: "অ্যাডমিন কর্তৃক Batch-এর নাম ও বিষয় হালনাগাদ",
       }
       : {
         name,
+        mode,
+        defaultFeeTk,
         subjectNames: selectedSubjects,
       };
 
@@ -246,6 +262,10 @@ export function AdminBatchManager() {
               placeholder="যেমন: HSC 2029"
             />
           </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="batch-mode">Batch type</Label><select id="batch-mode" value={mode} onChange={(event) => setMode(event.target.value as "online" | "offline")} className="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"><option value="offline">Offline</option><option value="online">Online</option></select></div>
+            <div className="space-y-2"><Label htmlFor="batch-default-fee">Default monthly fee (৳)</Label><Input id="batch-default-fee" type="number" min={0} max={10000000} required value={defaultFeeTk} onChange={(event) => setDefaultFeeTk(Number(event.target.value))} /></div>
+          </div>
           <fieldset className="mt-5"><legend className="text-sm font-bold text-primary">Batch-এর বিষয়সমূহ</legend><p className="mt-1 text-xs text-muted">ভর্তির সময় এগুলো শুরুতে নির্বাচিত থাকবে; শিক্ষার্থী অনুযায়ী বিষয় ও ফি পরিবর্তন করা যাবে।</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{subjects.map((subject) => { const checked = selectedSubjects.includes(subject.name); return <button key={subject.code} type="button" aria-pressed={checked} onClick={() => setSelectedSubjects((current) => checked ? current.filter((name) => name !== subject.name) : [...current, subject.name])} className={cn("flex items-center gap-2 rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><span className="text-sm font-bold text-primary">{subject.nameBn || subject.name}</span></button>; })}</div></fieldset>
           <Button className="mt-5 w-full" type="submit" disabled={saving || selectedSubjects.length === 0}>
             {saving ? "Saving…" : editing ? "Update Batch" : "Create Batch"}
@@ -265,7 +285,7 @@ export function AdminBatchManager() {
             {availableStudents.map((student) => <button key={student.id} type="button" onClick={() => setSelectedStudent(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
             {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
           </div>
-          {selectedStudent && <p className="mt-4 rounded-xl bg-secondary p-3 text-sm text-primary"><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a 0 ৳ default fee.</p>}
+          {selectedStudent && <div className="mt-4 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><p className="mt-2 font-bold">{selectedStudent.studentCode ? `Permanent Student ID: ${selectedStudent.studentCode}` : `A permanent ID in the ${addingToBatch.name.match(/(?:19|20)\d{2}/)?.[0]?.slice(-2) ?? "year"}00${addingToBatch.studentIdGroup ?? 1}… series will be assigned automatically after enrollment.`}</p></div>}
           <Button className="mt-5 w-full" type="submit" disabled={saving || !selectedStudent}>{saving ? "Adding…" : "Add Student"}</Button>
         </form>
       )}
@@ -287,7 +307,7 @@ export function AdminBatchManager() {
                   </span>
                   <div>
                     <h3 className="font-black text-primary">{batch.name}</h3>
-                    <p className="text-xs text-muted">{batch.activeEnrollmentCount} শিক্ষার্থী</p>
+                    <p className="text-xs text-muted">{batch.activeEnrollmentCount} শিক্ষার্থী · {batch.mode === "online" ? "Online" : "Offline"} · {batch.defaultFeeTk.toLocaleString("en-US")} ৳/মাস</p>
                   </div>
                 </div>
                 <span
@@ -303,6 +323,7 @@ export function AdminBatchManager() {
                   {statusLabel[batch.status]}
                 </span>
               </div>
+              {batch.subjects.length > 0 && <p className="mt-3 text-xs text-muted">Default subjects: {batch.subjects.map((subject) => subject.nameBn || subject.name).join(" • ")}</p>}
               <div className="mt-4 flex flex-wrap gap-2">
                 {(batch.status === "planned" || batch.status === "active") && (
                   <Button size="sm" variant="outline" onClick={() => startEdit(batch)}>

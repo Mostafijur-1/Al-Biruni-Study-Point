@@ -116,6 +116,8 @@ try {
     branchId: String(branch._id),
     academicSessionId: String(academicSession._id),
     studentClass: "class-9" as const,
+    mode: "offline" as const,
+    defaultFeeTk: 3500,
     subjectNames: ["Physics"],
     startsAt: new Date("2026-01-01T00:00:00.000Z"),
     endsAt: new Date("2026-12-31T23:59:59.000Z"),

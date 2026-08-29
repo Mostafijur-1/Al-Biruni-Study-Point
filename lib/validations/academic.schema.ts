@@ -3,6 +3,7 @@ import { z } from "zod";
 const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid record identifier.");
 const studentClassSchema = z.enum(["class-9", "class-10", "class-11", "class-12"]);
 const mutationReasonSchema = z.string().trim().min(4).max(500);
+const batchNameSchema = z.string().trim().min(2).max(120).regex(/\b(?:19|20)\d{2}\b/, "Batch name must contain a four-digit year for permanent Student IDs.");
 
 export const batchListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
@@ -14,14 +15,18 @@ export const batchListQuerySchema = z.object({
 });
 
 export const batchCreateSchema = z.object({
-  name: z.string().trim().min(2).max(120),
+  name: batchNameSchema,
+  mode: z.enum(["online", "offline"]),
+  defaultFeeTk: z.coerce.number().int().min(0).max(10_000_000),
   subjectNames: z.array(z.string().trim().min(1).max(100)).min(1).max(30),
 }).strict();
 
 export const batchUpdateSchema = z
   .object({
     batchId: objectIdSchema,
-    name: z.string().trim().min(2).max(120).optional(),
+    name: batchNameSchema.optional(),
+    mode: z.enum(["online", "offline"]).optional(),
+    defaultFeeTk: z.coerce.number().int().min(0).max(10_000_000).optional(),
     subjectNames: z.array(z.string().trim().min(1).max(100)).min(1).max(30).optional(),
     status: z.enum(["planned", "active", "closed", "archived"]).optional(),
     reason: mutationReasonSchema,

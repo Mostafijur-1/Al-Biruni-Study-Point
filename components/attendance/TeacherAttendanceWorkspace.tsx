@@ -22,6 +22,7 @@ type RecordRow = {
   id: string;
   enrollmentId: string;
   studentName: string;
+  studentCode?: string;
   studentClass?: string;
   status: Status;
   minutesLate?: number;
@@ -260,7 +261,7 @@ export function TeacherAttendanceWorkspace() {
         </div>
         <div className="space-y-2">{records.map((row) => (
           <div key={row.enrollmentId} className="grid gap-3 rounded-xl border border-border p-3 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div><p className="font-bold text-primary">{row.studentName}</p><p className="text-xs text-muted">{row.studentClass}</p></div>
+            <div><p className="font-bold text-primary">{row.studentName}</p><p className="text-xs text-muted">ID {row.studentCode ?? "Unassigned"} · {row.studentClass}</p></div>
             <div role="group" aria-label={`${row.studentName} attendance`} className="grid grid-cols-4 gap-1">{statusOptions.map((option) => (
               <button type="button" key={option.value} title={option.fullLabel} aria-label={`${row.studentName}: ${option.fullLabel}`} disabled={controlsDisabled} onClick={() => mark(row.enrollmentId, option.value)} className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm font-black", row.status === option.value ? "border-primary bg-primary text-white" : "border-border bg-white text-muted", option.value === "absent" && row.status === option.value && "border-red-600 bg-red-600")}>{option.label}</button>
             ))}</div>

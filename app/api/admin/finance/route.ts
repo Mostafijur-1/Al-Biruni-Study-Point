@@ -83,11 +83,11 @@ export async function GET(request: NextRequest) {
         approvalStatus: "approved",
         $and: [
           { $or: accessFilters },
-          ...(search ? [{ $or: [{ name: search }, { reference: search }, { phone: search }] }] : []),
+          ...(search ? [{ $or: [{ name: search }, { studentCode: search }, { reference: search }, { phone: search }] }] : []),
         ],
-      }).select("name reference phone email role studentClass isActive").sort({ role: 1, name: 1 }).limit(500).lean(),
+      }).select("name studentCode reference phone email role studentClass isActive").sort({ role: 1, name: 1 }).limit(500).lean(),
       User.find({ approvalStatus: "approved", $or: commonFinanceFilters })
-        .select("name reference phone email role studentClass isActive")
+        .select("name studentCode reference phone email role studentClass isActive")
         .sort({ role: 1, name: 1 })
         .lean(),
     ]);
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       const profile = profileMap.get(String(user._id));
       const payment = paymentMap.get(String(user._id));
       return {
-        user: { id: String(user._id), name: user.name, reference: user.reference, phone: user.phone, email: user.email, role, studentClass: user.studentClass, isActive: user.isActive, ...(role === "student" && studentBatchMap.get(String(user._id)) ? { batch: { id: studentBatchMap.get(String(user._id)), name: batchMap.get(studentBatchMap.get(String(user._id))!)?.name } } : {}) },
+        user: { id: String(user._id), name: user.name, studentCode: user.studentCode, reference: user.reference, phone: user.phone, email: user.email, role, studentClass: user.studentClass, isActive: user.isActive, ...(role === "student" && studentBatchMap.get(String(user._id)) ? { batch: { id: studentBatchMap.get(String(user._id)), name: batchMap.get(studentBatchMap.get(String(user._id))!)?.name } } : {}) },
         profile: { subjects: profile?.subjects ?? fallback.subjects, defaultAmountTk: profile?.defaultAmountTk ?? fallback.defaultAmountTk, configured: Boolean(profile) },
         payment: { amountTk: payment?.amountTk ?? profile?.defaultAmountTk ?? fallback.defaultAmountTk, status: payment?.status ?? "due", clearedAt: payment?.clearedAt?.toISOString(), note: payment?.note, saved: Boolean(payment) },
       };

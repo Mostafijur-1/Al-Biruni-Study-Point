@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
     const sheet = sheetId ? await AttendanceSheet.findById(objectId.parse(sheetId)) : await AttendanceSheet.findOne({ classSessionId: objectId.parse(classSessionId) });
     if (!sheet) return success({ sheet: null, records: [] });
     if (!canManageAttendance(actor.role, actor.id, String(sheet.teacherId))) throw new ApiRouteError("Attendance sheet not found.", 404);
-    const records = await AttendanceRecord.find({ sheetId: sheet._id }).select("enrollmentId studentNameSnapshot studentClassSnapshot status minutesLate").sort({ studentNameSnapshot: 1 }).lean();
-    return success({ sheet: serializeSheet(sheet), records: records.map((record) => ({ id: String(record._id), enrollmentId: String(record.enrollmentId), studentName: record.studentNameSnapshot, studentClass: record.studentClassSnapshot, status: record.status, minutesLate: record.minutesLate })) });
+    const records = await AttendanceRecord.find({ sheetId: sheet._id }).select("enrollmentId studentNameSnapshot studentCodeSnapshot studentClassSnapshot status minutesLate").sort({ studentNameSnapshot: 1 }).lean();
+    return success({ sheet: serializeSheet(sheet), records: records.map((record) => ({ id: String(record._id), enrollmentId: String(record.enrollmentId), studentName: record.studentNameSnapshot, studentCode: record.studentCodeSnapshot, studentClass: record.studentClassSnapshot, status: record.status, minutesLate: record.minutesLate })) });
   } catch (error) { return handleApiError(error); }
 }
 

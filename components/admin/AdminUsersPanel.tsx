@@ -22,6 +22,7 @@ type AdminUserRow = {
   isActive: boolean;
   approvalStatus: ApprovalStatus;
   reference?: string;
+  studentCode?: string;
   isAbspMember: boolean;
   teacherDomain?: {
     isAll: boolean;
@@ -104,7 +105,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
 
   const displayedUsers = users.filter((u) => {
     if (role === "student" && studentSearchGlobalRef) {
-      return u.reference?.toLowerCase().includes(studentSearchGlobalRef.toLowerCase());
+      return `${u.studentCode ?? ""} ${u.reference ?? ""}`.toLowerCase().includes(studentSearchGlobalRef.toLowerCase());
     }
     return true;
   });
@@ -238,7 +239,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
       {role === "student" && (
         <div className="flex max-w-md gap-2 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-sm)]">
           <Input
-            placeholder={"রেফারেন্স দিয়ে ফিল্টার করুন..."}
+            placeholder={"Student ID বা reference দিয়ে খুঁজুন..."}
             value={studentSearchGlobalRef}
             onChange={(e) => setStudentSearchGlobalRef(e.target.value)}
             className="flex-1"
@@ -411,6 +412,11 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                     >
                       {user.isAbspMember ? "ABSP থেকে বাদ দিন" : "ABSP শিক্ষক করুন"}
                     </Button>
+                  )}
+                  {role === "student" && (
+                    <p className="mt-1.5 w-fit rounded border border-sky-200/60 bg-sky-50 px-2 py-0.5 font-mono text-xs font-bold text-primary">
+                      Student ID: {user.studentCode ?? "ব্যাচে ভর্তি হলে স্বয়ংক্রিয় হবে"}
+                    </p>
                   )}
                   {role === "teacher" && (
                     <Button

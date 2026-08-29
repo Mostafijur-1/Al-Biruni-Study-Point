@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
+import { BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -15,8 +15,37 @@ type HomeSectionProps = {
   brand: Dictionary["brand"];
 };
 
+type PublicBatch = {
+  id: string;
+  name: string;
+  mode: "online" | "offline";
+  defaultFeeTk: number;
+  capacity?: number;
+  activeEnrollmentCount: number;
+  startsAt?: string;
+  subjects: Array<{ id: string; name: string; nameBn?: string }>;
+};
+
 export function HomeSection({ dict, brand }: HomeSectionProps) {
     const [videoLoaded, setVideoLoaded] = useState(false);
+    const [publicBatches, setPublicBatches] = useState<PublicBatch[]>([]);
+    const [batchesLoading, setBatchesLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10_000);
+    void fetch("/api/public/batches?limit=4", { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Batch request failed");
+        return response.json() as Promise<{ success: true; data: { batches: PublicBatch[] } }>;
+      })
+      .then((payload) => setPublicBatches(payload.data.batches))
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setPublicBatches([]);
+      })
+      .finally(() => setBatchesLoading(false));
+    return () => { window.clearTimeout(timeout); controller.abort(); };
+  }, []);
 
   return (
     <>
@@ -219,7 +248,7 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
 
               <section className="relative flex flex-col items-center justify-center overflow-hidden bg-linear-to-br from-red-600 via-brand-red to-[#f12a12] p-6 text-center text-white sm:p-8" aria-label="Combo offer price">
                 <span className="absolute -right-14 -top-14 size-40 rounded-full bg-white/10" aria-hidden />
-                <p className="relative text-xs font-bold">{dict.hsc2028.combo.regularFeeLabel}</p>
+                <p className="relative text-xs font-bold">নিয়মিত ফি</p>
                 <p className="relative mt-0.5 text-2xl font-black line-through decoration-2 decoration-white/80">{dict.hsc2028.combo.regularFee}</p>
                 <div className="relative my-3 w-full border-t border-dashed border-white/60" />
                 <p className="relative text-xs font-bold">অফার মূল্য</p>
@@ -231,10 +260,10 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
             <footer className="grid items-center gap-3 bg-brand-yellow px-5 py-3 text-primary sm:grid-cols-[1fr_auto] sm:px-7">
               <p className="flex items-center justify-center gap-2 text-sm font-black sm:justify-start">
                 <Percent className="size-5" strokeWidth={3} />
-                সাশ্রয় 500 ৳ প্রতি মাসে!
+                সাশ্রয় 500 ৳ প্রতি মাসে!
               </p>
               <Link href={"/contact"} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-black text-primary-foreground shadow-md transition hover:scale-[1.02] hover:bg-primary/90">
-                এখনই ভর্তি হন · 10 October পর্যন্ত <ArrowRight className="size-4" />
+                অফার চলবে 10 October পর্যন্ত
               </Link>
             </footer>
           </div>
@@ -257,9 +286,13 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
           </div>
 
           <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-2">
-            {dict.batches.sample.map((batch) => (
+            {batchesLoading ? (
+              [0, 1].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl bg-card" />)
+            ) : publicBatches.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-muted md:col-span-2">এখন কোনো সক্রিয় ব্যাচ নেই।</p>
+            ) : publicBatches.map((batch) => (
               <article
-                key={batch.name}
+                key={batch.id}
                 className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -274,13 +307,15 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                     {batch.mode === "online" ? dict.batches.online : dict.batches.offline}
                   </span>
                   <span className="text-xs font-medium text-muted">
-                    {dict.batches.seats}: {batch.seats}
+                    {dict.batches.seats}: {batch.capacity ? `${batch.activeEnrollmentCount}/${batch.capacity}` : batch.activeEnrollmentCount}
                   </span>
                 </div>
                 <h3 className="mt-3 text-base font-bold text-foreground sm:text-lg">{batch.name}</h3>
                 <p className="mt-1 text-sm text-muted">
-                  {dict.batches.schedule}: {batch.schedule}
+                  {dict.batches.schedule}: {batch.startsAt ? new Date(batch.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "শিগগির জানানো হবে"}
                 </p>
+                <p className="mt-2 text-sm font-bold text-primary">{batch.defaultFeeTk.toLocaleString("en-US")} ৳ / মাস</p>
+                {batch.subjects.length > 0 && <p className="mt-1 text-xs text-muted">{batch.subjects.map((subject) => subject.nameBn || subject.name).join(" • ")}</p>}
               </article>
             ))}
           </div>

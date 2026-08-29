@@ -22,6 +22,8 @@ test("student codes are assigned only when absent and attendance is admin-wide",
   const userModel = await readFile("lib/db/models/User.ts", "utf8");
   const attendanceApi = await readFile("app/api/admin/attendance/route.ts", "utf8");
   const register = await readFile("components/attendance/AdminAttendanceRegister.tsx", "utf8");
+  const batchManager = await readFile("components/batches/AdminBatchManager.tsx", "utf8");
+  const teacherAttendance = await readFile("components/attendance/TeacherAttendanceWorkspace.tsx", "utf8");
 
   assert.match(enrollment, /if \(input\.student\.studentCode\) return/);
   assert.match(enrollment, /StudentCodeCounter\.findOneAndUpdate/);
@@ -29,6 +31,9 @@ test("student codes are assigned only when absent and attendance is admin-wide",
   assert.match(userModel, /unique: true, sparse: true/);
   assert.match(attendanceApi, /requireAuth\(request, \["admin"\]\)/);
   assert.match(attendanceApi, /backfill-student-codes/);
+  assert.match(batchManager, /Permanent Student ID/);
+  assert.match(batchManager, /defaultFeeTk/);
+  assert.match(teacherAttendance, /row\.studentCode/);
   for (const column of ["Student ID", "Student name", "Date", "Attendance status"]) {
     assert.match(register, new RegExp(column));
   }

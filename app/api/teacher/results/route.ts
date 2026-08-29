@@ -14,6 +14,7 @@ import type { StudentClass } from "@/types";
 type PopulatedStudent = {
   _id: Types.ObjectId;
   name?: string;
+  studentCode?: string;
   phone?: string;
   studentClass?: StudentClass;
   schoolCollege?: string;
@@ -184,7 +185,7 @@ export async function GET(request: NextRequest) {
     const total = await PracticeAttempt.countDocuments(attemptQuery);
 
     const attempts = await PracticeAttempt.find(attemptQuery)
-      .populate("student", "name phone studentClass schoolCollege")
+      .populate("student", "name studentCode phone studentClass schoolCollege")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -200,6 +201,7 @@ export async function GET(request: NextRequest) {
         student: {
           id: student._id.toString(),
           name: student?.name ?? "Unknown",
+          studentCode: student?.studentCode ?? null,
           phone: student?.phone ?? null,
           class: student?.studentClass ?? null,
           level: student?.studentClass ? getSchoolLevel(student.studentClass) : null,

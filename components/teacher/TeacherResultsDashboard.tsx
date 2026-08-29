@@ -35,6 +35,7 @@ type StudentResult = {
   student: {
     id: string;
     name: string;
+    studentCode: string | null;
     phone: string | null;
     class: string | null;
     level: "ssc" | "hsc" | null;
@@ -239,6 +240,7 @@ function ResultRow({
                 <p className="font-semibold text-primary truncate max-w-[150px] sm:max-w-none">
                   {result.student.name}
                 </p>
+                <span className="font-mono text-[10px] font-bold text-muted">ID {result.student.studentCode ?? "Unassigned"}</span>
                 {result.student.class && (
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-accent uppercase shrink-0">
                     {CLASS_LABELS[result.student.class] ?? result.student.class}

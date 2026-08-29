@@ -25,6 +25,9 @@ function serializeBatch(batch: {
   academicSessionId?: unknown;
   code?: string;
   name: string;
+  mode?: "online" | "offline";
+  defaultFeeTk?: number;
+  studentIdGroup?: number;
   studentClass?: string;
   capacity?: number;
   activeEnrollmentCount: number;
@@ -39,6 +42,9 @@ function serializeBatch(batch: {
     academicSessionId: batch.academicSessionId ? String(batch.academicSessionId) : undefined,
     code: batch.code,
     name: batch.name,
+    mode: batch.mode ?? "offline",
+    defaultFeeTk: batch.defaultFeeTk ?? 0,
+    studentIdGroup: batch.studentIdGroup ?? 1,
     studentClass: batch.studentClass,
     capacity: batch.capacity,
     activeEnrollmentCount: batch.activeEnrollmentCount,
@@ -148,6 +154,8 @@ export async function POST(request: NextRequest) {
       request,
       actor,
       name: parsed.name,
+      mode: parsed.mode,
+      defaultFeeTk: parsed.defaultFeeTk,
       subjectNames: parsed.subjectNames,
       reason: "অ্যাডমিন কর্তৃক নতুন ব্যাচ তৈরি",
     });
