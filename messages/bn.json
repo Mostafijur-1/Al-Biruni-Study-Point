@@ -20,7 +20,7 @@
       "classStartLabel": "ক্লাস শুরু",
       "classStartVal": "01 October, 2026",
       "specialOfferLabel": "বিশেষ অফার",
-      "specialOfferVal": "10 October-এর মধ্যে ভর্তি—মাসে ৳500 ছাড়!",
+      "specialOfferVal": "10 October-এর মধ্যে ভর্তি—মাসে 500 ৳ ছাড়!",
       "ctaCourses": "কোর্স দেখো",
       "ctaExplore": "MCQ TEST",
       "ctaRegister": "ভর্তি হোন"
@@ -34,7 +34,7 @@
     },
     "hsc2028": {
       "title": "HSC 2028 নতুন অফলাইন ব্যাচ",
-      "subtitle": "ক্লাস শুরু 01 October, 2026 • আগাম ভর্তিতে মাসে ৳500 ছাড়",
+      "subtitle": "ক্লাস শুরু 01 October, 2026 • আগাম ভর্তিতে মাসে 500 ৳ ছাড়",
       "physics": {
         "title": "Physics",
         "schedule": "সপ্তাহে ২ টি ক্লাস",
@@ -58,11 +58,11 @@
       "combo": {
         "title": "সবগুলো সাবজেক্ট প্যাকেজ",
         "badge": "কম্বো অফার",
-        "description": "Regular ৳4,000/month. 10 October-এর মধ্যে ভর্তি হলে মাত্র ৳3,500—প্রতি মাসে ৳500 সাশ্রয়!",
+        "description": "Physics, Chemistry, Higher Math ও ICT—এক প্যাকেজে পূর্ণ প্রস্তুতি, সঙ্গে বিশেষ মাসিক ছাড়।",
         "regularFeeLabel": "রেগুলার মাসিক ফি",
-        "regularFee": "৳4,000",
+        "regularFee": "4,000 ৳",
         "offerFeeLabel": "10 October-এর মধ্যে ভর্তি",
-        "offerFee": "৳3,500",
+        "offerFee": "3,500 ৳",
         "cta": "ভর্তি হতে যোগাযোগ করো"
       }
     },

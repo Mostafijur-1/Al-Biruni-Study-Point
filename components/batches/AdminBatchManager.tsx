@@ -265,7 +265,7 @@ export function AdminBatchManager() {
             {availableStudents.map((student) => <button key={student.id} type="button" onClick={() => setSelectedStudent(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
             {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
           </div>
-          {selectedStudent && <p className="mt-4 rounded-xl bg-secondary p-3 text-sm text-primary"><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a ৳0 default fee.</p>}
+          {selectedStudent && <p className="mt-4 rounded-xl bg-secondary p-3 text-sm text-primary"><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a 0 ৳ default fee.</p>}
           <Button className="mt-5 w-full" type="submit" disabled={saving || !selectedStudent}>{saving ? "Adding…" : "Add Student"}</Button>
         </form>
       )}

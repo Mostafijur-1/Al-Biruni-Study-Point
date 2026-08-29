@@ -199,9 +199,16 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
           </div>
 
           {/* Special Combo Package Card */}
-          <div className="mt-8 overflow-hidden rounded-3xl border-2 border-brand-yellow bg-linear-to-br from-brand-yellow/[0.08] via-transparent to-brand-blue/[0.08] shadow-md transition duration-300 hover:shadow-lg">
+          <div className="relative mt-8 overflow-hidden rounded-3xl border-2 border-brand-yellow bg-linear-to-br from-brand-yellow/[0.12] via-card to-brand-blue/[0.1] shadow-[0_18px_55px_-24px_rgba(220,38,38,0.45)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_65px_-24px_rgba(220,38,38,0.55)]">
+            <div className="absolute right-0 top-0 z-10 min-w-44 overflow-hidden rounded-bl-[2rem] bg-linear-to-br from-brand-red via-red-600 to-orange-500 px-5 py-4 text-center text-white shadow-xl ring-4 ring-brand-yellow/40" aria-label="500 taka discount every month until 10 October">
+              <span className="absolute -right-5 -top-7 size-20 rounded-full bg-white/15" aria-hidden />
+              <span className="absolute -bottom-8 -left-5 size-20 rounded-full bg-brand-yellow/20" aria-hidden />
+              <p className="relative text-3xl font-black leading-none tracking-tight sm:text-4xl">500 ৳</p>
+              <p className="relative mt-1 text-xs font-black uppercase tracking-[0.2em] text-brand-yellow">মাসিক ছাড়</p>
+              <p className="relative mt-1.5 border-t border-white/25 pt-1.5 text-[10px] font-bold">শুধু 10 October পর্যন্ত</p>
+            </div>
             <div className="grid md:grid-cols-[1.4fr_1fr]">
-              <div className="p-6 sm:p-8 md:p-10 flex flex-col justify-center">
+              <div className="flex flex-col justify-center p-6 pt-36 sm:p-8 sm:pt-36 md:p-10 md:pt-10">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full bg-brand-yellow px-3 py-1 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
                     {dict.hsc2028.combo.badge}
@@ -222,16 +229,17 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                 </div>
               </div>
 
-              <div className="bg-primary/[0.02] border-t-2 border-brand-yellow/20 md:border-t-0 md:border-l-2 md:border-brand-yellow/20 p-6 sm:p-8 md:p-10 flex flex-col justify-center items-center text-center">
-                <div className="space-y-1">
+              <div className="flex flex-col items-center justify-center border-t-2 border-brand-yellow/20 bg-primary/[0.025] p-6 text-center sm:p-8 md:border-l-2 md:border-t-0 md:p-10 md:pt-36">
+                <div className="w-full rounded-2xl border border-border/70 bg-white/70 p-4 shadow-xs backdrop-blur-sm">
                   <p className="text-xs font-bold text-muted uppercase tracking-wider">{dict.hsc2028.combo.regularFeeLabel}</p>
-                  <p className="text-lg font-bold text-muted/50 line-through">{dict.hsc2028.combo.regularFee} / মাস</p>
+                  <p className="mt-1 text-xl font-bold text-muted/55 line-through decoration-2 decoration-brand-red/70">{dict.hsc2028.combo.regularFee} / মাস</p>
                 </div>
-                <div className="mt-5 space-y-1">
-                  <p className="text-xs font-extrabold text-brand-red uppercase tracking-wider">{dict.hsc2028.combo.offerFeeLabel}</p>
-                  <p className="text-3xl sm:text-4xl font-black text-primary tracking-tight mt-0.5">
+                <div className="mt-3 w-full rounded-2xl border-2 border-brand-yellow bg-brand-yellow/15 p-4 shadow-[0_10px_30px_-18px_rgba(11,37,69,0.55)]">
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-brand-red">{dict.hsc2028.combo.offerFeeLabel}</p>
+                  <p className="mt-1 text-4xl font-black tracking-tight text-primary sm:text-5xl">
                     {dict.hsc2028.combo.offerFee} <span className="text-xs font-bold text-muted">/ মাস</span>
                   </p>
+                  <p className="mt-2 text-xs font-black text-emerald-700">প্রতি মাসেই 500 ৳ সাশ্রয়</p>
                 </div>
                 <Link
                   href={"/contact"}
