@@ -64,6 +64,8 @@ export const markAttendanceSchema = z.object({
   }
 });
 
+export const amendAttendanceSchema = markAttendanceSchema;
+
 export const submitAttendanceSchema = z.object({
   version: z.coerce.number().int().min(1),
   reason: reasonSchema,

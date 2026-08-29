@@ -43,3 +43,17 @@ test("teacher attendance is routine-owned and exposes P A L E controls", async (
   }
   assert.equal(config.env?.ATTENDANCE_WRITES_ENABLED, "true");
 });
+
+test("submitted attendance exposes audited teacher amendments", async () => {
+  const service = await readFile("lib/attendance-service.ts", "utf8");
+  const route = await readFile("app/api/attendance/route.ts", "utf8");
+  const workspace = await readFile("components/attendance/TeacherAttendanceWorkspace.tsx", "utf8");
+
+  assert.match(route, /body\.action === "amend"/);
+  assert.match(service, /export async function amendSubmittedAttendance/);
+  assert.match(service, /status: "approved"/);
+  assert.match(service, /attendance\.sheet\.amended/);
+  assert.match(service, /attendance\.correction\.approved/);
+  assert.match(workspace, /Edit attendance/);
+  assert.match(workspace, /action: "amend"/);
+});

@@ -606,6 +606,187 @@ export async function submitAttendance(
   });
 }
 
+export async function amendSubmittedAttendance(
+  input: AuditContext & {
+    sheetId: string;
+    version: number;
+    entries: AttendanceMarkInput[];
+    idempotencyKey: string;
+  },
+) {
+  return runTransaction(async (session) => {
+    const sheet = await AttendanceSheet.findById(input.sheetId).session(session);
+    if (!sheet) throw new ApiRouteError("Attendance sheet was not found.", 404);
+    assertAttendanceManager(input.actor, sheet.teacherId);
+    if (sheet.status !== "submitted") {
+      throw new ApiRouteError("Only submitted attendance can be amended.", 409);
+    }
+
+    const idempotency = await beginIdempotentWorkflow({
+      organizationId: sheet.organizationId,
+      actor: input.actor,
+      workflow: "attendance.amend",
+      targetId: input.sheetId,
+      key: input.idempotencyKey,
+      payload: { sheetId: input.sheetId, version: input.version, entries: input.entries },
+    }, session);
+    if (idempotency.replay) {
+      return { sheet, changedCount: 0, replayed: true };
+    }
+    if (sheet.workflowVersion !== input.version) {
+      throw new ApiRouteError(
+        "Attendance changed in another session. Refresh and try again.",
+        409,
+        "ATTENDANCE_VERSION_CONFLICT",
+        { currentVersion: sheet.workflowVersion },
+      );
+    }
+
+    const records = await AttendanceRecord.find({
+      sheetId: sheet._id,
+      enrollmentId: { $in: input.entries.map((entry) => entry.enrollmentId) },
+    }).session(session);
+    if (records.length !== input.entries.length) {
+      throw new ApiRouteError(
+        "One or more attendance entries are outside the submitted roster.",
+        409,
+        "ATTENDANCE_ROSTER_CHANGED",
+      );
+    }
+
+    const entryByEnrollment = new Map(
+      input.entries.map((entry) => [entry.enrollmentId, entry]),
+    );
+    const changed = records.filter((record) => {
+      const entry = entryByEnrollment.get(String(record.enrollmentId))!;
+      const nextMinutesLate = entry.status === "late" ? entry.minutesLate : undefined;
+      const nextPrivateNote = entry.privateNote === undefined
+        ? record.privateNote
+        : entry.privateNote || undefined;
+      return record.status !== entry.status ||
+        record.minutesLate !== nextMinutesLate ||
+        record.privateNote !== nextPrivateNote;
+    });
+    if (changed.length === 0) {
+      throw new ApiRouteError("The amendment does not change attendance.", 400, "VALIDATION_ERROR");
+    }
+
+    const now = new Date();
+    const actorId = new mongoose.Types.ObjectId(input.actor.id);
+    const corrections = [];
+    for (const record of changed) {
+      const entry = entryByEnrollment.get(String(record.enrollmentId))!;
+      const before = {
+        status: record.status as AttendanceStatus,
+        minutesLate: record.minutesLate,
+        privateNote: record.privateNote,
+      };
+      const after = {
+        status: entry.status,
+        minutesLate: entry.status === "late" ? entry.minutesLate : undefined,
+        privateNote: entry.privateNote === undefined
+          ? record.privateNote
+          : entry.privateNote || undefined,
+      };
+      record.status = after.status;
+      record.minutesLate = after.minutesLate;
+      record.privateNote = after.privateNote;
+      record.workflowVersion += 1;
+      record.correctionVersion += 1;
+      record.markedBy = actorId;
+      record.markedAt = now;
+      await record.save({ session });
+
+      const [correction] = await AttendanceCorrection.create([{
+        organizationId: sheet.organizationId,
+        branchId: sheet.branchId,
+        sheetId: sheet._id,
+        recordId: record._id,
+        sequence: record.correctionVersion,
+        status: "approved",
+        before,
+        after,
+        reason: input.reason,
+        requestedBy: actorId,
+        requestedAt: now,
+        reviewedBy: actorId,
+        reviewedAt: now,
+        reviewReason: input.reason,
+        requestId: getRequestId(input.request),
+      }], { session });
+      corrections.push(correction);
+    }
+
+    const allRecords = await AttendanceRecord.find({ sheetId: sheet._id }).session(session);
+    const summary = calculateAttendanceSummary(allRecords.map((record) => record.status));
+    const updatedSheet = await AttendanceSheet.findOneAndUpdate(
+      { _id: sheet._id, status: "submitted", workflowVersion: input.version },
+      {
+        $inc: { workflowVersion: 1 },
+        $set: {
+          summary: {
+            present: summary.counts.present,
+            absent: summary.counts.absent,
+            late: summary.counts.late,
+            excused: summary.counts.excused,
+            attended: summary.attended,
+            denominator: summary.denominator,
+            percentage: summary.percentage ?? undefined,
+          },
+        },
+      },
+      { new: true, session },
+    );
+    if (!updatedSheet) {
+      throw new ApiRouteError(
+        "Attendance changed in another session. Refresh and try again.",
+        409,
+        "ATTENDANCE_VERSION_CONFLICT",
+      );
+    }
+
+    await AttendanceOutbox.insertMany(corrections.map((correction) => ({
+      eventId: randomUUID(),
+      organizationId: sheet.organizationId,
+      branchId: sheet.branchId,
+      eventType: "attendance.correction.approved" as const,
+      aggregateId: String(sheet._id),
+      payload: {
+        sheetId: String(sheet._id),
+        correctionId: String(correction._id),
+        recordId: String(correction.recordId),
+        sequence: correction.sequence,
+        summary: updatedSheet.summary,
+      },
+      status: "pending" as const,
+      occurredAt: now,
+    })), { session });
+
+    await writeAuditLog({
+      request: input.request,
+      actor: input.actor,
+      organizationId: sheet.organizationId,
+      branchId: sheet.branchId,
+      action: "attendance.sheet.amended",
+      resourceType: "AttendanceSheet",
+      resourceId: sheet._id,
+      reason: input.reason,
+      before: { workflowVersion: input.version, summary: sheet.summary },
+      after: {
+        workflowVersion: updatedSheet.workflowVersion,
+        summary: updatedSheet.summary,
+        changedCount: changed.length,
+        correctionIds: corrections.map((correction) => String(correction._id)),
+      },
+      session,
+    });
+    idempotency.record.status = "completed";
+    idempotency.record.resultResourceId = String(sheet._id);
+    await idempotency.record.save({ session });
+    return { sheet: updatedSheet, changedCount: changed.length, replayed: false };
+  });
+}
+
 export async function requestAttendanceCorrection(
   input: AuditContext & {
     sheetId: string;

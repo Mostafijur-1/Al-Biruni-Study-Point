@@ -5,10 +5,10 @@ import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { ApiRouteError } from "@/lib/api-error";
 import { areAttendanceWritesEnabled, canManageAttendance } from "@/lib/attendance-rules";
-import { getAttendanceIdempotencyKey, markAttendance, openAttendanceSheet, openRoutineAttendanceSheet, submitAttendance } from "@/lib/attendance-service";
+import { amendSubmittedAttendance, getAttendanceIdempotencyKey, markAttendance, openAttendanceSheet, openRoutineAttendanceSheet, submitAttendance } from "@/lib/attendance-service";
 import { AttendanceRecord } from "@/lib/db/models/AttendanceRecord";
 import { AttendanceSheet } from "@/lib/db/models/AttendanceSheet";
-import { markAttendanceSchema, openAttendanceSheetSchema, openRoutineAttendanceSheetSchema, submitAttendanceSchema } from "@/lib/validations/attendance.schema";
+import { amendAttendanceSchema, markAttendanceSchema, openAttendanceSheetSchema, openRoutineAttendanceSheetSchema, submitAttendanceSchema } from "@/lib/validations/attendance.schema";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 
@@ -69,6 +69,11 @@ export async function POST(request: NextRequest) {
       const parsed = submitAttendanceSchema.parse(body);
       const result = await submitAttendance({ request, actor, sheetId, ...parsed, idempotencyKey: getAttendanceIdempotencyKey(request) });
       return success({ sheet: serializeSheet(result.sheet), replayed: result.replayed });
+    }
+    if (body.action === "amend") {
+      const parsed = amendAttendanceSchema.parse(body);
+      const result = await amendSubmittedAttendance({ request, actor, sheetId, ...parsed, idempotencyKey: getAttendanceIdempotencyKey(request) });
+      return success({ sheet: serializeSheet(result.sheet), changedCount: result.changedCount, replayed: result.replayed });
     }
     throw new ApiRouteError("Unsupported attendance action.", 400);
   } catch (error) { return handleApiError(error); }
