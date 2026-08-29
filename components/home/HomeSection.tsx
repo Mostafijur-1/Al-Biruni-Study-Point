@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
-import { PwaInstallPrompt } from "@/components/shared/PwaInstallPrompt";
 import { buttonVariants } from "@/components/ui/button-variants";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
@@ -117,8 +116,6 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
           </div>
         </div>
       </section>
-
-      <PwaInstallPrompt />
 
       <section id="courses" className="py-12 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">

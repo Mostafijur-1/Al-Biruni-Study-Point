@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
+import { PwaInstallPrompt } from "@/components/shared/PwaInstallPrompt";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
@@ -21,6 +22,7 @@ export function Footer({ brand, footer, navigation, contact }: FooterProps) {
           <div className="max-w-sm sm:col-span-2 lg:col-span-1">
             <Logo size="md" />
             <p className="mt-3 text-sm leading-6 text-white/80">{brand.tagline}</p>
+            <PwaInstallPrompt />
           </div>
 
           <nav className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm font-semibold sm:flex sm:flex-col sm:gap-3">
