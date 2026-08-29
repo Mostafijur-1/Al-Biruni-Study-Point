@@ -1,20 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Calendar, Users, Video, MapPin, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
 
 type Batch = {
-  id: string;
   name: string;
-  mode: "online" | "offline";
-  defaultFeeTk: number;
-  capacity?: number;
-  activeEnrollmentCount: number;
-  startsAt?: string;
-  subjects: Array<{ id: string; name: string; nameBn?: string }>;
+  mode: string;
+  schedule: string;
+  seats: string;
 };
 
 type BatchesListProps = {
@@ -25,31 +21,14 @@ type BatchesListProps = {
     online: string;
     seats: string;
     schedule: string;
+    sample: Batch[];
   };
 };
 
 export function BatchesList({ dict }: BatchesListProps) {
     const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
-  const [batches, setBatches] = useState<Batch[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 10_000);
-    void fetch("/api/public/batches?limit=50", { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Batch request failed");
-        return response.json() as Promise<{ success: true; data: { batches: Batch[] } }>;
-      })
-      .then((payload) => setBatches(payload.data.batches))
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) setBatches([]);
-      })
-      .finally(() => setLoading(false));
-    return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, []);
-
-  const filteredBatches = batches.filter(
+  const filteredBatches = dict.sample.filter(
     (batch) => filter === "all" || batch.mode === filter
   );
 
@@ -93,16 +72,14 @@ export function BatchesList({ dict }: BatchesListProps) {
 
       {/* Batches Grid */}
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {loading ? (
-          [0, 1, 2].map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-card" />)
-        ) : filteredBatches.length === 0 ? (
+        {filteredBatches.length === 0 ? (
           <p className="col-span-full rounded-xl border border-border bg-card p-6 text-center text-muted">
             {"কোনো ব্যাচ পাওয়া যায়নি।"}
           </p>
         ) : (
           filteredBatches.map((batch) => (
             <article
-              key={batch.id}
+              key={batch.name}
               className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5"
             >
               <div>
@@ -124,7 +101,7 @@ export function BatchesList({ dict }: BatchesListProps) {
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-muted">
                     <Users className="size-3.5" />
-                    {dict.seats}: {batch.capacity ? `${batch.activeEnrollmentCount}/${batch.capacity}` : batch.activeEnrollmentCount}
+                    {dict.seats}: {batch.seats}
                   </span>
                 </div>
 
@@ -139,11 +116,9 @@ export function BatchesList({ dict }: BatchesListProps) {
                       <span className="font-semibold text-foreground text-xs uppercase tracking-wider block">
                         {dict.schedule}
                       </span>
-                      <span className="mt-0.5 block">{batch.startsAt ? new Date(batch.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "শিগগির জানানো হবে"}</span>
+                      <span className="mt-0.5 block">{batch.schedule}</span>
                     </div>
                   </div>
-                  <p className="text-sm font-black text-primary">{batch.defaultFeeTk.toLocaleString("en-US")} ৳ / মাস</p>
-                  {batch.subjects.length > 0 && <p className="text-xs text-muted">{batch.subjects.map((subject) => subject.nameBn || subject.name).join(" • ")}</p>}
                 </div>
               </div>
 

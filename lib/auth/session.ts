@@ -28,6 +28,7 @@ export function serializeUser(user: {
   approvalStatus?: string;
   schoolCollege?: string;
   reference?: string;
+  studentCode?: string;
   teacherUsage?: {
     imageQuestionUploadMonth?: string;
     imageQuestionUploadCount?: number;
@@ -49,6 +50,7 @@ export function serializeUser(user: {
     approvalStatus: user.approvalStatus,
     schoolCollege: user.schoolCollege,
     reference: user.reference,
+    studentCode: user.studentCode,
     teacherUsage,
   };
 }
@@ -104,6 +106,7 @@ export async function requireAuth(
     studentClass: user.studentClass,
     schoolCollege: user.schoolCollege,
     reference: user.reference,
+    studentCode: user.studentCode,
     teacherUsage: user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined,
   } satisfies SessionUser;
 }

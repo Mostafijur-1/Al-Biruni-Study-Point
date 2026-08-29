@@ -2,7 +2,7 @@ import type { QueryFilter } from "mongoose";
 import { NextRequest } from "next/server";
 
 import { handleApiError, success } from "@/lib/api/response";
-import { assignStudentCodeForBatch, createCoachingEnrollment, transferCoachingEnrollment, updateCoachingSubjects, withdrawCoachingEnrollment } from "@/lib/coaching-enrollment-service";
+import { assignStudentCodeForBatch, createCoachingEnrollment, getStudentCodeContextForBatch, transferCoachingEnrollment, updateCoachingSubjects, withdrawCoachingEnrollment } from "@/lib/coaching-enrollment-service";
 import { areAcademicWritesEnabled } from "@/lib/academic-rules";
 import { ApiRouteError } from "@/lib/api-error";
 import { requireAuth } from "@/lib/auth/session";
@@ -53,6 +53,11 @@ export async function GET(request: NextRequest) {
     const parsed = enrollmentListQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
     );
+
+    if (user.role === "admin" && parsed.batchId && parsed.studentCodeContext === "true") {
+      return success({ studentCodeContext: await getStudentCodeContextForBatch(parsed.batchId) });
+    }
+
     const query: QueryFilter<IBatchEnrollment> = { status: parsed.status };
 
     if (parsed.organizationId) query.organizationId = parsed.organizationId;
@@ -157,6 +162,7 @@ export async function POST(request: NextRequest) {
             batchId: parsed.batchId,
             studentId: parsed.studentId,
             subjectIds: parsed.subjectIds,
+            studentCode: parsed.studentCode,
             effectiveFrom: parsed.effectiveFrom ?? new Date(),
             feeTk: parsed.feeTk,
             reason: parsed.reason,

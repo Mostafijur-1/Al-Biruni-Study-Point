@@ -101,6 +101,16 @@ export function getApiErrorMessage(
   const lowerCode = code.toLowerCase();
   const isBn = hasBangla(fallback) || hasBangla(techMsg);
 
+  if (
+    techMsg &&
+    (lowerMsg.includes("student id") ||
+      lowerMsg.includes("permanent") ||
+      lowerMsg.includes("batch name") ||
+      lowerMsg.includes("already assigned"))
+  ) {
+    return techMsg;
+  }
+
   // 1. Authentication & Authorization
   if (
     lowerCode.includes("auth") ||

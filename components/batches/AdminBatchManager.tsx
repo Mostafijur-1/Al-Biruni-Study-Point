@@ -24,6 +24,17 @@ type Batch = {
 type CatalogSubject = { code: string; name: string; nameBn: string };
 type Student = { id: string; name: string; reference?: string; studentCode?: string; isActive: boolean };
 type ActiveEnrollment = { student: { id: string } };
+type StudentCodeContext = {
+  prefix: string | null;
+  lastStudentCode: string | null;
+  nextStudentCode: string | null;
+  yearRequired: boolean;
+};
+
+function isValidStudentCodeDraft(value: string, prefix: string | null) {
+  if (!/^\d{7}$/.test(value)) return false;
+  return !prefix || value.startsWith(prefix);
+}
 
 const statusLabel: Record<BatchStatus, string> = {
   planned: "পরিকল্পিত",
@@ -51,6 +62,9 @@ export function AdminBatchManager() {
   const [studentQuery, setStudentQuery] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student>();
   const [assigningStudentId, setAssigningStudentId] = useState(false);
+  const [studentCodeContext, setStudentCodeContext] = useState<StudentCodeContext>();
+  const [studentCodeDraft, setStudentCodeDraft] = useState("");
+  const [idFieldLocked, setIdFieldLocked] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,7 +127,18 @@ export function AdminBatchManager() {
     setAddingToBatch(batch);
     setStudentQuery("");
     setSelectedStudent(undefined);
+    setStudentCodeDraft("");
+    setIdFieldLocked(false);
+    setStudentCodeContext(undefined);
     setMessage("");
+    void apiFetch<{ studentCodeContext: StudentCodeContext }>(
+      `/api/enrollments?batchId=${batch.id}&studentCodeContext=true&status=active&limit=1`,
+    ).then((result) => {
+      if (!result.ok || !isApiSuccess(result.payload)) return;
+      const context = result.payload.data.studentCodeContext;
+      setStudentCodeContext(context);
+      if (context.nextStudentCode) setStudentCodeDraft(context.nextStudentCode);
+    });
   }
 
   function closeAddStudent() {
@@ -121,14 +146,15 @@ export function AdminBatchManager() {
     setStudentQuery("");
     setSelectedStudent(undefined);
     setAssigningStudentId(false);
+    setStudentCodeContext(undefined);
+    setStudentCodeDraft("");
+    setIdFieldLocked(false);
   }
 
-  async function selectStudentForBatch(student: Student) {
-    if (!addingToBatch) return;
-    setSelectedStudent(student);
-    setMessage("");
-    if (student.studentCode) return;
+  async function assignStudentCode(student: Student, requestedCode?: string) {
+    if (!addingToBatch) return null;
     setAssigningStudentId(true);
+    setMessage("");
     const result = await apiFetch<{ studentCode: string }>("/api/enrollments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -136,19 +162,57 @@ export function AdminBatchManager() {
         action: "assign-student-code",
         studentId: student.id,
         batchId: addingToBatch.id,
-        reason: "Admin assigned permanent Student ID before batch enrollment",
+        ...(requestedCode ? { studentCode: requestedCode } : {}),
+        reason: requestedCode
+          ? "Admin manually assigned permanent Student ID before batch enrollment"
+          : "Admin assigned permanent Student ID before batch enrollment",
       }),
     });
+    setAssigningStudentId(false);
     if (!result.ok || !isApiSuccess(result.payload)) {
       setError(true);
       setMessage(getApiErrorMessage(result.payload, "Permanent Student ID could not be assigned."));
-    } else {
-      const studentCode = result.payload.data.studentCode;
-      setError(false);
-      setSelectedStudent((current) => current?.id === student.id ? { ...current, studentCode } : current);
-      setStudents((current) => current.map((item) => item.id === student.id ? { ...item, studentCode } : item));
+      return null;
     }
-    setAssigningStudentId(false);
+    const studentCode = result.payload.data.studentCode;
+    setError(false);
+    setSelectedStudent((current) => current?.id === student.id ? { ...current, studentCode } : current);
+    setStudents((current) => current.map((item) => item.id === student.id ? { ...item, studentCode } : item));
+    setStudentCodeDraft(studentCode);
+    setIdFieldLocked(true);
+    void apiFetch<{ studentCodeContext: StudentCodeContext }>(
+      `/api/enrollments?batchId=${addingToBatch.id}&studentCodeContext=true&status=active&limit=1`,
+    ).then((contextResult) => {
+      if (contextResult.ok && isApiSuccess(contextResult.payload)) {
+        setStudentCodeContext(contextResult.payload.data.studentCodeContext);
+      }
+    });
+    return studentCode;
+  }
+
+  async function selectStudentForBatch(student: Student) {
+    if (!addingToBatch) return;
+    setSelectedStudent(student);
+    setMessage("");
+    if (student.studentCode) {
+      setStudentCodeDraft(student.studentCode);
+      setIdFieldLocked(true);
+      return;
+    }
+    setIdFieldLocked(false);
+    setStudentCodeDraft(studentCodeContext?.nextStudentCode ?? "");
+  }
+
+  async function applyManualStudentCode() {
+    if (!selectedStudent || selectedStudent.studentCode || !studentCodeDraft.trim()) return;
+    if (!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)) {
+      setError(true);
+      setMessage(studentCodeContext?.prefix
+        ? `Student ID must be 7 digits and start with ${studentCodeContext.prefix}.`
+        : "Student ID must be a 7-digit number.");
+      return;
+    }
+    await assignStudentCode(selectedStudent, studentCodeDraft.trim());
   }
 
   async function addStudentToBatch(event: FormEvent) {
@@ -156,6 +220,18 @@ export function AdminBatchManager() {
     if (!addingToBatch || !selectedStudent) return;
     setSaving(true);
     setMessage("");
+    let studentCode = selectedStudent.studentCode;
+    const draft = studentCodeDraft.trim();
+    if (!studentCode) {
+      if (!isValidStudentCodeDraft(draft, studentCodeContext?.prefix ?? null)) {
+        setError(true);
+        setMessage(studentCodeContext?.prefix
+          ? `Assign a valid 7-digit Student ID starting with ${studentCodeContext.prefix}.`
+          : "Assign a valid 7-digit Student ID before enrollment.");
+        setSaving(false);
+        return;
+      }
+    }
     const result = await apiFetch<{ studentCode?: string }>("/api/enrollments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -165,6 +241,7 @@ export function AdminBatchManager() {
         batchId: addingToBatch.id,
         subjectIds: addingToBatch.subjects.map((subject) => subject.id),
         feeTk: addingToBatch.defaultFeeTk,
+        ...(studentCode ? {} : { studentCode: draft }),
         reason: "Admin added student from Batch management",
       }),
     });
@@ -173,7 +250,7 @@ export function AdminBatchManager() {
       setMessage(getApiErrorMessage(result.payload, "Student could not be added to this batch."));
     } else {
       setError(false);
-      const assignedCode = result.payload.data.studentCode ?? selectedStudent.studentCode;
+      const assignedCode = result.payload.data.studentCode ?? studentCode;
       setMessage(`${selectedStudent.name} was added. Permanent Student ID: ${assignedCode ?? "assigned"}.`);
       closeAddStudent();
       await load();
@@ -309,14 +386,30 @@ export function AdminBatchManager() {
             <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Add student</p><h3 className="mt-1 text-xl font-black text-primary">{addingToBatch.name}</h3></div>
             <button type="button" aria-label="Close add student form" onClick={closeAddStudent}><X className="size-5 text-muted" /></button>
           </div>
-          <p className="mb-4 text-sm text-muted">Search by Student ID, name, or reference. The exact permanent ID is assigned and shown before enrollment.</p>
+          <p className="mb-4 text-sm text-muted">Search by Student ID, name, or reference. The next ID is filled automatically from the last assigned ID; you can type a different 7-digit ID in the same field.</p>
+          {studentCodeContext && (
+            <div className="mb-4 rounded-xl border border-border bg-secondary/40 p-3 text-xs text-primary">
+              {studentCodeContext.yearRequired ? (
+                <p className="font-bold text-amber-800">This batch name must include a four-digit year (e.g. HSC 2028) before Student IDs can be assigned.</p>
+              ) : (
+                <p>
+                  {studentCodeContext.lastStudentCode
+                    ? <>Last assigned ID: <span className="font-mono font-black">{studentCodeContext.lastStudentCode}</span></>
+                    : "No Student ID has been assigned for this batch prefix yet."}
+                  {studentCodeContext.nextStudentCode && (
+                    <> · Next suggested: <span className="font-mono font-black">{studentCodeContext.nextStudentCode}</span></>
+                  )}
+                </p>
+              )}
+            </div>
+          )}
           <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input autoFocus value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="pl-9" placeholder="Search by Student ID, name, or reference" /></div>
           <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
-            {availableStudents.map((student) => <button key={student.id} type="button" disabled={assigningStudentId} onClick={() => void selectStudentForBatch(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
+            {availableStudents.map((student) => <button key={student.id} type="button" disabled={assigningStudentId} onClick={() => selectStudentForBatch(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
             {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
           </div>
-          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">Permanent Student ID</Label><Input id="assigned-student-id" readOnly value={selectedStudent.studentCode ?? (assigningStudentId ? "Assigning…" : "Assignment failed")} className="font-mono font-black" /></div></div>}
-          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent?.studentCode}>{saving ? "Adding…" : assigningStudentId ? "Assigning Student ID…" : "Add Student"}</Button>
+          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">Permanent Student ID</Label><Input id="assigned-student-id" readOnly={idFieldLocked || assigningStudentId} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={assigningStudentId ? "Assigning…" : studentCodeContext?.nextStudentCode ?? "Enter 7-digit ID"} className="font-mono font-black" inputMode="numeric" pattern="\d{7}" maxLength={7} /><p className="text-xs text-muted">{idFieldLocked ? "This permanent ID is saved on the student profile and used across attendance, finance, and results." : studentCodeContext?.lastStudentCode ? `Last ID was ${studentCodeContext.lastStudentCode}. Keep the suggested ID or type another 7-digit ID starting with ${studentCodeContext.prefix ?? ""}.` : "Type a 7-digit Student ID, or keep the suggested next ID."}</p></div>{!idFieldLocked && selectedStudent && !assigningStudentId && <Button type="button" variant="outline" className="w-full" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>Apply ID</Button>}</div>}
+          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent || (!selectedStudent.studentCode && !isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null))}>{saving ? "Adding…" : assigningStudentId ? "Assigning Student ID…" : "Add Student"}</Button>
         </form>
       )}
 

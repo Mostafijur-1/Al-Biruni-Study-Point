@@ -41,6 +41,7 @@ export const enrollmentListQuerySchema = z.object({
   academicSessionId: objectIdSchema.optional(),
   batchId: objectIdSchema.optional(),
   studentId: objectIdSchema.optional(),
+  studentCodeContext: z.enum(["true", "false"]).optional(),
   status: z.enum(["active", "completed", "withdrawn", "transferred"]).default("active"),
   limit: z.coerce.number().int().min(1).max(200).default(100),
 });
@@ -50,6 +51,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     action: z.literal("assign-student-code"),
     batchId: objectIdSchema,
     studentId: objectIdSchema,
+    studentCode: z.string().trim().regex(/^\d{7}$/, "Student ID must be a 7-digit number.").optional(),
     reason: mutationReasonSchema,
   }),
   z.object({
@@ -57,6 +59,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     batchId: objectIdSchema,
     studentId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
+    studentCode: z.string().trim().regex(/^\d{7}$/, "Student ID must be a 7-digit number.").optional(),
     feeTk: z.coerce.number().int().min(0).max(10_000_000),
     effectiveFrom: z.coerce.date().optional(),
     reason: mutationReasonSchema,

@@ -13,6 +13,7 @@ export type SessionUser = {
   studentClass?: StudentClass;
   schoolCollege?: string;
   reference?: string;
+  studentCode?: string;
   teacherUsage?: {
     imageQuestionUploadMonth: string;
     imageQuestionUploadCount: number;

@@ -13,7 +13,7 @@ import { CoachingEnrollmentSubject } from "./db/models/CoachingEnrollmentSubject
 import { PaymentProfile } from "./db/models/PaymentProfile.ts";
 import { User } from "./db/models/User.ts";
 import { StudentCodeCounter } from "./db/models/StudentCodeCounter.ts";
-import { formatStudentCode, getStudentCodePrefix } from "./student-code.ts";
+import { formatStudentCode, getStudentCodePrefix, isSevenDigitStudentCode, parseStudentCodeSequence, suggestNextFromLastCode, suggestNextStudentCode } from "./student-code.ts";
 
 type AuditInput = { request: NextRequest; actor: SessionUser; reason: string };
 
@@ -113,33 +113,193 @@ async function addSubjectRows(input: {
   );
 }
 
+async function syncStudentCodeCounter(input: {
+  prefix: string;
+  sequence: number;
+  session: ClientSession;
+}) {
+  const counter = await StudentCodeCounter.findOne({ prefix: input.prefix }).session(input.session);
+  if ((counter?.sequence ?? 0) >= input.sequence) return;
+  await StudentCodeCounter.findOneAndUpdate(
+    { prefix: input.prefix },
+    { $set: { sequence: input.sequence }, $setOnInsert: { prefix: input.prefix } },
+    { upsert: true, session: input.session },
+  );
+}
+
+function studentMatchesBatchClass(
+  student: { studentClass?: string },
+  batch: { studentClass?: string },
+) {
+  if (!batch.studentClass || !student.studentClass) return true;
+  return student.studentClass === batch.studentClass;
+}
+
+function codeTakenFilter(studentCode: string, excludeStudentId?: mongoose.Types.ObjectId) {
+  return {
+    ...(excludeStudentId ? { _id: { $ne: excludeStudentId } } : {}),
+    studentCode,
+  };
+}
+
+async function lastSequenceForPrefix(prefix: string, session?: ClientSession) {
+  const counterQuery = StudentCodeCounter.findOne({ prefix });
+  const assignedQuery = User.find({ studentCode: new RegExp(`^${prefix}\\d{2}$`) }).select("studentCode");
+  const [counter, assigned] = await Promise.all([
+    session ? counterQuery.session(session).lean() : counterQuery.lean(),
+    session ? assignedQuery.session(session).lean() : assignedQuery.lean(),
+  ]);
+  const latestSequence = assigned.reduce((max, student) => {
+    const sequence = parseStudentCodeSequence(String(student.studentCode ?? ""), prefix) ?? 0;
+    return Math.max(max, sequence);
+  }, 0);
+  return Math.max(counter?.sequence ?? 0, latestSequence);
+}
+
+async function lastSevenDigitCodeForBatch(batchId: mongoose.Types.ObjectId, session?: ClientSession) {
+  const enrollmentQuery = BatchEnrollment.find({ batchId, status: "active" }).select("studentId");
+  const enrollments = session ? await enrollmentQuery.session(session).lean() : await enrollmentQuery.lean();
+  if (enrollments.length === 0) return null;
+  const studentsQuery = User.find({
+    _id: { $in: enrollments.map((row) => row.studentId) },
+    studentCode: { $nin: [null, ""] },
+  }).select("studentCode");
+  const students = session ? await studentsQuery.session(session).lean() : await studentsQuery.lean();
+  const codes = students
+    .map((student) => String(student.studentCode ?? ""))
+    .filter(isSevenDigitStudentCode)
+    .sort();
+  return codes.at(-1) ?? null;
+}
+
+async function persistNewStudentCode(input: {
+  student: InstanceType<typeof User>;
+  studentCode: string;
+  session: ClientSession;
+}) {
+  const result = await User.collection.updateOne(
+    {
+      _id: input.student._id,
+      $or: [{ studentCode: { $exists: false } }, { studentCode: null }, { studentCode: "" }],
+    },
+    { $set: { studentCode: input.studentCode, updatedAt: new Date() } },
+    { session: input.session },
+  );
+  if (result.matchedCount === 0) {
+    const current = await User.findById(input.student._id).select("studentCode").session(input.session);
+    const currentCode = current?.studentCode == null || current.studentCode === "" ? "" : String(current.studentCode);
+    if (currentCode === input.studentCode) {
+      input.student.studentCode = input.studentCode;
+      return input.studentCode;
+    }
+    if (currentCode) {
+      throw new ApiRouteError("Student already has a permanent ID that cannot be changed.", 409, "CONFLICT");
+    }
+    const retry = await User.collection.updateOne(
+      { _id: input.student._id },
+      { $set: { studentCode: input.studentCode, updatedAt: new Date() } },
+      { session: input.session },
+    );
+    if (retry.matchedCount === 0) {
+      throw new ApiRouteError("Permanent Student ID could not be saved.", 500);
+    }
+  }
+  input.student.studentCode = input.studentCode;
+  return input.studentCode;
+}
+
+async function assignManualStudentCode(input: {
+  student: InstanceType<typeof User>;
+  batch: InstanceType<typeof Batch>;
+  requestedCode: string;
+  session: ClientSession;
+}) {
+  if (!isSevenDigitStudentCode(input.requestedCode)) {
+    throw new ApiRouteError("Student ID must be a 7-digit number.", 400, "VALIDATION_ERROR");
+  }
+  const prefix = getStudentCodePrefix(input.batch);
+  if (prefix && !input.requestedCode.startsWith(prefix)) {
+    throw new ApiRouteError(`Student ID must be 7 digits and start with ${prefix}.`, 400, "VALIDATION_ERROR");
+  }
+  const taken = await User.exists(codeTakenFilter(input.requestedCode, input.student._id)).session(input.session);
+  if (taken) throw new ApiRouteError("This Student ID is already assigned to another student.", 409, "CONFLICT");
+  await persistNewStudentCode({
+    student: input.student,
+    studentCode: input.requestedCode,
+    session: input.session,
+  });
+  if (prefix) {
+    const sequence = parseStudentCodeSequence(input.requestedCode, prefix);
+    if (sequence) await syncStudentCodeCounter({ prefix, sequence, session: input.session });
+  }
+  return input.requestedCode;
+}
+
 async function assignPermanentStudentCode(input: {
   student: InstanceType<typeof User>;
   batch: InstanceType<typeof Batch>;
   session: ClientSession;
+  requestedCode?: string;
 }) {
   if (input.student.studentCode) return input.student.studentCode;
+  if (input.requestedCode) {
+    return assignManualStudentCode({
+      student: input.student,
+      batch: input.batch,
+      requestedCode: input.requestedCode,
+      session: input.session,
+    });
+  }
   const prefix = getStudentCodePrefix(input.batch);
   if (!prefix) {
     throw new ApiRouteError(
-      "Batch name or code must contain a four-digit year before students can be enrolled.",
+      "Enter a 7-digit Student ID. Batch name or code should include a four-digit year so the next ID can be suggested automatically.",
       409,
       "CONFLICT",
     );
   }
-  const counter = await StudentCodeCounter.findOneAndUpdate(
-    { prefix },
-    { $inc: { sequence: 1 }, $setOnInsert: { prefix } },
-    { upsert: true, new: true, session: input.session },
-  );
-  input.student.studentCode = formatStudentCode(prefix, counter.sequence);
-  await input.student.save({ session: input.session });
-  return input.student.studentCode;
+  let sequence = (await lastSequenceForPrefix(prefix, input.session)) + 1;
+  while (sequence <= 99) {
+    const candidate = formatStudentCode(prefix, sequence);
+    const taken = await User.exists(codeTakenFilter(candidate)).session(input.session);
+    if (!taken) {
+      await persistNewStudentCode({ student: input.student, studentCode: candidate, session: input.session });
+      await syncStudentCodeCounter({ prefix, sequence, session: input.session });
+      return candidate;
+    }
+    sequence += 1;
+  }
+  throw new ApiRouteError("No remaining Student IDs are available for this batch prefix.", 409, "CONFLICT");
+}
+
+export async function getStudentCodeContextForBatch(batchId: string) {
+  const batch = await Batch.findOne({ _id: batchId, status: { $in: ["planned", "active"] } }).lean();
+  if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
+  const prefix = getStudentCodePrefix(batch);
+  const lastInBatch = await lastSevenDigitCodeForBatch(batch._id);
+  if (!prefix) {
+    return {
+      prefix: null as string | null,
+      lastStudentCode: lastInBatch,
+      nextStudentCode: lastInBatch ? suggestNextFromLastCode(lastInBatch) : null,
+      yearRequired: true,
+    };
+  }
+  const lastSequence = await lastSequenceForPrefix(prefix);
+  const lastFromPrefix = lastSequence > 0 ? formatStudentCode(prefix, lastSequence) : null;
+  const lastStudentCode = [lastFromPrefix, lastInBatch].filter(Boolean).sort().at(-1) ?? null;
+  return {
+    prefix,
+    lastStudentCode,
+    nextStudentCode: suggestNextStudentCode(prefix, lastSequence) ?? (lastStudentCode ? suggestNextFromLastCode(lastStudentCode) : null),
+    yearRequired: false,
+  };
 }
 
 export async function assignStudentCodeForBatch(input: AuditInput & {
   batchId: string;
   studentId: string;
+  studentCode?: string;
 }) {
   if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can assign student IDs.", 403);
   return inTransaction(async (session) => {
@@ -147,19 +307,27 @@ export async function assignStudentCodeForBatch(input: AuditInput & {
     const batch = await Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session);
     if (!student) throw new ApiRouteError("Active student not found.", 404);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
-    if (batch.studentClass && student.studentClass !== batch.studentClass) {
+    if (!studentMatchesBatchClass(student, batch)) {
       throw new ApiRouteError("Student class does not match the batch class.", 409);
     }
-    const existingCode = student.studentCode;
-    const studentCode = await assignPermanentStudentCode({ student, batch, session });
-    if (!existingCode) {
-      await writeAuditLog({
-        request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
-        action: "coaching.student-code.assigned", resourceType: "User", resourceId: student._id, reason: input.reason,
-        after: { batchId: String(batch._id), studentCode }, session,
-      });
+    if (student.studentCode) {
+      if (input.studentCode && input.studentCode !== student.studentCode) {
+        throw new ApiRouteError("Student already has a permanent ID that cannot be changed.", 409, "CONFLICT");
+      }
+      return { studentCode: student.studentCode, newlyAssigned: false };
     }
-    return { studentCode, newlyAssigned: !existingCode };
+    const studentCode = await assignPermanentStudentCode({
+      student,
+      batch,
+      session,
+      requestedCode: input.studentCode,
+    });
+    await writeAuditLog({
+      request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
+      action: "coaching.student-code.assigned", resourceType: "User", resourceId: student._id, reason: input.reason,
+      after: { batchId: String(batch._id), studentCode, manual: Boolean(input.studentCode) }, session,
+    });
+    return { studentCode, newlyAssigned: true };
   });
 }
 
@@ -167,6 +335,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
   batchId: string;
   studentId: string;
   subjectIds?: string[];
+  studentCode?: string;
   effectiveFrom: Date;
   feeTk: number;
 }) {
@@ -174,7 +343,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
     const { batch, selectedSubjectIds } = await loadSelection(input.batchId, input.subjectIds, session);
     const student = await User.findOne({ _id: input.studentId, role: "student", isActive: true }).session(session);
     if (!student) throw new ApiRouteError("Active student not found.", 404);
-    if (batch.studentClass && student.studentClass !== batch.studentClass) throw new ApiRouteError("Student class does not match the batch class.", 409);
+    if (!studentMatchesBatchClass(student, batch)) throw new ApiRouteError("Student class does not match the batch class.", 409);
     const effectiveFrom = batch.startsAt && input.effectiveFrom < batch.startsAt
       ? batch.startsAt
       : input.effectiveFrom;
@@ -186,7 +355,12 @@ export async function createCoachingEnrollment(input: AuditInput & {
       status: "active",
     }).session(session);
     if (exists) throw new ApiRouteError("Student already has an active coaching enrollment in this session.", 409);
-    const studentCode = await assignPermanentStudentCode({ student, batch, session });
+    const studentCode = await assignPermanentStudentCode({
+      student,
+      batch,
+      session,
+      requestedCode: input.studentCode,
+    });
     const reserved = await Batch.findOneAndUpdate(
       { _id: batch._id, status: { $in: ["planned", "active"] }, ...(batch.capacity ? { $or: [{ activeEnrollmentCount: { $lt: batch.capacity } }, { activeEnrollmentCount: { $exists: false } }] } : {}) },
       { $inc: { activeEnrollmentCount: 1 } },
