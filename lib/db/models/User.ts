@@ -14,6 +14,7 @@ export interface IUser extends Document {
   isActive: boolean;
   approvalStatus: ApprovalStatus;
   reference?: string;
+  studentCode?: string;
   isAbspMember: boolean;
   teacherDomain?: {
     isAll: boolean;
@@ -76,6 +77,7 @@ const UserSchema = new Schema<IUser>(
       lastChargeRefreshedAt: { type: Date },
     },
     reference: { type: String, trim: true },
+    studentCode: { type: String, trim: true, immutable: true },
     isAbspMember: { type: Boolean, default: false },
     refreshTokenHash: { type: String, select: false },
     sessionVersion: { type: Number, default: 0, min: 0 },
@@ -90,6 +92,7 @@ if (!mongoose.models.User) {
   UserSchema.index({ role: 1, isActive: 1 });
   UserSchema.index({ role: 1, studentClass: 1 });
   UserSchema.index({ approvalStatus: 1 });
+  UserSchema.index({ studentCode: 1 }, { unique: true, sparse: true });
 }
 
 const ExistingUserModel = mongoose.models.User as Model<IUser> | undefined;
@@ -104,6 +107,7 @@ if (
     !ExistingUserModel.schema.path("sessionVersion") ||
     !ExistingUserModel.schema.path("schoolCollege") ||
     !ExistingUserModel.schema.path("reference") ||
+    !ExistingUserModel.schema.path("studentCode") ||
     !ExistingUserModel.schema.path("isAbspMember") ||
     ExistingUserModel.schema.path("phone")?.options.required)
 ) {

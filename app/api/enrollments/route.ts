@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     const studentIds = [...new Set(enrollments.map((item) => String(item.studentId)))];
     const enrollmentIds = enrollments.map((item) => item._id);
     const [students, subjectRows, batches, paymentProfiles] = await Promise.all([
-      User.find({ _id: { $in: studentIds } }).select("name studentClass reference isActive").lean(),
+      User.find({ _id: { $in: studentIds } }).select("name studentClass reference studentCode isActive").lean(),
       CoachingEnrollmentSubject.find({ enrollmentId: { $in: enrollmentIds }, status: "active" }).lean(),
       Batch.find({ _id: { $in: enrollments.map((item) => item.batchId) } }).select("name code").lean(),
       PaymentProfile.find({ userId: { $in: studentIds }, role: "student" }).select("userId defaultAmountTk").lean(),
@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
             name: student?.name ?? "Unknown student",
             studentClass: student?.studentClass,
             reference: student?.reference,
+            studentCode: student?.studentCode,
             isActive: student?.isActive,
           },
           batch: batchById.get(String(enrollment.batchId)),

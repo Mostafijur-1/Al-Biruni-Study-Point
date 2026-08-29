@@ -12,6 +12,8 @@ import { CoachingBatchSubject } from "./db/models/CoachingBatchSubject.ts";
 import { CoachingEnrollmentSubject } from "./db/models/CoachingEnrollmentSubject.ts";
 import { PaymentProfile } from "./db/models/PaymentProfile.ts";
 import { User } from "./db/models/User.ts";
+import { StudentCodeCounter } from "./db/models/StudentCodeCounter.ts";
+import { formatStudentCode, getStudentCodePrefix } from "./student-code.ts";
 
 type AuditInput = { request: NextRequest; actor: SessionUser; reason: string };
 
@@ -111,6 +113,30 @@ async function addSubjectRows(input: {
   );
 }
 
+async function assignPermanentStudentCode(input: {
+  student: InstanceType<typeof User>;
+  batch: InstanceType<typeof Batch>;
+  session: ClientSession;
+}) {
+  if (input.student.studentCode) return input.student.studentCode;
+  const prefix = getStudentCodePrefix(input.batch);
+  if (!prefix) {
+    throw new ApiRouteError(
+      "Batch name or code must contain a four-digit year before students can be enrolled.",
+      409,
+      "CONFLICT",
+    );
+  }
+  const counter = await StudentCodeCounter.findOneAndUpdate(
+    { prefix },
+    { $inc: { sequence: 1 }, $setOnInsert: { prefix } },
+    { upsert: true, new: true, session: input.session },
+  );
+  input.student.studentCode = formatStudentCode(prefix, counter.sequence);
+  await input.student.save({ session: input.session });
+  return input.student.studentCode;
+}
+
 export async function createCoachingEnrollment(input: AuditInput & {
   batchId: string;
   studentId: string;
@@ -131,6 +157,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
       status: "active",
     }).session(session);
     if (exists) throw new ApiRouteError("Student already has an active coaching enrollment in this session.", 409);
+    const studentCode = await assignPermanentStudentCode({ student, batch, session });
     const reserved = await Batch.findOneAndUpdate(
       { _id: batch._id, status: { $in: ["planned", "active"] }, ...(batch.capacity ? { $or: [{ activeEnrollmentCount: { $lt: batch.capacity } }, { activeEnrollmentCount: { $exists: false } }] } : {}) },
       { $inc: { activeEnrollmentCount: 1 } },
@@ -153,9 +180,41 @@ export async function createCoachingEnrollment(input: AuditInput & {
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "coaching.enrollment.created", resourceType: "BatchEnrollment", resourceId: enrollment._id, reason: input.reason,
-      after: { batchId: String(batch._id), studentId: String(student._id), subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
+      after: { batchId: String(batch._id), studentId: String(student._id), studentCode, subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
     });
     return enrollment;
+  });
+}
+
+export async function assignMissingStudentCodes(input: AuditInput) {
+  if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can assign student IDs.", 403);
+  return inTransaction(async (session) => {
+    const enrollments = await BatchEnrollment.find({ status: "active" })
+      .sort({ effectiveFrom: 1, createdAt: 1 })
+      .session(session);
+    const assigned: string[] = [];
+    const skippedBatchIds = new Set<string>();
+    for (const enrollment of enrollments) {
+      const student = await User.findOne({ _id: enrollment.studentId, role: "student" }).session(session);
+      const batch = await Batch.findById(enrollment.batchId).session(session);
+      if (!student || student.studentCode || !batch) continue;
+      if (!getStudentCodePrefix(batch)) {
+        skippedBatchIds.add(String(batch._id));
+        continue;
+      }
+      assigned.push(await assignPermanentStudentCode({ student, batch, session }));
+    }
+    await writeAuditLog({
+      request: input.request,
+      actor: input.actor,
+      action: "coaching.student-codes.backfilled",
+      resourceType: "User",
+      resourceId: "bulk-student-code-assignment",
+      reason: input.reason,
+      after: { assignedCount: assigned.length, assigned, skippedBatchIds: [...skippedBatchIds] },
+      session,
+    });
+    return { assigned, skippedBatchIds: [...skippedBatchIds] };
   });
 }
 

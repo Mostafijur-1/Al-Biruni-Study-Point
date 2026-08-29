@@ -12,6 +12,7 @@ export interface IBatch extends Document {
   studentClass?: StudentClass;
   capacity?: number;
   activeEnrollmentCount: number;
+  studentIdGroup?: number;
   startsAt?: Date;
   endsAt?: Date;
   status: AcademicLifecycleStatus;
@@ -32,6 +33,7 @@ const BatchSchema = new Schema<IBatch>(
     },
     capacity: { type: Number, min: 1, max: 500 },
     activeEnrollmentCount: { type: Number, default: 0, min: 0 },
+    studentIdGroup: { type: Number, default: 1, min: 1, max: 999, immutable: true },
     startsAt: { type: Date },
     endsAt: { type: Date },
     status: {
