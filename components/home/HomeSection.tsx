@@ -199,55 +199,59 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
           </div>
 
           {/* Special Combo Package Card */}
-          <div className="relative mt-8 overflow-hidden rounded-3xl border-2 border-brand-yellow bg-linear-to-br from-brand-yellow/[0.12] via-card to-brand-blue/[0.1] shadow-[0_18px_55px_-24px_rgba(220,38,38,0.45)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_65px_-24px_rgba(220,38,38,0.55)]">
-            <div className="absolute right-0 top-0 z-10 min-w-44 overflow-hidden rounded-bl-[2rem] bg-linear-to-br from-brand-red via-red-600 to-orange-500 px-5 py-4 text-center text-white shadow-xl ring-4 ring-brand-yellow/40" aria-label="500 taka discount every month until 10 October">
-              <span className="absolute -right-5 -top-7 size-20 rounded-full bg-white/15" aria-hidden />
-              <span className="absolute -bottom-8 -left-5 size-20 rounded-full bg-brand-yellow/20" aria-hidden />
-              <p className="relative text-3xl font-black leading-none tracking-tight sm:text-4xl">500 ৳</p>
-              <p className="relative mt-1 text-xs font-black uppercase tracking-[0.2em] text-brand-yellow">মাসিক ছাড়</p>
-              <p className="relative mt-1.5 border-t border-white/25 pt-1.5 text-[10px] font-bold">শুধু 10 October পর্যন্ত</p>
-            </div>
-            <div className="grid md:grid-cols-[1.4fr_1fr]">
-              <div className="flex flex-col justify-center p-6 pt-36 sm:p-8 sm:pt-36 md:p-10 md:pt-10">
+          <div className="relative mt-8 overflow-hidden rounded-[2rem] border-2 border-brand-yellow bg-card shadow-[0_28px_70px_-32px_rgba(11,37,69,0.55)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_34px_80px_-32px_rgba(220,38,38,0.48)]">
+            <header className="relative min-h-40 overflow-hidden bg-linear-to-br from-primary via-[#123c68] to-[#1e5b89] p-6 pr-48 text-white sm:min-h-36 sm:p-8 sm:pr-60">
+              <span className="absolute -bottom-24 left-1/3 size-52 rounded-full bg-sky-300/10 blur-2xl" aria-hidden />
+              <p className="relative hidden text-[10px] font-black uppercase tracking-[0.24em] text-brand-yellow sm:block">HSC 2028 · Limited admission offer</p>
+              <h3 className="relative mt-5 max-w-xl font-display text-2xl font-black leading-tight sm:mt-3 sm:text-3xl">
+                <span className="sm:hidden">স্মার্ট<br />কম্বো অফার</span>
+                <span className="hidden sm:inline">সব বিষয়, এক স্মার্ট কম্বো</span>
+              </h3>
+              <p className="relative mt-2 hidden max-w-lg text-sm font-medium text-white/75 sm:block">পূর্ণ প্রস্তুতি, কম মাসিক খরচ—ICT একদম ফ্রি।</p>
+
+              <div className="absolute right-0 top-0 flex h-full w-44 flex-col items-center justify-center overflow-hidden rounded-bl-[2.5rem] bg-linear-to-br from-brand-red via-red-600 to-orange-500 px-4 text-center shadow-2xl ring-4 ring-inset ring-white/10 sm:w-52" aria-label="500 taka discount every month until 10 October">
+                <span className="absolute -right-10 -top-10 size-32 rounded-full bg-white/15" aria-hidden />
+                <span className="absolute -bottom-12 -left-8 size-28 rounded-full bg-brand-yellow/20" aria-hidden />
+                <p className="relative text-4xl font-black leading-none tracking-tight sm:text-5xl">500 ৳</p>
+                <p className="relative mt-2 text-xs font-black uppercase tracking-[0.18em] text-brand-yellow">প্রতি মাসে ছাড়</p>
+                <p className="relative mt-3 rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold">10 October পর্যন্ত</p>
+              </div>
+            </header>
+
+            <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="p-6 sm:p-8 lg:p-10">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-brand-yellow px-3 py-1 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
-                    {dict.hsc2028.combo.badge}
-                  </span>
-                  <span className="rounded-full bg-brand-red text-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
-                    ICT সম্পূর্ণ ফ্রি!
-                  </span>
+                  <span className="rounded-full bg-brand-yellow px-3 py-1 text-[10px] font-black uppercase tracking-wider text-accent-foreground">{dict.hsc2028.combo.badge}</span>
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">ICT সম্পূর্ণ ফ্রি</span>
                 </div>
-                <h3 className="font-display mt-4 text-2xl font-bold text-primary sm:text-3xl">
-                  {dict.hsc2028.combo.title}
-                </h3>
-                <p className="mt-3 text-sm text-muted leading-relaxed">
-                  {dict.hsc2028.combo.description}
-                </p>
-                <div className="mt-5 flex items-center gap-2 text-sm text-emerald-600 font-bold">
-                  <CheckCircle2 className="size-5 shrink-0" />
-                  <span>পদার্থবিজ্ঞান + রসায়ন + উচ্চতর গণিত + ICT (ফ্রি)</span>
+                <h4 className="mt-4 font-display text-2xl font-black text-primary sm:text-3xl">{dict.hsc2028.combo.title}</h4>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">{dict.hsc2028.combo.description}</p>
+
+                <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {["Physics", "Chemistry", "Higher Math", "ICT · FREE"].map((subject, index) => (
+                    <div key={subject} className={cn("rounded-xl border px-3 py-3 text-center text-xs font-black", index === 3 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-sky-100 bg-sky-50/70 text-primary")}>
+                      <CheckCircle2 className={cn("mx-auto mb-1.5 size-4", index === 3 ? "text-emerald-600" : "text-sky-600")} />
+                      {subject}
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center border-t-2 border-brand-yellow/20 bg-primary/[0.025] p-6 text-center sm:p-8 md:border-l-2 md:border-t-0 md:p-10 md:pt-36">
-                <div className="w-full rounded-2xl border border-border/70 bg-white/70 p-4 shadow-xs backdrop-blur-sm">
-                  <p className="text-xs font-bold text-muted uppercase tracking-wider">{dict.hsc2028.combo.regularFeeLabel}</p>
-                  <p className="mt-1 text-xl font-bold text-muted/55 line-through decoration-2 decoration-brand-red/70">{dict.hsc2028.combo.regularFee} / মাস</p>
+              <aside className="border-t border-border bg-linear-to-br from-secondary/75 to-brand-yellow/10 p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+                <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-brand-red">{dict.hsc2028.combo.offerFeeLabel}</p>
+                <div className="mt-4 rounded-2xl border border-white bg-white/85 p-5 text-center shadow-sm">
+                  <p className="text-xs font-bold text-muted">{dict.hsc2028.combo.regularFeeLabel}</p>
+                  <p className="mt-1 text-xl font-black text-muted/55 line-through decoration-2 decoration-brand-red">{dict.hsc2028.combo.regularFee}</p>
+                  <div className="mx-auto my-4 h-px w-16 bg-brand-yellow" />
+                  <p className="text-xs font-black uppercase tracking-wider text-emerald-700">অফার মূল্য</p>
+                  <p className="mt-1 text-4xl font-black tracking-tight text-primary sm:text-5xl">{dict.hsc2028.combo.offerFee}</p>
+                  <p className="mt-1 text-xs font-bold text-muted">প্রতি মাস</p>
                 </div>
-                <div className="mt-3 w-full rounded-2xl border-2 border-brand-yellow bg-brand-yellow/15 p-4 shadow-[0_10px_30px_-18px_rgba(11,37,69,0.55)]">
-                  <p className="text-xs font-extrabold uppercase tracking-wider text-brand-red">{dict.hsc2028.combo.offerFeeLabel}</p>
-                  <p className="mt-1 text-4xl font-black tracking-tight text-primary sm:text-5xl">
-                    {dict.hsc2028.combo.offerFee} <span className="text-xs font-bold text-muted">/ মাস</span>
-                  </p>
-                  <p className="mt-2 text-xs font-black text-emerald-700">প্রতি মাসেই 500 ৳ সাশ্রয়</p>
-                </div>
-                <Link
-                  href={"/contact"}
-                  className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-6 w-full justify-center shadow-md hover:shadow-lg transition-all")}
-                >
+                <p className="mt-3 text-center text-xs font-black text-emerald-700">আপনার সাশ্রয়: প্রতি মাসে 500 ৳</p>
+                <Link href={"/contact"} className={cn(buttonVariants({ variant: "default", size: "lg" }), "mt-5 w-full justify-center rounded-xl shadow-lg shadow-red-900/15 transition-all hover:scale-[1.02]")}>
                   {dict.hsc2028.combo.cta} <ArrowRight className="size-5" />
                 </Link>
-              </div>
+              </aside>
             </div>
           </div>
 

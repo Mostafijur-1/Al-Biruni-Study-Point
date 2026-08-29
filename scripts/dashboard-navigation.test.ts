@@ -26,10 +26,12 @@ test("teacher navigation exposes class content without routine sessions", () => 
   assert.equal(dashboardTopLevelRoutes.teacher.length, 6);
 });
 
-test("admin navigation exposes academic operations without exceeding six destinations", () => {
+test("admin navigation separates each administrative responsibility", () => {
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/academic"), true);
-  assert.equal(isTopLevelDashboardRoute("admin", "/admin/practice-mcqs"), false);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/practice-mcqs"), true);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/settings"), true);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/attendance"), true);
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/routine"), true);
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/finance"), true);
-  assert.equal(dashboardTopLevelRoutes.admin.length, 6);
+  assert.equal(dashboardTopLevelRoutes.admin.length, 10);
 });

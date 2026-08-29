@@ -10,9 +10,7 @@ import {
   FileImage,
   Image as ImageIcon,
   Loader2,
-  Save,
   Server,
-  Settings,
   Trash2,
   Type,
   Upload,
@@ -39,12 +37,6 @@ type ParsedQuestion = {
   options: string[];
   correctIndex: number;
   explanation?: string;
-};
-
-type PracticeTestSettings = {
-  maxQuestionsPerTest: number;
-  secondsPerQuestion: number;
-  passMarkPercent: number;
 };
 
 type UploadedQuestion = {
@@ -120,17 +112,6 @@ export function AdminPracticeManager() {
     addedCount: number;
     questions: ParsedQuestion[];
   } | null>(null);
-
-  // Practice test settings states
-  const [settings, setSettings] = useState<PracticeTestSettings>({
-    maxQuestionsPerTest: 25,
-    secondsPerQuestion: 45,
-    passMarkPercent: 60,
-  });
-  const [settingsLoading, setSettingsLoading] = useState(true);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [settingsError, setSettingsError] = useState("");
-  const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Active Tab for main MCQ panel
   const [activeMcqTab, setActiveMcqTab] = useState<"upload" | "uploaded">("upload");
@@ -382,48 +363,6 @@ export function AdminPracticeManager() {
     }
   };
 
-  // Load test settings on mount
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const { ok, payload } = await apiFetch<PracticeTestSettings>("/api/admin/practice-settings");
-        if (ok && isApiSuccess(payload)) {
-          setSettings(payload.data);
-        }
-      } catch {
-        // Use defaults silently
-      } finally {
-        setSettingsLoading(false);
-      }
-    }
-    loadSettings();
-  }, []);
-
-  // Handle settings save
-  async function handleSaveSettings(e: React.FormEvent) {
-    e.preventDefault();
-    setSettingsError("");
-    setSettingsSaved(false);
-    setSettingsSaving(true);
-    try {
-      const { ok, payload } = await apiFetch("/api/admin/practice-settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      if (!ok || !isApiSuccess(payload)) {
-        setSettingsError(getApiErrorMessage(payload, "Failed to save settings."));
-      } else {
-        setSettingsSaved(true);
-        setTimeout(() => setSettingsSaved(false), 3000);
-      }
-    } catch {
-      setSettingsError("Could not connect to the server.");
-    } finally {
-      setSettingsSaving(false);
-    }
-  }
-
   // Handle upload form submission
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -502,120 +441,11 @@ export function AdminPracticeManager() {
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">
-          {"Practice MCQ Management"}
+          {"Question Bank"}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          {locale === "bn"
-            ? "পরীক্ষার সেটিংস পরিবর্তন করুন এবং MCQ আপলোড করুন।"
-            : "Configure test settings and upload MCQ questions for students."}
+          {"Upload, review and organize practice MCQs by level, subject and chapter."}
         </p>
-      </div>
-
-      {/* ─── Test Settings Panel ─── */}
-      <div className="rounded-xl border-2 border-primary/20 bg-card p-5 shadow-[var(--shadow-sm)] space-y-5">
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <Settings className="size-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-bold text-primary">
-              {locale === "bn" ? "পরীক্ষার সেটিংস" : "Test Settings"}
-            </h2>
-            <p className="text-xs text-muted">
-              {locale === "bn"
-                ? "ডিফল্ট: ২৫টি প্রশ্ন · ৫০ সে/প্রশ্ন · ৬০% পাস মার্ক"
-                : "Defaults: 25 questions · 50s/question · 60% pass mark"}
-            </p>
-          </div>
-        </div>
-
-        {settingsLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            {"Loading settings..."}
-          </div>
-        ) : (
-          <form onSubmit={handleSaveSettings} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {/* Seconds per Question */}
-              <div className="space-y-1.5">
-                <Label htmlFor="seconds-per-q">
-                  {locale === "bn" ? "প্রতি প্রশ্নে সময় (সেকেন্ড)" : "Seconds per Question"}
-                </Label>
-                <input
-                  id="seconds-per-q"
-                  type="number"
-                  min={10}
-                  max={300}
-                  value={settings.secondsPerQuestion}
-                  onChange={(e) =>
-                    setSettings((s) => ({ ...s, secondsPerQuestion: Number(e.target.value) }))
-                  }
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
-                />
-                <p className="text-xs text-muted">{"Range: 10–300s"}</p>
-              </div>
-
-              {/* Pass Mark */}
-              <div className="space-y-1.5">
-                <Label htmlFor="pass-mark">
-                  {locale === "bn" ? "পাস মার্ক (%)" : "Pass Mark (%)"}
-                </Label>
-                <input
-                  id="pass-mark"
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={settings.passMarkPercent}
-                  onChange={(e) =>
-                    setSettings((s) => ({ ...s, passMarkPercent: Number(e.target.value) }))
-                  }
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-primary outline-none focus:border-primary"
-                />
-                <p className="text-xs text-muted">{"Range: 1–100%"}</p>
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div className="rounded-lg bg-secondary/60 border border-border px-4 py-3 text-xs text-muted flex flex-wrap gap-4">
-              <span>
-                {locale === "bn" ? "সময় প্রতি প্রশ্ন:" : "Seconds per question:"}{" "}
-                <span className="font-bold text-primary">{settings.secondsPerQuestion}s</span>
-              </span>
-              <span>·</span>
-              <span>
-                {locale === "bn" ? "পাস মার্ক:" : "Pass Mark:"}{" "}
-                <span className="font-bold text-primary">{settings.passMarkPercent}%</span>
-              </span>
-            </div>
-
-            {settingsError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-center gap-2">
-                <AlertTriangle className="size-4 shrink-0" />
-                <span>{settingsError}</span>
-              </div>
-            )}
-
-            {settingsSaved && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 flex items-center gap-2">
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                <span>{"Settings saved successfully!"}</span>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              loading={settingsSaving}
-              disabled={settingsSaving}
-              className="rounded-xl"
-            >
-              <Save className="mr-2 size-4" />
-              {settingsSaving
-                ? "Saving..."
-                :  "Save Settings"}
-            </Button>
-          </form>
-        )}
       </div>
 
       {/* Main MCQ Management Tabs */}

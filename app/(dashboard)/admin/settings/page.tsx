@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
-import { getLocalizedPath } from "@/lib/i18n";
+import { AdminPracticeSettings } from "@/components/admin/AdminPracticeSettings";
 
 export default function AdminSettingsPage() {
-  redirect(getLocalizedPath("/admin/practice-mcqs"));
+  return <AdminPracticeSettings />;
 }
-

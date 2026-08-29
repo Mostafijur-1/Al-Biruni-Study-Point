@@ -37,6 +37,7 @@ test("combo discount is a prominent corner offer", async () => {
 
   assert.match(home, /absolute right-0 top-0/);
   assert.match(home, />500 ৳</);
-  assert.match(home, /মাসিক ছাড়/);
+  assert.match(home, /প্রতি মাসে ছাড়/);
   assert.match(home, /10 October পর্যন্ত/);
+  assert.match(home, /ICT · FREE/);
 });

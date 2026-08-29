@@ -109,7 +109,9 @@ export function AdminOverview() {
     { href: "/admin/students", label:"Students" },
     { href: "/admin/teachers", label:"Teachers" },
     // { href: "/admin/courses", label: "কোর্স" },
-    { href: "/admin/practice-mcqs", label:"MCQ Management" },
+    { href: "/admin/attendance", label:"Attendance" },
+    { href: "/admin/practice-mcqs", label:"Question Bank" },
+    { href: "/admin/settings", label:"Practice Settings" },
   ];
 
   return (
