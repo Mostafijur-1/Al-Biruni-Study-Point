@@ -44,6 +44,11 @@ export const openAttendanceSheetSchema = z.object({
   reason: reasonSchema,
 });
 
+export const openRoutineAttendanceSheetSchema = z.object({
+  routineSlotId: objectIdSchema,
+  reason: reasonSchema,
+});
+
 export const markAttendanceSchema = z.object({
   version: z.coerce.number().int().min(1),
   entries: z.array(markSchema).min(1).max(500),

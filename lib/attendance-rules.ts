@@ -23,13 +23,10 @@ export const defaultAttendancePolicy: AttendancePolicySnapshot = {
 };
 
 export function areAttendanceWritesEnabled(
-  academicFlag: string | undefined,
+  _academicFlag: string | undefined,
   attendanceFlag: string | undefined,
 ) {
-  return (
-    academicFlag?.trim().toLowerCase() === "true" &&
-    attendanceFlag?.trim().toLowerCase() === "true"
-  );
+  return attendanceFlag?.trim().toLowerCase() === "true";
 }
 
 export function canManageAttendance(

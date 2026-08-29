@@ -5,7 +5,8 @@
   "installCommand": "npm ci",
   "regions": ["bom1"],
   "env": {
-    "ROUTINE_PUBLISHING_ENABLED": "true"
+    "ROUTINE_PUBLISHING_ENABLED": "true",
+    "ATTENDANCE_WRITES_ENABLED": "true"
   },
   "crons": [
     {

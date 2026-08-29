@@ -12,6 +12,7 @@ import {
   defaultAttendancePolicy,
   type AttendanceStatus,
 } from "./attendance-rules.ts";
+import { getDhakaRoutineOccurrence } from "./attendance-occurrence.ts";
 import { ApiRouteError } from "./api-error.ts";
 import { getRequestId, writeAuditLog } from "./audit/write-audit-log.ts";
 import { AttendanceCorrection } from "./db/models/AttendanceCorrection.ts";
@@ -22,6 +23,7 @@ import { AttendanceSheet, type IAttendanceSheet } from "./db/models/AttendanceSh
 import { BatchEnrollment } from "./db/models/BatchEnrollment.ts";
 import { CoachingEnrollmentSubject } from "./db/models/CoachingEnrollmentSubject.ts";
 import { ClassSession } from "./db/models/ClassSession.ts";
+import { RoutineSlot } from "./db/models/RoutineSlot.ts";
 import { TeacherAssignment } from "./db/models/TeacherAssignment.ts";
 import { User } from "./db/models/User.ts";
 
@@ -183,6 +185,74 @@ export function getAttendanceIdempotencyKey(request: NextRequest) {
   return key;
 }
 
+export async function openRoutineAttendanceSheet(
+  input: AuditContext & { routineSlotId: string },
+) {
+  const routine = await RoutineSlot.findOne({
+    _id: input.routineSlotId,
+    status: "active",
+  });
+  if (!routine || !routine.batchId || !routine.subjectId) {
+    throw new ApiRouteError(
+      "Routine is not eligible for attendance.",
+      409,
+      "ATTENDANCE_NOT_ELIGIBLE",
+    );
+  }
+  assertAttendanceManager(input.actor, routine.teacherId, "Routine was not found.");
+
+  const occurrence = getDhakaRoutineOccurrence(routine);
+  if (
+    !occurrence ||
+    routine.effectiveFrom > occurrence.scheduledEnd ||
+    (routine.effectiveTo && routine.effectiveTo < occurrence.scheduledStart)
+  ) {
+    throw new ApiRouteError(
+      "Attendance is available only on the routine's scheduled day.",
+      409,
+      "ATTENDANCE_NOT_ELIGIBLE",
+    );
+  }
+
+  let classSession = await ClassSession.findOne({
+    routineSlotId: routine._id,
+    scheduledStart: occurrence.scheduledStart,
+  });
+  if (!classSession) {
+    try {
+      classSession = await ClassSession.create({
+        organizationId: routine.organizationId ?? routine.batchId,
+        branchId: routine.branchId ?? routine.batchId,
+        academicSessionId: routine.academicSessionId ?? routine.batchId,
+        batchId: routine.batchId,
+        subjectId: routine.subjectId,
+        teacherId: routine.teacherId,
+        routineSlotId: routine._id,
+        scheduledStart: occurrence.scheduledStart,
+        scheduledEnd: occurrence.scheduledEnd,
+        status: "scheduled",
+        createdBy: input.actor.id,
+      });
+    } catch (error) {
+      if (typeof error !== "object" || error === null || !("code" in error) || error.code !== 11000) {
+        throw error;
+      }
+      classSession = await ClassSession.findOne({
+        routineSlotId: routine._id,
+        scheduledStart: occurrence.scheduledStart,
+      });
+      if (!classSession) throw error;
+    }
+  }
+
+  return openAttendanceSheet({
+    request: input.request,
+    actor: input.actor,
+    reason: input.reason,
+    classSessionId: String(classSession._id),
+  });
+}
+
 export async function openAttendanceSheet(
   input: AuditContext & { classSessionId: string },
 ) {
@@ -216,11 +286,22 @@ export async function openAttendanceSheet(
         ],
       }).session(session);
       if (!assignment) {
-        throw new ApiRouteError(
-          "No effective teacher assignment exists for this class session.",
-          409,
-          "ATTENDANCE_NOT_ELIGIBLE",
-        );
+        const routine = classSession.routineSlotId
+          ? await RoutineSlot.findOne({
+              _id: classSession.routineSlotId,
+              batchId: classSession.batchId,
+              subjectId: classSession.subjectId,
+              teacherId: classSession.teacherId,
+              status: "active",
+            }).session(session)
+          : null;
+        if (!routine) {
+          throw new ApiRouteError(
+            "No effective teacher assignment or routine exists for this class session.",
+            409,
+            "ATTENDANCE_NOT_ELIGIBLE",
+          );
+        }
       }
 
       const roster = await loadEffectiveRoster(classSession, session);
@@ -262,7 +343,7 @@ export async function openAttendanceSheet(
           batchId: classSession.batchId,
           subjectId: classSession.subjectId,
           teacherId: classSession.teacherId,
-          teacherAssignmentId: assignment._id,
+          teacherAssignmentId: assignment?._id,
           classSessionId: classSession._id,
           routineSlotId: classSession.routineSlotId,
           rosterVersion: 1,

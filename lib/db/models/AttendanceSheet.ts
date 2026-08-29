@@ -9,7 +9,7 @@ export interface IAttendanceSheet extends Document {
   batchId: Types.ObjectId;
   subjectId: Types.ObjectId;
   teacherId: Types.ObjectId;
-  teacherAssignmentId: Types.ObjectId;
+  teacherAssignmentId?: Types.ObjectId;
   classSessionId: Types.ObjectId;
   routineSlotId?: Types.ObjectId;
   rosterVersion: number;
@@ -43,7 +43,7 @@ const AttendanceSheetSchema = new Schema<IAttendanceSheet>(
     batchId: { type: Schema.Types.ObjectId, ref: "Batch", required: true },
     subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    teacherAssignmentId: { type: Schema.Types.ObjectId, ref: "TeacherAssignment", required: true },
+    teacherAssignmentId: { type: Schema.Types.ObjectId, ref: "TeacherAssignment" },
     classSessionId: { type: Schema.Types.ObjectId, ref: "ClassSession", required: true },
     routineSlotId: { type: Schema.Types.ObjectId, ref: "RoutineSlot" },
     rosterVersion: { type: Number, required: true, default: 1, min: 1 },

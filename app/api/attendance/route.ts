@@ -5,10 +5,10 @@ import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { ApiRouteError } from "@/lib/api-error";
 import { areAttendanceWritesEnabled, canManageAttendance } from "@/lib/attendance-rules";
-import { getAttendanceIdempotencyKey, markAttendance, openAttendanceSheet, submitAttendance } from "@/lib/attendance-service";
+import { getAttendanceIdempotencyKey, markAttendance, openAttendanceSheet, openRoutineAttendanceSheet, submitAttendance } from "@/lib/attendance-service";
 import { AttendanceRecord } from "@/lib/db/models/AttendanceRecord";
 import { AttendanceSheet } from "@/lib/db/models/AttendanceSheet";
-import { markAttendanceSchema, openAttendanceSheetSchema, submitAttendanceSchema } from "@/lib/validations/attendance.schema";
+import { markAttendanceSchema, openAttendanceSheetSchema, openRoutineAttendanceSheetSchema, submitAttendanceSchema } from "@/lib/validations/attendance.schema";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 
@@ -51,6 +51,11 @@ export async function POST(request: NextRequest) {
     if (body.action === "open") {
       const parsed = openAttendanceSheetSchema.parse(body);
       const result = await openAttendanceSheet({ request, actor, ...parsed });
+      return success({ sheet: serializeSheet(result.sheet), created: result.created }, result.created ? { status: 201 } : undefined);
+    }
+    if (body.action === "open-routine") {
+      const parsed = openRoutineAttendanceSheetSchema.parse(body);
+      const result = await openRoutineAttendanceSheet({ request, actor, ...parsed });
       return success({ sheet: serializeSheet(result.sheet), created: result.created }, result.created ? { status: 201 } : undefined);
     }
     if (!body.sheetId) throw new ApiRouteError("sheetId is required.", 400);
