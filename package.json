@@ -13,13 +13,16 @@
     "load:exam": "node scripts/load/exam-load.mjs",
     "migrate:phase1": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase1-migration.ts",
     "migrate:coaching": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-coaching-architecture.ts",
+    "migrate:scope-indexes": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step2-scope-indexes.ts",
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",
     "check:architecture-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-architecture-readiness.ts",
     "check:attendance-release": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase3-attendance-release.ts",
     "audit:academic-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/audit-phase2-teacher-scope.ts",
     "test:academic-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db.ts",
-    "test:academic-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db-memory.ts"
+    "test:academic-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db-memory.ts",
+    "test:scope-indexes-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-db.ts",
+    "test:scope-indexes-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
