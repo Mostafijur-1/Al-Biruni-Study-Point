@@ -30,6 +30,8 @@ test("install and notification actions live only in the footer", async () => {
   assert.doesNotMatch(actions, /<section/);
   assert.match(actions, /Install app/);
   assert.match(actions, /Enable notifications/);
+  assert.match(actions, /min-h-12 w-full border-2 border-brand-yellow bg-brand-yellow/);
+  assert.match(actions, /min-h-12 w-full border-2 border-white bg-white/);
 });
 
 test("combo discount uses a compact split offer layout", async () => {
