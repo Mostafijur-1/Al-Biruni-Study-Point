@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+import { downloadStudentReportPdf } from "@/lib/client-report-pdf";
 import type { StudentReport } from "@/lib/student-report-service";
 
 type Student = { id: string; name: string; studentCode?: string; batchName: string; enrollmentStatus?: string };
@@ -23,6 +24,7 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const loadReport = useCallback(async (target = studentId) => {
     setLoading(true); setMessage("");
@@ -50,13 +52,21 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
     setComment(""); setIsError(false); setMessage("Comment added to this report period."); await loadReport(report.student.id);
   }
 
+  async function downloadPdf() {
+    if (!report) return;
+    setDownloading(true); setMessage("");
+    try { await downloadStudentReportPdf(report); setIsError(false); }
+    catch { setIsError(true); setMessage("The PDF could not be generated on this device."); }
+    finally { setDownloading(false); }
+  }
+
   const mcqAverage = report?.weeklyMcqTests.length ? Math.round(report.weeklyMcqTests.reduce((sum, row) => sum + row.percentage, 0) / report.weeklyMcqTests.length * 10) / 10 : null;
   const writtenAverage = report?.writtenExams.length ? Math.round(report.writtenExams.reduce((sum, row) => sum + row.percentage, 0) / report.writtenExams.length * 10) / 10 : null;
 
   return <div className="space-y-6">
     <header className="rounded-3xl bg-[radial-gradient(circle_at_88%_14%,rgba(255,198,40,.28),transparent_30%),linear-gradient(125deg,#09233f,#124d78)] p-6 text-white shadow-lg sm:p-8"><p className="text-xs font-black uppercase tracking-[.2em] text-brand-yellow">Progress intelligence</p><h1 className="mt-2 text-3xl font-black">Student reports</h1><p className="mt-2 max-w-3xl text-sm text-white/75">Attendance, daily MCQ practice, weekly tests, written exams, and staff comments in one weekly or monthly view.</p></header>
     {message && <Alert variant={isError ? "destructive" : "success"}>{message}</Alert>}
-    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"><label className="space-y-1 text-xs font-black text-primary"><span>Report period</span><select className="h-11 rounded-xl border border-input bg-white px-3" value={period} onChange={(event) => setPeriod(event.target.value as "week" | "month")}><option value="week">Weekly report</option><option value="month">Monthly report</option></select></label><label className="space-y-1 text-xs font-black text-primary"><span>Reference date</span><Input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><Button onClick={() => void loadReport()} disabled={loading || (role !== "student" && !studentId)}><CalendarRange className="size-4" />Generate report</Button>{role === "admin" && report && <a className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-input bg-white px-4 text-sm font-bold text-primary hover:bg-secondary" href={`/api/student-reports/pdf?studentId=${report.student.id}&period=${period}&date=${date}`}><Download className="size-4" />Download PDF</a>}</div>
+    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"><label className="space-y-1 text-xs font-black text-primary"><span>Report period</span><select className="h-11 rounded-xl border border-input bg-white px-3" value={period} onChange={(event) => setPeriod(event.target.value as "week" | "month")}><option value="week">Weekly report</option><option value="month">Monthly report</option></select></label><label className="space-y-1 text-xs font-black text-primary"><span>Reference date</span><Input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><Button onClick={() => void loadReport()} disabled={loading || (role !== "student" && !studentId)}><CalendarRange className="size-4" />Generate report</Button>{role === "admin" && report && <Button type="button" variant="outline" disabled={downloading} onClick={() => void downloadPdf()}><Download className="size-4" />{downloading ? "Creating PDF…" : "Download PDF"}</Button>}</div>
     <div className={`grid gap-6 ${role === "student" ? "" : "xl:grid-cols-[310px_minmax(0,1fr)]"}`}>
       {role !== "student" && <aside className="h-fit space-y-3 rounded-3xl border border-border bg-card p-4 xl:sticky xl:top-24"><div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, ID, or batch" /></div><div className="max-h-[65vh] space-y-2 overflow-y-auto">{visible.map((student) => <button type="button" key={student.id} onClick={() => { setStudentId(student.id); void loadReport(student.id); }} className={`w-full rounded-xl border p-3 text-left ${studentId === student.id ? "border-primary bg-secondary" : "border-border"}`}><b className="text-sm text-primary">{student.name}</b><p className="mt-1 text-xs text-muted"><span className="font-mono font-black">{student.studentCode ?? "No ID"}</span> · {student.batchName}</p>{student.enrollmentStatus !== "active" && <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 text-[10px] font-black text-amber-800">{student.enrollmentStatus}</span>}</button>)}</div></aside>}
       <main>{!report ? <div className="grid min-h-96 place-items-center rounded-3xl border border-dashed border-border bg-card text-center"><div><TrendingUp className="mx-auto size-10 text-muted" /><h2 className="mt-3 text-xl font-black text-primary">{loading ? "Preparing report…" : role === "student" ? "No report available" : "Select a student"}</h2></div></div> : <div className="space-y-5">
