@@ -1,0 +1,136 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, FilePenLine, Save, Send } from "lucide-react";
+
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
+
+type Exam = {
+  id: string; batchId: string; batchName?: string; subjectId: string; subjectName?: string;
+  title: string; examDate: string; totalMarks: number; hasQuestionFile?: boolean;
+  questionFileName?: string; instructions?: string; isPublished: boolean;
+};
+type Batch = { id: string; name: string };
+type Subject = { id: string; name: string; nameBn?: string };
+type StudentRow = { id: string; name: string; studentCode?: string; marks?: number; comment?: string };
+const selectClass = "h-11 w-full rounded-xl border border-input bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30";
+
+export function WrittenExamWorkspace({ role }: { role: "admin" | "teacher" }) {
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [selectedExam, setSelectedExam] = useState<Exam>();
+  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [batchId, setBatchId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [title, setTitle] = useState("");
+  const [examDate, setExamDate] = useState(new Date().toISOString().slice(0, 10));
+  const [totalMarks, setTotalMarks] = useState(100);
+  const [questionFile, setQuestionFile] = useState<File>();
+  const [instructions, setInstructions] = useState("");
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    const [examResult, activeResult, plannedResult] = await Promise.all([
+      apiFetch<{ exams: Exam[] }>("/api/written-exams"),
+      apiFetch<{ batches: Batch[] }>("/api/batches?status=active&limit=100"),
+      apiFetch<{ batches: Batch[] }>("/api/batches?status=planned&limit=100"),
+    ]);
+    if (examResult.ok && isApiSuccess(examResult.payload)) setExams(examResult.payload.data.exams);
+    const available = [activeResult, plannedResult].flatMap((result) => result.ok && isApiSuccess(result.payload) ? result.payload.data.batches : []);
+    setBatches([...new Map(available.map((batch) => [batch.id, batch])).values()]);
+  }, []);
+
+  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
+  useEffect(() => {
+    if (!batchId) return;
+    void apiFetch<{ subjects: Subject[] }>(`/api/coaching-subjects?batchId=${batchId}`).then((result) => {
+      setSubjects(result.ok && isApiSuccess(result.payload) ? result.payload.data.subjects : []);
+    });
+  }, [batchId]);
+
+  async function openExam(exam: Exam) {
+    setSelectedExam(exam); setMessage("");
+    const result = await apiFetch<{ students: StudentRow[] }>(`/api/written-exams?examId=${exam.id}`);
+    if (result.ok && isApiSuccess(result.payload)) setStudents(result.payload.data.students);
+    else { setIsError(true); setMessage(getApiErrorMessage(result.payload, "Student roster could not be loaded.")); }
+  }
+
+  async function createExam(event: FormEvent) {
+    event.preventDefault(); setSaving(true); setMessage("");
+    const result = await apiFetch<{ exam: Exam }>("/api/written-exams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      action: "create", batchId, subjectId, title, examDate, totalMarks,
+      ...(instructions.trim() ? { instructions } : {}),
+    }) });
+    if (!result.ok || !isApiSuccess(result.payload)) {
+      setSaving(false); setIsError(true); setMessage(getApiErrorMessage(result.payload, "Written exam could not be created.")); return;
+    }
+    let questionUploaded = false;
+    if (questionFile) {
+      const form = new FormData(); form.append("examId", result.payload.data.exam.id); form.append("file", questionFile);
+      const upload = await apiFetch("/api/written-exams", { method: "POST", body: form });
+      if (!upload.ok || !isApiSuccess(upload.payload)) {
+        setSaving(false); setIsError(true); setMessage(`Exam created, but ${getApiErrorMessage(upload.payload, "the question could not be attached.")}`); await load(); return;
+      }
+      questionUploaded = true;
+    }
+    setSaving(false); setIsError(false); setMessage(`Written exam created${questionUploaded ? " with its private question file" : ""}. Enter marks, then publish when ready.`);
+    setTitle(""); setQuestionFile(undefined); setInstructions(""); await load();
+  }
+
+  const enteredRows = useMemo(() => students.filter((student) => Number.isFinite(student.marks)), [students]);
+
+  async function saveMarks() {
+    if (!selectedExam || !enteredRows.length) return;
+    setSaving(true); setMessage("");
+    const result = await apiFetch("/api/written-exams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      action: "save-marks", examId: selectedExam.id,
+      results: enteredRows.map((student) => ({ studentId: student.id, marks: student.marks, comment: student.comment })),
+    }) });
+    setSaving(false);
+    if (!result.ok || !isApiSuccess(result.payload)) { setIsError(true); setMessage(getApiErrorMessage(result.payload, "Marks could not be saved.")); return; }
+    setIsError(false); setMessage(`${enteredRows.length} student mark${enteredRows.length === 1 ? "" : "s"} saved as draft.`);
+  }
+
+  async function publish() {
+    if (!selectedExam || !window.confirm("Publish these written-exam marks to students? Published marks will be locked.")) return;
+    setSaving(true); setMessage("");
+    const result = await apiFetch("/api/written-exams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "publish", examId: selectedExam.id }) });
+    setSaving(false);
+    if (!result.ok || !isApiSuccess(result.payload)) { setIsError(true); setMessage(getApiErrorMessage(result.payload, "Exam could not be published.")); return; }
+    setIsError(false); setMessage("Written-exam results are now visible to students."); setSelectedExam({ ...selectedExam, isPublished: true }); await load();
+  }
+
+  return <div className="space-y-6">
+    <header className="rounded-3xl bg-[linear-gradient(125deg,#081f3b,#123f70_72%,#1c5c8d)] p-6 text-white shadow-lg"><p className="text-xs font-black uppercase tracking-[.2em] text-brand-yellow">Assessment workflow</p><h1 className="mt-2 text-3xl font-black">Written exams</h1><p className="mt-2 max-w-3xl text-sm text-white/75">Create an exam for a real batch, optionally attach its private question file, enter marks from the roster, and publish only when verified.</p></header>
+    {message && <Alert variant={isError ? "destructive" : "success"}>{message}</Alert>}
+    <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+      <div className="space-y-5">
+        <form onSubmit={createExam} className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">New written exam</p><h2 className="mt-1 text-xl font-black text-primary">Exam details</h2></div>
+          <div className="space-y-2"><Label htmlFor="written-batch">Batch</Label><select id="written-batch" required className={selectClass} value={batchId} onChange={(event) => { setBatchId(event.target.value); setSubjectId(""); setSubjects([]); }}><option value="">Select batch</option>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select></div>
+          <div className="space-y-2"><Label htmlFor="written-subject">Subject</Label><select id="written-subject" required className={selectClass} value={subjectId} onChange={(event) => setSubjectId(event.target.value)}><option value="">Select subject</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.nameBn || subject.name}</option>)}</select></div>
+          <div className="space-y-2"><Label htmlFor="written-title">Exam title</Label><Input id="written-title" required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Weekly Written Exam 01" /></div>
+          <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="written-date">Exam date</Label><Input id="written-date" required type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="written-total">Total marks</Label><Input id="written-total" required type="number" min={1} value={totalMarks} onChange={(event) => setTotalMarks(Number(event.target.value))} /></div></div>
+          <div className="space-y-2"><Label htmlFor="written-instructions">Instructions (optional)</Label><textarea id="written-instructions" className="min-h-20 w-full rounded-xl border border-input p-3 text-sm" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="written-question">Question file (optional)</Label><Input id="written-question" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setQuestionFile(event.target.files?.[0])} /><p className="text-xs text-muted">JPG, PNG, WebP, or PDF · maximum 5 MB · stored privately in the database</p></div>
+          <Button className="w-full" disabled={saving || !batchId || !subjectId}><FilePenLine className="size-4" />{saving ? "Creating…" : "Create written exam"}</Button>
+        </form>
+        <section className="space-y-2"><h2 className="font-black text-primary">All written exams</h2>{exams.length === 0 ? <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">No written exam yet.</p> : exams.map((exam) => <button type="button" key={exam.id} onClick={() => void openExam(exam)} className={`w-full rounded-2xl border bg-card p-4 text-left shadow-sm ${selectedExam?.id === exam.id ? "border-primary ring-2 ring-primary/10" : "border-border"}`}><div className="flex items-start justify-between gap-2"><div><b className="text-primary">{exam.title}</b><p className="mt-1 text-xs text-muted">{exam.batchName} · {exam.subjectName} · {new Date(exam.examDate).toLocaleDateString("en-GB")}</p>{exam.hasQuestionFile && <p className="mt-1 text-xs font-bold text-primary">Question attached</p>}</div><span className={`rounded-full px-2 py-1 text-[10px] font-black ${exam.isPublished ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>{exam.isPublished ? "Published" : "Draft"}</span></div></button>)}</section>
+      </div>
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+        {!selectedExam ? <div className="grid min-h-96 place-items-center text-center"><div><FilePenLine className="mx-auto size-10 text-muted" /><h2 className="mt-3 text-xl font-black text-primary">Select an exam</h2><p className="mt-1 text-sm text-muted">Its batch roster will open as a mark-entry sheet.</p></div></div> : <div className="space-y-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-black text-primary">{selectedExam.title}</h2><p className="text-sm text-muted">Maximum {selectedExam.totalMarks} marks · {students.length} active students</p>{selectedExam.hasQuestionFile && <a className="mt-1 inline-block text-xs font-bold text-primary underline" target="_blank" href={`/api/written-exams?examId=${selectedExam.id}&question=true`}>Open private question</a>}</div>{selectedExam.isPublished && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-700"><CheckCircle2 className="size-4" />Published</span>}</div>
+          <div className="overflow-x-auto rounded-2xl border border-border"><table className="min-w-full text-sm"><thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted"><tr><th className="px-3 py-3">Student ID</th><th className="px-3 py-3">Student</th><th className="px-3 py-3">Marks / {selectedExam.totalMarks}</th><th className="px-3 py-3">Comment</th></tr></thead><tbody>{students.map((student) => <tr key={student.id} className="border-t border-border"><td className="px-3 py-2 font-mono font-black text-primary">{student.studentCode ?? "—"}</td><td className="px-3 py-2 font-bold">{student.name}</td><td className="px-3 py-2"><Input aria-label={`${student.name} marks`} disabled={selectedExam.isPublished} className="w-28" type="number" min={0} max={selectedExam.totalMarks} value={student.marks ?? ""} onChange={(event) => setStudents((current) => current.map((row) => row.id === student.id ? { ...row, marks: event.target.value === "" ? undefined : Number(event.target.value) } : row))} /></td><td className="px-3 py-2"><Input aria-label={`${student.name} comment`} disabled={selectedExam.isPublished} value={student.comment ?? ""} onChange={(event) => setStudents((current) => current.map((row) => row.id === student.id ? { ...row, comment: event.target.value } : row))} /></td></tr>)}</tbody></table></div>
+          {!selectedExam.isPublished && <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" disabled={saving || !enteredRows.length} onClick={() => void saveMarks()}><Save className="size-4" />Save draft marks</Button><Button disabled={saving || !enteredRows.length} onClick={() => void publish()}><Send className="size-4" />Publish to students</Button></div>}
+        </div>}
+      </section>
+    </div>
+    {role === "admin" && <p className="text-xs text-muted">Admins can oversee all batches. Teachers only see exams matching their current batch and subject assignments.</p>}
+  </div>;
+}

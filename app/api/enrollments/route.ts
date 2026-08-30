@@ -32,6 +32,8 @@ function serializeEnrollment(enrollment: {
   effectiveFrom: Date;
   effectiveTo?: Date;
   endReason?: string;
+  guardianPhone?: string;
+  guardianRelation?: string;
 }) {
   return {
     id: String(enrollment._id),
@@ -44,6 +46,8 @@ function serializeEnrollment(enrollment: {
     effectiveFrom: enrollment.effectiveFrom.toISOString(),
     effectiveTo: enrollment.effectiveTo?.toISOString(),
     endReason: enrollment.endReason,
+    guardianPhone: enrollment.guardianPhone,
+    guardianRelation: enrollment.guardianRelation,
   };
 }
 
@@ -134,6 +138,10 @@ export async function GET(request: NextRequest) {
           effectiveFrom: enrollment.effectiveFrom.toISOString(),
           effectiveTo: enrollment.effectiveTo?.toISOString(),
           endReason: enrollment.endReason,
+          ...(user.role === "admin" ? {
+            guardianPhone: enrollment.guardianPhone,
+            guardianRelation: enrollment.guardianRelation,
+          } : {}),
         };
       }),
     });
@@ -165,6 +173,8 @@ export async function POST(request: NextRequest) {
             studentCode: parsed.studentCode,
             effectiveFrom: parsed.effectiveFrom ?? new Date(),
             feeTk: parsed.feeTk,
+            guardianPhone: parsed.guardianPhone,
+            guardianRelation: parsed.guardianRelation,
             reason: parsed.reason,
           })
         : parsed.action === "transfer" ? await transferCoachingEnrollment({
@@ -175,11 +185,15 @@ export async function POST(request: NextRequest) {
             subjectIds: parsed.subjectIds,
             effectiveAt: parsed.effectiveAt ?? new Date(),
             feeTk: parsed.feeTk,
+            guardianPhone: parsed.guardianPhone,
+            guardianRelation: parsed.guardianRelation,
             reason: parsed.reason,
           }) : parsed.action === "update-subjects" ? await updateCoachingSubjects({
             request, actor, enrollmentId: parsed.enrollmentId, subjectIds: parsed.subjectIds,
             effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,
             feeTk: parsed.feeTk,
+            guardianPhone: parsed.guardianPhone,
+            guardianRelation: parsed.guardianRelation,
           }) : await withdrawCoachingEnrollment({
             request, actor, enrollmentId: parsed.enrollmentId,
             effectiveAt: parsed.effectiveAt ?? new Date(), reason: parsed.reason,

@@ -51,6 +51,8 @@ type EnrollStudentInput = WorkflowAuditContext & {
   batchId: string;
   studentId: string;
   effectiveFrom: Date;
+  guardianPhone: string;
+  guardianRelation: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 };
 
 type UpdateBatchInput = WorkflowAuditContext & {
@@ -395,6 +397,8 @@ export async function enrollStudent(input: EnrollStudentInput) {
           studentId: student._id,
           status: "active",
           effectiveFrom: input.effectiveFrom,
+          guardianPhone: input.guardianPhone,
+          guardianRelation: input.guardianRelation,
           createdBy: input.actor.id,
         },
       ],
@@ -415,6 +419,7 @@ export async function enrollStudent(input: EnrollStudentInput) {
         studentId: String(student._id),
         status: enrollment.status,
         effectiveFrom: enrollment.effectiveFrom.toISOString(),
+        guardianRelation: enrollment.guardianRelation,
       },
       session,
     });
@@ -475,6 +480,8 @@ export async function transferStudent(input: TransferStudentInput) {
           studentId: current.studentId,
           status: "active",
           effectiveFrom: input.effectiveAt,
+          guardianPhone: current.guardianPhone,
+          guardianRelation: current.guardianRelation,
           createdBy: input.actor.id,
         },
       ],
@@ -496,6 +503,7 @@ export async function transferStudent(input: TransferStudentInput) {
         status: nextEnrollment.status,
         nextEnrollmentId: String(nextEnrollment._id),
         effectiveFrom: nextEnrollment.effectiveFrom.toISOString(),
+        guardianRelation: nextEnrollment.guardianRelation,
       },
       session,
     });

@@ -13,6 +13,7 @@ test("student navigation includes the schedule-first dashboard", () => {
     "/student/practice",
     "/student/exams",
     "/student/results",
+    "/student/reports",
   ]);
   assert.equal(isTopLevelDashboardRoute("student", "/student/courses"), false);
   assert.equal(isTopLevelDashboardRoute("student", "/student/tools"), false);
@@ -23,7 +24,9 @@ test("teacher navigation exposes class content without routine sessions", () => 
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher"), true);
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/classes"), true);
   assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/results"), true);
-  assert.equal(dashboardTopLevelRoutes.teacher.length, 6);
+  assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/written-exams"), true);
+  assert.equal(isTopLevelDashboardRoute("teacher", "/teacher/reports"), true);
+  assert.equal(dashboardTopLevelRoutes.teacher.length, 8);
 });
 
 test("admin navigation separates each administrative responsibility", () => {
@@ -33,5 +36,7 @@ test("admin navigation separates each administrative responsibility", () => {
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/attendance"), true);
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/routine"), true);
   assert.equal(isTopLevelDashboardRoute("admin", "/admin/finance"), true);
-  assert.equal(dashboardTopLevelRoutes.admin.length, 10);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/written-exams"), true);
+  assert.equal(isTopLevelDashboardRoute("admin", "/admin/reports"), true);
+  assert.equal(dashboardTopLevelRoutes.admin.length, 12);
 });

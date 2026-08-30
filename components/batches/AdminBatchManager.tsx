@@ -65,6 +65,8 @@ export function AdminBatchManager() {
   const [studentCodeContext, setStudentCodeContext] = useState<StudentCodeContext>();
   const [studentCodeDraft, setStudentCodeDraft] = useState("");
   const [idFieldLocked, setIdFieldLocked] = useState(false);
+  const [guardianPhone, setGuardianPhone] = useState("");
+  const [guardianRelation, setGuardianRelation] = useState("father");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,6 +133,8 @@ export function AdminBatchManager() {
     setIdFieldLocked(false);
     setStudentCodeContext(undefined);
     setMessage("");
+    setGuardianPhone("");
+    setGuardianRelation("father");
     void apiFetch<{ studentCodeContext: StudentCodeContext }>(
       `/api/enrollments?batchId=${batch.id}&studentCodeContext=true&status=active&limit=1`,
     ).then((result) => {
@@ -149,6 +153,8 @@ export function AdminBatchManager() {
     setStudentCodeContext(undefined);
     setStudentCodeDraft("");
     setIdFieldLocked(false);
+    setGuardianPhone("");
+    setGuardianRelation("father");
   }
 
   async function assignStudentCode(student: Student, requestedCode?: string) {
@@ -220,7 +226,7 @@ export function AdminBatchManager() {
     if (!addingToBatch || !selectedStudent) return;
     setSaving(true);
     setMessage("");
-    let studentCode = selectedStudent.studentCode;
+    const studentCode = selectedStudent.studentCode;
     const draft = studentCodeDraft.trim();
     if (!studentCode) {
       if (!isValidStudentCodeDraft(draft, studentCodeContext?.prefix ?? null)) {
@@ -241,6 +247,8 @@ export function AdminBatchManager() {
         batchId: addingToBatch.id,
         subjectIds: addingToBatch.subjects.map((subject) => subject.id),
         feeTk: addingToBatch.defaultFeeTk,
+        guardianPhone: guardianPhone.trim(),
+        guardianRelation,
         ...(studentCode ? {} : { studentCode: draft }),
         reason: "Admin added student from Batch management",
       }),
@@ -408,8 +416,8 @@ export function AdminBatchManager() {
             {availableStudents.map((student) => <button key={student.id} type="button" disabled={assigningStudentId} onClick={() => selectStudentForBatch(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
             {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
           </div>
-          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">Permanent Student ID</Label><Input id="assigned-student-id" readOnly={idFieldLocked || assigningStudentId} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={assigningStudentId ? "Assigning…" : studentCodeContext?.nextStudentCode ?? "Enter 7-digit ID"} className="font-mono font-black" inputMode="numeric" pattern="\d{7}" maxLength={7} /><p className="text-xs text-muted">{idFieldLocked ? "This permanent ID is saved on the student profile and used across attendance, finance, and results." : studentCodeContext?.lastStudentCode ? `Last ID was ${studentCodeContext.lastStudentCode}. Keep the suggested ID or type another 7-digit ID starting with ${studentCodeContext.prefix ?? ""}.` : "Type a 7-digit Student ID, or keep the suggested next ID."}</p></div>{!idFieldLocked && selectedStudent && !assigningStudentId && <Button type="button" variant="outline" className="w-full" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>Apply ID</Button>}</div>}
-          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent || (!selectedStudent.studentCode && !isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null))}>{saving ? "Adding…" : assigningStudentId ? "Assigning Student ID…" : "Add Student"}</Button>
+          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">Permanent Student ID</Label><Input id="assigned-student-id" readOnly={idFieldLocked || assigningStudentId} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={assigningStudentId ? "Assigning…" : studentCodeContext?.nextStudentCode ?? "Enter 7-digit ID"} className="font-mono font-black" inputMode="numeric" pattern="\d{7}" maxLength={7} /><p className="text-xs text-muted">{idFieldLocked ? "This permanent ID is saved on the student profile and used across attendance, finance, and results." : studentCodeContext?.lastStudentCode ? `Last ID was ${studentCodeContext.lastStudentCode}. Keep the suggested ID or type another 7-digit ID starting with ${studentCodeContext.prefix ?? ""}.` : "Type a 7-digit Student ID, or keep the suggested next ID."}</p></div>{!idFieldLocked && selectedStudent && !assigningStudentId && <Button type="button" variant="outline" className="w-full" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>Apply ID</Button>}<div className="grid gap-3 sm:grid-cols-[1fr_150px]"><div className="space-y-1.5"><Label htmlFor="batch-guardian-phone">Guardian phone</Label><Input id="batch-guardian-phone" required inputMode="tel" pattern="\+?[0-9]{10,15}" value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value.replace(/[^+0-9]/g, "").slice(0, 16))} placeholder="01XXXXXXXXX" /></div><div className="space-y-1.5"><Label htmlFor="batch-guardian-relation">Relation</Label><select id="batch-guardian-relation" required value={guardianRelation} onChange={(event) => setGuardianRelation(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-white px-3"><option value="father">Father</option><option value="mother">Mother</option><option value="brother">Brother</option><option value="sister">Sister</option><option value="uncle">Uncle</option><option value="aunt">Aunt</option><option value="other">Other</option></select></div></div></div>}
+          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent || !/^\+?[0-9]{10,15}$/.test(guardianPhone.trim()) || (!selectedStudent.studentCode && !isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null))}>{saving ? "Adding…" : assigningStudentId ? "Assigning Student ID…" : "Add Student"}</Button>
         </form>
       )}
 

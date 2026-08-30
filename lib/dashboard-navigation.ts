@@ -7,6 +7,7 @@ export const dashboardTopLevelRoutes = {
     "/student/practice",
     "/student/exams",
     "/student/results",
+    "/student/reports",
   ],
   teacher: [
     "/teacher",
@@ -14,6 +15,8 @@ export const dashboardTopLevelRoutes = {
     "/teacher/mcq-review",
     "/teacher/exams",
     "/teacher/results",
+    "/teacher/written-exams",
+    "/teacher/reports",
     "/teacher/profile",
   ],
   admin: [
@@ -21,6 +24,8 @@ export const dashboardTopLevelRoutes = {
     "/admin/students",
     "/admin/teachers",
     "/admin/attendance",
+    "/admin/written-exams",
+    "/admin/reports",
     "/admin/routine",
     "/admin/academic",
     "/admin/finance",

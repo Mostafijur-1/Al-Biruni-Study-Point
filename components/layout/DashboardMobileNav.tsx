@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   FileQuestion,
+  FilePenLine,
   GraduationCap,
   HandCoins,
   Home,
@@ -54,6 +55,7 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       mobilePrimary: true,
     },
     { href: "/student/results", label: "ফলাফল", icon: GraduationCap, mobilePrimary: true },
+    { href: "/student/reports", label: "Progress reports", icon: LineChart },
   ],
   teacher: [
     { href: "/teacher", label: "হোম", icon: Home, mobilePrimary: true },
@@ -76,6 +78,8 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       icon: LineChart,
       mobilePrimary: true,
     },
+    { href: "/teacher/written-exams", label: "Written exams", icon: FilePenLine },
+    { href: "/teacher/reports", label: "Student reports", icon: LineChart },
     { href: "/teacher/profile", label: "প্রোফাইল", icon: UserCircle },
   ],
   admin: [
@@ -102,6 +106,8 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
       icon: ClipboardCheck,
       mobilePrimary: true,
     },
+    { href: "/admin/written-exams", label: "Written Exams", icon: FilePenLine },
+    { href: "/admin/reports", label: "Student Reports", icon: LineChart },
     {
       href: "/admin/routine",
       label: "Class Routine",

@@ -338,6 +338,8 @@ export async function createCoachingEnrollment(input: AuditInput & {
   studentCode?: string;
   effectiveFrom: Date;
   feeTk: number;
+  guardianPhone: string;
+  guardianRelation: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
   return inTransaction(async (session) => {
     const { batch, selectedSubjectIds } = await loadSelection(input.batchId, input.subjectIds, session);
@@ -375,6 +377,8 @@ export async function createCoachingEnrollment(input: AuditInput & {
       studentId: student._id,
       status: "active",
       effectiveFrom,
+      guardianPhone: input.guardianPhone,
+      guardianRelation: input.guardianRelation,
       createdBy: input.actor.id,
     }], { session });
     await addSubjectRows({ enrollment, subjectIds: selectedSubjectIds, effectiveFrom, actorId: input.actor.id, session });
@@ -383,7 +387,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
       action: "coaching.enrollment.created", resourceType: "BatchEnrollment", resourceId: enrollment._id, reason: input.reason,
-      after: { batchId: String(batch._id), studentId: String(student._id), studentCode, subjectIds: selectedSubjectIds, feeTk: input.feeTk, effectiveFrom: effectiveFrom.toISOString() }, session,
+      after: { batchId: String(batch._id), studentId: String(student._id), studentCode, subjectIds: selectedSubjectIds, feeTk: input.feeTk, guardianRelation: input.guardianRelation, effectiveFrom: effectiveFrom.toISOString() }, session,
     });
     return enrollment;
   });
@@ -426,6 +430,8 @@ export async function updateCoachingSubjects(input: AuditInput & {
   subjectIds: string[];
   effectiveAt: Date;
   feeTk: number;
+  guardianPhone?: string;
+  guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
   return inTransaction(async (session) => {
     const enrollment = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
@@ -443,6 +449,8 @@ export async function updateCoachingSubjects(input: AuditInput & {
       );
     }
     if (added.length) await addSubjectRows({ enrollment, subjectIds: added, effectiveFrom: input.effectiveAt, actorId: input.actor.id, session });
+    if (input.guardianPhone) enrollment.guardianPhone = input.guardianPhone;
+    if (input.guardianRelation) enrollment.guardianRelation = input.guardianRelation;
     await enrollment.save({ session });
     await syncPaymentProfile({ studentId: enrollment.studentId, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
     await writeAuditLog({
@@ -461,6 +469,8 @@ export async function transferCoachingEnrollment(input: AuditInput & {
   subjectIds?: string[];
   effectiveAt: Date;
   feeTk: number;
+  guardianPhone?: string;
+  guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
   return inTransaction(async (session) => {
     const current = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
@@ -489,6 +499,8 @@ export async function transferCoachingEnrollment(input: AuditInput & {
     const [next] = await BatchEnrollment.create([{
       organizationId: targetBatch.organizationId, branchId: targetBatch.branchId, academicSessionId: targetBatch.academicSessionId,
       batchId: targetBatch._id, studentId: current.studentId, status: "active", effectiveFrom: input.effectiveAt,
+      guardianPhone: input.guardianPhone ?? current.guardianPhone,
+      guardianRelation: input.guardianRelation ?? current.guardianRelation,
       createdBy: input.actor.id,
     }], { session });
     await addSubjectRows({ enrollment: next, subjectIds: selectedSubjectIds, effectiveFrom: input.effectiveAt, actorId: input.actor.id, session });

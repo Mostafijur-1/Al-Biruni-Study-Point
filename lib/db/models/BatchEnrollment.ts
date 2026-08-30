@@ -12,6 +12,8 @@ export interface IBatchEnrollment extends Document {
   effectiveFrom: Date;
   effectiveTo?: Date;
   endReason?: string;
+  guardianPhone?: string;
+  guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +34,11 @@ const BatchEnrollmentSchema = new Schema<IBatchEnrollment>(
     effectiveFrom: { type: Date, required: true, default: Date.now },
     effectiveTo: { type: Date },
     endReason: { type: String, trim: true },
+    guardianPhone: { type: String, trim: true, maxlength: 20 },
+    guardianRelation: {
+      type: String,
+      enum: ["father", "mother", "brother", "sister", "uncle", "aunt", "other"],
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true },

@@ -3,6 +3,8 @@ import { z } from "zod";
 const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid record identifier.");
 const studentClassSchema = z.enum(["class-9", "class-10", "class-11", "class-12"]);
 const mutationReasonSchema = z.string().trim().min(4).max(500);
+const guardianPhoneSchema = z.string().trim().regex(/^\+?[0-9]{10,15}$/, "Enter a valid guardian phone number using English digits.");
+const guardianRelationSchema = z.enum(["father", "mother", "brother", "sister", "uncle", "aunt", "other"]);
 const batchNameSchema = z.string().trim().min(2).max(120).regex(/\b(?:19|20)\d{2}\b/, "Batch name must contain a four-digit year for permanent Student IDs.");
 
 export const batchListQuerySchema = z.object({
@@ -61,6 +63,8 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
     studentCode: z.string().trim().regex(/^\d{7}$/, "Student ID must be a 7-digit number.").optional(),
     feeTk: z.coerce.number().int().min(0).max(10_000_000),
+    guardianPhone: guardianPhoneSchema,
+    guardianRelation: guardianRelationSchema,
     effectiveFrom: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),
@@ -70,6 +74,8 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     targetBatchId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
     feeTk: z.coerce.number().int().min(0).max(10_000_000),
+    guardianPhone: guardianPhoneSchema.optional(),
+    guardianRelation: guardianRelationSchema.optional(),
     effectiveAt: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),
@@ -78,6 +84,8 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     enrollmentId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30),
     feeTk: z.coerce.number().int().min(0).max(10_000_000),
+    guardianPhone: guardianPhoneSchema.optional(),
+    guardianRelation: guardianRelationSchema.optional(),
     effectiveAt: z.coerce.date().optional(),
     reason: mutationReasonSchema,
   }),

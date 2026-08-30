@@ -45,9 +45,13 @@ test("enrollment mutations require explicit actions, valid IDs, and audit reason
     batchId: id,
     studentId: "64f000000000000000000002",
     feeTk: 2500,
+    guardianPhone: "01700000000",
+    guardianRelation: "father",
     reason: "Confirmed admission roster",
   });
   assert.equal(enrollment.action, "enroll");
+  assert.equal(enrollment.guardianPhone, "01700000000");
+  assert.equal(enrollmentMutationSchema.safeParse({ ...enrollment, guardianPhone: "০১৭০০০০০০০০" }).success, false);
 
   assert.equal(
     enrollmentMutationSchema.safeParse({

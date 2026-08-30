@@ -141,6 +141,8 @@ try {
     batchId: String(firstBatch._id),
     studentId: String(firstStudent._id),
     effectiveFrom: new Date("2026-01-02T00:00:00.000Z"),
+    guardianPhone: "01700000000",
+    guardianRelation: "father",
     reason: "Confirmed test enrollment",
   });
   await assert.rejects(
@@ -150,6 +152,8 @@ try {
       batchId: String(firstBatch._id),
       studentId: String(secondStudent._id),
       effectiveFrom: new Date("2026-01-02T00:00:00.000Z"),
+      guardianPhone: "01800000000",
+      guardianRelation: "mother",
       reason: "Capacity test enrollment",
     }),
     (error) => error instanceof ApiRouteError && error.status === 409,
