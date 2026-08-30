@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { createHash } from "node:crypto";
 
 import { compareTeacherScopeParity } from "../lib/academic-scope-parity.ts";
 import { AcademicSubject } from "../lib/db/models/AcademicSubject.ts";
@@ -9,6 +10,12 @@ import { User } from "../lib/db/models/User.ts";
 
 const uri = process.env.MONGODB_URI?.trim();
 if (!uri) throw new Error("MONGODB_URI is not configured.");
+const includeDetails = process.argv.includes("--details");
+const sourceCommit = process.argv.find((value) => value.startsWith("--commit="))?.slice(9);
+if (process.argv.includes("--fail-on-mismatch") && !/^[a-f\d]{7,40}$/i.test(sourceCommit ?? "")) {
+  throw new Error("Evidence mode requires --commit=<deployed-git-sha>.");
+}
+const anonymousTeacherRef = (id: unknown) => createHash("sha256").update(`teacher:${String(id)}`).digest("hex").slice(0, 16);
 
 await mongoose.connect(uri, { dbName: "absp" });
 
@@ -92,20 +99,27 @@ try {
     });
 
     return {
-      teacherId: String(teacher._id),
+      teacherRef: anonymousTeacherRef(teacher._id),
       canonicalAssignmentCount: teacherAssignments.length,
       ...parity,
     };
   });
   const summary = {
     generatedAt: now.toISOString(),
+    sourceCommit: sourceCommit ?? null,
     teachers: results.length,
     matches: results.filter((result) => result.status === "match").length,
     mismatches: results.filter((result) => result.status === "mismatch").length,
     legacyAllRequiresReview: results.filter(
       (result) => result.status === "legacy_all_requires_review",
     ).length,
-    results,
+    unauthorizedExpansionCount: results.filter((result) =>
+      result.status === "legacy_all_requires_review" ||
+      result.differences.canonicalOnlyClasses.length > 0 ||
+      result.differences.canonicalOnlySubjects.length > 0 ||
+      result.differences.canonicalOnlyStudents.length > 0
+    ).length,
+    ...(includeDetails ? { results } : {}),
   };
 
   console.log(JSON.stringify(summary, null, 2));

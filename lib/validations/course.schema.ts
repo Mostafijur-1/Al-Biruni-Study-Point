@@ -2,12 +2,15 @@ import { z } from "zod";
 
 import { targetClassesSchema } from "@/lib/validations/content.schema";
 
+const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid canonical subject ID.");
+
 export const createCourseSchema = z.object({
   title: z.string().trim().min(3),
   titleBn: z.string().trim().min(3),
   description: z.string().trim().optional().or(z.literal("")),
   level: z.enum(["SSC", "HSC"]),
   subject: z.enum(["Physics", "Chemistry", "Math", "Higher Math", "ICT"]),
+  subjectId: objectIdSchema.optional(),
   targetClasses: targetClassesSchema,
   isPublished: z.boolean().default(true),
 });

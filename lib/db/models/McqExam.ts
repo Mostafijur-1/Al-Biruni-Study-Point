@@ -1,7 +1,13 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import type { StudentClass } from "@/types";
+import { requireCanonicalPathsWhenEnabled } from "../canonical-scope-guard.ts";
 
 export interface IMcqExam extends Document {
+  organizationId?: Types.ObjectId;
+  branchId?: Types.ObjectId;
+  academicSessionId?: Types.ObjectId;
+  batchIds?: Types.ObjectId[];
+  subjectId?: Types.ObjectId;
   title: string;
   teacher: Types.ObjectId;
   subject: string;
@@ -25,6 +31,11 @@ export interface IMcqExam extends Document {
 
 const McqExamSchema = new Schema<IMcqExam>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
+    academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession" },
+    batchIds: [{ type: Schema.Types.ObjectId, ref: "Batch" }],
+    subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
     title: { type: String, required: true, trim: true },
     teacher: { type: Schema.Types.ObjectId, ref: "User", required: true },
     subject: { type: String, required: true },
@@ -45,6 +56,8 @@ const McqExamSchema = new Schema<IMcqExam>(
   },
   { timestamps: true }
 );
+McqExamSchema.index({ organizationId: 1, subjectId: 1, isPublished: 1, createdAt: -1 });
+requireCanonicalPathsWhenEnabled(McqExamSchema, ["organizationId", "subjectId"]);
 
 // Prevent Next.js hot-reloading model duplication error
 if (process.env.NODE_ENV !== "production" && mongoose.models.McqExam) {

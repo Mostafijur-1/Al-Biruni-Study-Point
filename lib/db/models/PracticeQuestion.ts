@@ -1,6 +1,11 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import { requireCanonicalPathsWhenEnabled } from "../canonical-scope-guard.ts";
 
 export interface IPracticeQuestion extends Document {
+  organizationId?: Types.ObjectId;
+  subjectId?: Types.ObjectId;
+  chapterId?: Types.ObjectId;
+  topicId?: Types.ObjectId;
   level: "ssc" | "hsc";
   subject: string;
   chapter: string;
@@ -18,6 +23,10 @@ export interface IPracticeQuestion extends Document {
 
 const PracticeQuestionSchema = new Schema<IPracticeQuestion>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
+    chapterId: { type: Schema.Types.ObjectId, ref: "AcademicChapter" },
+    topicId: { type: Schema.Types.ObjectId, ref: "AcademicTopic" },
     level: { type: String, enum: ["ssc", "hsc"], required: true },
     subject: { type: String, required: true },
     chapter: { type: String, required: true },
@@ -43,6 +52,8 @@ const PracticeQuestionSchema = new Schema<IPracticeQuestion>(
 // Indexes for fast lookup
 PracticeQuestionSchema.index({ level: 1, subject: 1, chapter: 1 });
 PracticeQuestionSchema.index({ isTeacherSet: 1, createdBy: 1 });
+PracticeQuestionSchema.index({ organizationId: 1, subjectId: 1, chapterId: 1, topicId: 1 });
+requireCanonicalPathsWhenEnabled(PracticeQuestionSchema, ["organizationId", "subjectId", "chapterId"]);
 
 if (process.env.NODE_ENV !== "production" && mongoose.models.PracticeQuestion) {
   mongoose.deleteModel("PracticeQuestion");

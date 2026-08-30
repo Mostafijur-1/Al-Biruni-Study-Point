@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 import type { StudentClass } from "@/types";
+import { requireCanonicalPathsWhenEnabled } from "../canonical-scope-guard.ts";
 
 export interface IAcademicSubject extends Document {
   organizationId?: Types.ObjectId;
@@ -37,6 +38,7 @@ const AcademicSubjectSchema = new Schema<IAcademicSubject>(
 
 AcademicSubjectSchema.index({ organizationId: 1, code: 1 }, { unique: true });
 AcademicSubjectSchema.index({ organizationId: 1, classLevels: 1, status: 1 });
+requireCanonicalPathsWhenEnabled(AcademicSubjectSchema, ["organizationId"]);
 
 export const AcademicSubject: Model<IAcademicSubject> =
   (mongoose.models.AcademicSubject as Model<IAcademicSubject> | undefined) ||

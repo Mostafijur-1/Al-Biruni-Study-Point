@@ -10,6 +10,7 @@ import { connectDB } from "@/lib/db/connect";
 import { CqAssignment } from "@/lib/db/models/CqAssignment";
 import { createCqAssignmentSchema } from "@/lib/validations/cq.schema";
 import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
+import { resolveCanonicalContentScope } from "@/lib/canonical-content-scope";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,6 +59,8 @@ export async function POST(request: NextRequest) {
     const parsed = createCqAssignmentSchema.parse(await request.json());
 
     await connectDB();
+    const canonicalScope = await resolveCanonicalContentScope(parsed.subjectId, parsed.subject);
+    if (!canonicalScope.ok) return fail(canonicalScope.message, canonicalScope.status);
 
     if (user.role === "teacher") {
       if (!parsed.subject) return fail("Subject is required for teacher content.", 400);
@@ -65,11 +68,14 @@ export async function POST(request: NextRequest) {
         user.id,
         parsed.targetClasses,
         parsed.subject,
+        canonicalScope.subjectId,
       );
       if (!decision.ok) return fail(decision.message, decision.status);
     }
 
     const assignment = await CqAssignment.create({
+      organizationId: canonicalScope.organizationId,
+      subjectId: canonicalScope.subjectId,
       title: parsed.title,
       description: parsed.description || undefined,
       subject: parsed.subject,

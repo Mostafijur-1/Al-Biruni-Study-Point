@@ -12,6 +12,7 @@ import {
   readImageFilesFromFormData,
 } from "@/lib/mcq/upload-parser";
 import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { isCanonicalAcademicAuthorityEnabled } from "@/lib/db/canonical-scope-guard";
 
 export const maxDuration = 60;
 
@@ -48,9 +49,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       const { BENGALI_TO_ENGLISH_SUBJECT_MAP } = await import("@/lib/content/syllabus");
       const englishSubject = BENGALI_TO_ENGLISH_SUBJECT_MAP[exam.subject] || exam.subject;
 
+      const practiceSubjectFilter = isCanonicalAcademicAuthorityEnabled()
+        ? { subjectId: exam.subjectId }
+        : { subject: { $in: [exam.subject, englishSubject] } };
       const practiceQs = await PracticeQuestion.find({
         _id: { $in: questionIds },
-        subject: { $in: [exam.subject, englishSubject] },
+        ...practiceSubjectFilter,
       }).lean();
 
       if (practiceQs.length === 0) {
@@ -59,6 +63,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
       const currentCount = await McqQuestion.countDocuments({ exam: id });
       const docs = practiceQs.map((q, idx) => ({
+        organizationId: exam.organizationId,
+        subjectId: exam.subjectId,
+        chapterId: q.chapterId,
+        topicId: q.topicId,
         exam: id,
         question: q.question,
         options: q.options,
@@ -131,6 +139,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const currentCount = await McqQuestion.countDocuments({ exam: id });
     const docs = parseResult.questions.map((q, idx) => ({
+      organizationId: exam.organizationId,
+      subjectId: exam.subjectId,
       exam: id,
       question: q.question,
       options: q.options,

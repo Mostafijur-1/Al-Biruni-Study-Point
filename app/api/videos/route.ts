@@ -12,6 +12,7 @@ import { VideoProgress } from "@/lib/db/models/VideoProgress";
 import { createVideoSchema } from "@/lib/validations/video.schema";
 import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
 import { redactGuestVideoUrl } from "@/lib/content/video-visibility";
+import { resolveCanonicalContentScope } from "@/lib/canonical-content-scope";
 
 export async function GET(request: NextRequest) {
   try {
@@ -97,6 +98,8 @@ export async function POST(request: NextRequest) {
     const parsed = createVideoSchema.parse(await request.json());
 
     await connectDB();
+    const canonicalScope = await resolveCanonicalContentScope(parsed.subjectId, parsed.subject);
+    if (!canonicalScope.ok) return fail(canonicalScope.message, canonicalScope.status);
 
     if (user.role === "teacher") {
       if (!parsed.subject) return fail("Subject is required for teacher content.", 400);
@@ -104,11 +107,14 @@ export async function POST(request: NextRequest) {
         user.id,
         parsed.targetClasses,
         parsed.subject,
+        canonicalScope.subjectId,
       );
       if (!decision.ok) return fail(decision.message, decision.status);
     }
 
     const video = await Video.create({
+      organizationId: canonicalScope.organizationId,
+      subjectId: canonicalScope.subjectId,
       title: parsed.title,
       description: parsed.description || undefined,
       subject: parsed.subject,

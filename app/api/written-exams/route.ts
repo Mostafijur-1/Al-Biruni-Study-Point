@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { Types } from "mongoose";
+import { isCanonicalAcademicAuthorityEnabled } from "@/lib/db/canonical-scope-guard";
 import { z } from "zod";
 
 import { ApiRouteError } from "@/lib/api-error";
@@ -164,13 +165,26 @@ export async function POST(request: NextRequest) {
     if (parsed.action === "create") {
       const [batch, subject] = await Promise.all([Batch.findById(parsed.batchId), AcademicSubject.findById(parsed.subjectId)]);
       if (!batch || !subject) throw new ApiRouteError("Batch or subject not found.", 404);
+      if (batch.organizationId && subject.organizationId && String(batch.organizationId) !== String(subject.organizationId)) {
+        throw new ApiRouteError("Batch and subject belong to different organizations.", 409);
+      }
+      if (isCanonicalAcademicAuthorityEnabled() && (!batch.organizationId || !batch.branchId || !batch.academicSessionId || !subject.organizationId)) {
+        throw new ApiRouteError("Batch or subject canonical scope is incomplete.", 409);
+      }
       if (actor.role === "teacher") {
         const assignments = await teacherAssignments(actor.id);
         if (!assignments.some((row) => String(row.batchId) === parsed.batchId && String(row.subjectId) === parsed.subjectId)) {
           throw new ApiRouteError("You can only create written exams for an assigned batch and subject.", 403);
         }
       }
-      const exam = await WrittenExam.create({ ...parsed, createdBy: actor.id, creatorRole: actor.role === "admin" ? "admin" : "teacher" });
+      const exam = await WrittenExam.create({
+        ...parsed,
+        organizationId: batch.organizationId,
+        branchId: batch.branchId,
+        academicSessionId: batch.academicSessionId,
+        createdBy: actor.id,
+        creatorRole: actor.role === "admin" ? "admin" : "teacher",
+      });
       await writeAuditLog({ request, actor, organizationId: batch.organizationId, branchId: batch.branchId, action: "written-exam.created", resourceType: "WrittenExam", resourceId: exam._id, reason: "Written exam created", after: { batchId: parsed.batchId, subjectId: parsed.subjectId, totalMarks: parsed.totalMarks, examDate: parsed.examDate.toISOString() } });
       return success({ exam: serializeExam(exam, batch.name, subject.nameBn || subject.name) }, { status: 201 });
     }

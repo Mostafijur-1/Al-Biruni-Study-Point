@@ -6,6 +6,7 @@ import { getSyllabusChapters, type SchoolLevel } from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { resolveCanonicalQuestionScope } from "@/lib/canonical-content-scope";
 import {
   MAX_IMAGE_UPLOADS,
   parseMcqsFromImages,
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
     const targetSubject = formData.get("subject") as CourseSubject;
     const targetLevel = formData.get("level") as SchoolLevel;
     const targetChapter = formData.get("chapter") as string;
+    const subjectId = String(formData.get("subjectId") ?? "") || undefined;
+    const chapterId = String(formData.get("chapterId") ?? "") || undefined;
     const contentType = formData.get("contentType") as string;
 
     if (!targetSubject || !targetLevel || !targetChapter) {
@@ -74,7 +77,12 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+    const canonicalScope = await resolveCanonicalQuestionScope(subjectId, chapterId, targetSubject, targetChapter);
+    if (!canonicalScope.ok) return fail(canonicalScope.message, canonicalScope.status);
     const docs = parseResult.questions.map((q) => ({
+      organizationId: canonicalScope.organizationId,
+      subjectId: canonicalScope.subjectId,
+      chapterId: canonicalScope.chapterId,
       level: targetLevel,
       subject: targetSubject,
       chapter: targetChapter,

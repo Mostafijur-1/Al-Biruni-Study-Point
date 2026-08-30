@@ -11,6 +11,7 @@ import { Course } from "@/lib/db/models/Course";
 import { createCourseSchema } from "@/lib/validations/course.schema";
 import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
 import { doTargetClassesMatchLevel } from "@/lib/auth/teacher-domain-rules";
+import { resolveCanonicalContentScope } from "@/lib/canonical-content-scope";
 
 function slugify(value: string) {
   return value
@@ -79,12 +80,15 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+    const canonicalScope = await resolveCanonicalContentScope(parsed.subjectId, parsed.subject);
+    if (!canonicalScope.ok) return fail(canonicalScope.message, canonicalScope.status);
 
     if (user.role === "teacher") {
       const decision = await authorizeTeacherContentScope(
         user.id,
         parsed.targetClasses,
         parsed.subject,
+        canonicalScope.subjectId,
       );
       if (!decision.ok) return fail(decision.message, decision.status);
     }
@@ -99,6 +103,8 @@ export async function POST(request: NextRequest) {
     }
 
     const course = await Course.create({
+      organizationId: canonicalScope.organizationId,
+      subjectId: canonicalScope.subjectId,
       title: parsed.title,
       titleBn: parsed.titleBn,
       slug,

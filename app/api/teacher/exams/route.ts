@@ -6,13 +6,14 @@ import { requireAuth } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/connect";
 import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
-import { User } from "@/lib/db/models/User";
-import { isExamWithinTeacherDomain } from "@/lib/auth/teacher-domain-rules";
+import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
+import { resolveCanonicalContentScope } from "@/lib/canonical-content-scope";
 import type { StudentClass } from "@/types";
 
 const createExamSchema = z.object({
   title: z.string().trim().min(1),
   subject: z.string().trim().min(1),
+  subjectId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   duration: z.number().int().min(1), // in minutes
   totalMarks: z.number().int().min(1),
   passMark: z.number().int().min(1),
@@ -57,13 +58,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const parsed = createExamSchema.parse(body);
-    const teacher = await User.findById(user.id).select("teacherDomain").lean();
-    if (!isExamWithinTeacherDomain(teacher?.teacherDomain, parsed.subject, parsed.targetClasses)) {
-      return fail("The selected subject or class is outside your assigned teaching scope.", 403);
-    }
+    const canonicalScope = await resolveCanonicalContentScope(parsed.subjectId, parsed.subject);
+    if (!canonicalScope.ok) return fail(canonicalScope.message, canonicalScope.status);
+    const authorization = await authorizeTeacherContentScope(user.id, parsed.targetClasses, parsed.subject, canonicalScope.subjectId);
+    if (!authorization.ok) return fail(authorization.message, authorization.status);
 
     const exam = await McqExam.create({
       ...parsed,
+      organizationId: canonicalScope.organizationId,
+      subjectId: canonicalScope.subjectId,
       targetClasses: parsed.targetClasses as StudentClass[],
       teacher: user.id,
       isPublished: false,

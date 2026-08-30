@@ -1,11 +1,14 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
 import { ensureSchemaPaths } from "@/lib/db/ensure-schema-path";
+import { requireCanonicalPathsWhenEnabled } from "@/lib/db/canonical-scope-guard";
 import type { CourseLevel, CourseSubject, StudentClass } from "@/types";
 
 export type CourseStatus = "draft" | "published" | "archived";
 
 export interface ICourse extends Document {
+  organizationId?: Types.ObjectId;
+  subjectId?: Types.ObjectId;
   title: string;
   titleBn: string;
   slug: string;
@@ -27,6 +30,8 @@ export interface ICourse extends Document {
 
 const CourseSchema = new Schema<ICourse>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
     title: { type: String, required: true, trim: true },
     titleBn: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, trim: true },
@@ -66,6 +71,9 @@ CourseSchema.index({ level: 1, subject: 1 });
 CourseSchema.index({ status: 1 });
 CourseSchema.index({ targetClasses: 1, status: 1 });
 CourseSchema.index({ slug: 1 }, { unique: true });
+CourseSchema.index({ organizationId: 1, subjectId: 1, status: 1 });
+
+requireCanonicalPathsWhenEnabled(CourseSchema, ["organizationId", "subjectId"]);
 
 const CourseModel =
   mongoose.models.Course || mongoose.model<ICourse>("Course", CourseSchema);

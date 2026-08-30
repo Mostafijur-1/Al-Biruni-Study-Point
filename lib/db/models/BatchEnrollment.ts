@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 import type { EnrollmentStatus } from "@/lib/academic-rules";
+import { requireCanonicalPathsWhenEnabled } from "../canonical-scope-guard.ts";
 
 export interface IBatchEnrollment extends Document {
   organizationId?: Types.ObjectId;
@@ -50,6 +51,7 @@ BatchEnrollmentSchema.index(
 );
 BatchEnrollmentSchema.index({ branchId: 1, batchId: 1, status: 1, studentId: 1 });
 BatchEnrollmentSchema.index({ studentId: 1, status: 1, effectiveFrom: -1 });
+requireCanonicalPathsWhenEnabled(BatchEnrollmentSchema, ["organizationId", "branchId", "academicSessionId"]);
 
 export const BatchEnrollment: Model<IBatchEnrollment> =
   (mongoose.models.BatchEnrollment as Model<IBatchEnrollment> | undefined) ||

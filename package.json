@@ -14,6 +14,7 @@
     "migrate:phase1": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase1-migration.ts",
     "migrate:coaching": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-coaching-architecture.ts",
     "migrate:scope-indexes": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step2-scope-indexes.ts",
+    "migrate:canonical-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step3-canonical-scope.ts",
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",
     "check:architecture-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-architecture-readiness.ts",
@@ -22,7 +23,9 @@
     "test:academic-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db.ts",
     "test:academic-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-phase2-academic-db-memory.ts",
     "test:scope-indexes-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-db.ts",
-    "test:scope-indexes-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-memory.ts"
+    "test:scope-indexes-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-memory.ts",
+    "test:canonical-scope-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-db.ts",
+    "test:canonical-scope-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

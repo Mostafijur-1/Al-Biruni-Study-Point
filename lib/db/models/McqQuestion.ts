@@ -1,8 +1,13 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import { requireCanonicalPathsWhenEnabled } from "../canonical-scope-guard.ts";
 
 export type McqDifficulty = "easy" | "medium" | "hard";
 
 export interface IMcqQuestion extends Document {
+  organizationId?: Types.ObjectId;
+  subjectId?: Types.ObjectId;
+  chapterId?: Types.ObjectId;
+  topicId?: Types.ObjectId;
   exam: Types.ObjectId;
   question: string;
   questionBn?: string;
@@ -19,6 +24,10 @@ export interface IMcqQuestion extends Document {
 
 const McqQuestionSchema = new Schema<IMcqQuestion>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
+    chapterId: { type: Schema.Types.ObjectId, ref: "AcademicChapter" },
+    topicId: { type: Schema.Types.ObjectId, ref: "AcademicTopic" },
     exam: { type: Schema.Types.ObjectId, ref: "McqExam", required: true },
     question: { type: String, required: true, trim: true },
     questionBn: { type: String, trim: true },
@@ -46,6 +55,8 @@ const McqQuestionSchema = new Schema<IMcqQuestion>(
 
 McqQuestionSchema.index({ exam: 1, order: 1 });
 McqQuestionSchema.index({ exam: 1, topic: 1 });
+McqQuestionSchema.index({ organizationId: 1, subjectId: 1, chapterId: 1, topicId: 1 });
+requireCanonicalPathsWhenEnabled(McqQuestionSchema, ["organizationId", "subjectId"]);
 
 export const McqQuestion: Model<IMcqQuestion> =
   mongoose.models.McqQuestion ||

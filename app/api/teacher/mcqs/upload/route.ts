@@ -12,8 +12,9 @@ import {
 import { requireAuth } from "@/lib/auth/session";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { incrementTeacherImageQuestionUpload } from "@/lib/teacher-charges";
-import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { resolveCanonicalQuestionScope } from "@/lib/canonical-content-scope";
+import { authorizeTeacherContentScope } from "@/lib/auth/teacher-domain-policy";
 
 export const maxDuration = 60;
 
@@ -42,6 +43,8 @@ export async function POST(request: NextRequest) {
     const level = formData.get("level") as "ssc" | "hsc";
     const subject = formData.get("subject") as string;
     const chapterParam = formData.get("chapter") as string | null;
+    const subjectId = String(formData.get("subjectId") ?? "") || undefined;
+    const chapterId = String(formData.get("chapterId") ?? "") || undefined;
     const uploadContentType = (formData.get("contentType") as string) || "json";
 
     if (!level || !subject) {
@@ -52,38 +55,17 @@ export async function POST(request: NextRequest) {
       return fail("Invalid level. Must be ssc or hsc.", 400);
     }
 
-    const domain = user.teacherDomain;
-    let allowed = false;
+    const canonicalScope = await resolveCanonicalQuestionScope(subjectId, chapterId, subject, chapterParam ?? undefined);
+    if (!canonicalScope.ok) return fail(canonicalScope.message, canonicalScope.status);
 
-    if (domain?.isAll) {
-      allowed = true;
-    } else {
-      const allowedLevels: string[] = [];
-      if (domain?.classes?.some((c) => c === "class-9" || c === "class-10")) allowedLevels.push("ssc");
-      if (domain?.classes?.some((c) => c === "class-11" || c === "class-12")) allowedLevels.push("hsc");
-
-      const levelAllowed = allowedLevels.includes(level);
-
-      let subjectAllowed = false;
-      if (domain?.subjects && domain.subjects.length > 0) {
-        const mapping = COURSE_TO_MCQ_SUBJECT_MAP[level as "ssc" | "hsc"] || {};
-        subjectAllowed = domain.subjects.some((engSub) => {
-          const bengaliNames = mapping[engSub];
-          return Array.isArray(bengaliNames) && bengaliNames.includes(subject);
-        });
-        if (!subjectAllowed) {
-          subjectAllowed = domain.subjects.includes(subject);
-        }
-      }
-
-      if (levelAllowed && subjectAllowed) {
-        allowed = true;
-      }
-    }
-
-    if (!allowed) {
-      return fail("Access denied. You do not have domain access to this subject/level.", 403);
-    }
+    const targetClasses = level === "ssc" ? ["class-9", "class-10"] as const : ["class-11", "class-12"] as const;
+    const canonicalAuthorization = await authorizeTeacherContentScope(
+      sessionUser.id,
+      [...targetClasses],
+      subject,
+      canonicalScope.subjectId,
+    );
+    if (!canonicalAuthorization.ok) return fail(canonicalAuthorization.message, canonicalAuthorization.status);
 
     if (uploadContentType === "json") {
       const uploadedFiles = formData.getAll("files") as File[];
@@ -113,6 +95,9 @@ export async function POST(request: NextRequest) {
 
           if (Array.isArray(questions)) {
             const docs = questions.map((q: { question: string; options: string[]; correctIndex: number; explanation?: string }) => ({
+              organizationId: canonicalScope.organizationId,
+              subjectId: canonicalScope.subjectId,
+              chapterId: canonicalScope.chapterId,
               level,
               subject,
               chapter,
@@ -190,6 +175,9 @@ export async function POST(request: NextRequest) {
     }
 
     const docs = parseResult.questions.map((q) => ({
+      organizationId: canonicalScope.organizationId,
+      subjectId: canonicalScope.subjectId,
+      chapterId: canonicalScope.chapterId,
       level,
       subject,
       chapter: chapterParam,

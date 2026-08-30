@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 import { isValidRoutineWindow } from "../../academic-rules.ts";
+import { requireCanonicalPathsWhenEnabled } from "../canonical-scope-guard.ts";
 
 export interface IRoutineSlot extends Document {
   organizationId?: Types.ObjectId;
@@ -62,6 +63,9 @@ RoutineSlotSchema.index({ batchId: 1, subjectId: 1, weekday: 1, status: 1 });
 RoutineSlotSchema.index({ teacherId: 1, weekday: 1, startMinute: 1, status: 1 });
 RoutineSlotSchema.index({ studentIds: 1, weekday: 1, status: 1 });
 RoutineSlotSchema.index({ branchId: 1, academicSessionId: 1, status: 1 });
+requireCanonicalPathsWhenEnabled(RoutineSlotSchema, [
+  "organizationId", "branchId", "academicSessionId", "batchId", "subjectId",
+]);
 
 export const RoutineSlot: Model<IRoutineSlot> =
   (mongoose.models.RoutineSlot as Model<IRoutineSlot> | undefined) ||

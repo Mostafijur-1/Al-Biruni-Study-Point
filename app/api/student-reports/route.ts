@@ -5,6 +5,7 @@ import { handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { StudentReportComment } from "@/lib/db/models/StudentReportComment";
+import { Batch } from "@/lib/db/models/Batch";
 import { buildStudentReport, listReportStudents, normalizeReportPeriodStart } from "@/lib/student-report-service";
 
 const querySchema = z.object({
@@ -44,7 +45,11 @@ export async function POST(request: NextRequest) {
     const actor = await requireAuth(request, ["admin", "teacher"]);
     const parsed = commentSchema.parse(await request.json());
     const report = await buildStudentReport({ actor, studentId: parsed.studentId, periodType: parsed.period, selectedDate: parsed.date });
+    const batch = await Batch.findById(report.batch.id).select("organizationId branchId academicSessionId").lean();
     const comment = await StudentReportComment.create({
+      organizationId: batch?.organizationId,
+      branchId: batch?.branchId,
+      academicSessionId: batch?.academicSessionId,
       studentId: parsed.studentId,
       batchId: report.batch.id,
       periodType: parsed.period,
