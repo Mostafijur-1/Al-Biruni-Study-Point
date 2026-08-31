@@ -97,6 +97,9 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
   }),
 ]);
 
+export type EnrollmentListInput = z.output<typeof enrollmentListQuerySchema>;
+export type EnrollmentMutationInput = z.output<typeof enrollmentMutationSchema>;
+
 export const teacherAssignmentListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
   branchId: objectIdSchema.optional(),

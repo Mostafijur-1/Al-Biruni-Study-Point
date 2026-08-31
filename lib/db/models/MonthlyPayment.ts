@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export interface IMonthlyPayment extends Document {
+  organizationId?: Types.ObjectId;
   userId: Types.ObjectId;
   role: "student" | "teacher";
   month: string;
@@ -16,6 +17,7 @@ export interface IMonthlyPayment extends Document {
 
 const MonthlyPaymentSchema = new Schema<IMonthlyPayment>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     role: { type: String, enum: ["student", "teacher"], required: true },
     month: { type: String, required: true, match: /^\d{4}-(0[1-9]|1[0-2])$/ },
@@ -31,6 +33,7 @@ const MonthlyPaymentSchema = new Schema<IMonthlyPayment>(
 
 MonthlyPaymentSchema.index({ userId: 1, month: 1, kind: 1 }, { unique: true });
 MonthlyPaymentSchema.index({ month: 1, role: 1, status: 1 });
+MonthlyPaymentSchema.index({ organizationId: 1, month: 1, role: 1, status: 1 });
 
 export const MonthlyPayment: Model<IMonthlyPayment> =
   (mongoose.models.MonthlyPayment as Model<IMonthlyPayment> | undefined) ||

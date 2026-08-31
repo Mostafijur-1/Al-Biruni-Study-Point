@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export interface IPaymentProfile extends Document {
+  organizationId?: Types.ObjectId;
   userId: Types.ObjectId;
   role: "student" | "teacher";
   subjects: string[];
@@ -13,6 +14,7 @@ export interface IPaymentProfile extends Document {
 
 const PaymentProfileSchema = new Schema<IPaymentProfile>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
     role: { type: String, enum: ["student", "teacher"], required: true },
     subjects: [{ type: String, trim: true }],
@@ -24,6 +26,7 @@ const PaymentProfileSchema = new Schema<IPaymentProfile>(
 );
 
 PaymentProfileSchema.index({ role: 1, isActive: 1 });
+PaymentProfileSchema.index({ organizationId: 1, role: 1, isActive: 1 });
 
 export const PaymentProfile: Model<IPaymentProfile> =
   (mongoose.models.PaymentProfile as Model<IPaymentProfile> | undefined) ||

@@ -14,20 +14,9 @@ import { PaymentProfile } from "./db/models/PaymentProfile.ts";
 import { User } from "./db/models/User.ts";
 import { StudentCodeCounter } from "./db/models/StudentCodeCounter.ts";
 import { formatStudentCode, getStudentCodePrefix, isSevenDigitStudentCode, parseStudentCodeSequence, suggestNextFromLastCode, suggestNextStudentCode } from "./student-code.ts";
+import { withMongoTransaction } from "./application/transaction.ts";
 
 type AuditInput = { request: NextRequest; actor: SessionUser; reason: string };
-
-async function inTransaction<T>(work: (session: ClientSession) => Promise<T>) {
-  const session = await mongoose.startSession();
-  let result: T | undefined;
-  try {
-    await session.withTransaction(async () => { result = await work(session); });
-  } finally {
-    await session.endSession();
-  }
-  if (result === undefined) throw new ApiRouteError("Coaching enrollment did not complete.", 500);
-  return result;
-}
 
 async function loadSelection(
   batchId: string | mongoose.Types.ObjectId,
@@ -302,7 +291,7 @@ export async function assignStudentCodeForBatch(input: AuditInput & {
   studentCode?: string;
 }) {
   if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can assign student IDs.", 403);
-  return inTransaction(async (session) => {
+  return withMongoTransaction(async (session) => {
     const student = await User.findOne({ _id: input.studentId, role: "student", isActive: true }).session(session);
     const batch = await Batch.findOne({ _id: input.batchId, status: { $in: ["planned", "active"] } }).session(session);
     if (!student) throw new ApiRouteError("Active student not found.", 404);
@@ -341,7 +330,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
   guardianPhone: string;
   guardianRelation: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
-  return inTransaction(async (session) => {
+  return withMongoTransaction(async (session) => {
     const { batch, selectedSubjectIds } = await loadSelection(input.batchId, input.subjectIds, session);
     const student = await User.findOne({ _id: input.studentId, role: "student", isActive: true }).session(session);
     if (!student) throw new ApiRouteError("Active student not found.", 404);
@@ -395,7 +384,7 @@ export async function createCoachingEnrollment(input: AuditInput & {
 
 export async function assignMissingStudentCodes(input: AuditInput) {
   if (input.actor.role !== "admin") throw new ApiRouteError("Only admins can assign student IDs.", 403);
-  return inTransaction(async (session) => {
+  return withMongoTransaction(async (session) => {
     const enrollments = await BatchEnrollment.find({ status: "active" })
       .sort({ effectiveFrom: 1, createdAt: 1 })
       .session(session);
@@ -433,7 +422,7 @@ export async function updateCoachingSubjects(input: AuditInput & {
   guardianPhone?: string;
   guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
-  return inTransaction(async (session) => {
+  return withMongoTransaction(async (session) => {
     const enrollment = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
     if (!enrollment) throw new ApiRouteError("Active coaching enrollment not found.", 404);
     const { selectedSubjectIds } = await loadSelection(enrollment.batchId, input.subjectIds, session);
@@ -472,7 +461,7 @@ export async function transferCoachingEnrollment(input: AuditInput & {
   guardianPhone?: string;
   guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
-  return inTransaction(async (session) => {
+  return withMongoTransaction(async (session) => {
     const current = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
     if (!current) throw new ApiRouteError("Active coaching enrollment not found.", 404);
     if (String(current.batchId) === input.targetBatchId) throw new ApiRouteError("Student is already in the target batch.", 409);
@@ -516,7 +505,7 @@ export async function transferCoachingEnrollment(input: AuditInput & {
 }
 
 export async function withdrawCoachingEnrollment(input: AuditInput & { enrollmentId: string; effectiveAt: Date }) {
-  return inTransaction(async (session) => {
+  return withMongoTransaction(async (session) => {
     const enrollment = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
     if (!enrollment) throw new ApiRouteError("Active coaching enrollment not found.", 404);
     enrollment.status = "withdrawn";

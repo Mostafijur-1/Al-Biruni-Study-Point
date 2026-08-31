@@ -2,11 +2,10 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { handleApiError, success } from "@/lib/api/response";
+import { createRequestContext } from "@/lib/application/request-context";
+import { addStudentReportComment } from "@/lib/application/student-report-application-service";
 import { requireAuth } from "@/lib/auth/session";
-import { writeAuditLog } from "@/lib/audit/write-audit-log";
-import { StudentReportComment } from "@/lib/db/models/StudentReportComment";
-import { Batch } from "@/lib/db/models/Batch";
-import { buildStudentReport, listReportStudents, normalizeReportPeriodStart } from "@/lib/student-report-service";
+import { buildStudentReport, listReportStudents } from "@/lib/student-report-service";
 
 const querySchema = z.object({
   studentId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
@@ -44,22 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin", "teacher"]);
     const parsed = commentSchema.parse(await request.json());
-    const report = await buildStudentReport({ actor, studentId: parsed.studentId, periodType: parsed.period, selectedDate: parsed.date });
-    const batch = await Batch.findById(report.batch.id).select("organizationId branchId academicSessionId").lean();
-    const comment = await StudentReportComment.create({
-      organizationId: batch?.organizationId,
-      branchId: batch?.branchId,
-      academicSessionId: batch?.academicSessionId,
-      studentId: parsed.studentId,
-      batchId: report.batch.id,
-      periodType: parsed.period,
-      periodStart: normalizeReportPeriodStart(parsed.period, parsed.date),
-      comment: parsed.comment,
-      authorId: actor.id,
-      authorRole: actor.role === "admin" ? "admin" : "teacher",
-    });
-    await writeAuditLog({ request, actor, action: "student-report.comment-added", resourceType: "StudentReportComment", resourceId: comment._id, reason: "Teacher or admin added a progress report comment", after: { studentId: parsed.studentId, periodType: parsed.period, periodStart: normalizeReportPeriodStart(parsed.period, parsed.date).toISOString() } });
-    return success({ comment: { id: String(comment._id) } }, { status: 201 });
+    return success(await addStudentReportComment(createRequestContext(request, actor), parsed), { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }
