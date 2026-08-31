@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const financeMonthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
+const optionalQueryObjectId = z.preprocess((value) => value === "" || value === null ? undefined : value, objectId.optional());
 const wholeTaka = z.coerce.number().int().min(0).max(100_000_000);
 const ledgerScope = { organizationId: objectId.optional(), branchId: objectId.optional() };
 const idempotencyKey = z.string().trim().min(8).max(200);
@@ -10,9 +11,9 @@ export const financeListSchema = z.object({
   month: z.string().regex(financeMonthPattern).default(() => new Date().toISOString().slice(0, 7)),
   role: z.enum(["all", "student", "teacher"]).default("all"),
   q: z.string().trim().max(120).default(""),
-  batchId: objectId.optional(),
-  organizationId: objectId.optional(),
-  branchId: objectId.optional(),
+  batchId: optionalQueryObjectId,
+  organizationId: optionalQueryObjectId,
+  branchId: optionalQueryObjectId,
 });
 
 export const financeMutationSchema = z.discriminatedUnion("action", [

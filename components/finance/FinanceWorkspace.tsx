@@ -56,7 +56,10 @@ export function FinanceWorkspace() {
   const [hasError, setHasError] = useState(false);
 
   const load = useCallback(async () => {
-    const result = await apiFetch<FinanceData>(`/api/admin/finance?month=${month}&role=${role}&batchId=${batchId}&q=${encodeURIComponent(query)}`);
+    const params = new URLSearchParams({ month, role });
+    if (batchId) params.set("batchId", batchId);
+    if (query.trim()) params.set("q", query.trim());
+    const result = await apiFetch<FinanceData>(`/api/admin/finance?${params.toString()}`);
     if (result.ok && isApiSuccess(result.payload)) {
       setData(result.payload.data);
       setExpenseDrafts(Object.fromEntries(result.payload.data.expenses.map((expense) => [expense.category, { amountTk: expense.amountTk, status: expense.status, note: expense.note || "" }])) as Record<ExpenseCategory, ExpenseDraft>);
