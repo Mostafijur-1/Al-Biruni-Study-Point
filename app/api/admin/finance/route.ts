@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin"]);
     const input = financeListSchema.parse(Object.fromEntries(request.nextUrl.searchParams.entries()));
-    const context = createRequestContext(request, actor, { organizationId: input.organizationId });
+    const context = createRequestContext(request, actor, { organizationId: input.organizationId, branchId: input.branchId });
     return success(await getFinanceLedger(context, input));
   } catch (error) {
     return handleApiError(error);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin"]);
     const input = financeMutationSchema.parse(await request.json());
-    const context = createRequestContext(request, actor, { organizationId: input.organizationId });
+    const context = createRequestContext(request, actor, { organizationId: input.organizationId, branchId: "branchId" in input ? input.branchId : undefined });
     return success(await mutateFinance(context, input));
   } catch (error) {
     return handleApiError(error);

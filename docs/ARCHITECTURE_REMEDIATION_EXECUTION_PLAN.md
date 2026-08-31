@@ -252,6 +252,8 @@ MongoDB bounded contexts
 
 **Product decision gate:** do not start until the owner confirms that ABSP will use the platform as an authoritative fee/payroll record.
 
+**Decision (2026-08-31):** confirmed. ABSP is authoritative for recording cash fees, cash payroll, and cash expenses only; it does not process payments.
+
 **Deliverables**
 
 - Add fee plans, student fee assignments, invoices, invoice lines, payments, allocations, adjustments, expenses, and receipts.
