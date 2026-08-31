@@ -8,7 +8,8 @@ import { requireAuth } from "@/lib/auth/session";
 import { authorizeTeacherForStudentSubject } from "@/lib/auth/teacher-domain-policy";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
-import { PracticeResult } from "@/lib/db/models/PracticeResult";
+import { AssessmentAttempt } from "@/lib/db/models/AssessmentAttempt";
+import { rebuildPracticeResult } from "@/lib/mcq/practice-result-projection";
 
 const voidSchema = z.object({
   reason: z.string().trim().min(3).max(500),
@@ -48,12 +49,8 @@ export async function POST(request: NextRequest, context: Context) {
     attempt.voidReason = reason;
     await attempt.save();
 
-    const resultFilter = attempt.attemptSession
-      ? { attemptSession: attempt.attemptSession }
-      : { _id: null };
-    await PracticeResult.updateOne(resultFilter, {
-      $set: { isCancelled: true, voidedAt, voidedBy, voidReason: reason },
-    });
+    await rebuildPracticeResult(attempt);
+    if (attempt.assessmentAttemptId) await AssessmentAttempt.updateOne({ _id: attempt.assessmentAttemptId }, { $set: { status: "voided", voidedAt, voidedBy, voidReason: reason } });
 
     try {
       await writeAuditLog({
@@ -72,10 +69,8 @@ export async function POST(request: NextRequest, context: Context) {
       attempt.voidedBy = undefined;
       attempt.voidReason = undefined;
       await attempt.save();
-      await PracticeResult.updateOne(resultFilter, {
-        $set: { isCancelled: before.isCancelled },
-        $unset: { voidedAt: 1, voidedBy: 1, voidReason: 1 },
-      });
+      await rebuildPracticeResult(attempt);
+      if (attempt.assessmentAttemptId) await AssessmentAttempt.updateOne({ _id: attempt.assessmentAttemptId }, { $set: { status: "submitted" }, $unset: { voidedAt: 1, voidedBy: 1, voidReason: 1 } });
       throw error;
     }
 

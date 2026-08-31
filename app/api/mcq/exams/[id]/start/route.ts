@@ -15,6 +15,7 @@ import {
   beginAttemptSession,
   createAttemptSession,
   getRemainingSeconds,
+  saveAttemptDraft,
 } from "@/lib/mcq/attempt-session";
 
 type Context = {
@@ -89,7 +90,21 @@ export async function GET(request: NextRequest, context: Context) {
         examId: id,
         questionIds: questions.map((question) => question._id.toString()),
         durationSeconds: exam.duration * 60,
+        organizationId: exam.organizationId ? String(exam.organizationId) : undefined,
+        assessmentId: exam.assessmentId ? String(exam.assessmentId) : undefined,
+        assessmentVersionId: exam.assessmentVersionId ? String(exam.assessmentVersionId) : undefined,
+        questionVersionIds: exam.assessmentVersionId && questions.every((question) => question.questionVersionId)
+          ? questions.map((question) => String(question.questionVersionId))
+          : undefined,
       });
+    }
+
+    if (attemptSession && !attemptSession.assessmentVersionId && exam.organizationId && exam.assessmentId && exam.assessmentVersionId && questions.every((question) => question.questionVersionId)) {
+      attemptSession.organizationId = exam.organizationId;
+      attemptSession.assessmentId = exam.assessmentId;
+      attemptSession.assessmentVersionId = exam.assessmentVersionId;
+      attemptSession.questionVersionIds = questions.map((question) => question.questionVersionId!);
+      await attemptSession.save();
     }
 
     const sanitizedQuestions = questions.map((q) => ({
@@ -141,6 +156,28 @@ export async function POST(request: NextRequest, context: Context) {
       remainingSeconds: getRemainingSeconds(session),
       startedAt: session.startedAt,
     });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+const autosaveSchema = z.object({
+  attemptSessionId: z.string().min(1),
+  revision: z.number().int().min(0),
+  responses: z.array(z.object({ questionId: z.string().min(1), selectedIndex: z.number().int().min(0).max(3).nullable() })).max(500),
+});
+
+export async function PUT(request: NextRequest, context: Context) {
+  try {
+    await connectDB();
+    const user = await requireAuth(request, ["student"]);
+    const { id } = await context.params;
+    const parsed = autosaveSchema.parse(await request.json());
+    const session = await AttemptSession.findOne({ _id: parsed.attemptSessionId, student: user.id, exam: id }).select("_id").lean();
+    if (!session) return fail("Exam attempt session is invalid.", 400);
+    const saved = await saveAttemptDraft({ sessionId: parsed.attemptSessionId, studentId: user.id, kind: "exam", expectedRevision: parsed.revision, responses: parsed.responses });
+    if (!saved.ok) return fail(saved.reason === "conflict" ? "A newer answer draft already exists." : "Exam answer draft is invalid.", saved.reason === "conflict" ? 409 : 400);
+    return success(saved);
   } catch (error) {
     return handleApiError(error);
   }

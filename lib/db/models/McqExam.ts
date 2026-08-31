@@ -8,6 +8,8 @@ export interface IMcqExam extends Document {
   academicSessionId?: Types.ObjectId;
   batchIds?: Types.ObjectId[];
   subjectId?: Types.ObjectId;
+  assessmentId?: Types.ObjectId;
+  assessmentVersionId?: Types.ObjectId;
   title: string;
   teacher: Types.ObjectId;
   subject: string;
@@ -36,6 +38,8 @@ const McqExamSchema = new Schema<IMcqExam>(
     academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession" },
     batchIds: [{ type: Schema.Types.ObjectId, ref: "Batch" }],
     subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
+    assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment" },
+    assessmentVersionId: { type: Schema.Types.ObjectId, ref: "AssessmentVersion" },
     title: { type: String, required: true, trim: true },
     teacher: { type: Schema.Types.ObjectId, ref: "User", required: true },
     subject: { type: String, required: true },

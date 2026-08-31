@@ -8,6 +8,8 @@ export interface IMcqQuestion extends Document {
   subjectId?: Types.ObjectId;
   chapterId?: Types.ObjectId;
   topicId?: Types.ObjectId;
+  questionId?: Types.ObjectId;
+  questionVersionId?: Types.ObjectId;
   exam: Types.ObjectId;
   question: string;
   questionBn?: string;
@@ -28,6 +30,8 @@ const McqQuestionSchema = new Schema<IMcqQuestion>(
     subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
     chapterId: { type: Schema.Types.ObjectId, ref: "AcademicChapter" },
     topicId: { type: Schema.Types.ObjectId, ref: "AcademicTopic" },
+    questionId: { type: Schema.Types.ObjectId, ref: "Question" },
+    questionVersionId: { type: Schema.Types.ObjectId, ref: "QuestionVersion" },
     exam: { type: Schema.Types.ObjectId, ref: "McqExam", required: true },
     question: { type: String, required: true, trim: true },
     questionBn: { type: String, trim: true },

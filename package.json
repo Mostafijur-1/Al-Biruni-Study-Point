@@ -15,6 +15,8 @@
     "migrate:coaching": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-coaching-architecture.ts",
     "migrate:scope-indexes": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step2-scope-indexes.ts",
     "migrate:canonical-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step3-canonical-scope.ts",
+    "migrate:assessment-references": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step6-assessment-references.ts",
+    "rebuild:practice-results": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-practice-result-projections.ts",
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",
     "check:architecture-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-architecture-readiness.ts",
@@ -27,7 +29,8 @@
     "test:canonical-scope-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-db.ts",
     "test:canonical-scope-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-memory.ts",
     "test:assessment-kernel-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-db.ts",
-    "test:assessment-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-memory.ts"
+    "test:assessment-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-memory.ts",
+    "test:mcq-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step6-mcq-kernel-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

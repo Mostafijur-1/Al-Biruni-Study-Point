@@ -10,6 +10,7 @@ import { connectDB } from "@/lib/db/connect";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import type { IMcqExam } from "@/lib/db/models/McqExam";
 import "@/lib/db/models/McqExam";
+import { AssessmentAttempt } from "@/lib/db/models/AssessmentAttempt";
 
 const voidSchema = z.object({
   reason: z.string().trim().min(3).max(500),
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest, context: Context) {
     attempt.voidedBy = new Types.ObjectId(user.id);
     attempt.voidReason = reason;
     await attempt.save();
+    if (attempt.assessmentAttemptId) await AssessmentAttempt.updateOne({ _id: attempt.assessmentAttemptId }, { $set: { status: "voided", voidedAt, voidedBy: attempt.voidedBy, voidReason: reason } });
 
     try {
       await writeAuditLog({
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest, context: Context) {
       attempt.voidedBy = undefined;
       attempt.voidReason = undefined;
       await attempt.save();
+      if (attempt.assessmentAttemptId) await AssessmentAttempt.updateOne({ _id: attempt.assessmentAttemptId }, { $set: { status: "submitted" }, $unset: { voidedAt: 1, voidedBy: 1, voidReason: 1 } });
       throw error;
     }
 

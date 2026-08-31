@@ -18,6 +18,7 @@ export interface IMcqQuestionSnapshot {
 
 export interface IMcqExamAttempt extends Document {
   attemptSession?: Types.ObjectId;
+  assessmentAttemptId?: Types.ObjectId;
   student: Types.ObjectId;
   exam: Types.ObjectId;
   answers: IMcqExamAnswer[];
@@ -67,6 +68,7 @@ const McqExamSnapshotSchema = new Schema({
 const McqExamAttemptSchema = new Schema<IMcqExamAttempt>(
   {
     attemptSession: { type: Schema.Types.ObjectId, ref: "AttemptSession" },
+    assessmentAttemptId: { type: Schema.Types.ObjectId, ref: "AssessmentAttempt" },
     student: { type: Schema.Types.ObjectId, ref: "User", required: true },
     exam: { type: Schema.Types.ObjectId, ref: "McqExam", required: true },
     answers: { type: [McqExamAnswerSchema], default: [] },
@@ -94,6 +96,7 @@ const McqExamAttemptSchema = new Schema<IMcqExamAttempt>(
 // Compound index to ensure uniqueness per student, exam, and attempt number
 McqExamAttemptSchema.index({ student: 1, exam: 1, attemptNo: 1 }, { unique: true });
 McqExamAttemptSchema.index({ attemptSession: 1 }, { unique: true, sparse: true });
+McqExamAttemptSchema.index({ assessmentAttemptId: 1 }, { unique: true, sparse: true });
 
 if (process.env.NODE_ENV !== "production" && mongoose.models.McqExamAttempt) {
   mongoose.deleteModel("McqExamAttempt");

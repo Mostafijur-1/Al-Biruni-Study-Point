@@ -13,6 +13,7 @@ export interface IPracticeAnswer {
 
 export interface IPracticeAttempt extends Document {
   attemptSession?: Types.ObjectId;
+  assessmentAttemptId?: Types.ObjectId;
   student: Types.ObjectId;
   subject: string;
   answers: IPracticeAnswer[];
@@ -32,6 +33,7 @@ export interface IPracticeAttempt extends Document {
   voidedBy?: Types.ObjectId;
   voidReason?: string;
   passMarkPercent?: number;
+  submittedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +58,7 @@ const PracticeAssessmentSnapshotSchema = new Schema({
 const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
   {
     attemptSession: { type: Schema.Types.ObjectId, ref: "AttemptSession" },
+    assessmentAttemptId: { type: Schema.Types.ObjectId, ref: "AssessmentAttempt" },
     student: { type: Schema.Types.ObjectId, ref: "User", required: true },
     subject: { type: String, required: true },
     answers: { type: [PracticeAnswerSchema], default: [] },
@@ -75,12 +78,14 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
     voidedBy: { type: Schema.Types.ObjectId, ref: "User" },
     voidReason: { type: String, trim: true },
     passMarkPercent: { type: Number, min: 1, max: 100 },
+    submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
 
 PracticeAttemptSchema.index({ student: 1, subject: 1, createdAt: -1 });
 PracticeAttemptSchema.index({ attemptSession: 1 }, { unique: true, sparse: true });
+PracticeAttemptSchema.index({ assessmentAttemptId: 1 }, { unique: true, sparse: true });
 
 if (process.env.NODE_ENV !== "production" && mongoose.models.PracticeAttempt) {
   mongoose.deleteModel("PracticeAttempt");

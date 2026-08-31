@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import mongoose, { type ClientSession, Document, Model, Schema, Types } from "mongoose";
 import { AssessmentVersion } from "./AssessmentVersion.ts";
 
 export interface IAssessmentQuestion extends Document {
@@ -15,7 +15,12 @@ const AssessmentQuestionSchema = new Schema<IAssessmentQuestion>({
   assessmentVersionId: {
     type: Schema.Types.ObjectId, ref: "AssessmentVersion", required: true,
     validate: {
-      validator: async (id: Types.ObjectId) => (await AssessmentVersion.exists({ _id: id, status: { $ne: "published" } })) !== null,
+      validator: async function (id: Types.ObjectId) {
+        const query = AssessmentVersion.exists({ _id: id, status: { $ne: "published" } });
+        const session = (this as unknown as { $session(): ClientSession | null }).$session();
+        if (session) query.session(session);
+        return (await query) !== null;
+      },
       message: "Published assessment question sets are immutable.",
     },
   },

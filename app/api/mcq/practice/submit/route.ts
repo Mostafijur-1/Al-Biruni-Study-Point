@@ -23,6 +23,8 @@ import { dedupeSubmittedAnswers } from "@/lib/mcq/answer-scoring";
 import { syncMistakesFromAnswers } from "@/lib/learning/mistake-service";
 import { awardSubjectProgress } from "@/lib/gamification/subject-progress-service";
 import { validateLegacyIndexResponses } from "@/lib/assessment-kernel";
+import { recordAuthoritativeAssessmentAttempt } from "@/lib/mcq/assessment-attempt-adapter";
+import { rebuildPracticeResult } from "@/lib/mcq/practice-result-projection";
 
 const submitPracticeSchema = z.object({
   attemptSessionId: z.string().min(1),
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
     const parsed = submitPracticeSchema.parse(await request.json());
     const submittedAnswers = dedupeSubmittedAnswers(parsed.answers);
     async function findCompletedSubmission() {
-      const [existingAttempt, existingResult] = await Promise.all([
+      const [existingAttempt, storedResult] = await Promise.all([
         PracticeAttempt.findOne({
           attemptSession: parsed.attemptSessionId,
           student: user.id,
@@ -64,8 +66,8 @@ export async function POST(request: NextRequest) {
           subject: parsed.subject,
         }).lean(),
       ]);
-
-      if (!existingAttempt || !existingResult) return null;
+      if (!existingAttempt) return null;
+      const existingResult = storedResult ?? await rebuildPracticeResult(existingAttempt);
 
       let gamification;
       try {
@@ -192,6 +194,12 @@ export async function POST(request: NextRequest) {
         };
       })
     );
+    const authoritativeAttempt = await recordAuthoritativeAssessmentAttempt({
+      attemptSessionId: submissionSession.session._id.toString(), studentId: user.id,
+      responses: detailedAnswers.map((answer) => ({ questionId: String(answer.questionId), selectedIndex: answer.selectedIndex, isCorrect: answer.isCorrect, awardedMarks: answer.isCorrect ? 1 : 0 })),
+      score: scoring.score, totalMarks: scoring.totalQuestions, percentage: scoring.percentage, passed: scoring.isPassed, submittedAt: submissionSession.submittedAt,
+      voided: parsed.isCancelled || false,
+    });
 
     // Save detailed attempt (teacher view)
     const attempt = await PracticeAttempt.findOneAndUpdate(
@@ -199,6 +207,7 @@ export async function POST(request: NextRequest) {
       {
         $setOnInsert: {
           student: user.id,
+          assessmentAttemptId: authoritativeAttempt?._id,
           subject: parsed.subject,
           answers: detailedAnswers,
           assessmentSnapshot: {
@@ -216,32 +225,14 @@ export async function POST(request: NextRequest) {
           teacherId: teacherId || undefined,
           isCancelled: parsed.isCancelled || false,
           passMarkPercent: settings.passMarkPercent,
+          submittedAt: submissionSession.submittedAt,
         },
       },
       { new: true, upsert: true, setDefaultsOnInsert: true },
     );
 
-    // Save only the summary result (existing behavior)
-    const result = await PracticeResult.findOneAndUpdate(
-      { attemptSession: submissionSession.session._id },
-      {
-        $setOnInsert: {
-          student: user.id,
-          subject: parsed.subject,
-          score: scoring.score,
-          totalQuestions: scoring.totalQuestions,
-          percentage: scoring.percentage,
-          isPassed: scoring.isPassed,
-          timeTaken: submissionSession.timeTaken,
-          submittedAt: submissionSession.submittedAt,
-          isTeacherSet: isTeacher,
-          teacherId: teacherId || undefined,
-          isCancelled: parsed.isCancelled || false,
-          passMarkPercent: settings.passMarkPercent,
-        },
-      },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
-    );
+    // PracticeResult is a rebuildable compatibility projection; the attempt is authoritative.
+    const result = await rebuildPracticeResult(attempt);
     await markAttemptSessionSubmitted(
       submissionSession.session._id.toString(),
       submissionSession.submittedAt,

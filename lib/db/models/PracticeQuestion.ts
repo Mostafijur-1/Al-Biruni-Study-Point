@@ -6,6 +6,8 @@ export interface IPracticeQuestion extends Document {
   subjectId?: Types.ObjectId;
   chapterId?: Types.ObjectId;
   topicId?: Types.ObjectId;
+  questionId?: Types.ObjectId;
+  questionVersionId?: Types.ObjectId;
   level: "ssc" | "hsc";
   subject: string;
   chapter: string;
@@ -27,6 +29,8 @@ const PracticeQuestionSchema = new Schema<IPracticeQuestion>(
     subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject" },
     chapterId: { type: Schema.Types.ObjectId, ref: "AcademicChapter" },
     topicId: { type: Schema.Types.ObjectId, ref: "AcademicTopic" },
+    questionId: { type: Schema.Types.ObjectId, ref: "Question" },
+    questionVersionId: { type: Schema.Types.ObjectId, ref: "QuestionVersion" },
     level: { type: String, enum: ["ssc", "hsc"], required: true },
     subject: { type: String, required: true },
     chapter: { type: String, required: true },

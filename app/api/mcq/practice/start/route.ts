@@ -14,8 +14,12 @@ import {
   beginAttemptSession,
   createAttemptSession,
   getRemainingSeconds,
+  saveAttemptDraft,
 } from "@/lib/mcq/attempt-session";
 import { COURSE_TO_MCQ_SUBJECT_MAP, getSchoolLevel, getSyllabusChapters } from "@/lib/content/syllabus";
+import { PracticeQuestion } from "@/lib/db/models/PracticeQuestion";
+import { materializeLegacyMcqAssessment, practiceSelectionSourceId } from "@/lib/mcq/assessment-kernel-adapter";
+import { isAssessmentKernelWriteEnabled } from "@/lib/mcq/kernel-rollout";
 
 export async function GET(request: NextRequest) {
   try {
@@ -98,12 +102,41 @@ export async function GET(request: NextRequest) {
       teacherId,
       user.id,
     );
+    const selectedRows = await PracticeQuestion.find({ _id: { $in: examData.questions.map((question) => question.id) } }).lean();
+    const selectedById = new Map(selectedRows.map((row) => [String(row._id), row]));
+    const orderedRows = examData.questions.map((question) => selectedById.get(question.id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
+    const owner = teacherId
+      ? await User.findOne({ _id: teacherId, role: "teacher" }).select("_id role").lean()
+      : await User.findOne({ role: "admin", isActive: true }).select("_id role").lean();
+    const commonOrganizationId = orderedRows[0]?.organizationId ? String(orderedRows[0].organizationId) : undefined;
+    const commonSubjectId = orderedRows[0]?.subjectId ? String(orderedRows[0].subjectId) : undefined;
+    const kernel = isAssessmentKernelWriteEnabled() && owner && orderedRows.length === examData.questions.length
+      ? await materializeLegacyMcqAssessment({
+          source: { collection: "PracticeSelection", id: practiceSelectionSourceId({ questionIds: examData.questions.map((question) => question.id), durationSeconds: examData.durationSeconds, passMarkPercent: settings.passMarkPercent }) },
+          organizationId: commonOrganizationId, subjectId: commonSubjectId, title: `${subject} MCQ Practice`, kind: "practice",
+          durationSeconds: examData.durationSeconds, passRule: { mode: "percent", threshold: settings.passMarkPercent },
+          ownerId: String(owner._id), ownerRole: owner.role as "admin" | "teacher",
+          questions: orderedRows.map((question) => ({
+            id: String(question._id), organizationId: question.organizationId ? String(question.organizationId) : undefined,
+            subjectId: question.subjectId ? String(question.subjectId) : undefined, chapterId: question.chapterId ? String(question.chapterId) : undefined,
+            topicId: question.topicId ? String(question.topicId) : undefined, prompt: question.question, options: question.options,
+            correctIndex: question.correctIndex, explanation: question.explanation, marks: 1, ownerId: String(owner._id), ownerRole: owner.role as "admin" | "teacher", collection: "PracticeQuestion",
+          })),
+        })
+      : null;
+    if (kernel) {
+      await PracticeQuestion.bulkWrite(orderedRows.map((question, index) => ({ updateOne: { filter: { _id: question._id }, update: { $set: { questionId: kernel.questionIds[index], questionVersionId: kernel.questionVersionIds[index] } } } })));
+    }
     const attemptSession = await createAttemptSession({
       studentId: user.id,
       kind: "practice",
       subject,
       questionIds: examData.questions.map((question) => question.id),
       durationSeconds: examData.durationSeconds,
+      organizationId: kernel ? String(kernel.organizationId) : undefined,
+      assessmentId: kernel ? String(kernel.assessmentId) : undefined,
+      assessmentVersionId: kernel ? String(kernel.assessmentVersionId) : undefined,
+      questionVersionIds: kernel?.questionVersionIds.map(String),
     });
 
     return success({
@@ -140,6 +173,25 @@ export async function POST(request: NextRequest) {
       remainingSeconds: getRemainingSeconds(session),
       startedAt: session.startedAt,
     });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+const autosaveSchema = z.object({
+  attemptSessionId: z.string().min(1),
+  revision: z.number().int().min(0),
+  responses: z.array(z.object({ questionId: z.string().min(1), selectedIndex: z.number().int().min(0).max(3).nullable() })).max(100),
+});
+
+export async function PUT(request: NextRequest) {
+  try {
+    await connectDB();
+    const user = await requireAuth(request, ["student"]);
+    const parsed = autosaveSchema.parse(await request.json());
+    const saved = await saveAttemptDraft({ sessionId: parsed.attemptSessionId, studentId: user.id, kind: "practice", expectedRevision: parsed.revision, responses: parsed.responses });
+    if (!saved.ok) return fail(saved.reason === "conflict" ? "A newer answer draft already exists." : "Practice answer draft is invalid.", saved.reason === "conflict" ? 409 : 400);
+    return success(saved);
   } catch (error) {
     return handleApiError(error);
   }

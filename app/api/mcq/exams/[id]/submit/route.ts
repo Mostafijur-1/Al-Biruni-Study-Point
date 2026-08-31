@@ -10,6 +10,7 @@ import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { scoreSubmittedAnswers } from "@/lib/mcq/answer-scoring";
 import { validateLegacyIndexResponses } from "@/lib/assessment-kernel";
+import { recordAuthoritativeAssessmentAttempt } from "@/lib/mcq/assessment-attempt-adapter";
 import {
   loadSubmissionSession,
   markAttemptSessionSubmitted,
@@ -136,12 +137,22 @@ export async function POST(request: NextRequest, context: Context) {
     }
     const percentage = totalMarks > 0 ? Number(((score / totalMarks) * 100).toFixed(2)) : 0;
     const isPassed = score >= exam.passMark;
+    const authoritativeAttempt = await recordAuthoritativeAssessmentAttempt({
+      attemptSessionId: submissionSession.session._id.toString(), studentId: user.id,
+      responses: scoring.records.map((answer) => ({
+        questionId: answer.questionId, selectedIndex: answer.selectedIndex,
+        isCorrect: answer.isCorrect, awardedMarks: answer.isCorrect ? (questionsMap.get(answer.questionId)?.marks ?? 1) : 0,
+      })),
+      score, totalMarks, percentage, passed: isPassed, submittedAt: submissionSession.submittedAt,
+      voided: parsed.isCancelled || false,
+    });
 
     const savedAttempt = await McqExamAttempt.findOneAndUpdate(
       { student: user.id, exam: id, attemptNo: 1 },
       {
         $setOnInsert: {
           attemptSession: submissionSession.session._id,
+          assessmentAttemptId: authoritativeAttempt?._id,
           answers: answersDoc,
           questionSnapshots: dbQuestions.map((question) => ({
             questionId: question._id,

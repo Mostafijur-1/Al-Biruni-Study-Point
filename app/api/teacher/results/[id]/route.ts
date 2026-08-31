@@ -3,9 +3,9 @@ import { Types } from "mongoose";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
-import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { connectDB } from "@/lib/db/connect";
 import { authorizeTeacherForStudentSubject } from "@/lib/auth/teacher-domain-policy";
+import { rebuildPracticeResult } from "@/lib/mcq/practice-result-projection";
 
 type Context = {
   params: Promise<{ id: string }>;
@@ -47,16 +47,7 @@ export async function PUT(request: NextRequest, context: Context) {
     attempt.commentedBy = new Types.ObjectId(user.id);
     await attempt.save();
 
-    // Sync to PracticeResult (student dashboard summary)
-    await PracticeResult.updateMany(
-      { student: attempt.student, subject: attempt.subject },
-      { 
-        $set: { 
-          teacherComment: teacherComment ?? "",
-          commentedBy: user.id
-        } 
-      }
-    );
+    await rebuildPracticeResult(attempt);
 
     return success({ message: "Comment updated successfully.", attempt });
   } catch (error) {

@@ -8,6 +8,8 @@ import { McqExam } from "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { validateExamForPublication } from "@/lib/mcq/exam-invariants";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
+import { materializeLegacyMcqAssessment } from "@/lib/mcq/assessment-kernel-adapter";
+import { isAssessmentKernelWriteEnabled } from "@/lib/mcq/kernel-rollout";
 
 const togglePublishSchema = z.object({
   type: z.enum(["exam", "results"]),
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest, context: Context) {
 
     if (parsed.type === "exam") {
       if (parsed.value) {
-        const questions = await McqQuestion.find({ exam: id }).select("marks").lean();
+        const questions = await McqQuestion.find({ exam: id }).sort({ order: 1 }).lean();
         const validation = validateExamForPublication({
           configuredTotalMarks: exam.totalMarks,
           passMark: exam.passMark,
@@ -63,6 +65,26 @@ export async function POST(request: NextRequest, context: Context) {
         exam.publishedQuestionCount = validation.questionCount;
         exam.publishedTotalMarks = validation.totalMarks;
         if ((exam.version ?? 0) === 0) exam.version = 1;
+        const kernel = isAssessmentKernelWriteEnabled() ? await materializeLegacyMcqAssessment({
+          source: { collection: "McqExam", id: String(exam._id) },
+          organizationId: exam.organizationId ? String(exam.organizationId) : undefined,
+          subjectId: exam.subjectId ? String(exam.subjectId) : undefined,
+          branchId: exam.branchId ? String(exam.branchId) : undefined,
+          academicSessionId: exam.academicSessionId ? String(exam.academicSessionId) : undefined,
+          title: exam.title, kind: "mcq-exam", durationSeconds: exam.duration * 60,
+          passRule: { mode: "points", threshold: exam.passMark }, ownerId: user.id, ownerRole: "teacher",
+          questions: questions.map((question) => ({
+            id: String(question._id), organizationId: question.organizationId ? String(question.organizationId) : undefined,
+            subjectId: question.subjectId ? String(question.subjectId) : undefined, chapterId: question.chapterId ? String(question.chapterId) : undefined,
+            topicId: question.topicId ? String(question.topicId) : undefined, prompt: question.question, options: question.options,
+            correctIndex: question.correctIndex, explanation: question.explanation, marks: question.marks, difficulty: question.difficulty,
+            ownerId: user.id, ownerRole: "teacher", collection: "McqQuestion",
+          })),
+        }) : null;
+        if (kernel) {
+          exam.assessmentId = kernel.assessmentId; exam.assessmentVersionId = kernel.assessmentVersionId;
+          await McqQuestion.bulkWrite(questions.map((question, index) => ({ updateOne: { filter: { _id: question._id }, update: { $set: { questionId: kernel.questionIds[index], questionVersionId: kernel.questionVersionIds[index] } } } })));
+        }
       } else if (exam.resultsPublished) {
         return fail("Unpublish the results before unpublishing the exam.", 409);
       }

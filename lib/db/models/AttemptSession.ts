@@ -13,6 +13,8 @@ export interface IAttemptSession extends Document {
   subject?: string;
   questionIds: Types.ObjectId[];
   questionVersionIds: Types.ObjectId[];
+  draftResponses: Array<{ questionId: Types.ObjectId; selectedIndex: number | null }>;
+  draftRevision: number;
   durationSeconds: number;
   status: AttemptSessionStatus;
   startedAt?: Date;
@@ -33,6 +35,14 @@ const AttemptSessionSchema = new Schema<IAttemptSession>(
     subject: { type: String, trim: true },
     questionIds: [{ type: Schema.Types.ObjectId, required: true }],
     questionVersionIds: [{ type: Schema.Types.ObjectId }],
+    draftResponses: {
+      type: [new Schema({
+        questionId: { type: Schema.Types.ObjectId, required: true },
+        selectedIndex: { type: Number, min: 0, max: 3, default: null },
+      }, { _id: false })],
+      default: [],
+    },
+    draftRevision: { type: Number, default: 0, min: 0 },
     durationSeconds: { type: Number, required: true, min: 1 },
     status: {
       type: String,

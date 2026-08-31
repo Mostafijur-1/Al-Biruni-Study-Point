@@ -4,7 +4,8 @@ import {
   AttemptSession,
   type AttemptKind,
   type IAttemptSession,
-} from "@/lib/db/models/AttemptSession";
+} from "../db/models/AttemptSession.ts";
+import { validateLegacyIndexResponses } from "../assessment-kernel.ts";
 
 const SUBMISSION_GRACE_SECONDS = 30;
 
@@ -146,4 +147,24 @@ export async function markAttemptSessionSubmitted(sessionId: string, submittedAt
     { _id: sessionId, status: "started" },
     { $set: { status: "submitted", submittedAt } },
   );
+}
+
+export async function saveAttemptDraft(input: {
+  sessionId: string;
+  studentId: string;
+  kind: AttemptKind;
+  expectedRevision: number;
+  responses: Array<{ questionId: string; selectedIndex: number | null }>;
+}) {
+  const session = await AttemptSession.findOne({ _id: input.sessionId, student: input.studentId, kind: input.kind, status: "started" }).lean();
+  if (!session) return { ok: false as const, reason: "invalid" as const };
+  const validation = validateLegacyIndexResponses(input.responses, session.questionIds.map(String));
+  if (!validation.ok) return { ok: false as const, reason: "responses" as const, validation };
+  const updated = await AttemptSession.findOneAndUpdate(
+    { _id: session._id, status: "started", draftRevision: input.expectedRevision },
+    { $set: { draftResponses: input.responses }, $inc: { draftRevision: 1 } },
+    { new: true },
+  ).lean();
+  if (!updated) return { ok: false as const, reason: "conflict" as const };
+  return { ok: true as const, revision: updated.draftRevision, savedAt: updated.updatedAt };
 }
