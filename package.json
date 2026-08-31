@@ -16,6 +16,7 @@
     "migrate:scope-indexes": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step2-scope-indexes.ts",
     "migrate:canonical-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step3-canonical-scope.ts",
     "migrate:assessment-references": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step6-assessment-references.ts",
+    "migrate:written-exams": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step7-written-exams.ts",
     "rebuild:practice-results": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-practice-result-projections.ts",
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",
@@ -30,7 +31,8 @@
     "test:canonical-scope-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-memory.ts",
     "test:assessment-kernel-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-db.ts",
     "test:assessment-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-memory.ts",
-    "test:mcq-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step6-mcq-kernel-memory.ts"
+    "test:mcq-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step6-mcq-kernel-memory.ts",
+    "test:written-exams-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step7-written-exams-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

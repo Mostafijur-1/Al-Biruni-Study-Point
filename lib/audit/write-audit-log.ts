@@ -3,7 +3,7 @@ import { Types, type ClientSession } from "mongoose";
 import type { NextRequest } from "next/server";
 
 import type { SessionUser } from "../../types";
-import { AuditLog } from "../db/models/AuditLog";
+import { AuditLog } from "../db/models/AuditLog.ts";
 
 type AuditInput = {
   request: NextRequest;

@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
         "X-Content-Type-Options": "nosniff",
       } });
     }
+    if (result.kind === "external-link") {
+      return new Response(null, { status: 307, headers: { Location: result.url, "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } });
+    }
     return success(result.data);
   } catch (error) {
     return handleApiError(error);

@@ -14,6 +14,7 @@ import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
 import { User } from "@/lib/db/models/User";
 import { WrittenExam } from "@/lib/db/models/WrittenExam";
 import { WrittenExamResult } from "@/lib/db/models/WrittenExamResult";
+import { resolveCurrentWrittenResults } from "@/lib/repositories/written-exam-repository";
 
 export type ReportPeriod = "week" | "month";
 
@@ -140,7 +141,7 @@ export async function buildStudentReport(input: {
   const { start, end } = rangeFor(input.periodType, input.selectedDate);
   const { student, batch, enrollment } = await resolveStudentContext(input.actor, input.studentId, end);
 
-  const [sheets, practiceRows, mcqAttempts, writtenResults, comments] = await Promise.all([
+  const [sheets, practiceRows, mcqAttempts, storedWrittenResults, comments] = await Promise.all([
     AttendanceSheet.find({ batchId: enrollment.batchId, status: "submitted", submittedAt: { $gte: start, $lt: end } })
       .select("_id submittedAt").lean(),
     PracticeResult.find({ student: student._id, submittedAt: { $gte: start, $lt: end }, isCancelled: { $ne: true } })
@@ -157,6 +158,7 @@ export async function buildStudentReport(input: {
     } : { studentId: student._id, periodType: "week", periodStart: start })
       .populate("authorId", "name").sort({ createdAt: 1 }).lean(),
   ]);
+  const writtenResults = await resolveCurrentWrittenResults(storedWrittenResults);
 
   const [attendanceRows, publishedMcqExams, publishedWrittenExams] = await Promise.all([
     AttendanceRecord.find({ sheetId: { $in: sheets.map((sheet) => sheet._id) }, studentId: student._id, status: { $ne: "unmarked" } })

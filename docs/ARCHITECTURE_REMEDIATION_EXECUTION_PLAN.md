@@ -229,11 +229,11 @@ MongoDB bounded contexts
 
 **Deliverables**
 
-- Store question files in private object storage with integrity metadata in MongoDB.
+- Product decision (2026-08-31): do not upload new written-question files. Keep the source optional and allow only an authorized Google Drive reference; retain legacy embedded files as read-only rollback data.
 - Represent written exams through the assessment kernel or a strict adapter to it.
 - Publish marks in a transaction with a frozen result-publication record.
 - Add audited correction records instead of modifying published marks.
-- Add retention and deletion rules for draft, published, and orphaned assets.
+- Add retention and deletion rules for draft links, published evidence, and legacy embedded assets.
 
 **Acceptance**
 

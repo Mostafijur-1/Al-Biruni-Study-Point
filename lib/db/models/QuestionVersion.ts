@@ -8,6 +8,7 @@ export interface IQuestionVersion extends Document {
   options: Array<{ key: string; text: string }>;
   correctResponse: { mode: "single-option" | "multiple-option" | "text" | "manual"; optionKeys: string[]; acceptedTexts: string[] };
   explanation?: string;
+  sourceReference?: { provider: "google-drive"; url: string };
   marks: number;
   difficulty: "easy" | "medium" | "hard";
   language: "bn" | "en" | "mixed";
@@ -30,6 +31,7 @@ const QuestionVersionSchema = new Schema<IQuestionVersion>({
   questionId: { type: Schema.Types.ObjectId, ref: "Question", required: true }, version: { type: Number, required: true, min: 1 },
   prompt: { type: String, required: true, trim: true, maxlength: 10_000 }, options: { type: [OptionSchema], default: [] },
   correctResponse: { type: CorrectResponseSchema, required: true }, explanation: { type: String, trim: true, maxlength: 10_000 },
+  sourceReference: { provider: { type: String, enum: ["google-drive"] }, url: { type: String, trim: true, maxlength: 2_000 } },
   marks: { type: Number, required: true, min: 0.01, max: 10_000 }, difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "medium" },
   language: { type: String, enum: ["bn", "en", "mixed"], required: true }, status: { type: String, enum: ["draft", "published"], default: "draft" },
   contentHash: { type: String, required: true }, createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -37,11 +39,20 @@ const QuestionVersionSchema = new Schema<IQuestionVersion>({
 }, { timestamps: true });
 
 QuestionVersionSchema.pre("validate", function () {
+  if (this.sourceReference) {
+    try {
+      const host = new URL(this.sourceReference.url).hostname.toLowerCase();
+      if ((host !== "drive.google.com" && host !== "docs.google.com") || this.sourceReference.provider !== "google-drive") this.invalidate("sourceReference", "Question source must use Google Drive.");
+    } catch {
+      this.invalidate("sourceReference.url", "Question source must be a valid Google Drive URL.");
+    }
+  }
   this.contentHash = assessmentContentHash({
     prompt: this.prompt,
     options: this.options.map((option) => ({ key: option.key, text: option.text })),
     correctResponse: { mode: this.correctResponse.mode, optionKeys: [...this.correctResponse.optionKeys], acceptedTexts: [...this.correctResponse.acceptedTexts] },
-    explanation: this.explanation, marks: this.marks, difficulty: this.difficulty, language: this.language,
+    explanation: this.explanation, sourceReference: this.sourceReference ? { provider: this.sourceReference.provider, url: this.sourceReference.url } : undefined,
+    marks: this.marks, difficulty: this.difficulty, language: this.language,
   });
   const keys = this.options.map((option) => option.key);
   if (new Set(keys).size !== keys.length) this.invalidate("options", "Option keys must be unique.");

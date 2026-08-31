@@ -9,6 +9,21 @@ import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
 import { User } from "@/lib/db/models/User";
 import { WrittenExam } from "@/lib/db/models/WrittenExam";
 import { WrittenExamResult } from "@/lib/db/models/WrittenExamResult";
+import { WrittenExamResultCorrection } from "@/lib/db/models/WrittenExamResultCorrection";
+import { replayWrittenResultCorrections } from "@/lib/written-exam/correction-history";
+
+export async function resolveCurrentWrittenResults<T extends { _id: Types.ObjectId; marks: number; comment?: string }>(results: T[]) {
+  if (!results.length) return results;
+  const corrections = await WrittenExamResultCorrection.find({ resultId: { $in: results.map((row) => row._id) } }).sort({ resultId: 1, sequence: -1 }).lean();
+  const byResult = new Map<string, typeof corrections>();
+  for (const correction of corrections) byResult.set(String(correction.resultId), [...(byResult.get(String(correction.resultId)) ?? []), correction]);
+  return results.map((row) => {
+    const history = byResult.get(String(row._id));
+    if (!history?.length) return row;
+    const replayed = replayWrittenResultCorrections({ marks: row.marks, comment: row.comment }, history);
+    return { ...row, marks: replayed.current.marks, comment: replayed.current.comment, correctionSequence: replayed.correctionSequence };
+  });
+}
 
 export async function findActiveWrittenExamAssignments(context: RequestContext) {
   const now = new Date();
@@ -38,11 +53,12 @@ export async function isStudentEnrolledForExam(context: RequestContext, studentI
 export async function listStudentWrittenExams(context: RequestContext) {
   const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), studentId: context.actor.id, status: "active" }).select("batchId").lean();
   const exams = await WrittenExam.find({ ...canonicalScopeFilter(context.scope), batchId: { $in: enrollments.map((row) => row.batchId) }, isPublished: true }).sort({ examDate: -1 }).lean();
-  const [results, batches, subjects] = await Promise.all([
+  const [storedResults, batches, subjects] = await Promise.all([
     WrittenExamResult.find({ studentId: context.actor.id, examId: { $in: exams.map((exam) => exam._id) } }).lean(),
     Batch.find({ ...canonicalScopeFilter(context.scope), _id: { $in: exams.map((exam) => exam.batchId) } }).select("name").lean(),
     AcademicSubject.find({ ...canonicalScopeFilter(context.scope), _id: { $in: exams.map((exam) => exam.subjectId) } }).select("name nameBn").lean(),
   ]);
+  const results = await resolveCurrentWrittenResults(storedResults);
   return { exams, results, batches, subjects };
 }
 
@@ -58,10 +74,11 @@ export async function listManagedWrittenExams(context: RequestContext, assignmen
 
 export async function loadWrittenExamRoster(context: RequestContext, exam: { _id: Types.ObjectId; batchId: Types.ObjectId }) {
   const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), batchId: exam.batchId, status: "active" }).select("studentId").lean();
-  const [students, results] = await Promise.all([
+  const [students, storedResults] = await Promise.all([
     User.find({ _id: { $in: enrollments.map((row) => row.studentId) } }).select("name studentCode studentClass").sort({ studentCode: 1, name: 1 }).lean(),
     WrittenExamResult.find({ examId: exam._id }).lean(),
   ]);
+  const results = await resolveCurrentWrittenResults(storedResults);
   return { students, results };
 }
 

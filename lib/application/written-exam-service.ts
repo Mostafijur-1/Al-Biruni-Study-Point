@@ -6,18 +6,13 @@ import type { RequestContext } from "@/lib/application/request-context";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { isCanonicalAcademicAuthorityEnabled } from "@/lib/db/canonical-scope-guard";
 import { countWrittenExamResults, createWrittenExamRecord, findActiveWrittenExamAssignments, findWrittenExam, findWrittenExamBatchAndSubject, isStudentEnrolledForExam, listManagedWrittenExams, listStudentWrittenExams, loadWrittenExamRoster, saveWrittenExamMarks, saveWrittenExamRecord } from "@/lib/repositories/written-exam-repository";
+import { WrittenExamResult } from "@/lib/db/models/WrittenExamResult";
 import type { WrittenExamMutationInput } from "@/lib/validations/written-exam.schema";
+import { materializeWrittenExamAssessment } from "@/lib/written-exam/assessment-adapter";
+import { appendWrittenResultCorrection, publishWrittenResultsAtomically } from "@/lib/written-exam/publication-service";
 
-function serializeExam(exam: { _id: unknown; batchId: unknown; subjectId: unknown; title: string; examDate: Date; totalMarks: number; questionFile?: { contentType?: string; fileName?: string }; instructions?: string; isPublished: boolean; publishedAt?: Date; createdAt: Date }, batchName?: string, subjectName?: string) {
-  return { id: String(exam._id), batchId: String(exam.batchId), batchName, subjectId: String(exam.subjectId), subjectName, title: exam.title, examDate: exam.examDate.toISOString(), totalMarks: exam.totalMarks, hasQuestionFile: Boolean(exam.questionFile?.contentType), questionFileName: exam.questionFile?.fileName, instructions: exam.instructions, isPublished: exam.isPublished, publishedAt: exam.publishedAt?.toISOString(), createdAt: exam.createdAt.toISOString() };
-}
-
-function hasExpectedQuestionSignature(bytes: Uint8Array, contentType: string) {
-  if (contentType === "application/pdf") return bytes.length >= 5 && String.fromCharCode(...bytes.slice(0, 5)) === "%PDF-";
-  if (contentType === "image/png") return bytes.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value);
-  if (contentType === "image/jpeg") return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (contentType === "image/webp") return bytes.length >= 12 && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
-  return false;
+function serializeExam(exam: { _id: unknown; batchId: unknown; subjectId: unknown; title: string; examDate: Date; totalMarks: number; questionFile?: { contentType?: string; fileName?: string }; questionLink?: { provider?: string }; instructions?: string; isPublished: boolean; publishedAt?: Date; createdAt: Date }, batchName?: string, subjectName?: string) {
+  return { id: String(exam._id), batchId: String(exam.batchId), batchName, subjectId: String(exam.subjectId), subjectName, title: exam.title, examDate: exam.examDate.toISOString(), totalMarks: exam.totalMarks, hasQuestionFile: Boolean(exam.questionLink?.provider || exam.questionFile?.contentType), questionFileName: exam.questionLink?.provider === "google-drive" ? "Google Drive" : exam.questionFile?.fileName, instructions: exam.instructions, isPublished: exam.isPublished, publishedAt: exam.publishedAt?.toISOString(), createdAt: exam.createdAt.toISOString() };
 }
 
 async function assertExamAccess(context: RequestContext, examId: string, includeQuestionData = false) {
@@ -36,11 +31,12 @@ export async function getWrittenExamData(context: RequestContext, input: { examI
   if (input.examId && !Types.ObjectId.isValid(input.examId)) throw new DomainError("Written exam not found.", 404);
   if (input.examId && input.question) {
     const exam = await assertExamAccess(context, input.examId, true);
-    if (!exam.questionFile?.data || !exam.questionFile.contentType) throw new DomainError("Question file not found.", 404);
     if (context.actor.role === "student") {
       if (!exam.isPublished) throw new DomainError("Question file is not published.", 403);
       if (!(await isStudentEnrolledForExam(context, context.actor.id, exam.batchId))) throw new DomainError("Forbidden", 403);
     }
+    if (exam.questionLink?.provider === "google-drive" && exam.questionLink.url) return { kind: "external-link" as const, url: exam.questionLink.url };
+    if (!exam.questionFile?.data || !exam.questionFile.contentType) throw new DomainError("Question file not found.", 404);
     return { kind: "file" as const, bytes: new Uint8Array(exam.questionFile.data), contentType: exam.questionFile.contentType, fileName: exam.questionFile.fileName.replace(/["\\]/g, "") };
   }
   if (context.actor.role === "student") {
@@ -70,17 +66,10 @@ export async function getWrittenExamData(context: RequestContext, input: { examI
 }
 
 export async function uploadWrittenExamQuestion(context: RequestContext, input: { examId: string; file: File }) {
-  if (!Types.ObjectId.isValid(input.examId) || input.file.size === 0) throw new DomainError("A valid exam and question file are required.", 400, "VALIDATION_ERROR");
-  if (input.file.size > 5 * 1024 * 1024) throw new DomainError("Question file must be 5 MB or smaller.", 413);
-  if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(input.file.type)) throw new DomainError("Question must be a JPG, PNG, WebP, or PDF file.", 400, "VALIDATION_ERROR");
-  const bytes = new Uint8Array(await input.file.arrayBuffer());
-  if (!hasExpectedQuestionSignature(bytes, input.file.type)) throw new DomainError("The question file content does not match its declared type.", 400, "VALIDATION_ERROR");
-  const exam = await assertExamAccess(context, input.examId);
-  if (exam.isPublished) throw new DomainError("Published exams cannot be edited.", 409);
-  exam.questionFile = { data: Buffer.from(bytes), contentType: input.file.type, fileName: input.file.name };
-  await saveWrittenExamRecord(exam);
-  await writeAuditLog({ request: context.request, actor: context.actor, action: "written-exam.question-uploaded", resourceType: "WrittenExam", resourceId: exam._id, reason: "Question file attached to written exam", after: { fileName: input.file.name, contentType: input.file.type, size: input.file.size } });
-  return { uploaded: true, fileName: input.file.name };
+  if (!Types.ObjectId.isValid(input.examId)) throw new DomainError("Written exam not found.", 404);
+  await assertExamAccess(context, input.examId);
+  void input.file;
+  throw new DomainError("Written question uploads are disabled. This exam records marks and results only.", 405, "METHOD_NOT_ALLOWED");
 }
 
 export async function mutateWrittenExam(context: RequestContext, input: WrittenExamMutationInput) {
@@ -114,11 +103,26 @@ export async function mutateWrittenExam(context: RequestContext, input: WrittenE
       await writeAuditLog({ request: context.request, actor: context.actor, action: "written-exam.marks-saved", resourceType: "WrittenExam", resourceId: exam._id, reason: "Draft written marks entered or corrected", after: { savedCount: result.count } });
       return { savedCount: result.count };
     }
-    const resultCount = await countWrittenExamResults(exam._id);
-    if (!resultCount) throw new DomainError("Enter at least one student mark before publishing.", 409);
-    exam.isPublished = true; exam.publishedAt = new Date(); exam.publishedBy = new Types.ObjectId(context.actor.id);
-    await saveWrittenExamRecord(exam);
-    await writeAuditLog({ request: context.request, actor: context.actor, action: "written-exam.published", resourceType: "WrittenExam", resourceId: exam._id, reason: "Written exam results explicitly published to students", after: { resultCount, publishedAt: exam.publishedAt.toISOString() } });
-    return { exam: serializeExam(exam) };
+    if (input.action === "set-question-link") {
+      if (exam.isPublished) throw new DomainError("Published exams cannot be edited.", 409);
+      exam.questionLink = input.url ? { provider: "google-drive", url: input.url, setBy: new Types.ObjectId(context.actor.id), setAt: new Date() } : undefined;
+      await saveWrittenExamRecord(exam);
+      await writeAuditLog({ request: context.request, actor: context.actor, action: input.url ? "written-exam.question-link-set" : "written-exam.question-link-removed", resourceType: "WrittenExam", resourceId: exam._id, reason: input.url ? "Optional Google Drive question link set" : "Optional Google Drive question link removed", after: input.url ? { provider: "google-drive", host: new URL(input.url).hostname } : { provider: null } });
+      return { linked: Boolean(input.url), provider: input.url ? "google-drive" : null };
+    }
+    if (input.action === "correct-result") {
+      if (!exam.isPublished) throw new DomainError("Publish the written results before correcting them.", 409);
+      if (input.marks > exam.totalMarks) throw new DomainError(`Marks cannot exceed ${exam.totalMarks}.`, 400, "VALIDATION_ERROR");
+      if (!(await WrittenExamResult.exists({ examId: exam._id, studentId: input.studentId }))) throw new DomainError("Published written result not found.", 404);
+      const correction = await appendWrittenResultCorrection(context, input);
+      return { corrected: true, correctionId: String(correction._id), sequence: correction.sequence, marks: correction.after.marks, comment: correction.after.comment };
+    }
+    if (!(await countWrittenExamResults(exam._id))) throw new DomainError("Enter at least one student mark before publishing.", 409);
+    let kernel: Awaited<ReturnType<typeof materializeWrittenExamAssessment>> | null = null;
+    if (process.env.WRITTEN_EXAM_KERNEL_WRITES?.trim().toLowerCase() !== "false" && exam.organizationId) {
+      kernel = await materializeWrittenExamAssessment({ examId: String(exam._id), organizationId: String(exam.organizationId), branchId: exam.branchId ? String(exam.branchId) : undefined, academicSessionId: exam.academicSessionId ? String(exam.academicSessionId) : undefined, batchId: String(exam.batchId), subjectId: String(exam.subjectId), title: exam.title, instructions: exam.instructions, totalMarks: exam.totalMarks, ownerId: context.actor.id, ownerRole: context.actor.role === "admin" ? "admin" : "teacher", questionLink: exam.questionLink?.url });
+    }
+    const published = await publishWrittenResultsAtomically(context, { examId: String(exam._id), assessmentId: kernel?.assessmentId, assessmentVersionId: kernel?.assessmentVersionId, questionVersionId: kernel?.questionVersionId });
+    return { exam: serializeExam(published.exam), publicationId: String(published.publicationId), alreadyPublished: published.alreadyPublished };
   });
 }
