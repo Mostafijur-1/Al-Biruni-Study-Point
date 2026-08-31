@@ -6,11 +6,23 @@ export interface IMcqExamAnswer {
   isCorrect: boolean;
 }
 
+export interface IMcqQuestionSnapshot {
+  questionId: Types.ObjectId;
+  question: string;
+  questionBn?: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+  marks: number;
+}
+
 export interface IMcqExamAttempt extends Document {
   attemptSession?: Types.ObjectId;
   student: Types.ObjectId;
   exam: Types.ObjectId;
   answers: IMcqExamAnswer[];
+  questionSnapshots: IMcqQuestionSnapshot[];
+  examSnapshot?: { title: string; duration: number; totalMarks: number; passMark: number; version: number };
   score: number;
   percentage: number;
   isPassed: boolean;
@@ -30,12 +42,36 @@ export interface IMcqExamAttempt extends Document {
   updatedAt: Date;
 }
 
+const McqExamAnswerSchema = new Schema<IMcqExamAnswer>({
+  questionId: { type: Schema.Types.ObjectId, ref: "McqQuestion", required: true },
+  selectedIndex: { type: Number, min: 0, max: 3, default: null },
+  isCorrect: { type: Boolean, required: true },
+}, { _id: false });
+
+const McqQuestionSnapshotSchema = new Schema<IMcqQuestionSnapshot>({
+  questionId: { type: Schema.Types.ObjectId, required: true },
+  question: { type: String, required: true },
+  questionBn: String,
+  options: { type: [String], required: true },
+  correctIndex: { type: Number, required: true, min: 0, max: 3 },
+  explanation: String,
+  marks: { type: Number, required: true, min: 0.01 },
+}, { _id: false });
+
+const McqExamSnapshotSchema = new Schema({
+  title: { type: String, required: true }, duration: { type: Number, required: true, min: 1 },
+  totalMarks: { type: Number, required: true, min: 1 }, passMark: { type: Number, required: true, min: 0 },
+  version: { type: Number, required: true, min: 0 },
+}, { _id: false });
+
 const McqExamAttemptSchema = new Schema<IMcqExamAttempt>(
   {
     attemptSession: { type: Schema.Types.ObjectId, ref: "AttemptSession" },
     student: { type: Schema.Types.ObjectId, ref: "User", required: true },
     exam: { type: Schema.Types.ObjectId, ref: "McqExam", required: true },
-    answers: { type: [Object], default: [] },
+    answers: { type: [McqExamAnswerSchema], default: [] },
+    questionSnapshots: { type: [McqQuestionSnapshotSchema], default: [] },
+    examSnapshot: { type: McqExamSnapshotSchema },
     score: { type: Number, required: true },
     percentage: { type: Number, required: true },
     isPassed: { type: Boolean, required: true },

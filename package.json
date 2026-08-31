@@ -25,7 +25,9 @@
     "test:scope-indexes-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-db.ts",
     "test:scope-indexes-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step2-scope-indexes-memory.ts",
     "test:canonical-scope-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-db.ts",
-    "test:canonical-scope-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-memory.ts"
+    "test:canonical-scope-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step3-canonical-scope-memory.ts",
+    "test:assessment-kernel-db": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-db.ts",
+    "test:assessment-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

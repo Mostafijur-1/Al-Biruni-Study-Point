@@ -9,6 +9,7 @@ import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { McqExamAttempt } from "@/lib/db/models/McqExamAttempt";
 import { consumeRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { scoreSubmittedAnswers } from "@/lib/mcq/answer-scoring";
+import { validateLegacyIndexResponses } from "@/lib/assessment-kernel";
 import {
   loadSubmissionSession,
   markAttemptSessionSubmitted,
@@ -96,6 +97,15 @@ export async function POST(request: NextRequest, context: Context) {
 
     // Fetch all questions for this exam to grade
     const dbQuestions = await McqQuestion.find({ exam: id }).lean();
+    const responseValidation = validateLegacyIndexResponses(
+      parsed.answers,
+      dbQuestions.map((question) => String(question._id)),
+    );
+    if (!responseValidation.ok) {
+      return fail(responseValidation.code === "DUPLICATE_RESPONSE"
+        ? "The submission contains duplicate question responses."
+        : "The submission contains an invalid question response.", 400);
+    }
     const questionsMap = new Map(dbQuestions.map((q) => [q._id.toString(), q]));
     const scoring = scoreSubmittedAnswers(
       parsed.answers,
@@ -133,6 +143,22 @@ export async function POST(request: NextRequest, context: Context) {
         $setOnInsert: {
           attemptSession: submissionSession.session._id,
           answers: answersDoc,
+          questionSnapshots: dbQuestions.map((question) => ({
+            questionId: question._id,
+            question: question.question,
+            questionBn: question.questionBn,
+            options: question.options,
+            correctIndex: question.correctIndex,
+            explanation: question.explanation,
+            marks: question.marks ?? 1,
+          })),
+          examSnapshot: {
+            title: exam.title,
+            duration: exam.duration,
+            totalMarks,
+            passMark: exam.passMark,
+            version: exam.version ?? 0,
+          },
           score,
           percentage,
           isPassed,

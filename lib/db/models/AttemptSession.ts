@@ -4,11 +4,15 @@ export type AttemptKind = "practice" | "exam";
 export type AttemptSessionStatus = "ready" | "started" | "submitted" | "expired";
 
 export interface IAttemptSession extends Document {
+  organizationId?: Types.ObjectId;
+  assessmentId?: Types.ObjectId;
+  assessmentVersionId?: Types.ObjectId;
   student: Types.ObjectId;
   kind: AttemptKind;
   exam?: Types.ObjectId;
   subject?: string;
   questionIds: Types.ObjectId[];
+  questionVersionIds: Types.ObjectId[];
   durationSeconds: number;
   status: AttemptSessionStatus;
   startedAt?: Date;
@@ -20,11 +24,15 @@ export interface IAttemptSession extends Document {
 
 const AttemptSessionSchema = new Schema<IAttemptSession>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
+    assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment" },
+    assessmentVersionId: { type: Schema.Types.ObjectId, ref: "AssessmentVersion" },
     student: { type: Schema.Types.ObjectId, ref: "User", required: true },
     kind: { type: String, enum: ["practice", "exam"], required: true },
     exam: { type: Schema.Types.ObjectId, ref: "McqExam" },
     subject: { type: String, trim: true },
     questionIds: [{ type: Schema.Types.ObjectId, required: true }],
+    questionVersionIds: [{ type: Schema.Types.ObjectId }],
     durationSeconds: { type: Number, required: true, min: 1 },
     status: {
       type: String,

@@ -22,6 +22,7 @@ import { awardPracticeGamification } from "@/lib/gamification/service";
 import { dedupeSubmittedAnswers } from "@/lib/mcq/answer-scoring";
 import { syncMistakesFromAnswers } from "@/lib/learning/mistake-service";
 import { awardSubjectProgress } from "@/lib/gamification/subject-progress-service";
+import { validateLegacyIndexResponses } from "@/lib/assessment-kernel";
 
 const submitPracticeSchema = z.object({
   attemptSessionId: z.string().min(1),
@@ -115,6 +116,15 @@ export async function POST(request: NextRequest) {
         : "Practice attempt session validation failed.";
       return fail(message, 400);
     }
+    const responseValidation = validateLegacyIndexResponses(
+      parsed.answers,
+      submissionSession.session.questionIds.map(String),
+    );
+    if (!responseValidation.ok) {
+      return fail(responseValidation.code === "DUPLICATE_RESPONSE"
+        ? "The submission contains duplicate question responses."
+        : "The submission contains an invalid question response.", 400);
+    }
 
     // Fetch admin-configurable pass mark
     const settings = await getPracticeSettings();
@@ -191,6 +201,12 @@ export async function POST(request: NextRequest) {
           student: user.id,
           subject: parsed.subject,
           answers: detailedAnswers,
+          assessmentSnapshot: {
+            subject: parsed.subject,
+            totalQuestions: scoring.totalQuestions,
+            passMarkPercent: settings.passMarkPercent,
+            mode: isTeacher ? "teacher" : "general",
+          },
           totalQuestions: scoring.totalQuestions,
           score: scoring.score,
           percentage: scoring.percentage,

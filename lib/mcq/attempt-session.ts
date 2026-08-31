@@ -9,6 +9,10 @@ import {
 const SUBMISSION_GRACE_SECONDS = 30;
 
 type CreateAttemptSessionInput = {
+  organizationId?: string;
+  assessmentId?: string;
+  assessmentVersionId?: string;
+  questionVersionIds?: string[];
   studentId: string;
   kind: AttemptKind;
   questionIds: string[];
@@ -19,6 +23,10 @@ type CreateAttemptSessionInput = {
 
 export async function createAttemptSession(input: CreateAttemptSessionInput) {
   return AttemptSession.create({
+    organizationId: input.organizationId,
+    assessmentId: input.assessmentId,
+    assessmentVersionId: input.assessmentVersionId,
+    questionVersionIds: input.questionVersionIds?.map((id) => new Types.ObjectId(id)) ?? [],
     student: input.studentId,
     kind: input.kind,
     exam: input.examId,

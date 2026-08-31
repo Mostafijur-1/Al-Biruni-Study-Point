@@ -113,24 +113,25 @@ export async function GET(request: NextRequest, context: Context) {
       return fail("Results for this exam have not been published by your teacher yet.", 403);
     }
 
-    // Load full solutions (McqQuestions)
-    const questions = await McqQuestion.find({ exam: exam._id })
-      .sort({ order: 1 })
-      .lean();
+    // Prefer the immutable submission snapshot. Legacy attempts fall back to live questions.
+    const questions = attempt.questionSnapshots?.length
+      ? attempt.questionSnapshots
+      : await McqQuestion.find({ exam: exam._id }).sort({ order: 1 }).lean();
 
     // Map student answers for easy lookup in details view
     const answersMap = new Map(attempt.answers.map((a) => [String(a.questionId), a]));
 
     const solutionBreakdown = questions.map((q) => {
-      const studentAns = answersMap.get(String(q._id));
+      const questionId = String("questionId" in q ? q.questionId : q._id);
+      const studentAns = answersMap.get(questionId);
       return {
-        id: q._id.toString(),
+        id: questionId,
         question: q.question,
         options: q.options,
         correctIndex: q.correctIndex, // safe to return now that results are published
         explanation: q.explanation || "",
-        selectedIndex: studentAns ? studentAns.selectedIndex : null,
-        isCorrect: studentAns ? studentAns.isCorrect : false,
+        selectedIndex: studentAns?.selectedIndex ?? null,
+        isCorrect: studentAns?.isCorrect ?? false,
       };
     });
 
@@ -145,9 +146,9 @@ export async function GET(request: NextRequest, context: Context) {
         teacherComment: attempt.teacherComment,
         commentedBy: attempt.commentedBy,
         exam: {
-          title: exam.title,
-          totalMarks: attempt.totalMarksSnapshot ?? exam.totalMarks,
-          passMark: attempt.passMarkSnapshot ?? exam.passMark,
+          title: attempt.examSnapshot?.title ?? exam.title,
+          totalMarks: attempt.examSnapshot?.totalMarks ?? attempt.totalMarksSnapshot ?? exam.totalMarks,
+          passMark: attempt.examSnapshot?.passMark ?? attempt.passMarkSnapshot ?? exam.passMark,
         },
       },
       solutions: solutionBreakdown,
