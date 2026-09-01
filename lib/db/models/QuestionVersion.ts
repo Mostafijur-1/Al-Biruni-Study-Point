@@ -39,10 +39,12 @@ const QuestionVersionSchema = new Schema<IQuestionVersion>({
 }, { timestamps: true });
 
 QuestionVersionSchema.pre("validate", function () {
-  if (this.sourceReference) {
+  const sourceReference = this.sourceReference;
+  const hasSourceReference = Boolean(sourceReference?.provider || sourceReference?.url);
+  if (sourceReference && hasSourceReference) {
     try {
-      const host = new URL(this.sourceReference.url).hostname.toLowerCase();
-      if ((host !== "drive.google.com" && host !== "docs.google.com") || this.sourceReference.provider !== "google-drive") this.invalidate("sourceReference", "Question source must use Google Drive.");
+      const host = new URL(sourceReference.url).hostname.toLowerCase();
+      if ((host !== "drive.google.com" && host !== "docs.google.com") || sourceReference.provider !== "google-drive") this.invalidate("sourceReference", "Question source must use Google Drive.");
     } catch {
       this.invalidate("sourceReference.url", "Question source must be a valid Google Drive URL.");
     }
@@ -51,7 +53,7 @@ QuestionVersionSchema.pre("validate", function () {
     prompt: this.prompt,
     options: this.options.map((option) => ({ key: option.key, text: option.text })),
     correctResponse: { mode: this.correctResponse.mode, optionKeys: [...this.correctResponse.optionKeys], acceptedTexts: [...this.correctResponse.acceptedTexts] },
-    explanation: this.explanation, sourceReference: this.sourceReference ? { provider: this.sourceReference.provider, url: this.sourceReference.url } : undefined,
+    explanation: this.explanation, sourceReference: hasSourceReference ? { provider: sourceReference?.provider, url: sourceReference?.url } : undefined,
     marks: this.marks, difficulty: this.difficulty, language: this.language,
   });
   const keys = this.options.map((option) => option.key);

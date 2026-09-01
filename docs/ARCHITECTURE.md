@@ -2,6 +2,14 @@
 
 ABSP - Al-Biruni Study Point is a Bangla-first coaching center website and LMS for SSC and HSC science students. The architecture follows the supplied `ABSP_Architecture_Guide.pdf` and is being implemented module by module.
 
+## Current implementation status (2026-09)
+
+ABSP remains a Next.js App Router modular monolith backed by MongoDB/Mongoose; no microservice or database-engine rewrite is planned. The target high-risk request flow is `route adapter -> request context -> application service -> policy -> scoped repository -> Mongoose model`. Enrollment, written exams, student reports, and finance use this boundary; older MCQ, practice, routine, and teacher-report routes still contain compatibility logic.
+
+Canonical organization/branch/session scope, BatchEnrollment, TeacherAssignment, routine/class sessions, audited attendance, versioned assessments, immutable written-result corrections, the cash-only finance ledger, and rebuildable reporting projections are implemented additively. Source collections remain authoritative for projections. `User.teacherDomain`, curriculum strings, legacy result stores, and embedded written-question bytes are deprecated but not yet safe to remove. The machine-checkable gate and required production evidence are documented in `LEGACY_CONTRACTION_RUNBOOK.md`; the current collection authority is in `SCHEMA_MAP.md` and recovery is in `RECOVERY_RUNBOOK.md`.
+
+The sections below describe the original product blueprint. Where they differ from the current-status section or schema map, the current-status documents govern operations.
+
 ## 1. Complete Software Architecture
 
 The application is a full-stack Next.js App Router project with layered boundaries:

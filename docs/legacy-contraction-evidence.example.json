@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "contractionId": "step10-legacy-authority-v1",
+  "environment": "production",
+  "testedCommit": "0000000000000000000000000000000000000000",
+  "observationStartedAt": "2026-09-01T00:00:00.000Z",
+  "observationEndedAt": "2026-09-29T00:00:00.000Z",
+  "telemetry": {
+    "teacher-domain": { "reads": 0, "writes": 0, "unexplainedReads": 0 },
+    "string-curriculum": { "reads": 0, "writes": 0, "unexplainedReads": 0 },
+    "duplicate-results": { "reads": 0, "writes": 0, "unexplainedReads": 0 },
+    "embedded-binaries": { "reads": 0, "writes": 0, "unexplainedReads": 0 }
+  },
+  "backupRestore": {
+    "completedAt": "2026-09-29T01:00:00.000Z",
+    "snapshotReferenceHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "restoreTarget": "isolated-non-production",
+    "integrityChecksPassed": false,
+    "restoreOwner": "replace-before-approval"
+  },
+  "verification": {
+    "fullTestsPassed": false,
+    "typecheckPassed": false,
+    "lintPassed": false,
+    "buildPassed": false,
+    "authenticatedJourneys": { "admin": false, "teacher": false, "student": false },
+    "accessibilitySmokePassed": false,
+    "rollbackDrillPassed": false
+  },
+  "retentionPolicyApproved": false,
+  "approvedBy": "replace-before-approval",
+  "approvedAt": "2026-09-29T02:00:00.000Z"
+}

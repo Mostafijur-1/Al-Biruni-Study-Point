@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import mongoose from "mongoose";
 
 import { replayWrittenResultCorrections } from "../lib/written-exam/correction-history.ts";
 import { writtenExamMutationSchema } from "../lib/validations/written-exam.schema.ts";
+import { QuestionVersion } from "../lib/db/models/QuestionVersion.ts";
 
 const examId = "507f1f77bcf86cd799439011";
 
@@ -12,6 +14,12 @@ test("optional written question references only accept Google Drive", () => {
   assert.equal(writtenExamMutationSchema.safeParse({ action: "set-question-link", examId, url: "https://drive.google.com/file/d/example/view" }).success, true);
   assert.equal(writtenExamMutationSchema.safeParse({ action: "set-question-link", examId, url: "https://docs.google.com/document/d/example/edit" }).success, true);
   assert.equal(writtenExamMutationSchema.safeParse({ action: "set-question-link", examId, url: "https://example.com/question.pdf" }).success, false);
+});
+
+test("question versions may omit the optional source reference", async () => {
+  const version = new QuestionVersion({ questionId: new mongoose.Types.ObjectId(), version: 1, prompt: "Manual question", options: [], correctResponse: { mode: "manual", optionKeys: [], acceptedTexts: [] }, marks: 10, difficulty: "medium", language: "mixed", status: "draft", contentHash: "pending", createdBy: new mongoose.Types.ObjectId() });
+  await version.validate();
+  assert.match(version.contentHash, /^[a-f\d]{64}$/);
 });
 
 test("written correction replay reproduces current state and rejects broken history", () => {

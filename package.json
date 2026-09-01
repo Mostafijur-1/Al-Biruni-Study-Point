@@ -20,6 +20,7 @@
     "migrate:finance-ledger": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step8-finance-ledger.ts",
     "rebuild:reporting-projections": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-reporting-projections.ts",
     "check:reporting-projections": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-reporting-projections.ts",
+    "check:legacy-contraction": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-legacy-contraction-readiness.ts",
     "rebuild:practice-results": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-practice-result-projections.ts",
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",

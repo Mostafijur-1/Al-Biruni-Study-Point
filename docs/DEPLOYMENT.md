@@ -42,6 +42,11 @@ In Vercel → **Settings** → **Environment Variables**, add (for **Production*
 | `NEXT_PUBLIC_APP_URL` | Yes | `https://your-project.vercel.app` |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | No | `bn` |
 | `CLOUDINARY_*` | No | Only if using CQ uploads |
+| `ACADEMIC_WRITES_ENABLED` | Yes | Default `false`; enable only with approved rollout evidence |
+| `CANONICAL_ACADEMIC_AUTHORITY_ENABLED` | Yes | Canonical teacher/enrollment authority rollout flag |
+| `WRITTEN_EXAM_KERNEL_WRITES` | Yes | Default `true`; rollback switch for canonical written attempts |
+| `FINANCE_LEDGER_AUTHORITY_ENABLED` | Yes | Default `false` until opening reconciliation is approved |
+| `REPORTING_PROJECTIONS_ENABLED` | Yes | Default `false` until reconciliation and p95 gates pass |
 
 Generate secrets (PowerShell example):
 
@@ -52,6 +57,8 @@ Generate secrets (PowerShell example):
 ## 5. Deploy
 
 Click **Deploy**. Vercel runs `npm run build` on each push to `main`.
+
+Before promotion, run typecheck, lint, full tests, affected replica-set DB suites, and the production build. Migration commands require an explicit environment/database and confirmation token. Preserve the dry-run report before apply. Deployment success alone never authorizes a feature flag.
 
 ## 6. After deploy
 
@@ -73,3 +80,7 @@ Click **Deploy**. Vercel runs `npm run build` on each push to `main`.
 npm run build
 npm run start
 ```
+
+## Backup, rollback, and schema contraction
+
+Record a current Atlas snapshot and release commit before migrations. Rehearse restore into an isolated non-production target using `RECOVERY_RUNBOOK.md`. Legacy schema contraction additionally requires `LEGACY_CONTRACTION_RUNBOOK.md`; deployment access alone is not authorization to drop data.

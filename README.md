@@ -19,6 +19,8 @@ The project key and analysis scope are defined in `sonar-project.properties`.
   <strong>A Bangla-First Learning Management System (LMS) and Coaching Hub for SSC & HSC Science Students</strong>
 </p>
 
+ABSP is a Next.js modular monolith backed by MongoDB/Mongoose. Canonical academic scope, enrollment, teacher assignment, attendance, versioned assessment, immutable cash-ledger, and rebuildable reporting models coexist with tracked legacy adapters during staged migration. See [Architecture](docs/ARCHITECTURE.md), [Schema map](docs/SCHEMA_MAP.md), [Deployment](docs/DEPLOYMENT.md), [Recovery](docs/RECOVERY_RUNBOOK.md), and the [Step 10 contraction gate](docs/LEGACY_CONTRACTION_RUNBOOK.md).
+
 <p align="center">
   <a href="https://absp.vercel.app/bn"><img src="https://img.shields.io/badge/Live%20Website-absp.vercel.app-red?style=for-the-badge&logo=vercel" alt="Live Website" /></a>
   <img src="https://img.shields.io/badge/Language-Bangla%20%2F%20English-blue?style=for-the-badge" alt="Language Badge" />

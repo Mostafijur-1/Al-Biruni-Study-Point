@@ -41,6 +41,7 @@ function questionVersionPayload(question: LegacyMcqQuestion) {
     options,
     correctResponse: { mode: "single-option" as const, optionKeys: [String(question.correctIndex)], acceptedTexts: [] as string[] },
     explanation: question.explanation,
+    sourceReference: undefined,
     marks: question.marks,
     difficulty: question.difficulty ?? "medium",
     language: "mixed" as const,
