@@ -4,7 +4,7 @@ import { VideoLessonPlayer } from "@/components/learning/VideoLessonPlayer";
 
 export const metadata: Metadata = {
   title: "ভিডিও ক্লাস | ABSP",
-  description: "ভিডিও ক্লাস দেখো এবং শেখার অগ্রগতি সংরক্ষণ করো।",
+  description: "Video Class দেখো এবং শেখার অগ্রগতি Save করো।",
 };
 
 type Props = { params: Promise<{ id: string }> };

@@ -103,7 +103,7 @@ function ActiveUploadingIndicator({ className }: { className?: string }) {
           </h4>
 
           <p className="text-3xs md:text-2xs text-muted font-medium">
-            ⚠️ দয়া করে Page রিফ্রেশ বা Window বন্ধ করবেন না। AI processing সম্পন্ন হতে ৩০-৬০ সেকেন্ড সময় লাগতে পারে।
+            ⚠️ Upload চলার সময় Page Refresh বা Window Close করবেন না। AI Processing শেষ হতে ৩০-৬০ সেকেন্ড লাগতে পারে।
           </p>
         </div>
       </div>

@@ -247,7 +247,7 @@ export function FormulaSprint() {
       setError(
         getApiErrorMessage(
           result.payload,
-          "স্প্রিন্ট জমা দেওয়া যায়নি। আবার চেষ্টা করো।",
+          "Sprint Submit করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }

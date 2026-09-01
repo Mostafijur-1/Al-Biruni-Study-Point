@@ -33,10 +33,10 @@ const statusOptions: Array<{
   label: string;
   fullLabel: string;
 }> = [
-  { value: "present", label: "P", fullLabel: "Present" },
-  { value: "absent", label: "A", fullLabel: "Absent" },
-  { value: "late", label: "L", fullLabel: "Late" },
-  { value: "excused", label: "E", fullLabel: "Excused" },
+  { value: "present", label: "P", fullLabel: "উপস্থিত" },
+  { value: "absent", label: "A", fullLabel: "অনুপস্থিত" },
+  { value: "late", label: "L", fullLabel: "দেরিতে" },
+  { value: "excused", label: "E", fullLabel: "ছুটি" },
 ];
 
 function sameMark(left: RecordRow, right: RecordRow) {
@@ -150,7 +150,7 @@ export function TeacherAttendanceWorkspace() {
     });
     if (!marked.ok || !isApiSuccess(marked.payload)) {
       setError(true);
-      setMessage(getApiErrorMessage(marked.payload, "Attendance সংরক্ষণ করা যায়নি।"));
+      setMessage(getApiErrorMessage(marked.payload, "Attendance Save করা যায়নি।"));
       setSaving(false);
       return;
     }
@@ -203,7 +203,7 @@ export function TeacherAttendanceWorkspace() {
     });
     if (!result.ok || !isApiSuccess(result.payload)) {
       setError(true);
-      setMessage(getApiErrorMessage(result.payload, "Attendance পরিবর্তন সংরক্ষণ করা যায়নি।"));
+      setMessage(getApiErrorMessage(result.payload, "Attendance-এর পরিবর্তন Save করা যায়নি।"));
     } else {
       await loadSheet(result.payload.data.sheet.classSessionId);
       setError(false);
@@ -223,10 +223,10 @@ export function TeacherAttendanceWorkspace() {
   if (!activeSession) {
     return (
       <section className="space-y-4" aria-labelledby="attendance-title">
-        <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Class attendance</p><h2 id="attendance-title" className="mt-1 text-xl font-black text-primary">আজকের attendance</h2></div>
+        <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Class Attendance</p><h2 id="attendance-title" className="mt-1 text-xl font-black text-primary">আজকের Attendance</h2></div>
         {message && <Alert variant={error ? "destructive" : "success"}>{message}</Alert>}
         {loading ? <div className="h-32 animate-pulse rounded-2xl bg-secondary" /> : sessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted">আজ আপনার কোনো scheduled class নেই।</div>
+          <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted">আজ আপনার কোনো Scheduled Class নেই।</div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">{sessions.map((session) => (
             <button type="button" key={session.id} onClick={() => void open(session)} className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/50">
@@ -244,7 +244,7 @@ export function TeacherAttendanceWorkspace() {
 
   return (
     <section className="space-y-4" aria-labelledby="attendance-title">
-      <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Class attendance</p><h2 id="attendance-title" className="mt-1 text-xl font-black text-primary">আজকের attendance</h2></div>
+      <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Class Attendance</p><h2 id="attendance-title" className="mt-1 text-xl font-black text-primary">আজকের Attendance</h2></div>
       {message && <Alert variant={error ? "destructive" : "success"}>{message}</Alert>}
       <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
@@ -268,7 +268,7 @@ export function TeacherAttendanceWorkspace() {
           </div>
         ))}</div>
         {sheet?.status === "draft" && <Button className="mt-5 w-full" size="lg" disabled={saving || counts.unmarked > 0} onClick={() => void submit()}>{saving ? "Submit হচ্ছে…" : counts.unmarked > 0 ? `${counts.unmarked} জনকে mark করুন` : "Review করে attendance submit করুন"}</Button>}
-        {sheet?.status === "submitted" && editingSubmitted && <Button className="mt-5 w-full" size="lg" disabled={saving || changedRecords.length === 0} onClick={() => void saveAmendment()}>{saving ? "সংরক্ষণ হচ্ছে…" : changedRecords.length === 0 ? "কোনো পরিবর্তন নেই" : `${changedRecords.length}টি পরিবর্তন সংরক্ষণ করুন`}</Button>}
+        {sheet?.status === "submitted" && editingSubmitted && <Button className="mt-5 w-full" size="lg" disabled={saving || changedRecords.length === 0} onClick={() => void saveAmendment()}>{saving ? "Save হচ্ছে…" : changedRecords.length === 0 ? "কোনো পরিবর্তন নেই" : `${changedRecords.length}টি পরিবর্তন Save করুন`}</Button>}
       </div>
     </section>
   );

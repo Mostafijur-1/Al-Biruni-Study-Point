@@ -36,7 +36,7 @@ export default async function StudentCoursesPage({ searchParams }: StudentCourse
           </span>
         }
       />
-      <Suspense fallback={<p className="text-sm text-muted">Loading...</p>}>
+      <Suspense fallback={<p className="text-sm text-muted">লোড হচ্ছে...</p>}>
         <StudentClassCourses level={level} />
       </Suspense>
     </section>

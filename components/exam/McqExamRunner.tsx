@@ -77,7 +77,7 @@ const ExamTimer = React.memo(
           isLowTime ? "border-brand-red bg-red-50" : "border-primary/20 bg-secondary"
         )}
       >
-        <p className="text-xs font-semibold uppercase text-muted">Time left</p>
+        <p className="text-xs font-semibold uppercase text-muted">বাকি সময়</p>
         <p
           className={cn(
             "font-display text-2xl font-bold tabular-nums",
@@ -302,7 +302,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             setLoadingDone(true);
           }
         } else {
-          setErrorMessage(getApiErrorMessage(payload, "Failed to initialize exam."));
+          setErrorMessage(getApiErrorMessage(payload, "Exam শুরু করা যায়নি।"));
         }
       } catch {
         setErrorMessage("Connection error loading exam.");
@@ -393,12 +393,12 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         phaseRef.current = "completed";
         setPhase("completed");
       } else {
-        setSubmitError(getApiErrorMessage(payload, "Submission failed. Please try again."));
+        setSubmitError(getApiErrorMessage(payload, "Submit করা যায়নি। আবার চেষ্টা করো।"));
         phaseRef.current = "running";
         setPhase("running");
       }
     } catch {
-      setSubmitError("Network error submitting exam. Please check your connection.");
+      setSubmitError("Exam Submit-এর সময় Network সমস্যা হয়েছে। Connection Check করো।");
       phaseRef.current = "running";
       setPhase("running");
     } finally {
@@ -621,7 +621,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
           </h3>
           <ul className="text-xs text-muted space-y-2.5 list-disc pl-5 font-semibold leading-relaxed">
             <li className="text-brand-red font-bold">
-              {"পরীক্ষা চলাকালীন উইন্ডো বা ট্যাব পরিবর্তন কোরো না। একাধিকবার পরিবর্তন করলে তোমার পরীক্ষাটি স্বয়ংক্রিয়ভাবে বাতিল হয়ে যাবে।"}
+              {"পরীক্ষা চলাকালীন Window বা Tab পরিবর্তন কোরো না। একাধিকবার পরিবর্তন করলে পরীক্ষা স্বয়ংক্রিয়ভাবে Cancel হবে।"}
             </li>
             <li>
               {"পরীক্ষা চলাকালীন পেজ রিফ্রেশ বা ব্যাক কোরো না।"}
@@ -644,7 +644,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             onClick={() => router.push("/student/exams")}
             className="rounded-xl font-bold"
           >
-            {"বাতিল"}
+            {"Cancel"}
           </Button>
           <Button
             onClick={() => void beginExam()}
@@ -675,7 +675,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 {"তুমি এখন অফলাইন আছ"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
-                {"তোমার Internet connection বিচ্ছিন্ন রয়েছে। পৃষ্ঠাটি রিফ্রেশ বা বন্ধ কোরো না। পরীক্ষাটি তোমার Browser-এ সুরক্ষিত আছে এবং Internet ফিরে এলে সাবমিট করতে পারবে।"}
+                {"তোমার Internet Connection নেই। Page Refresh বা Close কোরো না। পরীক্ষাটি Browser-এ নিরাপদ আছে; Internet ফিরে এলে Submit করতে পারবে।"}
               </p>
             </div>
           </div>
@@ -687,12 +687,12 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {"পরীক্ষা বাতিল করা হয়েছে"}
+                {"পরীক্ষা Cancel হয়েছে"}
               </h3>
               <p className="text-xs leading-5 text-red-700">
                 {isOffline 
-                  ? "তুমি একাধিকবার ট্যাব পরিবর্তন করেছ, তাই তোমার পরীক্ষা বাতিল করা হয়েছে। ইন্টারনেট সংযোগ ফিরে এলে এটি স্বয়ংক্রিয়ভাবে সাবমিট হবে।"
-                  : "তুমি একাধিকবার ট্যাব পরিবর্তন করেছ, তাই তোমার পরীক্ষা বাতিল করে সাবমিট করা হচ্ছে..."}
+                  ? "তুমি একাধিকবার Tab পরিবর্তন করেছ, তাই পরীক্ষা Cancel হয়েছে। Internet ফিরে এলে এটি স্বয়ংক্রিয়ভাবে Submit হবে।"
+                  : "তুমি একাধিকবার Tab পরিবর্তন করেছ, তাই পরীক্ষা Cancel করে Submit করা হচ্ছে..."}
               </p>
             </div>
           </div>
@@ -719,7 +719,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
 
           <div className="mt-4">
             <div className="mb-1.5 flex justify-between text-xs font-semibold text-muted">
-              <span>Progress</span>
+              <span>অগ্রগতি</span>
               <span>{progressPercent}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-border">
@@ -760,7 +760,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
           {phase === "submitting"
             ? "Submitting..."
             : locale === "bn"
-            ? `পরীক্ষা জমা দাও (${answeredCount}/${questions.length}টি উত্তর দেওয়া হয়েছে)`
+            ? `পরীক্ষা Submit করো (${answeredCount}/${questions.length}টি উত্তর দেওয়া হয়েছে)`
             : `Submit Exam (${answeredCount}/${questions.length} answered)`}
         </Button>
 
@@ -775,10 +775,10 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                 <div className="space-y-4 w-full">
                   <div className="space-y-1">
                     <h3 className="font-display text-lg font-bold text-primary">
-                      {"পরীক্ষা জমা দিতে চান?"}
+                      {"পরীক্ষা Submit করতে চাও?"}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {"জমা দেওয়ার পূর্বে তোমার উত্তরগুলো মিলিয়ে নাও।"}
+                      {"Submit করার আগে তোমার উত্তরগুলো মিলিয়ে নাও।"}
                     </p>
                   </div>
 
@@ -849,7 +849,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                       submitExam(elapsedSeconds, answers, false);
                     }}
                   >
-                    {"জমা দাও"}
+                    {"Submit করো"}
                   </Button>
                 </div>
               </div>
@@ -951,7 +951,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
                     {"ট্যাব পরিবর্তনের সতর্কতা!"}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed font-semibold text-red-600">
-                    {"তুমি উইন্ডো বা ট্যাব পরিবর্তন করেছ! পরীক্ষা চলাকালীন পুনরায় ট্যাব বা উইন্ডো পরিবর্তন করলে তোমার পরীক্ষাটি বাতিল এবং স্বয়ংক্রিয়ভাবে সাবমিট হয়ে যাবে।"}
+                    {"তুমি Window বা Tab পরিবর্তন করেছ! পরীক্ষা চলাকালীন আবার Window বা Tab পরিবর্তন করলে পরীক্ষা Cancel হয়ে স্বয়ংক্রিয়ভাবে Submit হবে।"}
                   </p>
                 </div>
                 <Button
@@ -978,10 +978,10 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             <AlertTriangle className="size-6 text-brand-red shrink-0 mt-0.5 animate-pulse" />
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-red-800">
-                {"পরীক্ষা বাতিল করা হয়েছে"}
+                {"পরীক্ষা Cancel হয়েছে"}
               </h3>
               <p className="text-xs leading-5 text-red-700 font-semibold">
-                {"পরীক্ষা চলাকালীন একাধিকবার ট্যাব বা উইন্ডো পরিবর্তন করার কারণে তোমার পরীক্ষাটি বাতিল করা হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে সাবমিট করা হয়েছে।"}
+                {"পরীক্ষা চলাকালীন একাধিকবার Tab বা Window পরিবর্তন করায় পরীক্ষা Cancel হয়েছে এবং উত্তরগুলো স্বয়ংক্রিয়ভাবে Submit হয়েছে।"}
               </p>
             </div>
           </div>
@@ -996,8 +996,8 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
         </h2>
         <p className="text-xs text-muted leading-relaxed font-semibold">
           {wasAutoSubmittedDueToTabLeave 
-            ? "নীতিমালা লঙ্ঘন করার কারণে তোমার পরীক্ষা বাতিল হয়েছে। তোমার বর্তমান উত্তরগুলো তোমার শিক্ষকের নিকট পাঠানো হয়েছে।"
-            : "তোমার পরীক্ষার উত্তরগুলো সফলভাবে জমা নেওয়া হয়েছে। তোমার শিক্ষক ফলাফল মূল্যায়ন করার পরে তা প্রকাশ করবেন।"}
+            ? "নিয়ম ভাঙার কারণে তোমার পরীক্ষা Cancel হয়েছে। বর্তমান উত্তরগুলো Teacher-এর কাছে পাঠানো হয়েছে।"
+            : "তোমার পরীক্ষার উত্তর Submit হয়েছে। Teacher Result Check করার পর Publish করবেন।"}
         </p>
         <div className="pt-4 border-t border-border">
           <Button

@@ -121,7 +121,7 @@ export function TeacherMcqReview() {
         if (ok && isApiSuccess(payload)) {
           setSubjects(payload.data.subjects);
         } else {
-          setErrorMessage(getApiErrorMessage(payload, "Failed to load subjects."));
+          setErrorMessage(getApiErrorMessage(payload, "বিষয় লোড করা যায়নি।"));
         }
       } catch (error) {
         console.error("[Teacher Review Fetch Subjects Catch Error]:", error);
@@ -150,7 +150,7 @@ export function TeacherMcqReview() {
       return;
     }
     if (uploadContentType === "image" && !uploadFile) {
-      setUploadError("অনুগ্রহ করে একটি ছবি নির্বাচন করুন।");
+      setUploadError("একটি ছবি Select করুন।");
       return;
     }
 
@@ -210,7 +210,7 @@ export function TeacherMcqReview() {
       if (ok && isApiSuccess(payload)) {
         setReports(payload.data.reports);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to load reported questions."));
+        setErrorMessage(getApiErrorMessage(payload, "Report করা প্রশ্ন লোড করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Teacher Review Fetch Reports Catch Error]:", error);
@@ -240,7 +240,7 @@ export function TeacherMcqReview() {
       if (ok && isApiSuccess(payload)) {
         setUploadedQuestions(payload.data.questions);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to load uploaded questions."));
+        setErrorMessage(getApiErrorMessage(payload, "Upload করা প্রশ্ন লোড করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Fetch Uploaded Questions Catch Error]:", error);
@@ -263,7 +263,7 @@ export function TeacherMcqReview() {
   // Bulk delete uploaded MCQs
   const handleBulkDeleteUploaded = async () => {
     if (selectedUploadedIds.length === 0) return;
-    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে আপনি ${selectedUploadedIds.length}টি প্রশ্ন মুছে ফেলতে চান?` : `Are you sure you want to delete ${selectedUploadedIds.length} selected questions?`)) return;
+    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে ${selectedUploadedIds.length}টি প্রশ্ন Delete করতে চান?` : `Are you sure you want to delete ${selectedUploadedIds.length} selected questions?`)) return;
 
     try {
       setBulkDeleting(true);
@@ -274,13 +274,13 @@ export function TeacherMcqReview() {
       });
 
       if (ok && isApiSuccess(payload)) {
-        setSuccessMessage("নির্বাচিত প্রশ্নসমূহ সফলভাবে মুছে ফেলা হয়েছে।");
+        setSuccessMessage("Select করা প্রশ্নগুলো Delete হয়েছে।");
         setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q._id)));
         setReports((prev) => prev.filter((r) => !r.questionId || !selectedUploadedIds.includes(r.questionId._id)));
         setSelectedUploadedIds([]);
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to delete selected questions."));
+        setErrorMessage(getApiErrorMessage(payload, "Select করা প্রশ্ন Delete করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Bulk Delete MCQ Catch Error]:", error);
@@ -292,7 +292,7 @@ export function TeacherMcqReview() {
 
   // Delete MCQ
   const handleDeleteMcq = async (id: string) => {
-    if (!confirm("আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?")) return;
+    if (!confirm("আপনি কি নিশ্চিত যে এই প্রশ্নটি Delete করতে চান?")) return;
 
     try {
       const { ok, payload } = await apiFetch(`/api/teacher/mcqs/${id}`, {
@@ -300,14 +300,14 @@ export function TeacherMcqReview() {
       });
 
       if (ok && isApiSuccess(payload)) {
-        setSuccessMessage("প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।");
+        setSuccessMessage("প্রশ্নটি Delete হয়েছে।");
         // Remove from list
         setReports((prev) => prev.filter((r) => r.questionId?._id !== id));
         setUploadedQuestions((prev) => prev.filter((q) => q._id !== id));
         setSelectedUploadedIds((prev) => prev.filter((item) => item !== id));
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to delete question."));
+        setErrorMessage(getApiErrorMessage(payload, "প্রশ্ন Delete করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Teacher Review Delete MCQ Catch Error]:", error);
@@ -352,11 +352,11 @@ export function TeacherMcqReview() {
         setEditForm((prev) => ({ ...prev, imageUrl: result.data.url }));
       } else {
         console.error("[Image Upload Failure Technical Details]:", result);
-        setImageError("Failed to upload image. Please ensure the file is a valid image.");
+        setImageError("ছবি Upload করা যায়নি। File-টি সঠিক Image কি না Check করুন।");
       }
     } catch (error) {
       console.error("[Image Upload Catch Technical Details]:", error);
-      setImageError("Connection issue while uploading image. Please check your network and try again.");
+      setImageError("ছবি Upload-এর সময় Connection সমস্যা হয়েছে। Network Check করে আবার চেষ্টা করুন।");
     } finally {
       setIsUploadingImage(false);
     }
@@ -367,12 +367,12 @@ export function TeacherMcqReview() {
     if (!editingMcq) return;
 
     if (!editForm.question.trim()) {
-      setEditError("Question is required.");
+      setEditError("প্রশ্ন লিখুন।");
       return;
     }
 
     if (editForm.options.some((o) => !o.trim())) {
-      setEditError("All 4 options must be filled.");
+      setEditError("৪টি Option-ই পূরণ করুন।");
       return;
     }
 
@@ -402,7 +402,7 @@ export function TeacherMcqReview() {
         setEditingMcq(null);
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setEditError(getApiErrorMessage(payload, "Failed to update question."));
+        setEditError(getApiErrorMessage(payload, "প্রশ্ন Update করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Teacher Review Save MCQ Catch Error]:", error);
@@ -426,7 +426,7 @@ export function TeacherMcqReview() {
         setSuccessMessage("রিপোর্টটি সমাধান করা হয়েছে।");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to resolve report."));
+        setErrorMessage(getApiErrorMessage(payload, "Report Resolve করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Teacher Review Resolve Report Catch Error]:", error);
@@ -526,11 +526,11 @@ export function TeacherMcqReview() {
           {loadingReports ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-12 justify-center">
               <Loader2 className="size-6 animate-spin text-primary" />
-              <span>Loading reported questions...</span>
+              <span>Report করা প্রশ্ন লোড হচ্ছে...</span>
             </div>
           ) : reports.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground text-sm">
-              {"No reported questions. Good job!"}
+              {"Report করা কোনো প্রশ্ন নেই।"}
             </div>
           ) : (
             <div className="space-y-4">
@@ -607,7 +607,7 @@ export function TeacherMcqReview() {
                     <div className="bg-amber-100/40 rounded-lg p-3 border border-amber-200/50 flex items-start gap-2 text-sm text-amber-900">
                       <AlertTriangle className="size-4 shrink-0 text-amber-600 mt-0.5" />
                       <div>
-                        <strong className="font-bold">Student feedback:</strong>{" "}
+                        <strong className="font-bold">শিক্ষার্থীর Feedback:</strong>{" "}
                         <span>{report.comment}</span>
                       </div>
                     </div>
@@ -660,7 +660,7 @@ export function TeacherMcqReview() {
 
                       {q.explanation && (
                         <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
-                          <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                          <strong className="font-semibold">ব্যাখ্যা:</strong> {q.explanation}
                         </div>
                       )}
                     </div>
@@ -797,7 +797,7 @@ export function TeacherMcqReview() {
                     className="rounded-lg text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                   >
                     <Trash2 className="size-3.5 mr-1" />
-                    {"মুছে ফেলুন"}
+                    {"Delete"}
                   </Button>
                 </div>
               </div>
@@ -890,7 +890,7 @@ export function TeacherMcqReview() {
 
                       {q.explanation && (
                         <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
-                          <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                          <strong className="font-semibold">ব্যাখ্যা:</strong> {q.explanation}
                         </div>
                       )}
                     </div>
@@ -996,7 +996,7 @@ export function TeacherMcqReview() {
 
               {/* Source Type Selector */}
               <div className="space-y-1.5">
-                <Label className="font-bold">Source Type</Label>
+                <Label className="font-bold">Source-এর ধরন</Label>
                 <div className="flex flex-wrap gap-2 bg-secondary/60 p-1 rounded-xl w-fit">
                   <button
                     type="button"
@@ -1018,7 +1018,7 @@ export function TeacherMcqReview() {
               {/* Conditional Inputs */}
               {uploadContentType === "text" && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="mcq-pasted-text" className="font-bold">Raw Text (Questions, options, and explanations)</Label>
+                  <Label htmlFor="mcq-pasted-text" className="font-bold">Raw Text (প্রশ্ন, Option ও ব্যাখ্যা)</Label>
                   <textarea
                     id="mcq-pasted-text"
                     rows={8}
@@ -1143,7 +1143,7 @@ export function TeacherMcqReview() {
             <div className="space-y-4">
               {/* Question Text */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-question" className="font-bold">Question Text</Label>
+                <Label htmlFor="edit-question" className="font-bold">প্রশ্নের Text</Label>
                 <textarea
                   id="edit-question"
                   rows={2}
@@ -1156,7 +1156,7 @@ export function TeacherMcqReview() {
 
               {/* Image Upload Block */}
               <div className="space-y-2.5">
-                <Label className="font-bold">Question Illustration (Image)</Label>
+                <Label className="font-bold">প্রশ্নের ছবি</Label>
                 <div className="flex items-start gap-4">
                   <div className="flex-1 space-y-1.5">
                     <div className="relative">
@@ -1184,7 +1184,7 @@ export function TeacherMcqReview() {
                       </label>
                     </div>
                     {imageError && <p className="text-[10px] text-brand-red font-semibold">{imageError}</p>}
-                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, WebP. Hosted securely on Cloudinary.</p>
+                    <p className="text-[10px] text-muted-foreground">Format: PNG, JPG, WebP। ছবিটি Cloudinary-তে নিরাপদে রাখা হবে।</p>
                   </div>
 
                   {editForm.imageUrl && (
@@ -1227,7 +1227,7 @@ export function TeacherMcqReview() {
 
               {/* Correct Index */}
               <div className="space-y-1.5">
-                <Label htmlFor="correct-idx" className="font-bold">Correct Option</Label>
+                <Label htmlFor="correct-idx" className="font-bold">সঠিক Option</Label>
                 <select
                   id="correct-idx"
                   value={editForm.correctIndex}
@@ -1244,7 +1244,7 @@ export function TeacherMcqReview() {
 
               {/* Explanation */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-explanation" className="font-bold">Solution Explanation (Optional)</Label>
+                <Label htmlFor="edit-explanation" className="font-bold">সমাধানের ব্যাখ্যা (ঐচ্ছিক)</Label>
                 <textarea
                   id="edit-explanation"
                   rows={2}
@@ -1274,7 +1274,7 @@ export function TeacherMcqReview() {
                 disabled={isSavingEdit}
                 className="rounded-xl px-6"
               >
-                Save Changes
+                পরিবর্তন Save করুন
               </Button>
             </div>
           </div>

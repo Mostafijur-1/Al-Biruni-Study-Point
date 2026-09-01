@@ -28,8 +28,8 @@ test("install and notification actions live only in the footer", async () => {
   assert.doesNotMatch(home, /PwaInstallPrompt/);
   assert.match(footer, /<PwaInstallPrompt \/>/);
   assert.doesNotMatch(actions, /<section/);
-  assert.match(actions, /Install app/);
-  assert.match(actions, /Enable notifications/);
+  assert.match(actions, /App ইনস্টল করুন/);
+  assert.match(actions, /Notification চালু করুন/);
   assert.match(actions, /min-h-12 w-full border-2 border-brand-yellow bg-brand-yellow/);
   assert.match(actions, /min-h-12 w-full border-2 border-white bg-white/);
 });

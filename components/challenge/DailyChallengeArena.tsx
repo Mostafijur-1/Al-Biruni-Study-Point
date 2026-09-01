@@ -234,7 +234,7 @@ export function DailyChallengeArena() {
       setMessage(
         getApiErrorMessage(
           response.payload,
-          "চ্যালেঞ্জটি জমা দেওয়া যাচ্ছে না।",
+          "Challenge Submit করা যাচ্ছে না।",
         ),
       );
     }
@@ -297,7 +297,7 @@ export function DailyChallengeArena() {
               loading={busy}
               onClick={() => void submitChallenge()}
             >
-              {secondsLeft === 0 ? "সময় শেষ—জমা দাও" : "জমা দাও"}
+              {secondsLeft === 0 ? "সময় শেষ—Submit করো" : "Submit করো"}
             </Button>
           </div>
         </div>

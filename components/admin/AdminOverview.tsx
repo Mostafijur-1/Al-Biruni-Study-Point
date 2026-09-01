@@ -79,15 +79,15 @@ function PracticeAttemptsCard({
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)] sm:col-span-2 lg:col-span-3">
-      <p className="text-xs font-bold uppercase tracking-widest text-accent">Practice attempts</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-accent">Practice-এর চেষ্টা</p>
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         <div className="border-b border-border pb-4 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-4">
-          <p className="text-sm font-semibold text-muted">Today</p>
+          <p className="text-sm font-semibold text-muted">আজ</p>
           <p className="mt-1 text-3xl font-bold text-primary">{today}</p>
           <p className="mt-1 text-xs text-muted">{todayPassed} passed today</p>
         </div>
         <div className="sm:pl-1">
-          <p className="text-sm font-semibold text-muted">All</p>
+          <p className="text-sm font-semibold text-muted">সব</p>
           <p className="mt-1 text-3xl font-bold text-primary">{total}</p>
           <p className="mt-1 text-xs text-muted">{totalPassed} passed total</p>
         </div>
@@ -105,7 +105,7 @@ export function AdminOverview() {
   const stats = data?.stats;
 
   const quickLinks = [
-    { href: "/admin/academic", label:"ব্যাচ ব্যবস্থাপনা" },
+    { href: "/admin/academic", label:"Batch Management" },
     { href: "/admin/students", label:"Students" },
     { href: "/admin/teachers", label:"Teachers" },
     // { href: "/admin/courses", label: "কোর্স" },
@@ -183,8 +183,8 @@ export function AdminOverview() {
           <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-display text-lg font-bold text-primary">Teacher monthly charges</h2>
-                <p className="text-xs text-muted">100 tk base + 3 tk per successful image question upload</p>
+                <h2 className="font-display text-lg font-bold text-primary">Teacher-এর মাসিক Charge</h2>
+                <p className="text-xs text-muted">মূল Charge ১০০ টাকা + প্রতিটি সফল Image Question Upload-এ ৩ টাকা</p>
               </div>
               <span className="rounded-lg bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
                 Total: {stats.teacherChargesTotalTk} tk
@@ -212,13 +212,13 @@ export function AdminOverview() {
                   </div>
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     <div className="rounded-lg bg-secondary/50 p-2">
-                      <dt className="text-muted">Image uploads</dt>
+                      <dt className="text-muted">Image Upload</dt>
                       <dd className="mt-0.5 font-bold text-primary">
                         {teacher.imageQuestionUploadCount}
                       </dd>
                     </div>
                     <div className="rounded-lg bg-secondary/50 p-2">
-                      <dt className="text-muted">Due date</dt>
+                      <dt className="text-muted">Due Date</dt>
                       <dd
                         className={cn(
                           "mt-0.5 font-bold",
@@ -244,11 +244,11 @@ export function AdminOverview() {
                 <thead className="border-b border-border text-xs uppercase tracking-wide text-muted">
                   <tr>
                     <th className="py-2 pr-3">Teacher</th>
-                    <th className="py-2 pr-3">Contact</th>
-                    <th className="py-2 pr-3">Image uploads</th>
-                    <th className="py-2 pr-3">Monthly charge</th>
-                    <th className="py-2 pr-3">Cycle start</th>
-                    <th className="py-2 pr-3">Cycle end</th>
+                    <th className="py-2 pr-3">যোগাযোগ</th>
+                    <th className="py-2 pr-3">Image Upload</th>
+                    <th className="py-2 pr-3">মাসিক Charge</th>
+                    <th className="py-2 pr-3">Cycle শুরু</th>
+                    <th className="py-2 pr-3">Cycle শেষ</th>
                     <th className="py-2 pr-3">Status</th>
                   </tr>
                 </thead>

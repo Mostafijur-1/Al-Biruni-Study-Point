@@ -222,7 +222,7 @@ export function ResultHistory() {
         setReportedQuestionIds((current) => new Set(current).add(questionId));
         resetReportForm();
       } else {
-        setReportError(getApiErrorMessage(payload, "রিপোর্ট জমা দেওয়া যায়নি।"));
+        setReportError(getApiErrorMessage(payload, "Report Submit করা যায়নি।"));
       }
     } catch {
       setReportError("ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করো।");
@@ -295,7 +295,7 @@ export function ResultHistory() {
         <section className="grid gap-4 xl:grid-cols-2" aria-label="ফলাফলের তালিকা">
           {filteredResults.map((result) => {
             const score = result.percentage || 0;
-            const status = result.isCancelled ? "বাতিল" : result.isPassed ? "উত্তীর্ণ" : "অনুত্তীর্ণ";
+            const status = result.isCancelled ? "Cancelled" : result.isPassed ? "Pass" : "Fail";
             const statusTone = result.isCancelled ? "border-red-200 bg-red-50 text-red-700" : result.isPassed ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-orange-200 bg-orange-50 text-orange-700";
             return (
               <article key={result._id} className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/25 hover:shadow-md">
@@ -325,7 +325,7 @@ export function ResultHistory() {
             <header className="shrink-0 border-b border-border bg-card px-4 py-4 sm:px-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0"><p className="text-xs font-extrabold text-accent">উত্তরপত্র বিশ্লেষণ</p><h2 id="result-review-title" className="mt-1 text-lg font-black leading-7 text-primary sm:text-xl">{attemptDetail?.exam.title || "ফলাফলের বিস্তারিত লোড হচ্ছে..."}</h2></div>
-                <button type="button" onClick={closeDetails} className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted transition hover:bg-secondary hover:text-primary" aria-label="উত্তরপত্র বন্ধ করো"><X className="size-5" /></button>
+                <button type="button" onClick={closeDetails} className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-surface text-muted transition hover:bg-secondary hover:text-primary" aria-label="উত্তরপত্র Close করো"><X className="size-5" /></button>
               </div>
               {attemptDetail && <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">{[["Score", `${banglaNumber(attemptDetail.score)} / ${banglaNumber(attemptDetail.exam.totalMarks)}`], ["Accuracy", `${banglaNumber(attemptDetail.percentage)}%`], ["সময়", formatDuration(attemptDetail.timeTaken)]].map(([label, value]) => <div key={label} className="rounded-xl bg-secondary/50 p-2.5 text-center"><p className="text-[11px] font-bold text-muted">{label}</p><p className="mt-1 text-sm font-black text-primary">{value}</p></div>)}</div>}
             </header>
@@ -365,14 +365,14 @@ export function ResultHistory() {
                           </section>
 
                           {reportedQuestionIds.has(solution.id) ? (
-                            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm font-bold text-emerald-700"><CheckCircle2 className="size-4.5" /> রিপোর্টটি জমা হয়েছে। শিক্ষক এটি পর্যালোচনা করবেন।</div>
+                            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm font-bold text-emerald-700"><CheckCircle2 className="size-4.5" /> Report Submit হয়েছে। Teacher এটি Review করবেন।</div>
                           ) : reportingQuestionId === solution.id ? (
                             <section className="rounded-2xl border border-amber-200 bg-amber-50/55 p-4" aria-label="প্রশ্ন রিপোর্ট করার ফর্ম">
-                              <div className="flex items-start justify-between gap-3"><div><h4 className="flex items-center gap-2 text-sm font-extrabold text-primary"><Flag className="size-4 text-amber-700" /> প্রশ্নে সমস্যা রিপোর্ট করো</h4><p className="mt-1 text-xs leading-5 text-muted">কী ধরনের সমস্যা দেখেছেন তা নির্বাচন করে সংক্ষেপে লেখো।</p></div><button type="button" onClick={resetReportForm} className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white hover:text-primary" aria-label="রিপোর্ট ফর্ম বন্ধ করো"><X className="size-4" /></button></div>
+                              <div className="flex items-start justify-between gap-3"><div><h4 className="flex items-center gap-2 text-sm font-extrabold text-primary"><Flag className="size-4 text-amber-700" /> প্রশ্নে সমস্যা Report করো</h4><p className="mt-1 text-xs leading-5 text-muted">কী ধরনের সমস্যা দেখেছ তা Select করে সংক্ষেপে লেখো।</p></div><button type="button" onClick={resetReportForm} className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white hover:text-primary" aria-label="Report form Close করো"><X className="size-4" /></button></div>
                               <div className="mt-4 flex flex-wrap gap-2">{reportIssues.map((issue) => <button key={issue.id} type="button" onClick={() => setReportIssue(issue.id)} className={cn("min-h-9 rounded-full border px-3 text-xs font-bold transition", reportIssue === issue.id ? "border-amber-700 bg-amber-700 text-white" : "border-amber-200 bg-white text-amber-900 hover:border-amber-400")}>{issue.label}</button>)}</div>
                               <label className="mt-4 block"><span className="text-xs font-bold text-primary">অতিরিক্ত বিবরণ <span className="font-medium text-muted">(ঐচ্ছিক)</span></span><textarea value={reportComment} onChange={(event) => setReportComment(event.target.value)} rows={3} maxLength={500} placeholder="প্রয়োজনে সমস্যাটি সম্পর্কে আরও লেখো..." className="mt-2 w-full resize-y rounded-xl border border-amber-200 bg-white px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-200" /></label>
-                              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted"><span className={reportError ? "font-bold text-red-700" : ""}>{reportError || "শুধু সমস্যার ধরন নির্বাচন করেও রিপোর্ট জমা দিতে পারবে।"}</span><span>{banglaNumber(reportComment.length)}/৫০০</span></div>
-                              <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={resetReportForm} disabled={reportSubmitting} className="rounded-xl">বাতিল</Button><Button type="button" onClick={() => submitReport(solution.id)} loading={reportSubmitting} disabled={reportSubmitting} className="rounded-xl">রিপোর্ট জমা দাও</Button></div>
+                              <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted"><span className={reportError ? "font-bold text-red-700" : ""}>{reportError || "শুধু সমস্যার ধরন Select করেও Report Submit করতে পারবে।"}</span><span>{banglaNumber(reportComment.length)}/৫০০</span></div>
+                              <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={resetReportForm} disabled={reportSubmitting} className="rounded-xl">Cancel</Button><Button type="button" onClick={() => submitReport(solution.id)} loading={reportSubmitting} disabled={reportSubmitting} className="rounded-xl">Report Submit করো</Button></div>
                             </section>
                           ) : (
                             <button type="button" onClick={() => { resetReportForm(); setReportingQuestionId(solution.id); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-muted transition hover:bg-amber-50 hover:px-3 hover:text-amber-800"><Flag className="size-4" /> এই প্রশ্নে সমস্যা রিপোর্ট করো</button>
@@ -384,7 +384,7 @@ export function ResultHistory() {
                 </div>
               )}
             </div>
-            <footer className="flex shrink-0 items-center justify-end border-t border-border bg-card px-4 py-3 sm:px-6"><Button type="button" onClick={closeDetails} className="rounded-xl">উত্তরপত্র বন্ধ করো</Button></footer>
+            <footer className="flex shrink-0 items-center justify-end border-t border-border bg-card px-4 py-3 sm:px-6"><Button type="button" onClick={closeDetails} className="rounded-xl">উত্তরপত্র Close করো</Button></footer>
           </section>
         </div>
       )}

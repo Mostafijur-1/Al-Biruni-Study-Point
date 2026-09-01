@@ -5,14 +5,13 @@ export default function NotFound() {
     <main className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-5 px-4 text-center">
       <p className="text-sm font-bold uppercase tracking-widest text-accent">404</p>
       <h1 className="font-display text-3xl font-bold text-primary">পৃষ্ঠা পাওয়া যায়নি</h1>
-      <p className="text-muted">The page you are looking for may have moved or no longer be available.</p>
+      <p className="text-muted">আপনি যে পৃষ্ঠাটি খুঁজছেন, সেটি সরানো হয়েছে বা এখন আর নেই।</p>
       <Link
         href="/"
         className="rounded-lg bg-primary px-5 py-3 font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:ring-offset-2"
       >
-        Go to home page
+        Home-এ যান
       </Link>
     </main>
   );
 }
-

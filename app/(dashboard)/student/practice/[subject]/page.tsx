@@ -22,7 +22,7 @@ export default async function StudentPracticeRunnerPage({
     : undefined;
 
   return (
-    <Suspense fallback={<p className="text-sm text-muted">Loading...</p>}>
+    <Suspense fallback={<p className="text-sm text-muted">লোড হচ্ছে...</p>}>
       <McqPracticeRunner
         subject={decodedSubject}
         mode={mode || "general"}

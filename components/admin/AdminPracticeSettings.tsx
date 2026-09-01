@@ -31,7 +31,7 @@ export function AdminPracticeSettings() {
         const { ok, payload } = await apiFetch<PracticeTestSettings>("/api/admin/practice-settings");
         if (ok && isApiSuccess(payload)) setSettings(payload.data);
       } catch {
-        setError("Practice settings could not be loaded. The current defaults are shown.");
+        setError("Practice Setting লোড করা যায়নি। বর্তমান Default Value দেখানো হচ্ছে।");
       } finally {
         setLoading(false);
       }
@@ -51,7 +51,7 @@ export function AdminPracticeSettings() {
         body: JSON.stringify(settings),
       });
       if (!ok || !isApiSuccess(payload)) {
-        setError(getApiErrorMessage(payload, "Practice settings could not be saved."));
+        setError(getApiErrorMessage(payload, "Practice Setting Save করা যায়নি।"));
       } else {
         setSaved(true);
       }
@@ -67,8 +67,8 @@ export function AdminPracticeSettings() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Assessment controls</p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-primary sm:text-3xl">Practice Settings</h1>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Assessment Control</p>
+        <h1 className="mt-1 font-display text-2xl font-bold text-primary sm:text-3xl">Practice Setting</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
           Set the rules used for every automatically generated student practice test. Question uploads are managed separately in Question Bank.
         </p>
@@ -80,13 +80,13 @@ export function AdminPracticeSettings() {
             <Settings2 className="size-5" />
           </div>
           <div>
-            <h2 className="font-display text-lg font-bold text-primary">Practice test rules</h2>
-            <p className="text-xs text-muted">These values control test length, timing and pass criteria.</p>
+            <h2 className="font-display text-lg font-bold text-primary">Practice Test-এর নিয়ম</h2>
+            <p className="text-xs text-muted">এখান থেকে Test-এর প্রশ্নসংখ্যা, সময় ও Pass-এর নিয়ম Control করা হয়।</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-6 text-sm text-muted">Loading current settings…</div>
+          <div className="p-6 text-sm text-muted">বর্তমান Setting লোড হচ্ছে…</div>
         ) : (
           <div className="space-y-6 p-5 sm:p-6">
             <div className="grid gap-4 lg:grid-cols-3">
@@ -124,18 +124,18 @@ export function AdminPracticeSettings() {
             </div>
 
             <section className="rounded-xl border border-sky-200 bg-sky-50 p-4" aria-label="Current practice test preview">
-              <p className="text-xs font-black uppercase tracking-wider text-sky-800">Current student experience</p>
+              <p className="text-xs font-black uppercase tracking-wider text-sky-800">শিক্ষার্থীর বর্তমান Experience</p>
               <p className="mt-1 text-sm font-semibold text-primary">
-                {settings.maxQuestionsPerTest} questions · about {estimatedMinutes} minutes · {settings.passMarkPercent}% required to pass
+                {settings.maxQuestionsPerTest}টি প্রশ্ন · প্রায় {estimatedMinutes} মিনিট · Pass করতে {settings.passMarkPercent}% প্রয়োজন
               </p>
             </section>
 
             {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
-            {saved && <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700"><CheckCircle2 className="size-4" /> Practice settings saved successfully.</p>}
+            {saved && <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700"><CheckCircle2 className="size-4" /> Practice Setting Save হয়েছে।</p>}
 
             <div className="flex justify-end border-t border-border pt-5">
               <Button type="submit" size="lg" loading={saving} disabled={saving} className="min-w-44 rounded-xl">
-                <Save className="size-4" /> {saving ? "Saving…" : "Save settings"}
+                <Save className="size-4" /> {saving ? "Save হচ্ছে…" : "Setting Save করুন"}
               </Button>
             </div>
           </div>

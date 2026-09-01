@@ -22,7 +22,7 @@ export function BroadcastPanel() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
-      setStatus({ type: "error", text: "Message is required." });
+      setStatus({ type: "error", text: "Message লিখুন।" });
       return;
     }
 
@@ -44,7 +44,7 @@ export function BroadcastPanel() {
       if (ok && isApiSuccess(payload)) {
         setStatus({
           type: "success",
-          text: payload.data.message || `Broadcast sent successfully!`,
+          text: payload.data.message || "Broadcast পাঠানো হয়েছে!",
         });
         // Clear fields on success
         setTitle("");
@@ -72,8 +72,8 @@ export function BroadcastPanel() {
           <Bell className="size-5 text-primary animate-pulse" />
         </div>
         <div>
-          <h2 className="font-display text-lg font-bold text-primary">Push Broadcast Announcements</h2>
-          <p className="text-xs text-muted">Send real-time alerts directly to students&apos; devices via Web Push.</p>
+          <h2 className="font-display text-lg font-bold text-primary">Push Notification ঘোষণা</h2>
+          <p className="text-xs text-muted">Web Push-এর মাধ্যমে শিক্ষার্থীদের Device-এ সরাসরি Notification পাঠান।</p>
         </div>
       </div>
 
@@ -81,26 +81,26 @@ export function BroadcastPanel() {
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Target Audience */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1.5">Target Audience</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1.5">যাদের পাঠানো হবে</label>
             <select
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
             >
-              <option value="all">All Subscribed Devices</option>
-              <option value="pwa-only">PWA Installed App Users Only</option>
+              <option value="all">সব Subscribed Device</option>
+              <option value="pwa-only">শুধু PWA App ব্যবহারকারী</option>
             </select>
           </div>
 
           {/* Target Class */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1.5">Target Class</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1.5">যে Class-এর জন্য</label>
             <select
               value={targetClass}
               onChange={(e) => setTargetClass(e.target.value)}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
             >
-              <option value="">All Classes</option>
+              <option value="">সব Class</option>
               <option value="class-9">Class 9</option>
               <option value="class-10">Class 10</option>
               <option value="class-11">Class 11</option>
@@ -111,7 +111,7 @@ export function BroadcastPanel() {
 
         {/* Title */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1.5">Notification Title (Optional)</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1.5">Notification-এর শিরোনাম (ঐচ্ছিক)</label>
           <input
             type="text"
             placeholder="e.g. নতুন পরীক্ষার নোটিশ"

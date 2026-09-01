@@ -50,11 +50,11 @@ test("student codes are assigned only when absent and attendance is admin-wide",
   assert.match(userModel, /unique: true, sparse: true/);
   assert.match(attendanceApi, /requireAuth\(request, \["admin"\]\)/);
   assert.match(attendanceApi, /backfill-student-codes/);
-  assert.match(batchManager, /Permanent Student ID/);
+  assert.match(batchManager, /স্থায়ী Student ID/);
   assert.match(batchManager, /assign-student-code/);
   assert.match(batchManager, /defaultFeeTk/);
   assert.match(teacherAttendance, /row\.studentCode/);
-  for (const column of ["Student ID", "Student name", "Date", "Attendance status"]) {
+  for (const column of ["Student ID", "শিক্ষার্থীর নাম", "তারিখ", "Attendance Status"]) {
     assert.match(register, new RegExp(column));
   }
 });

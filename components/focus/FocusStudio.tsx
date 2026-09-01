@@ -275,13 +275,13 @@ export function FocusStudio() {
       body: JSON.stringify({ sessionId: current.id }),
     });
     if (result.ok && isApiSuccess(result.payload)) {
-      setNotice("সেশনটি বন্ধ করা হয়েছে। প্রস্তুত হলে আবার শুরু করো।");
+      setNotice("Session End হয়েছে। প্রস্তুত হলে আবার শুরু করো।");
       await loadStatus();
     } else {
       setError(
         getApiErrorMessage(
           result.payload,
-          "সেশন বন্ধ করা যায়নি। আবার চেষ্টা করো।",
+          "Session End করা যায়নি। আবার চেষ্টা করো।",
         ),
       );
     }
@@ -409,7 +409,7 @@ export function FocusStudio() {
                   onClick={cancelSession}
                 >
                   <X className="size-4" />
-                  সেশন বন্ধ করো
+                  Session End করো
                 </Button>
               </div>
             ) : (

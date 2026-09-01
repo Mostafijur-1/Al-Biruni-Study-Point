@@ -74,7 +74,7 @@ export function AdminTeacherMcqReview() {
       if (ok && isApiSuccess(payload)) {
         setQuestions(payload.data.questions);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to load pending questions."));
+        setError(getApiErrorMessage(payload, "Pending প্রশ্ন লোড করা যায়নি।"));
       }
     } catch {
       setError("An unexpected error occurred while connecting to the server.");
@@ -132,7 +132,7 @@ export function AdminTeacherMcqReview() {
         setSelectedIds((prev) => prev.filter((item) => item !== id));
         setTimeout(() => setSuccess(""), 4000);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to approve question."));
+        setError(getApiErrorMessage(payload, "প্রশ্ন Approve করা যায়নি।"));
       }
     } catch {
       setError("Could not connect to the server.");
@@ -142,7 +142,7 @@ export function AdminTeacherMcqReview() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?")) return;
+    if (!confirm("আপনি কি নিশ্চিত যে এই প্রশ্নটি Delete করতে চান?")) return;
 
     setActionId(id);
     setError("");
@@ -152,12 +152,12 @@ export function AdminTeacherMcqReview() {
         method: "DELETE",
       });
       if (ok && isApiSuccess(payload)) {
-        setSuccess("প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।");
+        setSuccess("প্রশ্নটি Delete হয়েছে।");
         setQuestions((prev) => prev.filter((q) => q.id !== id));
         setSelectedIds((prev) => prev.filter((item) => item !== id));
         setTimeout(() => setSuccess(""), 4000);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to delete question."));
+        setError(getApiErrorMessage(payload, "প্রশ্ন Delete করা যায়নি।"));
       }
     } catch {
       setError("Could not connect to the server.");
@@ -205,7 +205,7 @@ export function AdminTeacherMcqReview() {
         setSelectedIds([]);
         setTimeout(() => setSuccess(""), 4000);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to approve selected questions."));
+        setError(getApiErrorMessage(payload, "Select করা প্রশ্ন Approve করা যায়নি।"));
       }
     } catch {
       setError("Could not connect to the server.");
@@ -221,7 +221,7 @@ export function AdminTeacherMcqReview() {
     if (
       !confirm(
         locale === "bn"
-          ? `আপনি কি নিশ্চিত যে আপনি ${selectedIds.length}টি প্রশ্ন বাতিল/মুছে ফেলতে চান?`
+          ? `আপনি কি নিশ্চিত যে ${selectedIds.length}টি প্রশ্ন Reject/Delete করতে চান?`
           : `Are you sure you want to delete ${selectedIds.length} selected questions?`
       )
     )
@@ -239,7 +239,7 @@ export function AdminTeacherMcqReview() {
       if (ok && isApiSuccess(payload)) {
         setSuccess(
           locale === "bn"
-            ? `সফলভাবে ${selectedIds.length}টি প্রশ্ন বাতিল/মুছে ফেলা হয়েছে!`
+            ? `${selectedIds.length}টি প্রশ্ন Reject/Delete হয়েছে!`
             : `Successfully deleted ${selectedIds.length} questions!`
         );
         const deletedSet = new Set(selectedIds);
@@ -247,7 +247,7 @@ export function AdminTeacherMcqReview() {
         setSelectedIds([]);
         setTimeout(() => setSuccess(""), 4000);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to delete selected questions."));
+        setError(getApiErrorMessage(payload, "Select করা প্রশ্ন Delete করা যায়নি।"));
       }
     } catch {
       setError("Could not connect to the server.");
@@ -293,7 +293,7 @@ export function AdminTeacherMcqReview() {
       if (response.ok && data.success) {
         setEditForm((prev) => ({ ...prev, imageUrl: data.data.url }));
       } else {
-        setImageError(data.error?.message || "Failed to upload image.");
+        setImageError(data.error?.message || "ছবি Upload করা যায়নি।");
       }
     } catch {
       setImageError("Network error uploading image.");
@@ -305,19 +305,19 @@ export function AdminTeacherMcqReview() {
   const handleSaveEdit = async () => {
     if (!editingMcq) return;
     if (!editForm.question.trim()) {
-      setEditError("Question text is required.");
+      setEditError("প্রশ্নের Text লিখুন।");
       return;
     }
     if (editForm.options.some((o) => !o.trim())) {
-      setEditError("All 4 options must be filled.");
+      setEditError("৪টি Option-ই পূরণ করুন।");
       return;
     }
     if (!editForm.subject.trim()) {
-      setEditError("Subject is required.");
+      setEditError("বিষয় Select করুন।");
       return;
     }
     if (!editForm.chapter.trim()) {
-      setEditError("Chapter is required.");
+      setEditError("Chapter Select করুন।");
       return;
     }
 
@@ -355,7 +355,7 @@ export function AdminTeacherMcqReview() {
         setSuccess("প্রশ্নটি সফলভাবে এডিট করা হয়েছে।");
         setTimeout(() => setSuccess(""), 4000);
       } else {
-        setEditError(getApiErrorMessage(payload, "Failed to save edits."));
+        setEditError(getApiErrorMessage(payload, "Edit Save করা যায়নি।"));
       }
     } catch {
       setEditError("Error connecting to server.");
@@ -624,7 +624,7 @@ export function AdminTeacherMcqReview() {
                 {/* Explanation */}
                 {q.explanation && (
                   <div className="text-xs text-muted-foreground border-t border-border pt-2">
-                    <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                    <strong className="font-semibold">ব্যাখ্যা:</strong> {q.explanation}
                   </div>
                 )}
 
@@ -637,7 +637,7 @@ export function AdminTeacherMcqReview() {
                     className="text-muted hover:text-primary hover:bg-secondary flex items-center gap-1.5"
                   >
                     <Edit className="size-4" />
-                    {"সম্পাদনা করুন"}
+                    {"Edit"}
                   </Button>
                   <div className="flex gap-2.5 ml-auto">
                     <Button
@@ -649,7 +649,7 @@ export function AdminTeacherMcqReview() {
                       className="text-brand-red border-red-100 hover:bg-red-50 hover:text-brand-red"
                     >
                       <Trash2 className="size-4 mr-1.5" />
-                      {"বাতিল করুন"}
+                      {"Cancel"}
                     </Button>
                     <Button
                       size="sm"
@@ -676,7 +676,7 @@ export function AdminTeacherMcqReview() {
           <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl sm:p-6 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="font-display text-base md:text-lg font-bold text-primary">
-                {"প্রশ্ন সম্পাদনা"}
+                {"প্রশ্ন Edit"}
               </h3>
               <button
                 type="button"
@@ -711,7 +711,7 @@ export function AdminTeacherMcqReview() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-subject" className="font-bold">Subject</Label>
+                  <Label htmlFor="edit-subject" className="font-bold">বিষয়</Label>
                   <input
                     type="text"
                     id="edit-subject"
@@ -737,7 +737,7 @@ export function AdminTeacherMcqReview() {
 
               {/* Question Text */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-question" className="font-bold">Question Text</Label>
+                <Label htmlFor="edit-question" className="font-bold">প্রশ্নের Text</Label>
                 <textarea
                   id="edit-question"
                   rows={2}
@@ -750,7 +750,7 @@ export function AdminTeacherMcqReview() {
 
               {/* Image Upload */}
               <div className="space-y-2">
-                <Label className="font-bold">Question Illustration (Image)</Label>
+                <Label className="font-bold">প্রশ্নের ছবি</Label>
                 <div className="flex items-start gap-4">
                   <div className="flex-1 space-y-1.5">
                     <div className="relative">
@@ -820,7 +820,7 @@ export function AdminTeacherMcqReview() {
 
               {/* Correct Option */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-correct-index" className="font-bold">Correct Answer</Label>
+                <Label htmlFor="edit-correct-index" className="font-bold">সঠিক উত্তর</Label>
                 <select
                   id="edit-correct-index"
                   value={editForm.correctIndex}
@@ -837,7 +837,7 @@ export function AdminTeacherMcqReview() {
 
               {/* Explanation */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-explanation" className="font-bold">Explanation</Label>
+                <Label htmlFor="edit-explanation" className="font-bold">ব্যাখ্যা</Label>
                 <textarea
                   id="edit-explanation"
                   rows={2}
@@ -865,7 +865,7 @@ export function AdminTeacherMcqReview() {
                 disabled={isUploadingImage}
                 className="rounded-xl px-5 py-2"
               >
-                Save Changes
+                পরিবর্তন Save করুন
               </Button>
             </div>
           </div>

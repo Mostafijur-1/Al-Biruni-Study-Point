@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     );
 
     return success({
-      message: "রিপোর্টটি সফলভাবে জমা হয়েছে।",
+      message: "Report Submit হয়েছে।",
       reportId: report._id.toString(),
     });
   } catch (error) {

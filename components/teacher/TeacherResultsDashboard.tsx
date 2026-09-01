@@ -379,7 +379,7 @@ function ResultRow({
               )}
             >
               <MessageSquare className="size-3.5" />
-              <span>Comment</span>
+              <span>মন্তব্য</span>
             </button>
 
             <button
@@ -388,7 +388,7 @@ function ResultRow({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red text-xs font-semibold hover:bg-red-100 transition cursor-pointer"
             >
               <Ban className="size-3.5" />
-              <span>Void</span>
+              <span>Cancelled Result</span>
             </button>
           </div>
 
@@ -433,7 +433,7 @@ function ResultRow({
       {/* Comment panel (visible if expanded or commentOpen is true) */}
       {(expanded || commentOpen) && (
         <div className="border-t border-border px-4 pb-4 pt-3 bg-secondary/10 rounded-b-xl space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-primary">শিক্ষক মন্তব্য (Teacher&apos;s Comment)</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">Teacher-এর মন্তব্য</p>
           
           <div className="flex flex-col sm:flex-row gap-2" onClick={(e) => e.stopPropagation()}>
             <input
@@ -636,7 +636,7 @@ export function TeacherResultsDashboard() {
             <LineChart className="size-5 text-primary" />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold text-primary">Student Results</h1>
+            <h1 className="font-display text-2xl font-bold text-primary">শিক্ষার্থীদের Result</h1>
           </div>
         </div>
         <p className="mt-3 text-sm text-muted leading-6">
@@ -686,7 +686,7 @@ export function TeacherResultsDashboard() {
             }}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
           >
-            <option value="">All Classes</option>
+            <option value="">সব Class</option>
             {allowedClasses.map((cls) => (
               <option key={cls} value={cls}>
                 {CLASS_LABELS[cls] ?? cls}
@@ -703,7 +703,7 @@ export function TeacherResultsDashboard() {
             }}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
           >
-            <option value="">All Subjects</option>
+            <option value="">সব বিষয়</option>
             {allowedSubjects.map((sub) => (
               <option key={sub} value={sub}>
                 {sub}
@@ -720,11 +720,11 @@ export function TeacherResultsDashboard() {
             }}
             className="min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none"
           >
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="last-7-days">Last 7 Days</option>
-            <option value="last-30-days">Last 30 Days</option>
-            <option value="all">All Time</option>
+            <option value="today">আজ</option>
+            <option value="yesterday">গতকাল</option>
+            <option value="last-7-days">গত ৭ দিন</option>
+            <option value="last-30-days">গত ৩০ দিন</option>
+            <option value="all">সব সময়</option>
           </select>
 
           <button
@@ -827,11 +827,11 @@ export function TeacherResultsDashboard() {
       {!loading && !error && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-20 text-center">
           <GraduationCap className="size-10 text-muted/40 mb-3" />
-          <p className="font-semibold text-primary">No results found</p>
+          <p className="font-semibold text-primary">কোনো Result পাওয়া যায়নি</p>
           <p className="mt-1 text-sm text-muted max-w-xs">
             {filterClass || filterSubject || searchName
               ? "Try changing your filters."
-              : "No students have submitted practice attempts yet, or your domain has not been configured by the admin."}
+              : "এখনো কোনো শিক্ষার্থী Practice Submit করেনি, অথবা Admin আপনার Domain Configure করেননি।"}
           </p>
         </div>
       )}

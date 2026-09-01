@@ -191,7 +191,7 @@ function McqResultRow({
 
             {confirmDelete ? (
               <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5 text-left">
-                <span className="text-[9px] text-brand-red font-bold px-1">Void?</span>
+                <span className="text-[9px] text-brand-red font-bold px-1">Cancel?</span>
                 <button
                   type="button"
                   onClick={handleDeleteResult}
@@ -245,7 +245,7 @@ function McqResultRow({
 
               {/* Teacher Comment Section */}
               <div className="border-t border-border/50 pt-4 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-primary">শিক্ষক মন্তব্য (Teacher&apos;s Comment)</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-primary">Teacher-এর মন্তব্য</p>
                 
                 {/* Comment edit input */}
                 <div className="flex flex-col sm:flex-row gap-2 max-w-3xl" onClick={(e) => e.stopPropagation()}>
@@ -373,11 +373,11 @@ function McqResultMobileCard({
           </strong>
         </div>
         <div>
-          <span className="block text-[8px] uppercase tracking-wider mb-0.5">Percentage</span>
+          <span className="block text-[8px] uppercase tracking-wider mb-0.5">শতাংশ</span>
           <strong className="text-primary text-xs">{row.percentage.toFixed(1)}%</strong>
         </div>
         <div>
-          <span className="block text-[8px] uppercase tracking-wider mb-0.5">Duration</span>
+          <span className="block text-[8px] uppercase tracking-wider mb-0.5">সময়</span>
           <strong className="text-primary text-xs">{formatDurationSeconds(row.timeTaken)}</strong>
         </div>
       </div>
@@ -397,7 +397,7 @@ function McqResultMobileCard({
 
         {confirmDelete ? (
           <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5 text-left">
-            <span className="text-[9px] text-brand-red font-bold px-1">Void?</span>
+            <span className="text-[9px] text-brand-red font-bold px-1">Cancel?</span>
             <button
               type="button"
               onClick={handleDeleteResult}
@@ -441,11 +441,11 @@ function McqResultMobileCard({
               </div>
             </div>
           ) : (
-            <p className="text-2xs font-bold text-emerald-700">✓ No wrong answers! Correctly answered all questions.</p>
+            <p className="text-2xs font-bold text-emerald-700">✓ কোনো ভুল উত্তর নেই! সব প্রশ্নের উত্তর সঠিক হয়েছে।</p>
           )}
 
           <div className="space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Teacher Comment</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Teacher-এর মন্তব্য</span>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -474,7 +474,7 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
     const { data, message, isLoading, setData } = useApiQuery<{ results: McqResultTeacherRow[] }>(
     `/api/mcq/results?examId=${examId}`,
     {
-      loadingMessage: "Loading results...",
+      loadingMessage: "Result লোড হচ্ছে...",
       errorMessage: "Could not load results.",
     },
   );
@@ -522,7 +522,7 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
       </div>
 
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-accent">Student results</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-accent">শিক্ষার্থীদের Result</p>
         <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
           {examTitle || "MCQ Results"}
         </h1>
@@ -540,14 +540,14 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Student</th>
+                  <th className="px-4 py-3 font-semibold">শিক্ষার্থী</th>
                   <th className="px-4 py-3 font-semibold">Score</th>
                   <th className="px-4 py-3 font-semibold">%</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Time</th>
-                  <th className="px-4 py-3 font-semibold">Attempt</th>
-                  <th className="px-4 py-3 font-semibold">Submitted</th>
-                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                  <th className="px-4 py-3 font-semibold">সময়</th>
+                  <th className="px-4 py-3 font-semibold">চেষ্টা</th>
+                  <th className="px-4 py-3 font-semibold">Submit</th>
+                  <th className="px-4 py-3 font-semibold text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -589,7 +589,7 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
       ) : message ? (
         <p className="rounded-xl border border-border bg-card p-4 text-muted">{message}</p>
       ) : results.length === 0 ? (
-        <p className="rounded-xl border border-border bg-card p-4 text-muted">No student submissions yet.</p>
+        <p className="rounded-xl border border-border bg-card p-4 text-muted">এখনো কোনো শিক্ষার্থী Submit করেনি।</p>
       ) : (
         <div className="space-y-4">
           {/* Desktop Table View */}
@@ -597,14 +597,14 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Student</th>
+                  <th className="px-4 py-3 font-semibold">শিক্ষার্থী</th>
                   <th className="px-4 py-3 font-semibold">Score</th>
                   <th className="px-4 py-3 font-semibold">%</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Time</th>
-                  <th className="px-4 py-3 font-semibold">Attempt</th>
-                  <th className="px-4 py-3 font-semibold">Submitted</th>
-                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                  <th className="px-4 py-3 font-semibold">সময়</th>
+                  <th className="px-4 py-3 font-semibold">চেষ্টা</th>
+                  <th className="px-4 py-3 font-semibold">Submit</th>
+                  <th className="px-4 py-3 font-semibold text-right">Action</th>
                 </tr>
               </thead>
               <tbody>

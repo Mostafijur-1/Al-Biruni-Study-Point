@@ -59,7 +59,7 @@ function getTeacherPaymentMessage(chargeDueAt?: string, isChargeExpired?: boolea
 
 export function ProfilePanel() {
   const { data, message, isLoading, setData } = useApiQuery<MeResponseData>("/api/auth/me", {
-    loadingMessage: "Loading profile...",
+    loadingMessage: "Profile লোড হচ্ছে...",
     errorMessage: "Could not load profile.",
   });
 
@@ -139,7 +139,7 @@ export function ProfilePanel() {
         window.dispatchEvent(new Event("absp-auth-changed"));
         setIsEditing(false);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to update profile."));
+        setError(getApiErrorMessage(payload, "Profile Update করা যায়নি।"));
       }
     } catch {
       setError("An error occurred while connecting to the server.");
@@ -160,7 +160,7 @@ export function ProfilePanel() {
     return (
       <section className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-sm)]">
         <div className="flex items-center justify-between pb-4 border-b border-border/60">
-          <p className="text-xs font-bold uppercase tracking-widest text-accent">Edit Profile</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-accent">Profile Edit</p>
         </div>
 
         <form onSubmit={handleSave} className="mt-6 space-y-4">
@@ -171,7 +171,7 @@ export function ProfilePanel() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Full Name</Label>
+            <Label htmlFor="edit-name">পুরো নাম</Label>
             <Input
               id="edit-name"
               value={name}
@@ -193,11 +193,11 @@ export function ProfilePanel() {
                 disabled
                 className="bg-muted cursor-not-allowed text-muted-foreground"
               />
-              <p className="text-2xs text-muted-foreground">Phone number cannot be changed.</p>
+              <p className="text-2xs text-muted-foreground">ফোন নম্বর পরিবর্তন করা যাবে না।</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email (Optional)</Label>
+              <Label htmlFor="edit-email">Email (ঐচ্ছিক)</Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -237,7 +237,7 @@ export function ProfilePanel() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-reference">Reference (Teacher&apos;s name)</Label>
+                <Label htmlFor="edit-reference">Reference (Teacher-এর নাম)</Label>
                 <Input
                   id="edit-reference"
                   value={reference}
@@ -273,7 +273,7 @@ export function ProfilePanel() {
               className="flex items-center gap-1.5"
             >
               <Save className="size-4" />
-              Save Changes
+              পরিবর্তন Save করুন
             </Button>
           </div>
         </form>
@@ -323,7 +323,7 @@ export function ProfilePanel() {
 
       <dl className="mt-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-border bg-background p-4">
-          <dt className="text-xs font-bold uppercase tracking-wide text-muted">Phone</dt>
+          <dt className="text-xs font-bold uppercase tracking-wide text-muted">ফোন</dt>
           <dd className="mt-1 font-semibold text-foreground">{user.phone || "Not provided"}</dd>
         </div>
         <div className="rounded-lg border border-border bg-background p-4">
@@ -358,20 +358,20 @@ export function ProfilePanel() {
             </div>
           
             <div className="rounded-lg border border-border bg-background p-4">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Monthly Charge</dt>
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">মাসিক Charge</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {teacherUsage.monthlyChargeTk.toLocaleString('bn-BD')} টাকা
               </dd>
             
             </div>
             <div className="rounded-lg border border-border bg-background p-4">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing Start</dt>
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing শুরু</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatBillingDate(teacherUsage.chargeCycleStartedAt)}
               </dd>
             </div>
             <div className="rounded-lg border border-border bg-background p-4">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing End</dt>
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Billing শেষ</dt>
               <dd className="mt-1 font-semibold text-foreground">
                 {formatBillingDate(teacherUsage.chargeDueAt)}
               </dd>

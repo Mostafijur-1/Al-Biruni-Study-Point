@@ -59,7 +59,7 @@ export function TeacherExamsPanel() {
       if (ok && isApiSuccess(payload)) {
         setExams(payload.data.exams);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to load exams."));
+        setError(getApiErrorMessage(payload, "Exam লোড করা যায়নি।"));
       }
     } catch {
       setError("An error occurred connecting to the server.");
@@ -102,7 +102,7 @@ export function TeacherExamsPanel() {
           prev.map((e) => (e._id === id ? { ...e, ...payload.data.exam } : e))
         );
       } else {
-        alert(getApiErrorMessage(payload, "Failed to update status."));
+        alert(getApiErrorMessage(payload, "Status Update করা যায়নি।"));
       }
     } catch {
       alert("Error updating exam status.");
@@ -125,7 +125,7 @@ export function TeacherExamsPanel() {
       if (ok && isApiSuccess(payload)) {
         setExams((prev) => prev.filter((e) => e._id !== id));
       } else {
-        alert(getApiErrorMessage(payload, "Failed to archive exam."));
+        alert(getApiErrorMessage(payload, "Exam Archive করা যায়নি।"));
       }
     } catch {
       alert("Error archiving exam.");
@@ -167,7 +167,7 @@ export function TeacherExamsPanel() {
         setPassMark(15);
         setTargetClasses([]);
       } else {
-        setFormError(getApiErrorMessage(payload, "Failed to create exam."));
+        setFormError(getApiErrorMessage(payload, "Exam তৈরি করা যায়নি।"));
       }
     } catch {
       setFormError("Error creating exam.");
@@ -305,7 +305,7 @@ export function TeacherExamsPanel() {
                     ) : (
                       <>
                         <EyeOff className="size-3.5 shrink-0" />
-                        <span>Exam Hidden</span>
+                        <span>Exam লুকানো</span>
                       </>
                     )}
                   </button>
@@ -322,12 +322,12 @@ export function TeacherExamsPanel() {
                     {exam.resultsPublished ? (
                       <>
                         <Eye className="size-3.5 shrink-0" />
-                        <span>Results Public</span>
+                        <span>Result সবার জন্য</span>
                       </>
                     ) : (
                       <>
                         <EyeOff className="size-3.5 shrink-0" />
-                        <span>Results Hidden</span>
+                        <span>Result লুকানো</span>
                       </>
                     )}
                   </button>
@@ -349,7 +349,7 @@ export function TeacherExamsPanel() {
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="grid size-10 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-secondary hover:text-primary"
-                aria-label="বন্ধ করুন"
+                aria-label="Close"
               >
                 ✕
               </button>
@@ -363,7 +363,7 @@ export function TeacherExamsPanel() {
 
             <form onSubmit={handleCreateExam} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="exam-title">Exam Title</Label>
+                <Label htmlFor="exam-title">Exam-এর নাম</Label>
                 <Input
                   id="exam-title"
                   placeholder="e.g. Physics Class 11 Midterm"
@@ -374,7 +374,7 @@ export function TeacherExamsPanel() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="exam-subject">Subject</Label>
+                <Label htmlFor="exam-subject">বিষয়</Label>
                 <select
                   id="exam-subject"
                   value={subject}
@@ -382,7 +382,7 @@ export function TeacherExamsPanel() {
                   className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm focus:border-primary/50 focus:outline-none"
                   required
                 >
-                  <option value="">-- Select Subject --</option>
+                  <option value="">-- বিষয় Select করুন --</option>
                   {allowedSubjects.map((subName) => (
                     <option key={subName} value={subName}>
                       {subName}
@@ -393,7 +393,7 @@ export function TeacherExamsPanel() {
 
               <div className="grid gap-3 sm:grid-cols-3 sm:gap-2.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="exam-duration">Duration (m)</Label>
+                  <Label htmlFor="exam-duration">সময় (মিনিট)</Label>
                   <input
                     id="exam-duration"
                     type="number"
@@ -405,7 +405,7 @@ export function TeacherExamsPanel() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="exam-marks">Total Marks</Label>
+                  <Label htmlFor="exam-marks">মোট Marks</Label>
                   <input
                     id="exam-marks"
                     type="number"
@@ -431,7 +431,7 @@ export function TeacherExamsPanel() {
               </div>
 
               <div className="space-y-2">
-                <Label>Target Classes</Label>
+                <Label>যেসব Class-এর জন্য</Label>
                 <div className="flex flex-wrap gap-4">
                   {["class-9", "class-10", "class-11", "class-12"].map((cls) => (
                     <label key={cls} className="flex items-center gap-2 text-xs font-bold cursor-pointer">

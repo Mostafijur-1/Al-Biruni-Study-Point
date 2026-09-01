@@ -161,7 +161,7 @@ export function AdminPracticeManager() {
       if (ok && isApiSuccess(payload)) {
         setUploadedQuestions(payload.data.questions);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to load uploaded questions."));
+        setErrorMessage(getApiErrorMessage(payload, "Upload করা প্রশ্ন লোড করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Fetch Uploaded Questions Catch Error]:", error);
@@ -201,7 +201,7 @@ export function AdminPracticeManager() {
         setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q.id)));
         setSelectedUploadedIds([]);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to sync selected questions."));
+        setErrorMessage(getApiErrorMessage(payload, "Select করা প্রশ্ন Sync করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Bulk Sync Catch Error]:", error);
@@ -214,7 +214,7 @@ export function AdminPracticeManager() {
   // Bulk delete selected pending questions
   const handleBulkDeleteUploaded = async () => {
     if (selectedUploadedIds.length === 0) return;
-    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে আপনি ${selectedUploadedIds.length}টি প্রশ্ন মুছে ফেলতে চান?` : `Are you sure you want to delete ${selectedUploadedIds.length} selected questions?`)) return;
+    if (!confirm(locale === "bn" ? `আপনি কি নিশ্চিত যে ${selectedUploadedIds.length}টি প্রশ্ন Delete করতে চান?` : `Are you sure you want to delete ${selectedUploadedIds.length} selected questions?`)) return;
 
     setDeletingUploaded(true);
     setErrorMessage("");
@@ -228,7 +228,7 @@ export function AdminPracticeManager() {
         setUploadedQuestions((prev) => prev.filter((q) => !selectedUploadedIds.includes(q.id)));
         setSelectedUploadedIds([]);
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to delete selected questions."));
+        setErrorMessage(getApiErrorMessage(payload, "Select করা প্রশ্ন Delete করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Bulk Delete Catch Error]:", error);
@@ -240,7 +240,7 @@ export function AdminPracticeManager() {
 
   // Delete individual pending question
   const handleDeleteUploadedQuestion = async (id: string) => {
-    if (!confirm(locale === "bn" ? "আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?" : "Are you sure you want to delete this question?")) return;
+    if (!confirm(locale === "bn" ? "আপনি কি নিশ্চিত যে এই প্রশ্নটি Delete করতে চান?" : "Are you sure you want to delete this question?")) return;
     try {
       const { ok, payload } = await apiFetch(`/api/admin/teacher-mcqs/${id}`, {
         method: "DELETE",
@@ -249,7 +249,7 @@ export function AdminPracticeManager() {
         setUploadedQuestions((prev) => prev.filter((q) => q.id !== id));
         setSelectedUploadedIds((prev) => prev.filter((item) => item !== id));
       } else {
-        setErrorMessage(getApiErrorMessage(payload, "Failed to delete question."));
+        setErrorMessage(getApiErrorMessage(payload, "প্রশ্নটি Delete করা যায়নি।"));
       }
     } catch (error) {
       console.error("[Delete Question Catch Error]:", error);
@@ -294,7 +294,7 @@ export function AdminPracticeManager() {
       if (response.ok && data.success) {
         setEditForm((prev) => ({ ...prev, imageUrl: data.data.url }));
       } else {
-        setImageError(data.error?.message || "Failed to upload image.");
+        setImageError(data.error?.message || "ছবি Upload করা যায়নি।");
       }
     } catch {
       setImageError("Network error uploading image.");
@@ -306,19 +306,19 @@ export function AdminPracticeManager() {
   const handleSaveEdit = async () => {
     if (!editingMcq) return;
     if (!editForm.question.trim()) {
-      setEditError("Question text is required.");
+      setEditError("প্রশ্নের Text লিখুন।");
       return;
     }
     if (editForm.options.some((o) => !o.trim())) {
-      setEditError("All 4 options must be filled.");
+      setEditError("৪টি Option-ই পূরণ করুন।");
       return;
     }
     if (!editForm.subject.trim()) {
-      setEditError("Subject is required.");
+      setEditError("বিষয় Select করুন।");
       return;
     }
     if (!editForm.chapter.trim()) {
-      setEditError("Chapter is required.");
+      setEditError("Chapter Select করুন।");
       return;
     }
 
@@ -354,7 +354,7 @@ export function AdminPracticeManager() {
         );
         setEditingMcq(null);
       } else {
-        setEditError(getApiErrorMessage(payload, "Failed to save edits."));
+        setEditError(getApiErrorMessage(payload, "Edit Save করা যায়নি।"));
       }
     } catch {
       setEditError("Error connecting to server.");
@@ -378,14 +378,14 @@ export function AdminPracticeManager() {
 
     if (contentType === "text" && !pastedText.trim()) {
       setErrorMessage(
-        locale === "bn" ? "অনুগ্রহ করে কনভার্ট করার জন্য টেক্সট লিখুন।" : "Please paste some text."
+        locale === "bn" ? "Convert করার জন্য Text লিখুন।" : "Please paste some text."
       );
       return;
     }
 
     if (contentType !== "text" && !selectedFile) {
       setErrorMessage(
-        locale === "bn" ? "অনুগ্রহ করে একটি ছবি সিলেক্ট করুন।" : "Please select an image to upload."
+        locale === "bn" ? "একটি ছবি Select করুন।" : "Please select an image to upload."
       );
       return;
     }
@@ -762,7 +762,7 @@ export function AdminPracticeManager() {
                       </div>
                       {q.explanation && (
                         <p className="text-2xs text-emerald-800 bg-emerald-50/50 p-1.5 rounded border border-emerald-100">
-                          <strong>Explanation:</strong> {q.explanation}
+                          <strong>ব্যাখ্যা:</strong> {q.explanation}
                         </p>
                       )}
                     </div>
@@ -916,7 +916,7 @@ export function AdminPracticeManager() {
                     className="rounded-lg text-xs font-bold text-brand-red border-red-200 hover:bg-red-50 hover:text-brand-red"
                   >
                     <Trash2 className="size-3.5 mr-1" />
-                    {locale === "bn" ? "মুছে ফেলুন" : "Delete Selected"}
+                    {locale === "bn" ? "Delete" : "Delete Selected"}
                   </Button>
                 </div>
               </div>
@@ -1009,7 +1009,7 @@ export function AdminPracticeManager() {
 
                       {q.explanation && (
                         <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
-                          <strong className="font-semibold">Explanation:</strong> {q.explanation}
+                          <strong className="font-semibold">ব্যাখ্যা:</strong> {q.explanation}
                         </div>
                       )}
                     </div>
@@ -1053,7 +1053,7 @@ export function AdminPracticeManager() {
             <div className="space-y-4">
               {/* Question Text */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-question" className="font-bold">Question Text</Label>
+                <Label htmlFor="edit-question" className="font-bold">প্রশ্নের Text</Label>
                 <textarea
                   id="edit-question"
                   rows={2}
@@ -1066,7 +1066,7 @@ export function AdminPracticeManager() {
 
               {/* Image Upload Block */}
               <div className="space-y-2.5">
-                <Label className="font-bold">Question Illustration (Image)</Label>
+                <Label className="font-bold">প্রশ্নের ছবি</Label>
                 <div className="flex items-start gap-4">
                   <div className="flex-1 space-y-1.5">
                     <div className="relative">
@@ -1094,7 +1094,7 @@ export function AdminPracticeManager() {
                       </label>
                     </div>
                     {imageError && <p className="text-[10px] text-brand-red font-semibold">{imageError}</p>}
-                    <p className="text-[10px] text-muted-foreground">Formats: PNG, JPG, WebP. Hosted securely on Cloudinary.</p>
+                    <p className="text-[10px] text-muted-foreground">Format: PNG, JPG, WebP। ছবিটি Cloudinary-তে নিরাপদে রাখা হবে।</p>
                   </div>
 
                   {editForm.imageUrl && (
@@ -1127,7 +1127,7 @@ export function AdminPracticeManager() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-subject" className="font-bold">Subject</Label>
+                  <Label htmlFor="edit-subject" className="font-bold">বিষয়</Label>
                   <select
                     id="edit-subject"
                     value={editForm.subject}
@@ -1179,7 +1179,7 @@ export function AdminPracticeManager() {
 
               {/* Correct Index */}
               <div className="space-y-1.5">
-                <Label htmlFor="correct-idx" className="font-bold">Correct Option</Label>
+                <Label htmlFor="correct-idx" className="font-bold">সঠিক Option</Label>
                 <select
                   id="correct-idx"
                   value={editForm.correctIndex}
@@ -1196,7 +1196,7 @@ export function AdminPracticeManager() {
 
               {/* Explanation */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-explanation" className="font-bold">Solution Explanation (Optional)</Label>
+                <Label htmlFor="edit-explanation" className="font-bold">সমাধানের ব্যাখ্যা (ঐচ্ছিক)</Label>
                 <textarea
                   id="edit-explanation"
                   rows={2}
@@ -1226,7 +1226,7 @@ export function AdminPracticeManager() {
                 disabled={savingEdit}
                 className="rounded-xl px-6"
               >
-                Save Changes
+                পরিবর্তন Save করুন
               </Button>
             </div>
           </div>

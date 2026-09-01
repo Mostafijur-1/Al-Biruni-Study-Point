@@ -75,7 +75,7 @@ export function PwaInstallPrompt() {
       await deferredPrompt.prompt();
       const choice = await deferredPrompt.userChoice;
       setDeferredPrompt(null);
-      setStatusMessage(choice.outcome === "accepted" ? "ইনস্টলেশন শুরু হয়েছে।" : "ইনস্টলেশন বাতিল হয়েছে।");
+      setStatusMessage(choice.outcome === "accepted" ? "ইনস্টলেশন শুরু হয়েছে।" : "ইনস্টলেশন Cancel হয়েছে।");
       return;
     }
     if (isIos) {
@@ -126,7 +126,7 @@ export function PwaInstallPrompt() {
           onClick={() => void handleInstall()}
           disabled={isStandalone}
         >
-          {isStandalone ? <><CheckCircle2 className="size-5" /> App installed</> : <><Download className="size-5" /> Install app</>}
+          {isStandalone ? <><CheckCircle2 className="size-5" /> App ইনস্টল হয়েছে</> : <><Download className="size-5" /> App ইনস্টল করুন</>}
         </Button>
         <Button
           type="button"
@@ -137,7 +137,7 @@ export function PwaInstallPrompt() {
           loading={notificationBusy}
           disabled={notificationGranted || notificationUnavailable}
         >
-          {notificationGranted ? <><CheckCircle2 className="size-5" /> Notifications on</> : <><BellRing className="size-5" /> Enable notifications</>}
+          {notificationGranted ? <><CheckCircle2 className="size-5" /> Notification চালু</> : <><BellRing className="size-5" /> Notification চালু করুন</>}
         </Button>
       </div>
       {statusMessage && <p className="mt-2 text-xs leading-5 text-white/70" role="status" aria-live="polite">{statusMessage}</p>}

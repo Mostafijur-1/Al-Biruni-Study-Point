@@ -137,7 +137,7 @@ export function getApiErrorMessage(
     lowerMsg.includes("missing")
   ) {
     return isBn
-      ? "আপনার দেওয়া তথ্যে কিছু ভুল বা অসম্পূর্ণতা রয়েছে। অনুগ্রহ করে চেক করে আবার চেষ্টা করুন।"
+      ? "আপনার দেওয়া তথ্যে কিছু ভুল বা অসম্পূর্ণতা রয়েছে। তথ্য Check করে আবার চেষ্টা করুন।"
       : "Some details you entered are invalid or incomplete. Please verify your inputs.";
   }
 
@@ -154,10 +154,10 @@ export function getApiErrorMessage(
     lowerCode.includes("network")
   ) {
     return isBn
-      ? "সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।"
+      ? "সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।"
       : "We're having trouble connecting to our services. Please check your connection or try again later.";
   }
 
   // 4. Default clean error message (use fallback or a clean generic string)
-  return fallback || (isBn ? "একটি অপ্রত্যাশিত সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।" : "An unexpected issue occurred. Please try again.");
+  return fallback || (isBn ? "একটি অপ্রত্যাশিত সমস্যা হয়েছে। আবার চেষ্টা করুন।" : "An unexpected issue occurred. Please try again.");
 }

@@ -39,7 +39,7 @@ function isValidStudentCodeDraft(value: string, prefix: string | null) {
 const statusLabel: Record<BatchStatus, string> = {
   planned: "পরিকল্পিত",
   active: "সক্রিয়",
-  closed: "বন্ধ",
+  closed: "Closed",
   archived: "আর্কাইভ",
 };
 
@@ -177,7 +177,7 @@ export function AdminBatchManager() {
     setAssigningStudentId(false);
     if (!result.ok || !isApiSuccess(result.payload)) {
       setError(true);
-      setMessage(getApiErrorMessage(result.payload, "Permanent Student ID could not be assigned."));
+      setMessage(getApiErrorMessage(result.payload, "স্থায়ী Student ID দেওয়া যায়নি।"));
       return null;
     }
     const studentCode = result.payload.data.studentCode;
@@ -214,8 +214,8 @@ export function AdminBatchManager() {
     if (!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)) {
       setError(true);
       setMessage(studentCodeContext?.prefix
-        ? `Student ID must be 7 digits and start with ${studentCodeContext.prefix}.`
-        : "Student ID must be a 7-digit number.");
+        ? `Student ID ৭ সংখ্যার হতে হবে এবং ${studentCodeContext.prefix} দিয়ে শুরু করতে হবে।`
+        : "Student ID অবশ্যই ৭ সংখ্যার হতে হবে।");
       return;
     }
     await assignStudentCode(selectedStudent, studentCodeDraft.trim());
@@ -232,8 +232,8 @@ export function AdminBatchManager() {
       if (!isValidStudentCodeDraft(draft, studentCodeContext?.prefix ?? null)) {
         setError(true);
         setMessage(studentCodeContext?.prefix
-          ? `Assign a valid 7-digit Student ID starting with ${studentCodeContext.prefix}.`
-          : "Assign a valid 7-digit Student ID before enrollment.");
+          ? `${studentCodeContext.prefix} দিয়ে শুরু হওয়া সঠিক ৭ সংখ্যার Student ID দিন।`
+          : "Enrollment-এর আগে সঠিক ৭ সংখ্যার Student ID দিন।");
         setSaving(false);
         return;
       }
@@ -255,11 +255,11 @@ export function AdminBatchManager() {
     });
     if (!result.ok || !isApiSuccess(result.payload)) {
       setError(true);
-      setMessage(getApiErrorMessage(result.payload, "Student could not be added to this batch."));
+      setMessage(getApiErrorMessage(result.payload, "শিক্ষার্থীকে এই Batch-এ যোগ করা যায়নি।"));
     } else {
       setError(false);
       const assignedCode = result.payload.data.studentCode ?? studentCode;
-      setMessage(`${selectedStudent.name} was added. Permanent Student ID: ${assignedCode ?? "assigned"}.`);
+      setMessage(`${selectedStudent.name}-কে যোগ করা হয়েছে। স্থায়ী Student ID: ${assignedCode ?? "দেওয়া হয়েছে"}।`);
       closeAddStudent();
       await load();
     }
@@ -278,7 +278,7 @@ export function AdminBatchManager() {
         mode,
         defaultFeeTk,
         subjectNames: selectedSubjects,
-        reason: "অ্যাডমিন কর্তৃক Batch-এর নাম ও বিষয় হালনাগাদ",
+        reason: "Admin Batch-এর নাম ও বিষয় Update করেছেন",
       }
       : {
         name,
@@ -294,12 +294,12 @@ export function AdminBatchManager() {
     });
     if (!result.ok || !isApiSuccess(result.payload)) {
       setError(true);
-      setMessage(getApiErrorMessage(result.payload, "ব্যাচ সংরক্ষণ করা যায়নি।"));
+      setMessage(getApiErrorMessage(result.payload, "Batch Save করা যায়নি।"));
     } else {
       setError(false);
       setMessage(
         editing
-          ? "Batch-এর নাম ও বিষয়সমূহ হালনাগাদ হয়েছে।"
+          ? "Batch-এর নাম ও বিষয় Update হয়েছে।"
           : "নতুন Batch ও এর বিষয়সমূহ তৈরি হয়েছে।",
       );
       closeForm();
@@ -309,7 +309,7 @@ export function AdminBatchManager() {
   }
 
   async function changeStatus(batch: Batch, status: BatchStatus) {
-    const action = status === "active" ? "সক্রিয়" : status === "closed" ? "বন্ধ" : "আর্কাইভ";
+    const action = status === "active" ? "Activate" : status === "closed" ? "Close" : "Archive";
     if (!window.confirm(`${batch.name} ব্যাচটি ${action} করবেন?`)) return;
     setSaving(true);
     setMessage("");
@@ -338,10 +338,10 @@ export function AdminBatchManager() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-accent-foreground">
-            Batch management
+            Batch Management
           </p>
           <h2 id="batch-management-title" className="mt-1 text-2xl font-black text-primary">
-            Batch তৈরি ও ব্যবস্থাপনা
+            Batch তৈরি ও Management
           </h2>
         </div>
         <Button onClick={startCreate}>
@@ -358,9 +358,9 @@ export function AdminBatchManager() {
         >
           <div className="mb-5 flex items-center justify-between">
             <h3 className="text-xl font-black text-primary">
-              {editing ? "Batch সম্পাদনা" : "নতুন Batch"}
+              {editing ? "Batch Edit" : "নতুন Batch"}
             </h3>
-            <button type="button" aria-label="ফর্ম বন্ধ করুন" onClick={closeForm}>
+            <button type="button" aria-label="ফর্ম Close করুন" onClick={closeForm}>
               <X className="size-5 text-muted" />
             </button>
           </div>
@@ -378,12 +378,12 @@ export function AdminBatchManager() {
             />
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2"><Label htmlFor="batch-mode">Batch type</Label><select id="batch-mode" value={mode} onChange={(event) => setMode(event.target.value as "online" | "offline")} className="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"><option value="offline">Offline</option><option value="online">Online</option></select></div>
-            <div className="space-y-2"><Label htmlFor="batch-default-fee">Default monthly fee (৳)</Label><Input id="batch-default-fee" type="number" min={0} max={10000000} required value={defaultFeeTk} onChange={(event) => setDefaultFeeTk(Number(event.target.value))} /></div>
+            <div className="space-y-2"><Label htmlFor="batch-mode">Batch-এর ধরন</Label><select id="batch-mode" value={mode} onChange={(event) => setMode(event.target.value as "online" | "offline")} className="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"><option value="offline">Offline</option><option value="online">Online</option></select></div>
+            <div className="space-y-2"><Label htmlFor="batch-default-fee">Default মাসিক Fee (৳)</Label><Input id="batch-default-fee" type="number" min={0} max={10000000} required value={defaultFeeTk} onChange={(event) => setDefaultFeeTk(Number(event.target.value))} /></div>
           </div>
           <fieldset className="mt-5"><legend className="text-sm font-bold text-primary">Batch-এর বিষয়সমূহ</legend><p className="mt-1 text-xs text-muted">ভর্তির সময় এগুলো শুরুতে নির্বাচিত থাকবে; শিক্ষার্থী অনুযায়ী বিষয় ও ফি পরিবর্তন করা যাবে।</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{subjects.map((subject) => { const checked = selectedSubjects.includes(subject.name); return <button key={subject.code} type="button" aria-pressed={checked} onClick={() => setSelectedSubjects((current) => checked ? current.filter((name) => name !== subject.name) : [...current, subject.name])} className={cn("flex items-center gap-2 rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><span className="text-sm font-bold text-primary">{subject.nameBn || subject.name}</span></button>; })}</div></fieldset>
           <Button className="mt-5 w-full" type="submit" disabled={saving || selectedSubjects.length === 0}>
-            {saving ? "Saving…" : editing ? "Update Batch" : "Create Batch"}
+            {saving ? "Save হচ্ছে…" : editing ? "Batch Update করুন" : "Batch তৈরি করুন"}
           </Button>
         </form>
       )}
@@ -391,33 +391,33 @@ export function AdminBatchManager() {
       {addingToBatch && (
         <form onSubmit={addStudentToBatch} className="mx-auto max-w-xl rounded-3xl border border-primary/30 bg-card p-5 shadow-[var(--shadow-md)]">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">Add student</p><h3 className="mt-1 text-xl font-black text-primary">{addingToBatch.name}</h3></div>
-            <button type="button" aria-label="Close add student form" onClick={closeAddStudent}><X className="size-5 text-muted" /></button>
+            <div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">শিক্ষার্থী যোগ করুন</p><h3 className="mt-1 text-xl font-black text-primary">{addingToBatch.name}</h3></div>
+            <button type="button" aria-label="শিক্ষার্থী যোগ করার ফর্ম Close করুন" onClick={closeAddStudent}><X className="size-5 text-muted" /></button>
           </div>
-          <p className="mb-4 text-sm text-muted">Search by Student ID, name, or reference. The next ID is filled automatically from the last assigned ID; you can type a different 7-digit ID in the same field.</p>
+          <p className="mb-4 text-sm text-muted">Student ID, নাম বা reference দিয়ে Search করুন। সর্বশেষ ID অনুযায়ী পরের ID স্বয়ংক্রিয়ভাবে দেওয়া হবে; চাইলে একই ঘরে অন্য ৭ সংখ্যার ID লিখতে পারবেন।</p>
           {studentCodeContext && (
             <div className="mb-4 rounded-xl border border-border bg-secondary/40 p-3 text-xs text-primary">
               {studentCodeContext.yearRequired ? (
-                <p className="font-bold text-amber-800">This batch name must include a four-digit year (e.g. HSC 2028) before Student IDs can be assigned.</p>
+                <p className="font-bold text-amber-800">Student ID দেওয়ার আগে Batch-এর নামে ৪ সংখ্যার বছর থাকতে হবে (যেমন: HSC 2028)।</p>
               ) : (
                 <p>
                   {studentCodeContext.lastStudentCode
-                    ? <>Last assigned ID: <span className="font-mono font-black">{studentCodeContext.lastStudentCode}</span></>
-                    : "No Student ID has been assigned for this batch prefix yet."}
+                    ? <>সর্বশেষ দেওয়া ID: <span className="font-mono font-black">{studentCodeContext.lastStudentCode}</span></>
+                    : "এই Batch prefix-এ এখনো কোনো Student ID দেওয়া হয়নি।"}
                   {studentCodeContext.nextStudentCode && (
-                    <> · Next suggested: <span className="font-mono font-black">{studentCodeContext.nextStudentCode}</span></>
+                    <> · পরামর্শকৃত পরের ID: <span className="font-mono font-black">{studentCodeContext.nextStudentCode}</span></>
                   )}
                 </p>
               )}
             </div>
           )}
-          <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input autoFocus value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="pl-9" placeholder="Search by Student ID, name, or reference" /></div>
+          <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input autoFocus value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="pl-9" placeholder="Student ID, নাম বা reference দিয়ে Search করুন" /></div>
           <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
             {availableStudents.map((student) => <button key={student.id} type="button" disabled={assigningStudentId} onClick={() => selectStudentForBatch(student)} className={cn("flex w-full items-center justify-between rounded-xl border p-3 text-left", selectedStudent?.id === student.id ? "border-primary bg-secondary" : "border-border hover:border-primary/40")}><span><b className="text-sm text-primary">{student.name}</b>{student.studentCode && <small className="ml-2 font-mono text-muted">ID {student.studentCode}</small>}{student.reference && <small className="ml-2 text-muted">#{student.reference}</small>}</span>{selectedStudent?.id === student.id && <Check className="size-4 text-primary" />}</button>)}
-            {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">No available student found.</p>}
+            {studentQuery && availableStudents.length === 0 && <p className="rounded-xl bg-secondary p-3 text-sm text-muted">উপযুক্ত কোনো শিক্ষার্থী পাওয়া যায়নি।</p>}
           </div>
-          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b> will receive {addingToBatch.subjects.length} default subject{addingToBatch.subjects.length === 1 ? "" : "s"} and a {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ default monthly fee.</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">Permanent Student ID</Label><Input id="assigned-student-id" readOnly={idFieldLocked || assigningStudentId} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={assigningStudentId ? "Assigning…" : studentCodeContext?.nextStudentCode ?? "Enter 7-digit ID"} className="font-mono font-black" inputMode="numeric" pattern="\d{7}" maxLength={7} /><p className="text-xs text-muted">{idFieldLocked ? "This permanent ID is saved on the student profile and used across attendance, finance, and results." : studentCodeContext?.lastStudentCode ? `Last ID was ${studentCodeContext.lastStudentCode}. Keep the suggested ID or type another 7-digit ID starting with ${studentCodeContext.prefix ?? ""}.` : "Type a 7-digit Student ID, or keep the suggested next ID."}</p></div>{!idFieldLocked && selectedStudent && !assigningStudentId && <Button type="button" variant="outline" className="w-full" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>Apply ID</Button>}<div className="grid gap-3 sm:grid-cols-[1fr_150px]"><div className="space-y-1.5"><Label htmlFor="batch-guardian-phone">Guardian phone</Label><Input id="batch-guardian-phone" required inputMode="tel" pattern="\+?[0-9]{10,15}" value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value.replace(/[^+0-9]/g, "").slice(0, 16))} placeholder="01XXXXXXXXX" /></div><div className="space-y-1.5"><Label htmlFor="batch-guardian-relation">Relation</Label><select id="batch-guardian-relation" required value={guardianRelation} onChange={(event) => setGuardianRelation(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-white px-3"><option value="father">Father</option><option value="mother">Mother</option><option value="brother">Brother</option><option value="sister">Sister</option><option value="uncle">Uncle</option><option value="aunt">Aunt</option><option value="other">Other</option></select></div></div></div>}
-          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent || !/^\+?[0-9]{10,15}$/.test(guardianPhone.trim()) || (!selectedStudent.studentCode && !isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null))}>{saving ? "Adding…" : assigningStudentId ? "Assigning Student ID…" : "Add Student"}</Button>
+          {selectedStudent && <div className="mt-4 space-y-3 rounded-xl bg-secondary p-3 text-sm text-primary"><p><b>{selectedStudent.name}</b>-কে {addingToBatch.subjects.length}টি Default বিষয় এবং মাসে {addingToBatch.defaultFeeTk.toLocaleString("en-US")} ৳ Default Fee দেওয়া হবে।</p><div className="space-y-1.5"><Label htmlFor="assigned-student-id">স্থায়ী Student ID</Label><Input id="assigned-student-id" readOnly={idFieldLocked || assigningStudentId} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={assigningStudentId ? "ID দেওয়া হচ্ছে…" : studentCodeContext?.nextStudentCode ?? "৭ সংখ্যার ID লিখুন"} className="font-mono font-black" inputMode="numeric" pattern="\d{7}" maxLength={7} /><p className="text-xs text-muted">{idFieldLocked ? "এই স্থায়ী ID শিক্ষার্থীর Profile-এ Save হয় এবং Attendance, Finance ও Result-এ ব্যবহৃত হয়।" : studentCodeContext?.lastStudentCode ? `সর্বশেষ ID ছিল ${studentCodeContext.lastStudentCode}। প্রস্তাবিত ID রাখুন অথবা ${studentCodeContext.prefix ?? ""} দিয়ে শুরু হওয়া অন্য ৭ সংখ্যার ID লিখুন।` : "৭ সংখ্যার Student ID লিখুন অথবা প্রস্তাবিত পরের ID রাখুন।"}</p></div>{!idFieldLocked && selectedStudent && !assigningStudentId && <Button type="button" variant="outline" className="w-full" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>ID Apply করুন</Button>}<div className="grid gap-3 sm:grid-cols-[1fr_150px]"><div className="space-y-1.5"><Label htmlFor="batch-guardian-phone">Guardian-এর ফোন</Label><Input id="batch-guardian-phone" required inputMode="tel" pattern="\+?[0-9]{10,15}" value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value.replace(/[^+0-9]/g, "").slice(0, 16))} placeholder="01XXXXXXXXX" /></div><div className="space-y-1.5"><Label htmlFor="batch-guardian-relation">সম্পর্ক</Label><select id="batch-guardian-relation" required value={guardianRelation} onChange={(event) => setGuardianRelation(event.target.value)} className="h-11 w-full rounded-xl border border-input bg-white px-3"><option value="father">বাবা</option><option value="mother">মা</option><option value="brother">ভাই</option><option value="sister">বোন</option><option value="uncle">চাচা/মামা</option><option value="aunt">চাচি/মামি</option><option value="other">অন্যান্য</option></select></div></div></div>}
+          <Button className="mt-5 w-full" type="submit" disabled={saving || assigningStudentId || !selectedStudent || !/^\+?[0-9]{10,15}$/.test(guardianPhone.trim()) || (!selectedStudent.studentCode && !isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null))}>{saving ? "যোগ করা হচ্ছে…" : assigningStudentId ? "Student ID দেওয়া হচ্ছে…" : "শিক্ষার্থী যোগ করুন"}</Button>
         </form>
       )}
 
@@ -454,7 +454,7 @@ export function AdminBatchManager() {
                   {statusLabel[batch.status]}
                 </span>
               </div>
-              {batch.subjects.length > 0 && <p className="mt-3 text-xs text-muted">Default subjects: {batch.subjects.map((subject) => subject.nameBn || subject.name).join(" • ")}</p>}
+              {batch.subjects.length > 0 && <p className="mt-3 text-xs text-muted">Default বিষয়: {batch.subjects.map((subject) => subject.nameBn || subject.name).join(" • ")}</p>}
               <div className="mt-4 flex flex-wrap gap-2">
                 {(batch.status === "planned" || batch.status === "active") && (
                   <Button size="sm" variant="outline" onClick={() => startEdit(batch)}>
@@ -463,7 +463,7 @@ export function AdminBatchManager() {
                 )}
                 {(batch.status === "planned" || batch.status === "active") && (
                   <Button size="sm" variant="outline" onClick={() => openAddStudent(batch)}>
-                    <UserPlus className="size-4" /> Add Student
+                    <UserPlus className="size-4" /> শিক্ষার্থী যোগ করুন
                   </Button>
                 )}
                 {batch.status === "planned" && (

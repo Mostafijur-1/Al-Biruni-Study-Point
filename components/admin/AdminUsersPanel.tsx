@@ -85,7 +85,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
     "/api/admin/users?role=student",
     {
       enabled: !!(isModalOpen && selectedTeacher && role === "teacher"),
-      loadingMessage: "Loading students...",
+      loadingMessage: "শিক্ষার্থীদের তথ্য লোড হচ্ছে...",
       errorMessage: "Could not load students.",
     }
   );
@@ -134,7 +134,7 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
 
       if (!ok || !isApiSuccess(payload)) {
         setActionError(true);
-        setActionMessage(getApiErrorMessage(payload, "Update failed."));
+        setActionMessage(getApiErrorMessage(payload, "Update করা যায়নি।"));
         return;
       }
 
@@ -679,10 +679,10 @@ export function AdminUsersPanel({ role }: AdminUsersPanelProps) {
                   setSelectedTeacher(null);
                 }}
               >
-                {"বাতিল"}
+                {"Cancel"}
               </Button>
               <Button onClick={handleSaveDomain}>
-                {"সংরক্ষণ করুন"}
+                {"Save"}
               </Button>
             </div>
           </div>

@@ -130,7 +130,7 @@ export function MistakeNotebook() {
         subject: mistake.subject,
       });
     } else {
-      setError(getApiErrorMessage(payload, "উত্তরটি জমা দেওয়া যায়নি।"));
+      setError(getApiErrorMessage(payload, "উত্তরটি Submit করা যায়নি।"));
     }
     setSubmittingId(null);
   }

@@ -131,7 +131,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
   const handleUpdateExamDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editTitle.trim() || !editSubject.trim() || editTargetClasses.length === 0) {
-      setEditFormError("Please fill in all fields.");
+      setEditFormError("সব Field পূরণ করুন।");
       return;
     }
     try {
@@ -157,7 +157,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         setExam(payload.data.exam);
         setIsEditModalOpen(false);
       } else {
-        setEditFormError(getApiErrorMessage(payload, "Failed to update exam details."));
+        setEditFormError(getApiErrorMessage(payload, "Exam-এর তথ্য Update করা যায়নি।"));
       }
     } catch {
       setEditFormError("Error updating exam details.");
@@ -173,7 +173,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
   };
 
   const handleDeleteQuestion = async (qId: string) => {
-    if (!confirm("Are you sure you want to delete this question from the exam?")) return;
+    if (!confirm("আপনি কি নিশ্চিত যে Exam থেকে প্রশ্নটি Delete করতে চান?")) return;
     try {
       const { ok, payload } = await apiFetch(
         `/api/teacher/exams/${examId}/questions?questionId=${qId}`,
@@ -182,7 +182,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
       if (ok && isApiSuccess(payload)) {
         await fetchExamDetails();
       } else {
-        alert(getApiErrorMessage(payload, "Failed to delete question."));
+        alert(getApiErrorMessage(payload, "প্রশ্ন Delete করা যায়নি।"));
       }
     } catch {
       alert("Error connecting to server.");
@@ -224,7 +224,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
       if (ok && isApiSuccess(payload)) {
         setDbQuestions(payload.data.questions);
       } else {
-        alert(getApiErrorMessage(payload, "Failed to load database questions."));
+        alert(getApiErrorMessage(payload, "Database-এর প্রশ্ন লোড করা যায়নি।"));
       }
     } catch {
       alert("Error loading questions from database.");
@@ -262,7 +262,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         await fetchExamDetails();
         setActiveTab("questions");
       } else {
-        alert(getApiErrorMessage(payload, "Failed to add questions."));
+        alert(getApiErrorMessage(payload, "প্রশ্ন যোগ করা যায়নি।"));
       }
     } catch {
       alert("Error connecting to server.");
@@ -282,7 +282,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         setExam(payload.data.exam);
         setQuestions(payload.data.questions);
       } else {
-        setError(getApiErrorMessage(payload, "Failed to load exam details."));
+        setError(getApiErrorMessage(payload, "Exam-এর তথ্য লোড করা যায়নি।"));
       }
     } catch {
       setError("An error occurred connecting to the server.");
@@ -306,7 +306,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
       return;
     }
     if (contentType !== "text" && !selectedFile) {
-      setUploadError("অনুগ্রহ করে একটি ছবি নির্বাচন করুন।");
+      setUploadError("একটি ছবি Select করুন।");
       return;
     }
 
@@ -340,7 +340,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         // Refresh question list
         await fetchExamDetails();
       } else {
-        setUploadError(payload?.error?.message || getApiErrorMessage(payload, "Failed to parse questions."));
+        setUploadError(payload?.error?.message || getApiErrorMessage(payload, "প্রশ্ন Parse করা যায়নি।"));
       }
     } catch {
       setUploadError("Error connecting to question parser.");
@@ -353,7 +353,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
         <RefreshCw className="size-10 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted">Loading exam details...</p>
+        <p className="text-sm font-medium text-muted">Exam-এর তথ্য লোড হচ্ছে...</p>
       </div>
     );
   }
@@ -361,7 +361,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
   if (error || !exam) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
-        {error || "Exam not found."}
+        {error || "Exam পাওয়া যায়নি।"}
       </div>
     );
   }
@@ -384,7 +384,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
       <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-accent">Exam Details</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-accent">Exam-এর তথ্য</p>
             <h1 className="font-display mt-2 text-2xl font-bold text-primary sm:text-3xl">
               {exam.title}
             </h1>
@@ -401,7 +401,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         <div className="mt-4 grid gap-4 grid-cols-2 md:grid-cols-4">
           <div className="rounded-xl bg-secondary/40 border border-border/50 p-3 text-center">
             <Clock className="size-5 text-primary mx-auto mb-1" />
-            <span className="block text-2xs text-muted font-bold uppercase">Duration</span>
+            <span className="block text-2xs text-muted font-bold uppercase">সময়</span>
             <span className="text-sm font-bold text-primary">{exam.duration} mins</span>
           </div>
           <div className="rounded-xl bg-secondary/40 border border-border/50 p-3 text-center">
@@ -411,12 +411,12 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
           </div>
           <div className="rounded-xl bg-secondary/40 border border-border/50 p-3 text-center">
             <Users className="size-5 text-accent mx-auto mb-1" />
-            <span className="block text-2xs text-muted font-bold uppercase">Classes</span>
+            <span className="block text-2xs text-muted font-bold uppercase">Class</span>
             <span className="text-sm font-bold text-primary">{exam.targetClasses.join(", ")}</span>
           </div>
           <div className="rounded-xl bg-secondary/40 border border-border/50 p-3 text-center">
             <FileJson className="size-5 text-brand-blue mx-auto mb-1" />
-            <span className="block text-2xs text-muted font-bold uppercase">Questions</span>
+            <span className="block text-2xs text-muted font-bold uppercase">প্রশ্ন</span>
             <span className="text-sm font-bold text-primary">{questions.length} / {exam.totalMarks}</span>
           </div>
         </div>
@@ -440,7 +440,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
             activeTab === "upload" ? "border-primary text-primary" : "border-transparent text-muted hover:text-primary"
           )}
         >
-          Upload Questions
+          প্রশ্ন Upload
         </button>
         <button
           onClick={() => setActiveTab("database")}
@@ -458,7 +458,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
             activeTab === "results" ? "border-primary text-primary" : "border-transparent text-muted hover:text-primary"
           )}
         >
-          Student Results
+          শিক্ষার্থীদের Result
         </button>
       </div>
 
@@ -467,7 +467,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         <div className="space-y-4">
           {questions.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-muted">
-              No questions added yet. Switch to the &ldquo;Upload Questions&rdquo; tab to add some.
+              এখনো কোনো প্রশ্ন যোগ করা হয়নি। প্রশ্ন যোগ করতে &ldquo;প্রশ্ন Upload&rdquo; Tab খুলুন।
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -506,7 +506,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
                     </div>
                     {q.explanation && (
                       <div className="mt-2 rounded-lg bg-secondary/30 p-2.5 text-2xs text-muted font-medium border border-border/40 pl-7">
-                        <strong className="text-primary font-bold">Explanation:</strong> {q.explanation}
+                        <strong className="text-primary font-bold">ব্যাখ্যা:</strong> {q.explanation}
                       </div>
                     )}
                   </article>
@@ -522,11 +522,11 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
         <div className="grid gap-6 md:grid-cols-3">
           {/* Form */}
           <form onSubmit={handleUploadQuestions} className="md:col-span-2 rounded-xl border border-border bg-card p-5 shadow-xs space-y-5">
-            <h2 className="font-display text-sm font-bold text-primary">Upload Questions</h2>
+            <h2 className="font-display text-sm font-bold text-primary">প্রশ্ন Upload করুন</h2>
 
             {/* Type selector */}
             <div className="space-y-1.5">
-              <Label>Source Type</Label>
+              <Label>Source-এর ধরন</Label>
               <div className="flex flex-wrap gap-1.5 bg-secondary/60 p-1 rounded-xl w-full sm:w-fit">
                 <button
                   type="button"
@@ -548,7 +548,7 @@ export function TeacherExamDetailPanel({ examId }: TeacherExamDetailPanelProps) 
             {/* Content inputs */}
             {contentType === "text" ? (
               <div className="space-y-1.5">
-                <Label htmlFor="exam-raw-text">Raw Text (Questions, options, and explanations)</Label>
+                <Label htmlFor="exam-raw-text">Raw Text (প্রশ্ন, Option ও ব্যাখ্যা)</Label>
                 <textarea
                   id="exam-raw-text"
                   rows={8}
@@ -648,13 +648,13 @@ d) 9"
 
           {/* Guidelines Sidebar */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-4 shadow-xs">
-            <h3 className="font-display text-sm font-bold text-primary">Instructions</h3>
+            <h3 className="font-display text-sm font-bold text-primary">নির্দেশনা</h3>
             <div className="text-xs text-muted space-y-3 font-medium leading-relaxed">
               <p>
-                1. <strong>Pasted Text / TXT file:</strong> Ensure questions are clearly separated. Options should start with identifiers like a), b), c), d) or 1), 2), 3), 4).
+                ১. <strong>Pasted Text / TXT file:</strong> প্রতিটি প্রশ্ন আলাদা রাখুন। Option-এর শুরুতে a), b), c), d) অথবা 1), 2), 3), 4) ব্যবহার করুন।
               </p>
               <p>
-                2. <strong>Image OCR:</strong> Take a clear photo of the exam paper. Gemini AI will run OCR to detect text, translate it to Bengali, and format it as a valid exam.
+                ২. <strong>Image OCR:</strong> প্রশ্নপত্রের পরিষ্কার ছবি তুলুন। Gemini AI, OCR দিয়ে Text শনাক্ত করে বাংলায় রূপান্তর ও Exam format তৈরি করবে।
               </p>
               <p>
                 3. Gemini will automatically translate questions into **Bengali** and ensure exactly **4 options** are present for each question.
@@ -663,7 +663,7 @@ d) 9"
 
             {parsedPreview.length > 0 && (
               <div className="border-t border-border pt-3 space-y-2">
-                <h4 className="text-2xs font-bold uppercase tracking-wider text-muted">Parsed Questions:</h4>
+                <h4 className="text-2xs font-bold uppercase tracking-wider text-muted">Parse করা প্রশ্ন:</h4>
                 <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
                   {parsedPreview.map((pq, pIdx) => (
                     <div key={pIdx} className="rounded border border-border bg-surface p-2 text-2xs font-semibold text-primary truncate">
@@ -686,17 +686,17 @@ d) 9"
         return (
           <div className="space-y-6">
             <div className="rounded-xl border border-border bg-card p-5 shadow-xs space-y-4">
-              <h2 className="font-display text-sm font-bold text-primary">Add Questions from Database</h2>
+              <h2 className="font-display text-sm font-bold text-primary">Database থেকে প্রশ্ন যোগ করুন</h2>
               <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
                 <div className="space-y-1.5">
-                  <Label htmlFor="db-chapter-select">Select Chapter</Label>
+                  <Label htmlFor="db-chapter-select">Chapter Select করুন</Label>
                   <select
                     id="db-chapter-select"
                     value={selectedDbChapter}
                     onChange={(e) => setSelectedDbChapter(e.target.value)}
                     className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                   >
-                    <option value="">-- Select Chapter --</option>
+                    <option value="">-- Chapter Select করুন --</option>
                     {dbChapters.map((chap) => (
                       <option key={chap} value={chap}>
                         {getTranslatedChapter(chap, locale)}
@@ -712,8 +712,8 @@ d) 9"
                     onChange={(e) => setDbSourceScope(e.target.value as "all" | "my-uploaded")}
                     className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary transition"
                   >
-                    <option value="all">Whole Database (All Questions)</option>
-                    <option value="my-uploaded">My Uploaded Questions Only</option>
+                    <option value="all">পুরো Database (সব প্রশ্ন)</option>
+                    <option value="my-uploaded">শুধু আমার Upload করা প্রশ্ন</option>
                   </select>
                 </div>
               </div>
@@ -724,11 +724,11 @@ d) 9"
                 {loadingDbQuestions ? (
                   <div className="flex flex-col items-center justify-center py-12 space-y-3">
                     <RefreshCw className="size-6 animate-spin text-primary" />
-                    <p className="text-xs font-semibold text-muted">Loading questions from database...</p>
+                    <p className="text-xs font-semibold text-muted">Database থেকে প্রশ্ন লোড হচ্ছে...</p>
                   </div>
                 ) : filteredDbQuestions.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-border bg-card/45 p-8 text-center text-muted-foreground text-sm">
-                    No questions found in this chapter.
+                    এই Chapter-এ কোনো প্রশ্ন পাওয়া যায়নি।
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -813,7 +813,7 @@ d) 9"
                             </div>
                             {q.explanation && (
                               <div className="mt-2 rounded-lg bg-secondary/30 p-2.5 text-2xs text-muted font-medium border border-border/40 pl-7">
-                                <strong className="text-primary font-bold">Explanation:</strong> {q.explanation}
+                                <strong className="text-primary font-bold">ব্যাখ্যা:</strong> {q.explanation}
                               </div>
                             )}
                           </article>
@@ -846,7 +846,7 @@ d) 9"
               <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="grid size-10 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-secondary hover:text-primary"
-                aria-label="বন্ধ করুন"
+                aria-label="Close"
               >
                 ✕
               </button>
@@ -860,7 +860,7 @@ d) 9"
 
             <form onSubmit={handleUpdateExamDetails} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="edit-exam-title">Exam Title</Label>
+                <Label htmlFor="edit-exam-title">Exam-এর নাম</Label>
                 <Input
                   id="edit-exam-title"
                   placeholder="e.g. Physics Class 11 Midterm"
@@ -871,7 +871,7 @@ d) 9"
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="edit-exam-subject">Subject</Label>
+                <Label htmlFor="edit-exam-subject">বিষয়</Label>
                 <select
                   id="edit-exam-subject"
                   value={editSubject}
@@ -879,7 +879,7 @@ d) 9"
                   className="flex h-10 w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm focus:border-primary/50 focus:outline-none"
                   required
                 >
-                  <option value="">-- Select Subject --</option>
+                  <option value="">-- বিষয় Select করুন --</option>
                   {editAllowedSubjects.map((subName) => (
                     <option key={subName} value={subName}>
                       {subName}
@@ -890,7 +890,7 @@ d) 9"
 
               <div className="grid gap-3 sm:grid-cols-3 sm:gap-2.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-exam-duration">Duration (m)</Label>
+                  <Label htmlFor="edit-exam-duration">সময় (মিনিট)</Label>
                   <input
                     id="edit-exam-duration"
                     type="number"
@@ -902,7 +902,7 @@ d) 9"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-exam-marks">Total Marks</Label>
+                  <Label htmlFor="edit-exam-marks">মোট Marks</Label>
                   <input
                     id="edit-exam-marks"
                     type="number"
@@ -928,7 +928,7 @@ d) 9"
               </div>
 
               <div className="space-y-2">
-                <Label>Target Classes</Label>
+                <Label>যেসব Class-এর জন্য</Label>
                 <div className="flex flex-wrap gap-4">
                   {["class-9", "class-10", "class-11", "class-12"].map((cls) => (
                     <label key={cls} className="flex items-center gap-2 text-xs font-bold cursor-pointer">
@@ -958,7 +958,7 @@ d) 9"
                   loading={savingDetails}
                   className="rounded-xl font-bold"
                 >
-                  Save Changes
+                  পরিবর্তন Save করুন
                 </Button>
               </div>
             </form>

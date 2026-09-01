@@ -55,7 +55,7 @@ export function StudentExamsPanel() {
           setExams(payload.data.exams);
           setExamsCache(payload.data.exams);
         } else if (!cachedExams) {
-          setError(getApiErrorMessage(payload, "Failed to load exams."));
+          setError(getApiErrorMessage(payload, "Exam লোড করা যায়নি।"));
         }
       } catch {
         if (active && !cachedExams) {

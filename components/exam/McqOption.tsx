@@ -92,10 +92,10 @@ export function McqOption({
         </span>
       )}
       {showResult && resultMode === "correct" && (
-        <span className="shrink-0 text-xs font-bold text-emerald-700">Correct</span>
+        <span className="shrink-0 text-xs font-bold text-emerald-700">সঠিক</span>
       )}
       {showResult && resultMode === "wrong" && (
-        <span className="shrink-0 text-xs font-bold text-brand-red">Your answer</span>
+        <span className="shrink-0 text-xs font-bold text-brand-red">তোমার উত্তর</span>
       )}
     </button>
   );

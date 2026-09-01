@@ -185,7 +185,7 @@ export function TeacherClassUploadPanel() {
     }
 
     setMessage(
-      locale === "bn" ? "ক্লাস কন্টেন্ট সংরক্ষণ হয়েছে।" : "Class content saved successfully.",
+      locale === "bn" ? "Class Content Save হয়েছে।" : "Class content saved successfully.",
     );
     setIsSuccess(true);
     setTitle("");
@@ -221,7 +221,7 @@ export function TeacherClassUploadPanel() {
       return;
     }
 
-    setCourseMessage(locale === "bn" ? "কোর্স সংরক্ষণ হয়েছে।" : "Course saved successfully.");
+    setCourseMessage(locale === "bn" ? "Course Save হয়েছে।" : "Course saved successfully.");
     setCourseSuccess(true);
     setCourseTitle("");
     setCourseTitleBn("");
@@ -255,7 +255,7 @@ export function TeacherClassUploadPanel() {
       return;
     }
 
-    setCqMessage(locale === "bn" ? "CQ সংরক্ষণ হয়েছে।" : "CQ assignment saved successfully.");
+    setCqMessage(locale === "bn" ? "CQ Save হয়েছে।" : "CQ assignment saved successfully.");
     setCqSuccess(true);
     setCqTitle("");
     setCqDescription("");
@@ -312,7 +312,7 @@ export function TeacherClassUploadPanel() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="video-subject">Subject</Label>
+          <Label htmlFor="video-subject">বিষয়</Label>
           <select
             id="video-subject"
             value={videoSubject}
@@ -341,7 +341,7 @@ export function TeacherClassUploadPanel() {
           disabled={!videoSubject || videoTargetClasses.length === 0}
           className="w-full sm:w-auto"
         >
-          {locale === "bn" ? "ভিডিও সংরক্ষণ" : "Save video"}
+          {locale === "bn" ? "Video Save করুন" : "Save video"}
         </Button>
       </form>
 
@@ -443,7 +443,7 @@ export function TeacherClassUploadPanel() {
           disabled={allowedCourseSubjects.length === 0 || courseTargetClasses.length === 0}
           className="w-full sm:w-auto"
         >
-          {locale === "bn" ? "কোর্স সংরক্ষণ" : "Save course"}
+          {locale === "bn" ? "Course Save করুন" : "Save course"}
         </Button>
       </form>
 
@@ -485,7 +485,7 @@ export function TeacherClassUploadPanel() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cq-subject">Subject</Label>
+          <Label htmlFor="cq-subject">বিষয়</Label>
           <select
             id="cq-subject"
             value={cqSubject}
@@ -512,7 +512,7 @@ export function TeacherClassUploadPanel() {
           disabled={!cqSubject || cqTargetClasses.length === 0}
           className="w-full sm:w-auto"
         >
-          {locale === "bn" ? "CQ সংরক্ষণ" : "Save CQ"}
+          {locale === "bn" ? "CQ Save করুন" : "Save CQ"}
         </Button>
       </form>
 
