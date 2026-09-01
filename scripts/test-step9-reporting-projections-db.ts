@@ -1,0 +1,45 @@
+import assert from "node:assert/strict";
+import mongoose from "mongoose";
+import { AssessmentAttempt } from "../lib/db/models/AssessmentAttempt.ts";
+import { AttendanceRecord } from "../lib/db/models/AttendanceRecord.ts";
+import { AttendanceSheet } from "../lib/db/models/AttendanceSheet.ts";
+import { BatchEnrollment } from "../lib/db/models/BatchEnrollment.ts";
+import { Branch } from "../lib/db/models/Branch.ts";
+import { ClassSession } from "../lib/db/models/ClassSession.ts";
+import { FocusSession } from "../lib/db/models/FocusSession.ts";
+import { ReportingProjection } from "../lib/db/models/ReportingProjection.ts";
+import { TeacherAssignment } from "../lib/db/models/TeacherAssignment.ts";
+import { rebuildReportingProjections, reconcileReportingProjections } from "../lib/reporting/projection-service.ts";
+
+const uri = process.env.MONGODB_URI?.trim();
+if (!uri) throw new Error("MONGODB_URI is required.");
+await mongoose.connect(uri, { dbName: "absp", autoIndex: true });
+try {
+  const organizationId = new mongoose.Types.ObjectId();
+  const branch = await Branch.create({ organizationId, name: "Main", code: "MAIN", status: "active" });
+  const branchId = branch._id;
+  const studentId = new mongoose.Types.ObjectId();
+  const teacherId = new mongoose.Types.ObjectId();
+  const batchId = new mongoose.Types.ObjectId();
+  const now = new Date("2026-08-30T06:00:00.000Z");
+  await BatchEnrollment.collection.insertOne({ organizationId, branchId, batchId, studentId, status: "active", createdAt: now, updatedAt: now });
+  await TeacherAssignment.collection.insertOne({ organizationId, branchId, teacherId, status: "active", createdAt: now, updatedAt: now });
+  await ClassSession.collection.insertOne({ organizationId, branchId, teacherId, status: "completed", scheduledStart: now, createdAt: now, updatedAt: now });
+  await AttendanceSheet.collection.insertOne({ organizationId, branchId, teacherId, status: "submitted", submittedAt: now, summary: { present: 1, absent: 0, late: 0, excused: 0, attended: 1, denominator: 1 }, createdAt: now, updatedAt: now });
+  await AttendanceRecord.collection.insertOne({ organizationId, branchId, studentId, status: "present", createdAt: now, updatedAt: now });
+  await AssessmentAttempt.collection.insertOne({ organizationId, studentId, status: "submitted", submittedAt: now, score: 8, totalMarks: 10, percentage: 80, passed: true, createdAt: now, updatedAt: now });
+  await FocusSession.collection.insertOne({ student: studentId, dateKey: "2026-08-30", status: "completed", durationMinutes: 25, xpEarned: 10, createdAt: now, updatedAt: now });
+  const scope = { organizationId: String(organizationId), branchId: String(branchId), date: now };
+  const rebuilt = await rebuildReportingProjections(scope);
+  assert.equal(rebuilt.rebuilt, 5);
+  assert.deepEqual(new Set(Object.keys(rebuilt.byType)), new Set(["student-today", "teacher-today", "attendance-daily", "assessment-trend", "finance-monthly"]));
+  assert.equal((await reconcileReportingProjections(scope)).matches, true);
+  await FocusSession.collection.updateOne({ student: studentId }, { $set: { durationMinutes: 50 } });
+  const divergent = await reconcileReportingProjections(scope);
+  assert.equal(divergent.matches, false);
+  assert.ok(divergent.mismatches.some((row) => row.key.startsWith("student-today:")));
+  await rebuildReportingProjections(scope);
+  assert.equal((await reconcileReportingProjections(scope)).matches, true);
+  assert.equal(await ReportingProjection.countDocuments(), 5);
+  console.log(JSON.stringify({ status: "passed", scenarios: ["five-projection-rebuild", "hash-reconciliation", "source-divergence", "idempotent-rebuild"] }, null, 2));
+} finally { await mongoose.connection.dropDatabase(); await mongoose.disconnect(); }

@@ -18,6 +18,8 @@
     "migrate:assessment-references": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step6-assessment-references.ts",
     "migrate:written-exams": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step7-written-exams.ts",
     "migrate:finance-ledger": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step8-finance-ledger.ts",
+    "rebuild:reporting-projections": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-reporting-projections.ts",
+    "check:reporting-projections": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-reporting-projections.ts",
     "rebuild:practice-results": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-practice-result-projections.ts",
     "bootstrap:academic": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/run-phase2-academic-bootstrap.ts",
     "check:academic-readiness": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/check-phase2-academic-readiness.ts",
@@ -34,7 +36,8 @@
     "test:assessment-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step5-assessment-kernel-memory.ts",
     "test:mcq-kernel-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step6-mcq-kernel-memory.ts",
     "test:written-exams-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step7-written-exams-memory.ts",
-    "test:finance-ledger-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step8-finance-ledger-memory.ts"
+    "test:finance-ledger-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step8-finance-ledger-memory.ts",
+    "test:reporting-projections-db:memory": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/test-step9-reporting-projections-memory.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -14,7 +14,7 @@ import { replayWrittenResultCorrections } from "@/lib/written-exam/correction-hi
 
 export async function resolveCurrentWrittenResults<T extends { _id: Types.ObjectId; marks: number; comment?: string }>(results: T[]) {
   if (!results.length) return results;
-  const corrections = await WrittenExamResultCorrection.find({ resultId: { $in: results.map((row) => row._id) } }).sort({ resultId: 1, sequence: -1 }).lean();
+  const corrections = await WrittenExamResultCorrection.find({ resultId: { $in: results.map((row) => row._id) } }).sort({ resultId: 1, sequence: -1 }).limit(5_000).lean();
   const byResult = new Map<string, typeof corrections>();
   for (const correction of corrections) byResult.set(String(correction.resultId), [...(byResult.get(String(correction.resultId)) ?? []), correction]);
   return results.map((row) => {
@@ -51,10 +51,10 @@ export async function isStudentEnrolledForExam(context: RequestContext, studentI
 }
 
 export async function listStudentWrittenExams(context: RequestContext) {
-  const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), studentId: context.actor.id, status: "active" }).select("batchId").lean();
-  const exams = await WrittenExam.find({ ...canonicalScopeFilter(context.scope), batchId: { $in: enrollments.map((row) => row.batchId) }, isPublished: true }).sort({ examDate: -1 }).lean();
+  const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), studentId: context.actor.id, status: "active" }).select("batchId").limit(100).lean();
+  const exams = await WrittenExam.find({ ...canonicalScopeFilter(context.scope), batchId: { $in: enrollments.map((row) => row.batchId) }, isPublished: true }).sort({ examDate: -1 }).limit(100).lean();
   const [storedResults, batches, subjects] = await Promise.all([
-    WrittenExamResult.find({ studentId: context.actor.id, examId: { $in: exams.map((exam) => exam._id) } }).lean(),
+    WrittenExamResult.find({ studentId: context.actor.id, examId: { $in: exams.map((exam) => exam._id) } }).limit(100).lean(),
     Batch.find({ ...canonicalScopeFilter(context.scope), _id: { $in: exams.map((exam) => exam.batchId) } }).select("name").lean(),
     AcademicSubject.find({ ...canonicalScopeFilter(context.scope), _id: { $in: exams.map((exam) => exam.subjectId) } }).select("name nameBn").lean(),
   ]);
@@ -73,10 +73,10 @@ export async function listManagedWrittenExams(context: RequestContext, assignmen
 }
 
 export async function loadWrittenExamRoster(context: RequestContext, exam: { _id: Types.ObjectId; batchId: Types.ObjectId }) {
-  const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), batchId: exam.batchId, status: "active" }).select("studentId").lean();
+  const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), batchId: exam.batchId, status: "active" }).select("studentId").limit(1_000).lean();
   const [students, storedResults] = await Promise.all([
     User.find({ _id: { $in: enrollments.map((row) => row.studentId) } }).select("name studentCode studentClass").sort({ studentCode: 1, name: 1 }).lean(),
-    WrittenExamResult.find({ examId: exam._id }).lean(),
+    WrittenExamResult.find({ examId: exam._id }).limit(1_000).lean(),
   ]);
   const results = await resolveCurrentWrittenResults(storedResults);
   return { students, results };
@@ -87,7 +87,7 @@ export function saveWrittenExamRecord<T extends { save(): Promise<unknown> }>(ex
 export function countWrittenExamResults(examId: Types.ObjectId) { return WrittenExamResult.countDocuments({ examId }); }
 
 export async function saveWrittenExamMarks(context: RequestContext, exam: { _id: Types.ObjectId; batchId: Types.ObjectId }, results: Array<{ studentId: string; marks: number; comment?: string }>) {
-  const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), batchId: exam.batchId, status: "active", studentId: { $in: results.map((row) => row.studentId) } }).lean();
+  const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), batchId: exam.batchId, status: "active", studentId: { $in: results.map((row) => row.studentId) } }).limit(1_000).lean();
   const enrollmentByStudent = new Map(enrollments.map((row) => [String(row.studentId), row]));
   if (enrollments.length !== results.length) return { saved: false as const };
   await WrittenExamResult.bulkWrite(results.map((row) => ({ updateOne: {

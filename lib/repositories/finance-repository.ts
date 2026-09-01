@@ -17,7 +17,7 @@ function escapeRegex(value: string) {
 
 export async function loadFinanceLedger(context: RequestContext, input: FinanceListInput) {
   const scope = canonicalScopeFilter(context.scope);
-  const allActiveEnrollments = await BatchEnrollment.find({ ...scope, status: "active" }).select("studentId batchId").lean();
+  const allActiveEnrollments = await BatchEnrollment.find({ ...scope, status: "active" }).select("studentId batchId").limit(5_000).lean();
   const activeEnrollments = input.batchId ? allActiveEnrollments.filter((row) => String(row.batchId) === input.batchId) : allActiveEnrollments;
   const studentIds = activeEnrollments.map((row) => row.studentId);
   const accessFilters: QueryFilter<IUser>[] = input.role === "student" ? [{ role: "student", _id: { $in: studentIds } }]
@@ -31,15 +31,15 @@ export async function loadFinanceLedger(context: RequestContext, input: FinanceL
   const projection = "name studentCode reference phone email role studentClass isActive";
   const [users, financeUsers] = await Promise.all([
     User.find({ approvalStatus: "approved", $and: [{ $or: accessFilters }, ...(search ? [{ $or: [{ name: search }, { studentCode: search }, { reference: search }, { phone: search }] }] : [])] }).select(projection).sort({ role: 1, name: 1 }).limit(500).lean(),
-    User.find({ approvalStatus: "approved", $or: financeFilters }).select(projection).sort({ role: 1, name: 1 }).lean(),
+    User.find({ approvalStatus: "approved", $or: financeFilters }).select(projection).sort({ role: 1, name: 1 }).limit(5_000).lean(),
   ]);
   const financeUserIds = financeUsers.map((row) => row._id);
   const batchIds = [...new Set(allActiveEnrollments.map((row) => String(row.batchId)))];
   const [profiles, payments, expenses, batches] = await Promise.all([
-    PaymentProfile.find({ ...scope, userId: { $in: financeUserIds } }).lean(),
-    MonthlyPayment.find({ ...scope, userId: { $in: financeUserIds }, month: input.month }).lean(),
-    MonthlyExpense.find({ ...scope, month: input.month }).lean(),
-    Batch.find({ ...scope, _id: { $in: batchIds } }).select("name status").sort({ name: 1 }).lean(),
+    PaymentProfile.find({ ...scope, userId: { $in: financeUserIds } }).limit(5_000).lean(),
+    MonthlyPayment.find({ ...scope, userId: { $in: financeUserIds }, month: input.month }).limit(5_000).lean(),
+    MonthlyExpense.find({ ...scope, month: input.month }).limit(100).lean(),
+    Batch.find({ ...scope, _id: { $in: batchIds } }).select("name status").sort({ name: 1 }).limit(5_000).lean(),
   ]);
   return { users, financeUsers, allActiveEnrollments, profiles, payments, expenses, batches };
 }

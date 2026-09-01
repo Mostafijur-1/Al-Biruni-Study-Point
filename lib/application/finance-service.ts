@@ -6,13 +6,14 @@ import type { ExpenseCategory } from "@/lib/db/models/MonthlyExpense";
 import { findFinanceUser, isFinanceUserEligible, loadFinanceLedger, resolveFinanceLedgerScope, upsertFinanceExpense, upsertMonthlyPayment, upsertPaymentProfile } from "@/lib/repositories/finance-repository";
 import { appendLedgerAdjustment, assignStudentFeePlan, ensureLedgerExpense, ensureLedgerInvoice, recordCashTransaction, reverseCashTransaction } from "@/lib/finance/ledger-service";
 import { rebuildFinanceMonthSummary } from "@/lib/finance/ledger-summary";
+import { readFinanceMonthProjection } from "@/lib/reporting/projection-service";
 import type { FinanceListInput, FinanceMutationInput } from "@/lib/validations/finance.schema";
 
 export async function getFinanceLedger(context: RequestContext, input: FinanceListInput) {
   assertAdmin(context.actor);
   const rows = await loadFinanceLedger(context, input);
   const ledgerScope = await resolveFinanceLedgerScope(context, input);
-  const ledger = ledgerScope ? await rebuildFinanceMonthSummary({ ...ledgerScope, period: input.month }) : null;
+  const ledger = ledgerScope ? await readFinanceMonthProjection({ ...ledgerScope, period: input.month }) ?? await rebuildFinanceMonthSummary({ ...ledgerScope, period: input.month }) : null;
   const ledgerAuthoritative = process.env.FINANCE_LEDGER_AUTHORITY_ENABLED?.trim().toLowerCase() === "true" && Boolean(ledger);
   const ledgerPositionByUser = new Map(ledger?.positions.filter((row) => row.kind !== "operating-expense").map((row) => [row.counterpartyId, row]) ?? []);
   const batchMap = new Map(rows.batches.map((row) => [String(row._id), row]));

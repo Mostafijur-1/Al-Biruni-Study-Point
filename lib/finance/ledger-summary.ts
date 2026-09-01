@@ -2,13 +2,13 @@ import { CashTransaction, FinanceInvoice, LedgerAdjustment, PaymentAllocation } 
 
 export async function rebuildFinanceMonthSummary(input: { organizationId: string; branchId: string; period: string }) {
   const scope = { organizationId: input.organizationId, branchId: input.branchId };
-  const invoices = await FinanceInvoice.find({ ...scope, period: input.period }).lean();
+  const invoices = await FinanceInvoice.find({ ...scope, period: input.period }).limit(10_000).lean();
   const invoiceIds = invoices.map((row) => row._id);
   const [adjustments, allocations] = await Promise.all([
-    LedgerAdjustment.find({ ...scope, invoiceId: { $in: invoiceIds } }).lean(),
-    PaymentAllocation.find({ ...scope, invoiceId: { $in: invoiceIds } }).lean(),
+    LedgerAdjustment.find({ ...scope, invoiceId: { $in: invoiceIds } }).limit(20_000).lean(),
+    PaymentAllocation.find({ ...scope, invoiceId: { $in: invoiceIds } }).limit(20_000).lean(),
   ]);
-  const transactions = await CashTransaction.find({ ...scope, _id: { $in: allocations.map((row) => row.transactionId) } }).lean();
+  const transactions = await CashTransaction.find({ ...scope, _id: { $in: allocations.map((row) => row.transactionId) } }).limit(20_000).lean();
   const transactionById = new Map(transactions.map((row) => [String(row._id), row]));
   const adjustmentByInvoice = new Map<string, typeof adjustments>();
   const allocationByInvoice = new Map<string, typeof allocations>();
@@ -28,7 +28,7 @@ export async function rebuildFinanceMonthSummary(input: { organizationId: string
   const student = totals("student-fee");
   const payroll = totals("teacher-payroll");
   const expense = totals("operating-expense");
-  const allCash = await CashTransaction.find({ ...scope, occurredAt: { $gte: new Date(`${input.period}-01T00:00:00.000Z`), $lt: new Date(new Date(`${input.period}-01T00:00:00.000Z`).setUTCMonth(new Date(`${input.period}-01T00:00:00.000Z`).getUTCMonth() + 1)) } }).lean();
+  const allCash = await CashTransaction.find({ ...scope, occurredAt: { $gte: new Date(`${input.period}-01T00:00:00.000Z`), $lt: new Date(new Date(`${input.period}-01T00:00:00.000Z`).setUTCMonth(new Date(`${input.period}-01T00:00:00.000Z`).getUTCMonth() + 1)) } }).limit(20_000).lean();
   const cashInTk = allCash.filter((row) => row.direction === "in").reduce((sum, row) => sum + row.amountTk, 0);
   const cashOutTk = allCash.filter((row) => row.direction === "out").reduce((sum, row) => sum + row.amountTk, 0);
   const allocatedByTransaction = new Map<string, number>();
@@ -36,3 +36,5 @@ export async function rebuildFinanceMonthSummary(input: { organizationId: string
   const unappliedCashTk = transactions.reduce((sum, row) => sum + Math.max(0, row.amountTk - (allocatedByTransaction.get(String(row._id)) ?? 0)), 0);
   return { period: input.period, positions, student, payroll, expense, cashInTk, cashOutTk, netCashTk: cashInTk - cashOutTk, unappliedCashTk };
 }
+
+export type FinanceMonthSummary = Awaited<ReturnType<typeof rebuildFinanceMonthSummary>>;
