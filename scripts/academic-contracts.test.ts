@@ -53,6 +53,33 @@ test("enrollment mutations require explicit actions, valid IDs, and audit reason
   assert.equal(enrollment.guardianPhone, "01700000000");
   assert.equal(enrollmentMutationSchema.safeParse({ ...enrollment, guardianPhone: "০১৭০০০০০০০০" }).success, false);
 
+  const optionalEnrollment = enrollmentMutationSchema.parse({
+    action: "enroll",
+    batchId: id,
+    studentId: "64f000000000000000000002",
+    feeTk: 2500,
+    guardianPhone: "",
+    reason: "Enrollment with optional empty guardian phone",
+  });
+  assert.equal(optionalEnrollment.action, "enroll");
+  if (optionalEnrollment.action === "enroll") {
+    assert.equal(optionalEnrollment.guardianPhone, undefined);
+    assert.equal(optionalEnrollment.guardianRelation, undefined);
+  }
+
+  const omittedGuardianEnrollment = enrollmentMutationSchema.parse({
+    action: "enroll",
+    batchId: id,
+    studentId: "64f000000000000000000002",
+    feeTk: 2500,
+    reason: "Enrollment without guardian phone provided",
+  });
+  assert.equal(omittedGuardianEnrollment.action, "enroll");
+  if (omittedGuardianEnrollment.action === "enroll") {
+    assert.equal(omittedGuardianEnrollment.guardianPhone, undefined);
+    assert.equal(omittedGuardianEnrollment.guardianRelation, undefined);
+  }
+
   assert.equal(
     enrollmentMutationSchema.safeParse({
       action: "transfer",

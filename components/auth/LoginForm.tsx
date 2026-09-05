@@ -74,7 +74,7 @@ export function LoginForm({ auth, returnUrl, reason }: LoginFormProps) {
             <Input
               id="identifier"
               {...register("identifier")}
-              placeholder="01XXXXXXXXX"
+              placeholder="016339****2"
               autoComplete="username"
             />
             {errors.identifier && (

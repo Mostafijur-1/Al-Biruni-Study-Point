@@ -327,8 +327,8 @@ export async function createCoachingEnrollment(input: AuditInput & {
   studentCode?: string;
   effectiveFrom: Date;
   feeTk: number;
-  guardianPhone: string;
-  guardianRelation: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
+  guardianPhone?: string;
+  guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 }) {
   return withMongoTransaction(async (session) => {
     const { batch, selectedSubjectIds } = await loadSelection(input.batchId, input.subjectIds, session);
@@ -366,8 +366,8 @@ export async function createCoachingEnrollment(input: AuditInput & {
       studentId: student._id,
       status: "active",
       effectiveFrom,
-      guardianPhone: input.guardianPhone,
-      guardianRelation: input.guardianRelation,
+      guardianPhone: input.guardianPhone || undefined,
+      guardianRelation: input.guardianRelation || undefined,
       createdBy: input.actor.id,
     }], { session });
     await addSubjectRows({ enrollment, subjectIds: selectedSubjectIds, effectiveFrom, actorId: input.actor.id, session });
@@ -438,8 +438,8 @@ export async function updateCoachingSubjects(input: AuditInput & {
       );
     }
     if (added.length) await addSubjectRows({ enrollment, subjectIds: added, effectiveFrom: input.effectiveAt, actorId: input.actor.id, session });
-    if (input.guardianPhone) enrollment.guardianPhone = input.guardianPhone;
-    if (input.guardianRelation) enrollment.guardianRelation = input.guardianRelation;
+    if (input.guardianPhone !== undefined) enrollment.guardianPhone = input.guardianPhone || undefined;
+    if (input.guardianRelation !== undefined) enrollment.guardianRelation = input.guardianRelation || undefined;
     await enrollment.save({ session });
     await syncPaymentProfile({ studentId: enrollment.studentId, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
     await writeAuditLog({

@@ -185,31 +185,69 @@ export function CoachingEnrollmentPanel() {
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!selectedStudent || !batchId || !subjectIds.length) return;
-    setSaving(true); setMessage("");
-    if (!selectedEnrollment && !selectedStudent.studentCode) {
-      const draft = studentCodeDraft.trim();
+    setSaving(true);
+    setMessage("");
+    const trimmedPhone = guardianPhone.trim();
+    if (trimmedPhone && !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) {
+      setError(true);
+      setMessage("Guardian-এর সঠিক ফোন নম্বর দিন (১০-১৫ ডিজিট)।");
+      setSaving(false);
+      return;
+    }
+    const studentCode = selectedStudent.studentCode;
+    const draft = studentCodeDraft.trim();
+    if (!selectedEnrollment && !studentCode) {
       if (!isValidStudentCodeDraft(draft, studentCodeContext?.prefix ?? null)) {
         setError(true);
         setMessage(studentCodeContext?.prefix
-          ? `Assign a valid 7-digit Student ID starting with ${studentCodeContext.prefix}.`
-          : "Assign a valid 7-digit Student ID before enrollment.");
-        setSaving(false);
-        return;
-      }
-      const assigned = await assignStudentCode(draft);
-      if (!assigned) {
+          ? `${studentCodeContext.prefix} দিয়ে শুরু হওয়া সঠিক ৭ সংখ্যার Student ID দিন।`
+          : "ভর্তির আগে সঠিক ৭ সংখ্যার Student ID দিন।");
         setSaving(false);
         return;
       }
     }
     const body = selectedEnrollment
       ? batchId !== selectedEnrollment.batchId
-        ? { action: "transfer", enrollmentId: selectedEnrollment.id, targetBatchId: batchId, subjectIds, feeTk, guardianPhone, guardianRelation, reason: "অ্যাডমিন কর্তৃক coaching batch transfer" }
-        : { action: "update-subjects", enrollmentId: selectedEnrollment.id, subjectIds, feeTk, guardianPhone, guardianRelation, reason: "Admin Coaching Subject ও Fee Update করেছেন" }
-      : { action: "enroll", studentId: selectedStudent.id, batchId, subjectIds, feeTk, guardianPhone, guardianRelation, reason: "অ্যাডমিন কর্তৃক কোচিং ব্যাচে ভর্তি" };
+        ? {
+            action: "transfer",
+            enrollmentId: selectedEnrollment.id,
+            targetBatchId: batchId,
+            subjectIds,
+            feeTk,
+            guardianPhone: trimmedPhone || undefined,
+            guardianRelation: trimmedPhone ? guardianRelation : undefined,
+            reason: "অ্যাডমিন কর্তৃক coaching batch transfer",
+          }
+        : {
+            action: "update-subjects",
+            enrollmentId: selectedEnrollment.id,
+            subjectIds,
+            feeTk,
+            guardianPhone: trimmedPhone || undefined,
+            guardianRelation: trimmedPhone ? guardianRelation : undefined,
+            reason: "Admin Coaching Subject ও Fee Update করেছেন",
+          }
+      : {
+          action: "enroll",
+          studentId: selectedStudent.id,
+          batchId,
+          subjectIds,
+          feeTk,
+          guardianPhone: trimmedPhone || undefined,
+          guardianRelation: trimmedPhone ? guardianRelation : undefined,
+          ...(studentCode ? {} : { studentCode: draft }),
+          reason: "অ্যাডমিন কর্তৃক কোচিং ব্যাচে ভর্তি",
+        };
     const result = await apiFetch("/api/enrollments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!result.ok || !isApiSuccess(result.payload)) { setError(true); setMessage(getApiErrorMessage(result.payload, "Enrollment Save করা যায়নি।")); }
-    else { setError(false); setMessage(selectedEnrollment ? "কোচিং বিষয় ও শিক্ষার্থীর fee আপডেট হয়েছে।" : "শিক্ষার্থীকে কোচিং ব্যাচে ভর্তি করা হয়েছে।"); closeEditor(); await load(); }
+    if (!result.ok || !isApiSuccess(result.payload)) {
+      setError(true);
+      setMessage(getApiErrorMessage(result.payload, "Enrollment Save করা যায়নি।"));
+    } else {
+      setError(false);
+      setMessage(selectedEnrollment ? "কোচিং বিষয় ও শিক্ষার্থীর fee আপডেট হয়েছে।" : "শিক্ষার্থীকে কোচিং ব্যাচে ভর্তি করা হয়েছে।");
+      closeEditor();
+      await load();
+    }
     setSaving(false);
   }
 
@@ -225,13 +263,12 @@ export function CoachingEnrollmentPanel() {
   return <section className="space-y-5" aria-labelledby="coaching-enrollment-title">
     <header className="rounded-3xl bg-[linear-gradient(125deg,#0b2545,#123a6b_70%,#174d82)] p-6 text-white shadow-lg sm:p-8"><p className="text-xs font-black uppercase tracking-[.22em] text-brand-yellow">Student Enrollment</p><h1 id="coaching-enrollment-title" className="mt-2 text-3xl font-black">শিক্ষার্থী Enrollment Management</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-white/75">Website Registration ও Coaching Enrollment আলাদা। একটি Batch-এ ভর্তি করার সময় শিক্ষার্থীর বিষয় ও মাসিক Fee ঠিক করুন।</p></header>
     {message && <Alert variant={error ? "destructive" : "success"}>{message}</Alert>}
-    {selectedStudent && <div className="rounded-2xl border border-primary/20 bg-card p-3 space-y-2"><Label htmlFor="coaching-student-id">স্থায়ী Student ID</Label>{studentCodeContext && !selectedEnrollment && (<p className="text-xs text-muted">{studentCodeContext.yearRequired ? "ID দেওয়ার আগে Batch-এর নামে ৪ সংখ্যার বছর থাকতে হবে।" : studentCodeContext.lastStudentCode ? <>সর্বশেষ দেওয়া ID: <span className="font-mono font-black text-primary">{studentCodeContext.lastStudentCode}</span>{studentCodeContext.nextStudentCode && <> · প্রস্তাবিত পরের ID: <span className="font-mono font-black text-primary">{studentCodeContext.nextStudentCode}</span></>}</> : studentCodeContext.nextStudentCode ? <>প্রস্তাবিত পরের ID: <span className="font-mono font-black text-primary">{studentCodeContext.nextStudentCode}</span></> : null}</p>)}<Input id="coaching-student-id" className="font-mono font-black" readOnly={idFieldLocked || assigningStudentId || Boolean(selectedEnrollment)} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={batchId ? (assigningStudentId ? "ID দেওয়া হচ্ছে…" : studentCodeContext?.nextStudentCode ?? "৭ সংখ্যার ID লিখুন") : "ID দিতে Batch Select করুন"} inputMode="numeric" maxLength={7} />{!selectedEnrollment && !idFieldLocked && batchId && !assigningStudentId && <Button type="button" variant="outline" size="sm" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>ID Apply করুন</Button>}</div>}
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
       <div className="space-y-4"><div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[1fr_220px]"><div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="নাম, Student ID বা reference দিয়ে খুঁজুন" /></div><select className={selectClass} value={batchFilter} onChange={(event) => setBatchFilter(event.target.value)}><option value="">সব ব্যাচ</option>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select></div>
         {candidates.length > 0 && <div className="rounded-2xl border border-dashed border-primary/40 bg-secondary/30 p-3"><p className="mb-2 text-xs font-black text-primary">Website-এ নিবন্ধিত, কিন্তু কোচিংয়ে ভর্তি নয়</p>{candidates.map((student) => <button type="button" key={student.id} onClick={() => chooseStudent(student)} className="flex w-full items-center justify-between rounded-xl p-3 text-left hover:bg-white"><span><b>{student.name}</b><small className="ml-2 text-muted">{student.studentCode ? `ID ${student.studentCode}` : "ID ভর্তি হলে স্বয়ংক্রিয় হবে"}{student.reference && ` • #${student.reference}`}</small></span><span className="inline-flex items-center gap-1 text-xs font-bold text-primary"><UserPlus className="size-4" /> ভর্তি করুন</span></button>)}</div>}
         {loading ? <div className="h-56 animate-pulse rounded-3xl bg-secondary" /> : visibleEnrollments.length === 0 ? <div className="rounded-3xl border border-dashed border-border p-10 text-center"><UsersRound className="mx-auto size-9 text-muted" /><p className="mt-3 font-bold text-primary">কোনো ভর্তি পাওয়া যায়নি</p></div> : <div className="space-y-2">{visibleEnrollments.map((item) => <button type="button" key={item.id} onClick={() => chooseEnrollment(item)} className={cn("w-full rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:border-primary/50", selectedEnrollment?.id === item.id ? "border-primary ring-2 ring-primary/10" : "border-border")}><p className="font-black text-primary">{item.student.name}</p><p className="text-xs text-muted">{item.student.studentCode ? `ID ${item.student.studentCode} • ` : ""}{item.student.reference ? `#${item.student.reference} • ` : ""}{item.batch?.name}</p><div className="mt-2 flex flex-wrap gap-1.5">{item.subjects.map((subject) => <span key={subject.id} className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-bold text-primary">{subject.nameBn || subject.name}</span>)}</div></button>)}</div>}
       </div>
-      <aside className="h-fit rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-md)] xl:sticky xl:top-24">{!selectedStudent ? <div className="grid min-h-72 place-items-center text-center"><div><UsersRound className="mx-auto size-10 text-muted" /><p className="mt-3 font-black text-primary">একজন শিক্ষার্থী Select করুন</p><p className="mt-1 text-sm text-muted">নতুন Enrollment বা বর্তমান বিষয় পরিবর্তন করতে বাম পাশ থেকে Select করুন।</p></div></div> : <form onSubmit={save} className="space-y-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">{selectedEnrollment ? "Enrollment Update" : "নতুন Enrollment"}</p><h2 className="mt-1 text-xl font-black text-primary">{selectedStudent.name}</h2></div><button type="button" aria-label="Close" onClick={closeEditor}><X className="size-5 text-muted" /></button></div><div className="space-y-2"><Label htmlFor="coaching-batch">Batch</Label><select id="coaching-batch" className={selectClass} required value={batchId} onChange={(event) => { setBatchId(event.target.value); setSubjects([]); setSubjectIds([]); }}><option value="">Batch Select করুন</option>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select>{selectedEnrollment && batchId !== selectedEnrollment.batchId && <p className="text-xs font-bold text-amber-700">Save করলে আগের Enrollment রেখে নতুন Batch-এ Transfer হবে।</p>}</div><fieldset><legend className="text-sm font-bold text-primary">Coaching-এর বিষয়</legend>{batchId && subjects.length === 0 ? <p className="mt-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">এই Batch-এর Subject Configuration নেই। আগে Academic Setup থেকে Configure করুন।</p> : <div className="mt-2 space-y-2">{subjects.map((subject) => { const checked = subjectIds.includes(subject.id); return <button type="button" key={subject.id} aria-pressed={checked} onClick={() => setSubjectIds((current) => checked ? current.filter((id) => id !== subject.id) : [...current, subject.id])} className={cn("flex w-full items-center rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className="flex items-center gap-2"><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><b className="text-sm text-primary">{subject.nameBn || subject.name}</b></span></button>; })}</div>}</fieldset><div className="space-y-2"><Label htmlFor="student-fee">এই শিক্ষার্থীর মাসিক Fee (৳)</Label><Input id="student-fee" type="number" min={0} required value={feeTk} onChange={(event) => setFeeTk(Number(event.target.value))} /></div><div className="grid gap-3 sm:grid-cols-[1fr_145px]"><div className="space-y-2"><Label htmlFor="guardian-phone">Guardian-এর ফোন</Label><Input id="guardian-phone" required inputMode="tel" pattern="\+?[0-9]{10,15}" value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value.replace(/[^+0-9]/g, "").slice(0, 16))} placeholder="01XXXXXXXXX" /></div><div className="space-y-2"><Label htmlFor="guardian-relation">সম্পর্ক</Label><select id="guardian-relation" required className={selectClass} value={guardianRelation} onChange={(event) => setGuardianRelation(event.target.value)}><option value="father">বাবা</option><option value="mother">মা</option><option value="brother">ভাই</option><option value="sister">বোন</option><option value="uncle">চাচা/মামা</option><option value="aunt">চাচি/মামি</option><option value="other">অন্যান্য</option></select></div></div><Button className="w-full" size="lg" disabled={saving || !subjectIds.length || !/^\+?[0-9]{10,15}$/.test(guardianPhone.trim())}>{saving ? "Save হচ্ছে…" : "Enrollment Save করুন"}</Button>{selectedEnrollment && <Button type="button" variant="outline" className="w-full" disabled={saving} onClick={() => void withdraw()}>Coaching থেকে Remove করুন</Button>}</form>}</aside>
+      <aside className="h-fit rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-md)] xl:sticky xl:top-24">{!selectedStudent ? <div className="grid min-h-72 place-items-center text-center"><div><UsersRound className="mx-auto size-10 text-muted" /><p className="mt-3 font-black text-primary">একজন শিক্ষার্থী Select করুন</p><p className="mt-1 text-sm text-muted">নতুন Enrollment বা বর্তমান বিষয় পরিবর্তন করতে বাম পাশ থেকে Select করুন।</p></div></div> : <form onSubmit={save} className="space-y-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-accent-foreground">{selectedEnrollment ? "Enrollment Update" : "নতুন Enrollment"}</p><h2 className="mt-1 text-xl font-black text-primary">{selectedStudent.name}</h2></div><button type="button" aria-label="Close" onClick={closeEditor}><X className="size-5 text-muted" /></button></div><div className="space-y-2"><Label htmlFor="coaching-batch">Batch</Label><select id="coaching-batch" className={selectClass} required value={batchId} onChange={(event) => { const nextBatchId = event.target.value; setBatchId(nextBatchId); setSubjects([]); setSubjectIds([]); if (!selectedEnrollment) { const selectedB = batches.find((batch) => batch.id === nextBatchId); if (selectedB) setFeeTk(selectedB.defaultFeeTk); } }}><option value="">Batch Select করুন</option>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select>{selectedEnrollment && batchId !== selectedEnrollment.batchId && <p className="text-xs font-bold text-amber-700">Save করলে আগের Enrollment রেখে নতুন Batch-এ Transfer হবে।</p>}</div><div className="space-y-2 rounded-2xl border border-primary/20 bg-secondary/30 p-3"><Label htmlFor="coaching-student-id">স্থায়ী Student ID</Label>{studentCodeContext && !selectedEnrollment && (<p className="text-xs text-muted">{studentCodeContext.yearRequired ? "ID দেওয়ার আগে Batch-এর নামে ৪ সংখ্যার বছর থাকতে হবে।" : studentCodeContext.lastStudentCode ? <>সর্বশেষ দেওয়া ID: <span className="font-mono font-black text-primary">{studentCodeContext.lastStudentCode}</span>{studentCodeContext.nextStudentCode && <> · প্রস্তাবিত পরের ID: <span className="font-mono font-black text-primary">{studentCodeContext.nextStudentCode}</span></>}</> : studentCodeContext.nextStudentCode ? <>প্রস্তাবিত পরের ID: <span className="font-mono font-black text-primary">{studentCodeContext.nextStudentCode}</span></> : null}</p>)}<Input id="coaching-student-id" className="font-mono font-black" readOnly={idFieldLocked || assigningStudentId || Boolean(selectedEnrollment)} value={studentCodeDraft} onChange={(event) => setStudentCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder={batchId ? (assigningStudentId ? "ID দেওয়া হচ্ছে…" : studentCodeContext?.nextStudentCode ?? "৭ সংখ্যার ID লিখুন") : "ID দিতে Batch Select করুন"} inputMode="numeric" maxLength={7} />{!selectedEnrollment && !idFieldLocked && batchId && !assigningStudentId && <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void applyManualStudentCode()} disabled={!isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null)}>ID Apply করুন</Button>}</div><fieldset><legend className="text-sm font-bold text-primary">Coaching-এর বিষয়</legend>{batchId && subjects.length === 0 ? <p className="mt-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">এই Batch-এর Subject Configuration নেই। আগে Academic Setup থেকে Configure করুন।</p> : <div className="mt-2 space-y-2">{subjects.map((subject) => { const checked = subjectIds.includes(subject.id); return <button type="button" key={subject.id} aria-pressed={checked} onClick={() => setSubjectIds((current) => checked ? current.filter((id) => id !== subject.id) : [...current, subject.id])} className={cn("flex w-full items-center rounded-xl border p-3 text-left", checked ? "border-primary bg-secondary" : "border-border")}><span className="flex items-center gap-2"><span className={cn("grid size-5 place-items-center rounded border", checked ? "border-primary bg-primary text-white" : "border-border")}>{checked && <Check className="size-3.5" />}</span><b className="text-sm text-primary">{subject.nameBn || subject.name}</b></span></button>; })}</div>}</fieldset><div className="space-y-2"><Label htmlFor="student-fee">এই শিক্ষার্থীর মাসিক Fee (৳)</Label><Input id="student-fee" type="number" min={0} required value={feeTk} onChange={(event) => setFeeTk(Number(event.target.value))} /></div><div className="grid gap-3 sm:grid-cols-[1fr_145px]"><div className="space-y-2"><Label htmlFor="guardian-phone">Guardian-এর ফোন (Optional)</Label><Input id="guardian-phone" inputMode="tel" value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value.replace(/[^+0-9]/g, "").slice(0, 16))} placeholder="016339****2 (Optional)" /></div><div className="space-y-2"><Label htmlFor="guardian-relation">সম্পর্ক</Label><select id="guardian-relation" className={selectClass} value={guardianRelation} onChange={(event) => setGuardianRelation(event.target.value)}><option value="father">বাবা</option><option value="mother">মা</option><option value="brother">ভাই</option><option value="sister">বোন</option><option value="uncle">চাচা/মামা</option><option value="aunt">চাচি/মামি</option><option value="other">অন্যান্য</option></select></div></div><Button className="w-full" size="lg" type="submit" disabled={saving || assigningStudentId || !batchId || !subjectIds.length || (Boolean(guardianPhone.trim()) && !/^\+?[0-9]{10,15}$/.test(guardianPhone.trim())) || (!selectedEnrollment && !selectedStudent.studentCode && !isValidStudentCodeDraft(studentCodeDraft.trim(), studentCodeContext?.prefix ?? null))}>{saving ? "Save হচ্ছে…" : "Enrollment Save করুন"}</Button>{selectedEnrollment && <Button type="button" variant="outline" className="w-full" disabled={saving} onClick={() => void withdraw()}>Coaching থেকে Remove করুন</Button>}</form>}</aside>
     </div>
   </section>;
 }

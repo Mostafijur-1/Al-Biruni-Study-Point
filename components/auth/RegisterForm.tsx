@@ -184,7 +184,7 @@ function StudentRegisterForm({ auth,
             <Input
               id="phone"
               {...register("phone")}
-              placeholder="তোমার ফোন নম্বর লিখো"
+              placeholder="016339****2"
             />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
@@ -314,7 +314,7 @@ function TeacherRegisterForm({ auth }: Omit<RegisterFormProps, "kind">) {
             <Input
               id="phone"
               {...register("phone")}
-              placeholder={"যেমন: ০১XXXXXXXXX"}
+              placeholder="016339****2"
               required
               autoComplete="tel"
             />

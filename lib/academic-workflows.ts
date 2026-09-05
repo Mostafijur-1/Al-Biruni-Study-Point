@@ -51,8 +51,8 @@ type EnrollStudentInput = WorkflowAuditContext & {
   batchId: string;
   studentId: string;
   effectiveFrom: Date;
-  guardianPhone: string;
-  guardianRelation: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
+  guardianPhone?: string;
+  guardianRelation?: "father" | "mother" | "brother" | "sister" | "uncle" | "aunt" | "other";
 };
 
 type UpdateBatchInput = WorkflowAuditContext & {
@@ -397,8 +397,8 @@ export async function enrollStudent(input: EnrollStudentInput) {
           studentId: student._id,
           status: "active",
           effectiveFrom: input.effectiveFrom,
-          guardianPhone: input.guardianPhone,
-          guardianRelation: input.guardianRelation,
+          guardianPhone: input.guardianPhone || undefined,
+          guardianRelation: input.guardianRelation || undefined,
           createdBy: input.actor.id,
         },
       ],
