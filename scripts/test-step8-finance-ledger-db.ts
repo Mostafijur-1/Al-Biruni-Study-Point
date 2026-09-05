@@ -4,7 +4,6 @@ import { NextRequest } from "next/server.js";
 
 import type { RequestContext } from "../lib/application/request-context.ts";
 import { AuditLog } from "../lib/db/models/AuditLog.ts";
-import { Branch } from "../lib/db/models/Branch.ts";
 import { CashReceipt, CashTransaction, FeePlan, FinanceInvoice, LedgerAdjustment, LedgerExpense, PaymentAllocation, StudentFeeAssignment } from "../lib/db/models/FinanceLedger.ts";
 import { applyFinanceLedgerBackfill, inspectFinanceLedgerBackfill } from "../lib/db/finance-ledger-backfill.ts";
 import { appendLedgerAdjustment, assignStudentFeePlan, ensureLedgerExpense, ensureLedgerInvoice, invoicePosition, recordCashTransaction, reverseCashTransaction } from "../lib/finance/ledger-service.ts";
@@ -15,11 +14,10 @@ if (!uri) throw new Error("MONGODB_URI is required.");
 await mongoose.connect(uri, { dbName: "absp", autoIndex: true });
 try {
   const organizationId = new mongoose.Types.ObjectId();
-  const branch = await Branch.create({ organizationId, name: "Main", code: "MAIN", status: "active" });
   const actorId = new mongoose.Types.ObjectId();
   const studentId = new mongoose.Types.ObjectId();
   const student2Id = new mongoose.Types.ObjectId();
-  const scope = { organizationId: String(organizationId), branchId: String(branch._id) };
+  const scope = { organizationId: String(organizationId) };
   const context: RequestContext = { actor: { id: String(actorId), name: "Cashier", role: "admin" }, request: new NextRequest("http://localhost/api/admin/finance", { headers: { "x-request-id": "step8-test" } }), requestId: "step8-test", scope };
 
   const invoice = await ensureLedgerInvoice(context, { ...scope, counterpartyId: String(studentId), counterpartyRole: "student", kind: "student-fee", period: "2026-08", amountTk: 1000, description: "August fee", issuedAt: new Date("2026-08-01") });

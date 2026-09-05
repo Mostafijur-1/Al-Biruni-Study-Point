@@ -4,7 +4,7 @@ import { canonicalScopeFilter } from "@/lib/application/scope-policy";
 import type { RequestContext } from "@/lib/application/request-context";
 import { Batch } from "@/lib/db/models/Batch";
 import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
-import { Branch } from "@/lib/db/models/Branch";
+import { Organization } from "@/lib/db/models/Organization";
 import { MonthlyExpense } from "@/lib/db/models/MonthlyExpense";
 import { MonthlyPayment } from "@/lib/db/models/MonthlyPayment";
 import { PaymentProfile } from "@/lib/db/models/PaymentProfile";
@@ -55,13 +55,9 @@ export async function isFinanceUserEligible(context: RequestContext, userId: str
     : Boolean(await User.exists({ _id: userId, isAbspMember: true }));
 }
 
-export async function resolveFinanceLedgerScope(context: RequestContext, input: { organizationId?: string; branchId?: string }) {
-  if (input.organizationId && input.branchId) {
-    const branch = await Branch.findOne({ _id: input.branchId, organizationId: input.organizationId, status: "active" }).select("organizationId").lean();
-    return branch ? { organizationId: String(branch.organizationId), branchId: input.branchId } : null;
-  }
-  const branches = await Branch.find({ status: "active", ...(input.organizationId ? { organizationId: input.organizationId } : {}) }).select("organizationId").limit(2).lean();
-  return branches.length === 1 ? { organizationId: String(branches[0].organizationId), branchId: String(branches[0]._id) } : null;
+export async function resolveFinanceLedgerScope(context: RequestContext, input: { organizationId?: string }) {
+  const organizations = await Organization.find({ status: "active", ...(input.organizationId ? { _id: input.organizationId } : {}) }).select("_id").limit(2).lean();
+  return organizations.length === 1 ? { organizationId: String(organizations[0]._id) } : null;
 }
 
 export async function upsertFinanceExpense(context: RequestContext, input: { month: string; category: "room-rent" | "electricity"; amountTk: number; status: "due" | "clear"; note?: string }) {

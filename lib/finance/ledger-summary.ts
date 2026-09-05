@@ -1,7 +1,7 @@
 import { CashTransaction, FinanceInvoice, LedgerAdjustment, PaymentAllocation } from "../db/models/FinanceLedger.ts";
 
-export async function rebuildFinanceMonthSummary(input: { organizationId: string; branchId: string; period: string }) {
-  const scope = { organizationId: input.organizationId, branchId: input.branchId };
+export async function rebuildFinanceMonthSummary(input: { organizationId: string; period: string }) {
+  const scope = { organizationId: input.organizationId };
   const invoices = await FinanceInvoice.find({ ...scope, period: input.period }).limit(10_000).lean();
   const invoiceIds = invoices.map((row) => row._id);
   const [adjustments, allocations] = await Promise.all([

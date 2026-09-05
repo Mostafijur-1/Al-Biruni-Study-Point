@@ -5,7 +5,7 @@ import type { RequestContext } from "../application/request-context.ts";
 import { writeAuditLog } from "../audit/write-audit-log.ts";
 import { CashReceipt, CashTransaction, FeePlan, FinanceInvoice, FinanceInvoiceLine, LedgerAdjustment, LedgerExpense, PaymentAllocation, StudentFeeAssignment, type IFinanceInvoice, type LedgerCounterpartyRole, type LedgerInvoiceKind } from "../db/models/FinanceLedger.ts";
 
-type Scope = { organizationId: string; branchId: string };
+type Scope = { organizationId: string };
 type InvoiceInput = Scope & { counterpartyId: string; counterpartyRole: LedgerCounterpartyRole; kind: LedgerInvoiceKind; period: string; amountTk: number; description: string; issuedAt: Date; dueAt?: Date; legacySource?: { collection: string; id: string } };
 
 function requireWholeTaka(value: number, field: string, allowZero = false) {
@@ -25,16 +25,16 @@ export async function ensureLedgerInvoice(context: RequestContext, input: Invoic
       return output;
     } finally { await ownedSession.endSession(); }
   }
-  const filter = { organizationId: input.organizationId, branchId: input.branchId, counterpartyId: input.counterpartyId, period: input.period, kind: input.kind };
+  const filter = { organizationId: input.organizationId, counterpartyId: input.counterpartyId, period: input.period, kind: input.kind };
   const existing = await FinanceInvoice.findOne(filter).session(session);
   if (existing) {
     if (existing.totalTk !== input.amountTk) throw new Error("An immutable invoice already exists with a different amount; append an adjustment.");
     return existing;
   }
   try {
-    const [invoice] = await FinanceInvoice.create([{ organizationId: input.organizationId, branchId: input.branchId, counterpartyId: input.counterpartyId, counterpartyRole: input.counterpartyRole, kind: input.kind, period: input.period, invoiceNumber: invoiceNumber(input), currency: "BDT", totalTk: input.amountTk, issuedAt: input.issuedAt, dueAt: input.dueAt, createdBy: context.actor.id, legacySource: input.legacySource }], { session });
-    await FinanceInvoiceLine.create([{ organizationId: input.organizationId, branchId: input.branchId, invoiceId: invoice._id, lineNo: 1, description: input.description, quantity: 1, unitAmountTk: input.amountTk, amountTk: input.amountTk, createdBy: context.actor.id }], { session });
-    await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, branchId: input.branchId, action: "finance.invoice-issued", resourceType: "FinanceInvoice", resourceId: invoice._id, reason: "Finance invoice issued", after: { invoiceNumber: invoice.invoiceNumber, kind: invoice.kind, period: invoice.period, totalTk: invoice.totalTk }, session });
+    const [invoice] = await FinanceInvoice.create([{ organizationId: input.organizationId, counterpartyId: input.counterpartyId, counterpartyRole: input.counterpartyRole, kind: input.kind, period: input.period, invoiceNumber: invoiceNumber(input), currency: "BDT", totalTk: input.amountTk, issuedAt: input.issuedAt, dueAt: input.dueAt, createdBy: context.actor.id, legacySource: input.legacySource }], { session });
+    await FinanceInvoiceLine.create([{ organizationId: input.organizationId, invoiceId: invoice._id, lineNo: 1, description: input.description, quantity: 1, unitAmountTk: input.amountTk, amountTk: input.amountTk, createdBy: context.actor.id }], { session });
+    await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, action: "finance.invoice-issued", resourceType: "FinanceInvoice", resourceId: invoice._id, reason: "Finance invoice issued", after: { invoiceNumber: invoice.invoiceNumber, kind: invoice.kind, period: invoice.period, totalTk: invoice.totalTk }, session });
     return invoice;
   } catch (error) {
     if (!isDuplicate(error)) throw error;
@@ -70,7 +70,7 @@ export async function recordCashTransaction(context: RequestContext, input: Scop
   requireWholeTaka(allocationTk, "Allocation", true);
   if (allocationTk > input.amountTk) throw new Error("Allocation cannot exceed the cash amount.");
   const payloadHash = idempotencyPayloadHash(input);
-  const identity = { organizationId: input.organizationId, branchId: input.branchId, idempotencyKey: input.idempotencyKey };
+  const identity = { organizationId: input.organizationId, idempotencyKey: input.idempotencyKey };
   const existing = await CashTransaction.findOne(identity).lean();
   if (existing) {
     if (existing.payloadHash !== payloadHash) throw new Error("Cash idempotency key was reused with different details.");
@@ -82,16 +82,16 @@ export async function recordCashTransaction(context: RequestContext, input: Scop
     await session.withTransaction(async () => {
       if (input.invoiceId) {
         const position = await invoicePosition(new Types.ObjectId(input.invoiceId), session);
-        if (String(position.invoice.organizationId) !== input.organizationId || String(position.invoice.branchId) !== input.branchId || String(position.invoice.counterpartyId) !== input.counterpartyId) throw new Error("Cash allocation is outside the invoice scope or counterparty.");
+        if (String(position.invoice.organizationId) !== input.organizationId || String(position.invoice.counterpartyId) !== input.counterpartyId) throw new Error("Cash allocation is outside the organization or counterparty.");
         const expectedDirection = position.invoice.kind === "student-fee" ? "in" : "out";
         const transactionType = input.type ?? "payment";
         if ((transactionType === "payment" && input.direction !== expectedDirection) || (transactionType !== "payment" && input.direction === expectedDirection)) throw new Error("Cash direction is inconsistent with the invoice and transaction type.");
         if (transactionType === "payment" && allocationTk > Math.max(0, position.balanceTk)) throw new Error("Allocation exceeds the current invoice balance; leave the remainder as unapplied cash.");
       }
       const [transaction] = await CashTransaction.create([{ ...input, type: input.type ?? "payment", method: "cash", recordedBy: context.actor.id, payloadHash }], { session });
-      if (input.invoiceId && allocationTk) await PaymentAllocation.create([{ organizationId: input.organizationId, branchId: input.branchId, transactionId: transaction._id, invoiceId: input.invoiceId, amountTk: allocationTk, allocatedBy: context.actor.id }], { session });
-      const [receipt] = await CashReceipt.create([{ organizationId: input.organizationId, branchId: input.branchId, transactionId: transaction._id, receiptNumber: `CASH-${input.occurredAt.toISOString().slice(0, 10).replaceAll("-", "")}-${String(transaction._id).toUpperCase()}`, issuedAt: input.occurredAt, issuedBy: context.actor.id }], { session });
-      await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, branchId: input.branchId, action: "finance.cash-recorded", resourceType: "CashTransaction", resourceId: transaction._id, reason: input.note ?? "Cash transaction recorded", after: { direction: input.direction, type: input.type ?? "payment", amountTk: input.amountTk, allocationTk, receiptNumber: receipt.receiptNumber }, session });
+      if (input.invoiceId && allocationTk) await PaymentAllocation.create([{ organizationId: input.organizationId, transactionId: transaction._id, invoiceId: input.invoiceId, amountTk: allocationTk, allocatedBy: context.actor.id }], { session });
+      const [receipt] = await CashReceipt.create([{ organizationId: input.organizationId, transactionId: transaction._id, receiptNumber: `CASH-${input.occurredAt.toISOString().slice(0, 10).replaceAll("-", "")}-${String(transaction._id).toUpperCase()}`, issuedAt: input.occurredAt, issuedBy: context.actor.id }], { session });
+      await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, action: "finance.cash-recorded", resourceType: "CashTransaction", resourceId: transaction._id, reason: input.note ?? "Cash transaction recorded", after: { direction: input.direction, type: input.type ?? "payment", amountTk: input.amountTk, allocationTk, receiptNumber: receipt.receiptNumber }, session });
       output = { transaction, receipt, replayed: false, unappliedTk: input.amountTk - allocationTk };
     });
     if (!output) throw new Error("Cash transaction did not complete.");
@@ -112,19 +112,19 @@ async function loadTransactionOutcome(transactionId: Types.ObjectId) {
 }
 
 export async function reverseCashTransaction(context: RequestContext, input: Scope & { transactionId: string; idempotencyKey: string; occurredAt: Date; reason: string }) {
-  const original = await CashTransaction.findOne({ _id: input.transactionId, organizationId: input.organizationId, branchId: input.branchId }).lean();
+  const original = await CashTransaction.findOne({ _id: input.transactionId, organizationId: input.organizationId }).lean();
   if (!original) throw new Error("Cash transaction not found.");
   if (original.type === "reversal") throw new Error("A reversal cannot be reversed directly.");
   if (await CashTransaction.exists({ reversesTransactionId: original._id })) throw new Error("Cash transaction has already been reversed.");
   const allocations = await PaymentAllocation.find({ transactionId: original._id }).lean();
   if (allocations.length > 1) throw new Error("Multiple-allocation reversal is not supported by this workflow.");
-  return recordCashTransaction(context, { organizationId: input.organizationId, branchId: input.branchId, idempotencyKey: input.idempotencyKey, counterpartyId: String(original.counterpartyId), counterpartyRole: original.counterpartyRole, direction: original.direction === "in" ? "out" : "in", type: "reversal", amountTk: original.amountTk, occurredAt: input.occurredAt, invoiceId: allocations[0] ? String(allocations[0].invoiceId) : undefined, allocationTk: allocations[0]?.amountTk, reversesTransactionId: String(original._id), note: input.reason });
+  return recordCashTransaction(context, { organizationId: input.organizationId, idempotencyKey: input.idempotencyKey, counterpartyId: String(original.counterpartyId), counterpartyRole: original.counterpartyRole, direction: original.direction === "in" ? "out" : "in", type: "reversal", amountTk: original.amountTk, occurredAt: input.occurredAt, invoiceId: allocations[0] ? String(allocations[0].invoiceId) : undefined, allocationTk: allocations[0]?.amountTk, reversesTransactionId: String(original._id), note: input.reason });
 }
 
 export async function appendLedgerAdjustment(context: RequestContext, input: Scope & { invoiceId: string; idempotencyKey: string; type: "discount" | "charge" | "correction"; amountTk: number; effect: "debit" | "credit"; reason: string; occurredAt: Date }) {
   requireWholeTaka(input.amountTk, "Adjustment amount");
   const payloadHash = idempotencyPayloadHash(input);
-  const identity = { organizationId: input.organizationId, branchId: input.branchId, idempotencyKey: input.idempotencyKey };
+  const identity = { organizationId: input.organizationId, idempotencyKey: input.idempotencyKey };
   const existing = await LedgerAdjustment.findOne(identity).lean();
   if (existing) {
     if (existing.payloadHash !== payloadHash) throw new Error("Adjustment idempotency key was reused with different details.");
@@ -134,11 +134,11 @@ export async function appendLedgerAdjustment(context: RequestContext, input: Sco
   try {
     let adjustmentId: Types.ObjectId | null = null;
     await session.withTransaction(async () => {
-      const invoice = await FinanceInvoice.findOne({ _id: input.invoiceId, organizationId: input.organizationId, branchId: input.branchId }).session(session).lean();
+      const invoice = await FinanceInvoice.findOne({ _id: input.invoiceId, organizationId: input.organizationId }).session(session).lean();
       if (!invoice) throw new Error("Finance invoice not found.");
       const [adjustment] = await LedgerAdjustment.create([{ ...input, recordedBy: context.actor.id, payloadHash }], { session });
       adjustmentId = adjustment._id;
-      await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, branchId: input.branchId, action: "finance.adjustment-recorded", resourceType: "LedgerAdjustment", resourceId: adjustment._id, reason: input.reason, after: { invoiceId: input.invoiceId, type: input.type, amountTk: input.amountTk, effect: input.effect }, session });
+      await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, action: "finance.adjustment-recorded", resourceType: "LedgerAdjustment", resourceId: adjustment._id, reason: input.reason, after: { invoiceId: input.invoiceId, type: input.type, amountTk: input.amountTk, effect: input.effect }, session });
     });
     if (!adjustmentId) throw new Error("Ledger adjustment did not complete.");
     const adjustment = await LedgerAdjustment.findById(adjustmentId);
@@ -153,19 +153,19 @@ export async function assignStudentFeePlan(context: RequestContext, input: Scope
   try {
     let output: { feePlanId: Types.ObjectId; assignmentId: Types.ObjectId; replayed: boolean } | null = null;
     await session.withTransaction(async () => {
-      let plan = await FeePlan.findOne({ organizationId: input.organizationId, branchId: input.branchId, code: input.code }).session(session);
+      let plan = await FeePlan.findOne({ organizationId: input.organizationId, code: input.code }).session(session);
       if (plan && (plan.amountTk !== input.amountTk || plan.name !== input.name)) throw new Error("Fee-plan code already exists with different terms.");
-      if (!plan) plan = await FeePlan.create([{ organizationId: input.organizationId, branchId: input.branchId, code: input.code, name: input.name, amountTk: input.amountTk, billingCycle: "monthly", activeFrom: input.effectiveFrom, status: "active", createdBy: context.actor.id }], { session }).then((rows) => rows[0]);
+      if (!plan) plan = await FeePlan.create([{ organizationId: input.organizationId, code: input.code, name: input.name, amountTk: input.amountTk, billingCycle: "monthly", activeFrom: input.effectiveFrom, status: "active", createdBy: context.actor.id }], { session }).then((rows) => rows[0]);
       if (!plan) throw new Error("Fee plan could not be created.");
-      const existing = await StudentFeeAssignment.findOne({ organizationId: input.organizationId, branchId: input.branchId, studentId: input.studentId, effectiveFrom: input.effectiveFrom }).session(session);
+      const existing = await StudentFeeAssignment.findOne({ organizationId: input.organizationId, studentId: input.studentId, effectiveFrom: input.effectiveFrom }).session(session);
       if (existing) {
         if (String(existing.feePlanId) !== String(plan._id) || existing.amountTk !== input.amountTk) throw new Error("A different fee assignment already starts in this period.");
         output = { feePlanId: plan._id, assignmentId: existing._id, replayed: true }; return;
       }
       const previousMonth = new Date(`${input.effectiveFrom}-01T00:00:00.000Z`); previousMonth.setUTCDate(0);
-      await StudentFeeAssignment.updateMany({ organizationId: input.organizationId, branchId: input.branchId, studentId: input.studentId, status: "active", effectiveFrom: { $lt: input.effectiveFrom } }, { $set: { status: "ended", effectiveTo: previousMonth.toISOString().slice(0, 7) } }, { session });
-      const [assignment] = await StudentFeeAssignment.create([{ organizationId: input.organizationId, branchId: input.branchId, studentId: input.studentId, feePlanId: plan._id, amountTk: input.amountTk, effectiveFrom: input.effectiveFrom, status: "active", assignedBy: context.actor.id }], { session });
-      await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, branchId: input.branchId, action: "finance.fee-plan-assigned", resourceType: "StudentFeeAssignment", resourceId: assignment._id, reason: "Student fee plan assigned", after: { studentId: input.studentId, feePlanId: String(plan._id), amountTk: input.amountTk, effectiveFrom: input.effectiveFrom }, session });
+      await StudentFeeAssignment.updateMany({ organizationId: input.organizationId, studentId: input.studentId, status: "active", effectiveFrom: { $lt: input.effectiveFrom } }, { $set: { status: "ended", effectiveTo: previousMonth.toISOString().slice(0, 7) } }, { session });
+      const [assignment] = await StudentFeeAssignment.create([{ organizationId: input.organizationId, studentId: input.studentId, feePlanId: plan._id, amountTk: input.amountTk, effectiveFrom: input.effectiveFrom, status: "active", assignedBy: context.actor.id }], { session });
+      await writeAuditLog({ request: context.request, actor: context.actor, organizationId: input.organizationId, action: "finance.fee-plan-assigned", resourceType: "StudentFeeAssignment", resourceId: assignment._id, reason: "Student fee plan assigned", after: { studentId: input.studentId, feePlanId: String(plan._id), amountTk: input.amountTk, effectiveFrom: input.effectiveFrom }, session });
       output = { feePlanId: plan._id, assignmentId: assignment._id, replayed: false };
     });
     if (!output) throw new Error("Fee assignment did not complete.");

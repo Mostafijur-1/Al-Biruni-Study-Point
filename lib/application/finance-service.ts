@@ -66,17 +66,17 @@ export async function mutateFinance(context: RequestContext, input: FinanceMutat
   return runIdempotentMutation(context, { workflow: `finance.${input.action}`, targetId, payload: input }, async () => {
     if (input.action === "assign-fee-plan") {
       const scope = await resolveFinanceLedgerScope(context, input);
-      if (!scope) throw new DomainError("Select one active organization and branch before assigning a fee plan.", 409);
+      if (!scope) throw new DomainError("Configure the active organization before assigning a fee plan.", 409);
       const user = await findFinanceUser(context, input.studentId);
-      if (!user || user.role !== "student" || !(await isFinanceUserEligible({ ...context, scope }, input.studentId, "student"))) throw new DomainError("Active student not found in this branch.", 404);
+      if (!user || user.role !== "student" || !(await isFinanceUserEligible({ ...context, scope }, input.studentId, "student"))) throw new DomainError("Active student not found in this organization.", 404);
       return assignStudentFeePlan(context, { ...scope, studentId: input.studentId, code: input.code, name: input.name, amountTk: input.amountTk, effectiveFrom: input.effectiveFrom });
     }
     if (input.action === "issue-invoice") {
       const scope = await resolveFinanceLedgerScope(context, input);
-      if (!scope) throw new DomainError("Select one active organization and branch before issuing an invoice.", 409);
+      if (!scope) throw new DomainError("Configure the active organization before issuing an invoice.", 409);
       if (input.role !== "vendor") {
         const user = await findFinanceUser(context, input.userId);
-        if (!user || user.role !== input.role || !(await isFinanceUserEligible({ ...context, scope }, input.userId, input.role))) throw new DomainError("Active finance counterparty not found in this branch.", 404);
+        if (!user || user.role !== input.role || !(await isFinanceUserEligible({ ...context, scope }, input.userId, input.role))) throw new DomainError("Active finance counterparty not found in this organization.", 404);
       }
       const validShape = input.role === "student" ? input.kind === "student-fee" : input.role === "teacher" ? input.kind === "teacher-payroll" : input.kind === "operating-expense";
       if (!validShape) throw new DomainError("Role and invoice kind are inconsistent.", 400, "VALIDATION_ERROR");
@@ -89,11 +89,11 @@ export async function mutateFinance(context: RequestContext, input: FinanceMutat
     }
     if (input.action === "record-cash") {
       const scope = await resolveFinanceLedgerScope(context, input);
-      if (!scope) throw new DomainError("Select one active organization and branch before recording cash.", 409);
+      if (!scope) throw new DomainError("Configure the active organization before recording cash.", 409);
       if (input.role !== "vendor") {
         const user = await findFinanceUser(context, input.userId);
         if (!user || user.role !== input.role) throw new DomainError("Finance counterparty not found.", 404);
-        if (!(await isFinanceUserEligible({ ...context, scope }, input.userId, input.role))) throw new DomainError("Finance counterparty is not active in this branch.", 403);
+        if (!(await isFinanceUserEligible({ ...context, scope }, input.userId, input.role))) throw new DomainError("Finance counterparty is not active in this organization.", 403);
       }
       const validCashShape = input.role === "student" ? input.kind === "student-fee" && input.direction === "in"
         : input.role === "teacher" ? input.kind === "teacher-payroll" && input.direction === "out"
@@ -109,13 +109,13 @@ export async function mutateFinance(context: RequestContext, input: FinanceMutat
     }
     if (input.action === "adjust-invoice") {
       const scope = await resolveFinanceLedgerScope(context, input);
-      if (!scope) throw new DomainError("Select one active organization and branch before adjusting an invoice.", 409);
+      if (!scope) throw new DomainError("Configure the active organization before adjusting an invoice.", 409);
       const result = await appendLedgerAdjustment(context, { ...scope, invoiceId: input.invoiceId, idempotencyKey: input.idempotencyKey, type: input.type, amountTk: input.amountTk, effect: input.effect, reason: input.reason, occurredAt: input.occurredAt });
       return { adjustmentId: String(result.adjustment._id), replayed: result.replayed };
     }
     if (input.action === "reverse-cash") {
       const scope = await resolveFinanceLedgerScope(context, input);
-      if (!scope) throw new DomainError("Select one active organization and branch before reversing cash.", 409);
+      if (!scope) throw new DomainError("Configure the active organization before reversing cash.", 409);
       const result = await reverseCashTransaction(context, { ...scope, transactionId: input.transactionId, idempotencyKey: input.idempotencyKey, occurredAt: input.occurredAt, reason: input.reason });
       return { transactionId: String(result.transaction._id), receiptNumber: result.receipt?.receiptNumber, replayed: result.replayed };
     }

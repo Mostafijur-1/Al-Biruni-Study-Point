@@ -30,8 +30,9 @@ export async function readProjection(input: Scope & { projectionType: ReportingP
   return ReportingProjection.findOne(input).lean();
 }
 
-export async function readFinanceMonthProjection(input: Scope & { period: string }): Promise<FinanceMonthSummary | null> {
-  const projection = await readProjection({ ...input, projectionType: "finance-monthly", subjectKey: "scope", periodKey: input.period });
+export async function readFinanceMonthProjection(input: { organizationId: string; period: string }): Promise<FinanceMonthSummary | null> {
+  if (process.env.REPORTING_PROJECTIONS_ENABLED?.trim().toLowerCase() !== "true") return null;
+  const projection = await ReportingProjection.findOne({ organizationId: input.organizationId, projectionType: "finance-monthly", subjectKey: "scope", periodKey: input.period }).sort({ rebuiltAt: -1 }).lean();
   const metrics = projection?.metrics;
   if (!metrics || metrics.period !== input.period || !Array.isArray(metrics.positions) || typeof metrics.netCashTk !== "number") return null;
   return metrics as unknown as FinanceMonthSummary;
@@ -50,7 +51,7 @@ export async function buildReportingProjectionRows(input: Scope & { date: Date }
     FocusSession.find({ student: { $in: studentIds }, dateKey: day.key, status: "completed" }).select("student durationMinutes xpEarned").limit(REPORTING_SOURCE_LIMITS.focusSessions).lean(),
     ClassSession.find({ ...scope, scheduledStart: { $gte: day.start, $lte: day.end } }).select("teacherId status").limit(REPORTING_SOURCE_LIMITS.classSessions).lean(),
     TeacherAssignment.find({ ...scope, status: "active" }).select("teacherId").limit(REPORTING_SOURCE_LIMITS.assignments).lean(),
-    rebuildFinanceMonthSummary({ organizationId: input.organizationId, branchId: input.branchId, period: month }),
+    rebuildFinanceMonthSummary({ organizationId: input.organizationId, period: month }),
   ]);
   const sumSheet = sheets.reduce((sum, row) => ({ sheets: sum.sheets + 1, present: sum.present + (row.summary?.present ?? 0), absent: sum.absent + (row.summary?.absent ?? 0), late: sum.late + (row.summary?.late ?? 0), excused: sum.excused + (row.summary?.excused ?? 0), attended: sum.attended + (row.summary?.attended ?? 0), denominator: sum.denominator + (row.summary?.denominator ?? 0) }), { sheets: 0, present: 0, absent: 0, late: 0, excused: 0, attended: 0, denominator: 0 });
   const projections: ProjectionInput[] = [{ ...input, projectionType: "attendance-daily", subjectKey: "scope", periodKey: day.key, metrics: { ...sumSheet, percentage: sumSheet.denominator ? Number(((sumSheet.attended / sumSheet.denominator) * 100).toFixed(2)) : undefined } }];

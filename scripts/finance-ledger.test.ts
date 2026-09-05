@@ -3,7 +3,7 @@ import test from "node:test";
 import { financeListSchema, financeMutationSchema } from "../lib/validations/finance.schema.ts";
 
 const id = "507f1f77bcf86cd799439011";
-const scope = { organizationId: id, branchId: "507f1f77bcf86cd799439012" };
+const scope = { organizationId: id };
 
 test("cash ledger contracts require scoped, idempotent, whole-taka records", () => {
   const valid = { action: "record-cash", ...scope, idempotencyKey: "receipt-0001", userId: "507f1f77bcf86cd799439013", role: "student", kind: "student-fee", period: "2026-08", invoiceAmountTk: 1000, description: "August fee", direction: "in", amountTk: 400, allocationTk: 400, occurredAt: "2026-08-10" };
@@ -18,8 +18,7 @@ test("finance ledger exposes explicit adjustment and reversal contracts", () => 
 });
 
 test("finance list accepts the empty optional filters sent by the all-batches view", () => {
-  const parsed = financeListSchema.parse({ month: "2026-08", role: "student", batchId: "", organizationId: "", branchId: "", q: "" });
+  const parsed = financeListSchema.parse({ month: "2026-08", role: "student", batchId: "", organizationId: "", q: "" });
   assert.equal(parsed.batchId, undefined);
   assert.equal(parsed.organizationId, undefined);
-  assert.equal(parsed.branchId, undefined);
 });

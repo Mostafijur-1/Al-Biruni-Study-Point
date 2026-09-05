@@ -11,23 +11,22 @@ function monthDate(month: string) { return new Date(`${month}-01T00:00:00.000Z`)
 function invoiceNumber(month: string, kind: string, counterpartyId: ObjectId) { return `INV-${month.replace("-", "")}-${kind.toUpperCase()}-${String(counterpartyId).toUpperCase()}`; }
 
 async function resolveUserScope(db: Db, row: Document) {
-  if (row.organizationId) {
-    const branches = await db.collection("branches").find({ organizationId: row.organizationId, status: "active" }, { projection: { _id: 1 } }).limit(2).toArray();
-    if (branches.length === 1) return { organizationId: row.organizationId as ObjectId, branchId: branches[0]._id };
-  }
+  if (row.organizationId) return { organizationId: row.organizationId as ObjectId };
   if (row.role === "student") {
     const enrollment = await db.collection("batchenrollments").findOne({ studentId: row.userId, status: "active" }, { sort: { effectiveFrom: -1 } });
-    const batch = enrollment ? await db.collection("batches").findOne({ _id: enrollment.batchId }, { projection: { organizationId: 1, branchId: 1 } }) : null;
-    if (batch?.organizationId && batch.branchId) return { organizationId: batch.organizationId as ObjectId, branchId: batch.branchId as ObjectId };
+    const batch = enrollment ? await db.collection("batches").findOne({ _id: enrollment.batchId }, { projection: { organizationId: 1 } }) : null;
+    if (batch?.organizationId) return { organizationId: batch.organizationId as ObjectId };
   }
+  const organizations = await db.collection("organizations").find({ status: "active" }, { projection: { _id: 1 } }).limit(2).toArray();
+  if (organizations.length === 1) return { organizationId: organizations[0]._id as ObjectId };
   return null;
 }
 
-function openingRecords(input: { sourceCollection: string; sourceId: ObjectId; organizationId: ObjectId; branchId: ObjectId; counterpartyId: ObjectId; role: "student" | "teacher" | "vendor"; kind: "student-fee" | "teacher-payroll" | "operating-expense"; month: string; amountTk: number; clear: boolean; actorId: ObjectId; description: string; category?: string; note?: string }) {
+function openingRecords(input: { sourceCollection: string; sourceId: ObjectId; organizationId: ObjectId; counterpartyId: ObjectId; role: "student" | "teacher" | "vendor"; kind: "student-fee" | "teacher-payroll" | "operating-expense"; month: string; amountTk: number; clear: boolean; actorId: ObjectId; description: string; category?: string; note?: string }) {
   const invoiceId = stableId("invoice", `${input.sourceCollection}:${input.sourceId}`);
   const lineId = stableId("invoice-line", String(invoiceId));
   const issuedAt = monthDate(input.month);
-  const base = { organizationId: input.organizationId, branchId: input.branchId };
+  const base = { organizationId: input.organizationId };
   const inserts: PlannedInsert[] = [
     { collection: "financeinvoices", id: invoiceId, document: { _id: invoiceId, ...base, counterpartyId: input.counterpartyId, counterpartyRole: input.role, kind: input.kind, period: input.month, invoiceNumber: invoiceNumber(input.month, input.kind, input.counterpartyId), currency: "BDT", totalTk: input.amountTk, issuedAt, createdBy: input.actorId, legacySource: { collection: input.sourceCollection, id: String(input.sourceId) }, createdAt: issuedAt } },
     { collection: "financeinvoicelines", id: lineId, document: { _id: lineId, ...base, invoiceId, lineNo: 1, description: input.description, quantity: 1, unitAmountTk: input.amountTk, amountTk: input.amountTk, createdBy: input.actorId, createdAt: issuedAt } },
@@ -57,20 +56,20 @@ export async function inspectFinanceLedgerBackfill(db: Db, limit = 500) {
   for (const row of payments) {
     if (!Number.isSafeInteger(row.amountTk) || row.amountTk < 0) { unresolved.push({ collection: "MonthlyPayment", id: String(row._id), reason: "Amount is not non-negative whole taka." }); continue; }
     const resolved = await resolveUserScope(db, row);
-    if (!resolved) { unresolved.push({ collection: "MonthlyPayment", id: String(row._id), reason: "Organization and branch cannot be resolved uniquely." }); continue; }
+    if (!resolved) { unresolved.push({ collection: "MonthlyPayment", id: String(row._id), reason: "Organization cannot be resolved uniquely." }); continue; }
     inserts.push(...openingRecords({ sourceCollection: "MonthlyPayment", sourceId: row._id, ...resolved, counterpartyId: row.userId, role: row.role, kind: row.kind, month: row.month, amountTk: row.amountTk, clear: row.status === "clear", actorId: row.updatedBy, description: row.kind === "student-fee" ? "Opening monthly student fee" : "Opening monthly teacher payroll", note: row.note }));
   }
   const expenses = await db.collection("monthlyexpenses").find({}).sort({ month: 1, category: 1 }).limit(limit).toArray();
   for (const row of expenses) {
     if (!Number.isSafeInteger(row.amountTk) || row.amountTk < 0) { unresolved.push({ collection: "MonthlyExpense", id: String(row._id), reason: "Amount is not non-negative whole taka." }); continue; }
     const resolved = await resolveUserScope(db, { ...row, role: "vendor", userId: row._id });
-    if (!resolved) { unresolved.push({ collection: "MonthlyExpense", id: String(row._id), reason: "Organization and branch cannot be resolved uniquely." }); continue; }
+    if (!resolved) { unresolved.push({ collection: "MonthlyExpense", id: String(row._id), reason: "Organization cannot be resolved uniquely." }); continue; }
     inserts.push(...openingRecords({ sourceCollection: "MonthlyExpense", sourceId: row._id, ...resolved, counterpartyId: row._id, role: "vendor", kind: "operating-expense", month: row.month, amountTk: row.amountTk, clear: row.status === "clear", actorId: row.updatedBy, description: row.category === "room-rent" ? "Room rent" : "Electricity bill", category: row.category, note: row.note }));
   }
   const profiles = await db.collection("paymentprofiles").find({ role: "student", isActive: true }).limit(limit).toArray();
   for (const row of profiles) {
     const resolved = await resolveUserScope(db, row);
-    if (!resolved) { unresolved.push({ collection: "PaymentProfile", id: String(row._id), reason: "Organization and branch cannot be resolved uniquely." }); continue; }
+    if (!resolved) { unresolved.push({ collection: "PaymentProfile", id: String(row._id), reason: "Organization cannot be resolved uniquely." }); continue; }
     const planId = stableId("fee-plan", String(row._id));
     inserts.push(
       { collection: "feeplans", id: planId, document: { _id: planId, ...resolved, code: `LEGACY-${String(row.userId).toUpperCase()}`, name: "Legacy monthly student fee", amountTk: row.defaultAmountTk, billingCycle: "monthly", activeFrom: payments.find((payment) => String(payment.userId) === String(row.userId))?.month ?? new Date().toISOString().slice(0, 7), status: "active", createdBy: row.updatedBy, createdAt: row.createdAt ?? new Date(), updatedAt: row.updatedAt ?? new Date() } },
