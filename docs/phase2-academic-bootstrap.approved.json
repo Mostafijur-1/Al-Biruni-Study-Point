@@ -1,0 +1,50 @@
+{
+  "organization": {
+    "name": "Al-Biruni Study Point",
+    "slug": "al-biruni-study-point",
+    "timezone": "Asia/Dhaka"
+  },
+  "academicSession": {
+    "name": "2026",
+    "startsAt": "2026-01-01T00:00:00.000+06:00",
+    "endsAt": "2026-12-31T23:59:59.000+06:00",
+    "status": "active"
+  },
+  "subjects": [
+    {
+      "code": "PHY",
+      "name": "Physics",
+      "nameBn": "পদার্থবিজ্ঞান",
+      "classLevels": ["class-9", "class-10", "class-11", "class-12"],
+      "aliases": ["Physics 1st Paper", "Physics 2nd Paper", "পদার্থবিজ্ঞান ১ম পত্র", "পদার্থবিজ্ঞান ২য় পত্র"]
+    },
+    {
+      "code": "CHEM",
+      "name": "Chemistry",
+      "nameBn": "রসায়ন",
+      "classLevels": ["class-9", "class-10", "class-11", "class-12"],
+      "aliases": ["Chemistry 1st Paper", "Chemistry 2nd Paper", "রসায়ন ১ম পত্র", "রসায়ন ২য় পত্র"]
+    },
+    {
+      "code": "MATH",
+      "name": "Math",
+      "nameBn": "সাধারণ গণিত",
+      "classLevels": ["class-9", "class-10"],
+      "aliases": ["General Math", "Mathematics"]
+    },
+    {
+      "code": "HMATH",
+      "name": "Higher Math",
+      "nameBn": "উচ্চতর গণিত",
+      "classLevels": ["class-9", "class-10", "class-11", "class-12"],
+      "aliases": ["Higher Math 1st Paper", "Higher Math 2nd Paper", "উচ্চতর গণিত ১ম পত্র", "উচ্চতর গণিত ২য় পত্র"]
+    },
+    {
+      "code": "ICT",
+      "name": "ICT",
+      "nameBn": "তথ্য ও যোগাযোগ প্রযুক্তি",
+      "classLevels": ["class-9", "class-10", "class-11", "class-12"],
+      "aliases": ["Information and Communication Technology"]
+    }
+  ]
+}

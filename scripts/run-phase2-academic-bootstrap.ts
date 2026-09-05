@@ -54,12 +54,14 @@ try {
         name: manifest.academicSession.name,
       }).lean()
     : null;
+  const manifestSubjectCodes = manifest.subjects.map((subject) => subject.code.toUpperCase());
   const existingSubjectCount = organization
-    ? await AcademicSubject.countDocuments({
-        organizationId: organization._id,
-        code: { $in: manifest.subjects.map((subject) => subject.code.toUpperCase()) },
-      })
+    ? await AcademicSubject.countDocuments({ organizationId: organization._id, code: { $in: manifestSubjectCodes } })
     : 0;
+  const adoptableSubjectCount = await AcademicSubject.countDocuments({
+    organizationId: { $exists: false },
+    code: { $in: manifestSubjectCodes },
+  });
 
   const report = {
     migrationId: MIGRATION_ID,
@@ -70,6 +72,7 @@ try {
       organization: Boolean(organization),
       academicSession: Boolean(existingSession),
       subjects: existingSubjectCount,
+      adoptableSubjects: adoptableSubjectCount,
     },
     requestedSubjects: manifest.subjects.length,
     unresolvedLegacyMappings: {
@@ -132,13 +135,21 @@ try {
           for (const subject of manifest.subjects) {
             const code = subject.code.toUpperCase();
             const existingSubject = await AcademicSubject.findOne({
-              organizationId: organizationDoc._id,
               code,
+              $or: [
+                { organizationId: organizationDoc._id },
+                { organizationId: { $exists: false } },
+                { organizationId: null },
+              ],
             }).session(dbSession);
             if (existingSubject) {
               if (existingSubject.name !== subject.name || existingSubject.nameBn !== subject.nameBn) {
                 throw new Error(`Existing subject ${code} has different names.`);
               }
+              existingSubject.organizationId = organizationDoc._id;
+              existingSubject.classLevels = subject.classLevels;
+              existingSubject.aliases = [...new Set([existingSubject.name, existingSubject.nameBn, ...existingSubject.aliases, ...subject.aliases])];
+              await existingSubject.save({ session: dbSession });
               continue;
             }
             await AcademicSubject.create(
