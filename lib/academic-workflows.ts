@@ -391,7 +391,6 @@ export async function enrollStudent(input: EnrollStudentInput) {
       [
         {
           organizationId: batch.organizationId,
-          branchId: batch.branchId,
           academicSessionId: batch.academicSessionId,
           batchId: batch._id,
           studentId: student._id,
@@ -554,7 +553,6 @@ export async function assignTeacher(input: AssignTeacherInput) {
       [
         {
           organizationId: batch.organizationId,
-          branchId: batch.branchId,
           academicSessionId: batch.academicSessionId,
           batchId: batch._id,
           teacherId: teacher._id,
@@ -616,7 +614,6 @@ export async function endTeacherAssignment(input: EndTeacherAssignmentInput) {
       request: input.request,
       actor: input.actor,
       organizationId: assignment.organizationId,
-      branchId: assignment.branchId,
       action: "academic.teacher-assignment.ended",
       resourceType: "TeacherAssignment",
       resourceId: assignment._id,
@@ -690,7 +687,6 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       [
         {
           organizationId: batch.organizationId,
-          branchId: batch.branchId,
           academicSessionId: batch.academicSessionId,
           batchId: batch._id,
           subjectId: subject?._id,

@@ -17,6 +17,7 @@
     "migrate:canonical-scope": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step3-canonical-scope.ts",
     "migrate:single-organization": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-single-organization-scope.ts",
     "migrate:single-organization-curriculum": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-single-organization-curriculum.ts",
+    "migrate:teacher-assignments": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-teacher-assignments.ts",
     "migrate:assessment-references": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step6-assessment-references.ts",
     "migrate:written-exams": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step7-written-exams.ts",
     "migrate:finance-ledger": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step8-finance-ledger.ts",

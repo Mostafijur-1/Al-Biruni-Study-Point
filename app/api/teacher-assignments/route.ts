@@ -30,11 +30,11 @@ type AssignmentContext = {
 function serializeAssignment(assignment: {
   _id: unknown;
   organizationId: unknown;
-  branchId: unknown;
   academicSessionId: unknown;
   batchId: unknown;
   teacherId: unknown;
   subjectId: unknown;
+  studentIds?: unknown[];
   status: string;
   effectiveFrom: Date;
   effectiveTo?: Date;
@@ -47,11 +47,11 @@ function serializeAssignment(assignment: {
   return {
     id: String(assignment._id),
     organizationId: String(assignment.organizationId),
-    branchId: String(assignment.branchId),
     academicSessionId: String(assignment.academicSessionId),
     batchId: String(assignment.batchId),
     teacherId: String(assignment.teacherId),
     subjectId: String(assignment.subjectId),
+    studentIds: assignment.studentIds?.map(String),
     status: assignment.status,
     effectiveFrom: assignment.effectiveFrom.toISOString(),
     effectiveTo: assignment.effectiveTo?.toISOString(),
@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
       parsed.status === "all" ? {} : { status: parsed.status };
 
     if (parsed.organizationId) query.organizationId = parsed.organizationId;
-    if (parsed.branchId) query.branchId = parsed.branchId;
     if (parsed.academicSessionId) query.academicSessionId = parsed.academicSessionId;
     if (parsed.batchId) query.batchId = parsed.batchId;
     if (parsed.subjectId) query.subjectId = parsed.subjectId;

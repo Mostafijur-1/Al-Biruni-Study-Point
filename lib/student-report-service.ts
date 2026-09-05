@@ -61,7 +61,7 @@ function average(values: number[]) {
   return values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : null;
 }
 
-async function assignedBatchIds(actor: SessionUser) {
+async function assignedStudentAccess(actor: SessionUser) {
   if (actor.role !== "teacher") return [];
   const now = new Date();
   const rows = await TeacherAssignment.find({
@@ -69,12 +69,21 @@ async function assignedBatchIds(actor: SessionUser) {
     status: "active",
     effectiveFrom: { $lte: now },
     $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: now } }],
-  }).select("batchId").lean();
-  return [...new Set(rows.map((row) => String(row.batchId)))];
+  }).select("batchId studentIds").lean();
+  return rows.map((row) => ({ batchId: String(row.batchId), studentIds: row.studentIds?.map(String) }));
+}
+
+async function assignedBatchIds(actor: SessionUser) {
+  return [...new Set((await assignedStudentAccess(actor)).map((row) => row.batchId))];
+}
+
+function assignmentAllowsStudent(assignments: Awaited<ReturnType<typeof assignedStudentAccess>>, batchId: string, studentId: string) {
+  return assignments.some((row) => row.batchId === batchId && (row.studentIds === undefined || row.studentIds.includes(studentId)));
 }
 
 export async function listReportStudents(actor: SessionUser) {
-  const teacherBatches = await assignedBatchIds(actor);
+  const teacherAssignments = await assignedStudentAccess(actor);
+  const teacherBatches = [...new Set(teacherAssignments.map((row) => row.batchId))];
   const enrollmentQuery = actor.role === "student"
     ? { studentId: actor.id }
     : actor.role === "teacher"
@@ -89,7 +98,7 @@ export async function listReportStudents(actor: SessionUser) {
     const id = String(enrollment.studentId);
     if (!latestByStudent.has(id)) latestByStudent.set(id, enrollment);
   }
-  const latest = [...latestByStudent.values()];
+  const latest = [...latestByStudent.values()].filter((row) => actor.role !== "teacher" || assignmentAllowsStudent(teacherAssignments, String(row.batchId), String(row.studentId)));
   const [students, batches] = await Promise.all([
     User.find({ _id: { $in: latest.map((row) => row.studentId) }, role: "student" })
       .select("name studentCode studentClass isActive").sort({ name: 1 }).lean(),
@@ -121,7 +130,7 @@ async function resolveStudentContext(actor: SessionUser, studentId: string, peri
   }).sort({ effectiveFrom: -1 });
   if (!enrollment) throw new ApiRouteError("Student has no batch enrollment.", 404);
   if (actor.role === "teacher") {
-    const allowed = (await assignedBatchIds(actor)).includes(String(enrollment.batchId));
+    const allowed = assignmentAllowsStudent(await assignedStudentAccess(actor), String(enrollment.batchId), studentId);
     if (!allowed) throw new ApiRouteError("This student is outside your assigned batches.", 403);
   }
   const [student, batch] = await Promise.all([
