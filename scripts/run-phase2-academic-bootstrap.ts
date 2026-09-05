@@ -8,12 +8,11 @@ import {
 } from "../lib/academic-bootstrap.ts";
 import { AcademicSession } from "../lib/db/models/AcademicSession.ts";
 import { AcademicSubject } from "../lib/db/models/AcademicSubject.ts";
-import { Branch } from "../lib/db/models/Branch.ts";
 import { MigrationRecord } from "../lib/db/models/MigrationRecord.ts";
 import { Organization } from "../lib/db/models/Organization.ts";
 import { User } from "../lib/db/models/User.ts";
 
-const MIGRATION_ID = "20260804_phase2_academic_bootstrap_v1";
+const MIGRATION_ID = "20260905_single_organization_academic_bootstrap_v2";
 const applyRequested = process.argv.includes("--apply");
 const confirmation = process.argv.find((value) => value.startsWith("--confirm="))?.slice(10);
 const manifestArgument = process.argv.find((value) => value.startsWith("--manifest="))?.slice(11);
@@ -49,12 +48,6 @@ try {
       ],
     }),
   ]);
-  const existingBranch = organization
-    ? await Branch.findOne({
-        organizationId: organization._id,
-        code: manifest.branch.code.toUpperCase(),
-      }).lean()
-    : null;
   const existingSession = organization
     ? await AcademicSession.findOne({
         organizationId: organization._id,
@@ -75,7 +68,6 @@ try {
     ledgerStatus: existingRecord?.status ?? "not-started",
     existing: {
       organization: Boolean(organization),
-      branch: Boolean(existingBranch),
       academicSession: Boolean(existingSession),
       subjects: existingSubjectCount,
     },
@@ -120,19 +112,6 @@ try {
             throw new Error("Existing organization slug has a different name.");
           }
 
-          let branchDoc = await Branch.findOne({
-            organizationId: organizationDoc._id,
-            code: manifest.branch.code.toUpperCase(),
-          }).session(dbSession);
-          if (!branchDoc) {
-            [branchDoc] = await Branch.create(
-              [{ ...manifest.branch, organizationId: organizationDoc._id }],
-              { session: dbSession },
-            );
-          } else if (branchDoc.name !== manifest.branch.name) {
-            throw new Error("Existing branch code has a different name.");
-          }
-
           let academicSessionDoc = await AcademicSession.findOne({
             organizationId: organizationDoc._id,
             name: manifest.academicSession.name,
@@ -171,7 +150,6 @@ try {
 
           summary = {
             organizationId: String(organizationDoc._id),
-            branchId: String(branchDoc._id),
             academicSessionId: String(academicSessionDoc._id),
             createdSubjects,
             unresolvedActiveStudents: students,

@@ -9,11 +9,6 @@ export const academicBootstrapManifestSchema = z
       slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       timezone: z.string().trim().min(3).max(80).default("Asia/Dhaka"),
     }),
-    branch: z.object({
-      name: z.string().trim().min(2).max(120),
-      code: z.string().trim().min(2).max(30),
-      address: z.string().trim().max(500).optional(),
-    }),
     academicSession: z.object({
       name: z.string().trim().min(2).max(120),
       startsAt: z.coerce.date(),

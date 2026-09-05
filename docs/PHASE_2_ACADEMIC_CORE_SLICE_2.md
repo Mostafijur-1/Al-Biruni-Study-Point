@@ -30,7 +30,7 @@ The report shows existing canonical records plus the number of active students a
 Apply only after backup and manifest approval:
 
 ```powershell
-npm.cmd run bootstrap:academic -- --manifest=docs/phase2-academic-bootstrap.approved.json --apply --confirm=20260804_phase2_academic_bootstrap_v1
+npm.cmd run bootstrap:academic -- --manifest=docs/phase2-academic-bootstrap.approved.json --apply --confirm=20260905_single_organization_academic_bootstrap_v2
 ```
 
 Apply is transaction-backed, ledgered in `MigrationRecord`, refuses paths outside the workspace, rejects manifest placeholders/duplicate subject codes/inverted dates, and does not create guessed batches, enrollments, or teacher assignments.

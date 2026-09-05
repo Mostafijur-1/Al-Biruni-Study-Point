@@ -8,7 +8,6 @@ import {
 
 const manifest = {
   organization: { name: "ABSP", slug: "absp" },
-  branch: { name: "Main", code: "MAIN" },
   academicSession: {
     name: "2026",
     startsAt: "2026-01-01T00:00:00.000Z",
@@ -50,7 +49,7 @@ test("academic bootstrap rejects unreplaced example placeholders", () => {
   assert.equal(
     academicBootstrapManifestSchema.safeParse({
       ...manifest,
-      branch: { name: "REPLACE WITH BRANCH", code: "MAIN" },
+      organization: { name: "REPLACE WITH ORGANIZATION", slug: "absp" },
     }).success,
     false,
   );
