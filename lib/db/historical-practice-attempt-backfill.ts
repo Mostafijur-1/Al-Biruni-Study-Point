@@ -23,12 +23,13 @@ export async function inspectHistoricalPracticeAttemptBackfill(db: Db, limit = 5
       plans.push({ result, attemptId: stableId(result._id) });
     }
   }
-  return { plans, report: { eligibleResults: results.length, plannedAttempts: plans.length, exceptionCount: exceptions.length, exceptions } };
+  const blockingExceptionCount = exceptions.filter((item) => item.reason !== "student_missing").length;
+  return { plans, report: { eligibleResults: results.length, plannedAttempts: plans.length, excludedOrphans: exceptions.filter((item) => item.reason === "student_missing").length, blockingExceptionCount, exceptionCount: exceptions.length, exceptions } };
 }
 
 export async function applyHistoricalPracticeAttemptBackfill(db: Db, limit = 500) {
   const inspected = await inspectHistoricalPracticeAttemptBackfill(db, limit);
-  if (inspected.report.exceptionCount) throw new Error("Historical practice attempt backfill has unresolved exceptions.");
+  if (inspected.report.blockingExceptionCount) throw new Error("Historical practice attempt backfill has unresolved data exceptions.");
   if (!inspected.plans.length) return { ...inspected.report, insertedAttempts: 0, linkedResults: 0 };
   const attempts = db.collection("practiceattempts");
   const now = new Date();

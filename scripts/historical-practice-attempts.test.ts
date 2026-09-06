@@ -10,5 +10,6 @@ test("historical practice attempt migration is bounded, deterministic, and guard
   assert.match(runner, /Apply requires --confirm=/);
   assert.match(migration, /createHash/);
   assert.match(migration, /legacySource: \{ collection: "PracticeResult"/);
+  assert.match(migration, /reason !== "student_missing"/);
   assert.ok(HISTORICAL_PRACTICE_ATTEMPT_ID.includes("historical_practice_attempts"));
 });
