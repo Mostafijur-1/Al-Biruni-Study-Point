@@ -44,6 +44,14 @@ test("canonical authority never falls back to a broader legacy decision", () => 
   }), { allowed: false, authority: "legacy", shadowMismatch: true });
 });
 
+test("runtime teacher policy reads only canonical assignments", () => {
+  const source = readFileSync(join(process.cwd(), "lib", "auth", "teacher-domain-policy.ts"), "utf8");
+  assert.match(source, /TeacherAssignment\.find/);
+  assert.match(source, /BatchEnrollment\.exists/);
+  assert.doesNotMatch(source, /teacherDomain/);
+  assert.doesNotMatch(source, /CANONICAL_ACADEMIC_SHADOW_READS_ENABLED/);
+});
+
 test("canonical scope guard reports absent values", () => {
   assert.deepEqual(missingCanonicalPaths({ organizationId: "org", subjectId: "" }, ["organizationId", "subjectId"]), ["subjectId"]);
 });

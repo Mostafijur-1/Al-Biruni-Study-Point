@@ -12,7 +12,6 @@ import {
 import { ApiRouteError } from "./api-error.ts";
 import { findCatalogSubject } from "./academic-subject-catalog.ts";
 import { writeAuditLog } from "./audit/write-audit-log.ts";
-import { isSubjectWithinTeacherDomain } from "./auth/teacher-domain-rules.ts";
 import { AcademicSession } from "./db/models/AcademicSession.ts";
 import { AcademicSubject } from "./db/models/AcademicSubject.ts";
 import { Batch, type IBatch } from "./db/models/Batch.ts";
@@ -515,12 +514,6 @@ export async function assignTeacher(input: AssignTeacherInput) {
 
     if (!teacher) throw new ApiRouteError("Approved active teacher not found.", 404);
     if (!subject) throw new ApiRouteError("Subject is not active for this batch class.", 409);
-    if (
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.name) &&
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject.nameBn)
-    ) {
-      throw new ApiRouteError("Teacher is not authorized for the selected subject.", 409);
-    }
     if ((batch.startsAt && input.effectiveFrom < batch.startsAt) || (batch.endsAt && input.effectiveFrom > batch.endsAt)) {
       throw new ApiRouteError("Assignment date must fall within the batch dates.", 409);
     }
@@ -637,14 +630,19 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       : null;
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
     if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
-    const subjectName = subject?.nameBn || subject?.name || input.subjectName;
-    if (!subjectName) throw new ApiRouteError("Routine subject not found.", 404);
-    if (
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.name ?? subjectName) &&
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.nameBn ?? subjectName)
-    ) {
-      throw new ApiRouteError("Selected teacher is not authorized for this subject.", 409);
+    if (!subject || String(subject.organizationId) !== String(batch.organizationId)) {
+      throw new ApiRouteError("Routine subject is not active in this organization.", 404);
     }
+    const subjectName = subject.nameBn || subject.name;
+    const assignment = await TeacherAssignment.findOne({
+      batchId: batch._id,
+      teacherId: teacher._id,
+      subjectId: subject._id,
+      status: "active",
+      effectiveFrom: { $lte: input.effectiveFrom },
+      $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
+    }).session(session);
+    if (!assignment) throw new ApiRouteError("Selected teacher has no active assignment for this batch and subject.", 409);
     const effectiveTo = input.effectiveTo;
     const conflict = await RoutineSlot.findOne({
       status: "active",
@@ -675,6 +673,7 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
           subjectId: subject?._id,
           subjectName,
           teacherId: teacher._id,
+          teacherAssignmentId: assignment._id,
           studentIds: [],
           weekday: input.weekday,
           startMinute: input.startMinute,
@@ -746,14 +745,19 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     if (!routineSlot) throw new ApiRouteError("Active routine slot not found.", 404);
     if (!batch) throw new ApiRouteError("Batch not found or inactive.", 404);
     if (!teacher) throw new ApiRouteError("Active ABSP teacher not found.", 404);
-    const subjectName = subject?.nameBn || subject?.name || input.subjectName;
-    if (!subjectName) throw new ApiRouteError("Routine subject not found.", 404);
-    if (
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.name ?? subjectName) &&
-      !isSubjectWithinTeacherDomain(teacher.teacherDomain, subject?.nameBn ?? subjectName)
-    ) {
-      throw new ApiRouteError("Selected teacher is not authorized for this subject.", 409);
+    if (!subject || String(subject.organizationId) !== String(batch.organizationId)) {
+      throw new ApiRouteError("Routine subject is not active in this organization.", 404);
     }
+    const subjectName = subject.nameBn || subject.name;
+    const assignment = await TeacherAssignment.findOne({
+      batchId: batch._id,
+      teacherId: teacher._id,
+      subjectId: subject._id,
+      status: "active",
+      effectiveFrom: { $lte: input.effectiveFrom },
+      $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
+    }).session(session);
+    if (!assignment) throw new ApiRouteError("Selected teacher has no active assignment for this batch and subject.", 409);
     const linkedSession = await ClassSession.exists({ routineSlotId: routineSlot._id, status: "scheduled" }).session(session);
     if (linkedSession) throw new ApiRouteError("This legacy routine has a scheduled class session and cannot be edited.", 409);
 
@@ -770,7 +774,7 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
     const before = { teacherId: String(routineSlot.teacherId), studentIds: (routineSlot.studentIds ?? []).map(String), weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute };
     routineSlot.set({
       organizationId: batch.organizationId, academicSessionId: batch.academicSessionId,
-      batchId: batch._id, subjectId: subject?._id, subjectName, teacherId: teacher._id, teacherAssignmentId: undefined,
+      batchId: batch._id, subjectId: subject._id, subjectName, teacherId: teacher._id, teacherAssignmentId: assignment._id,
       studentIds: [], weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
       room: input.room?.trim() || undefined, effectiveFrom: input.effectiveFrom, effectiveTo,
     });
