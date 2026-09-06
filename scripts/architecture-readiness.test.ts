@@ -11,6 +11,7 @@ import {
   duplicateChecks,
   evaluateWriteGateSafety,
   orphanChecks,
+  scopeRequirements,
   safeDatabaseFailure,
 } from "../lib/architecture-readiness.ts";
 
@@ -19,6 +20,17 @@ test("architecture readiness classifies explicit deployment environments", () =>
   assert.equal(classifyRuntimeEnvironment({ vercel: "preview" }), "staging");
   assert.equal(classifyRuntimeEnvironment({ node: "test" }), "test");
   assert.equal(classifyRuntimeEnvironment({}), "unknown");
+});
+
+test("architecture readiness models one organization without branches", () => {
+  assert.equal(scopeRequirements.some((item) => item.collection === "branches"), false);
+  assert.equal(scopeRequirements.some((item) => item.fields.includes("branchId")), false);
+  assert.equal(orphanChecks.some((item) => item.targetCollection === "branches"), false);
+  assert.deepEqual(duplicateChecks.find((item) => item.id === "batch.scope-code")?.fields, [
+    "organizationId",
+    "academicSessionId",
+    "code",
+  ]);
 });
 
 test("write gates fail closed when rollout evidence is absent", () => {

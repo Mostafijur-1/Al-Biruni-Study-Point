@@ -29,28 +29,25 @@ export type DuplicateCheck = {
 };
 
 export const scopeRequirements: readonly ScopeRequirement[] = [
-  { collection: "branches", fields: ["organizationId"] },
   { collection: "academicsessions", fields: ["organizationId"] },
   { collection: "academicsubjects", fields: ["organizationId"] },
   { collection: "academicchapters", fields: ["organizationId", "subjectId"] },
   { collection: "academictopics", fields: ["organizationId", "subjectId", "chapterId"] },
-  { collection: "batches", fields: ["organizationId", "branchId", "academicSessionId"] },
-  { collection: "batchenrollments", fields: ["organizationId", "branchId", "academicSessionId"] },
-  { collection: "teacherassignments", fields: ["organizationId", "branchId", "academicSessionId"] },
-  { collection: "routineslots", fields: ["organizationId", "branchId", "academicSessionId", "batchId", "subjectId"] },
-  { collection: "classsessions", fields: ["organizationId", "branchId", "academicSessionId", "batchId", "subjectId"] },
-  { collection: "attendancesheets", fields: ["organizationId", "branchId", "academicSessionId", "batchId", "subjectId"] },
-  { collection: "attendancerecords", fields: ["organizationId", "branchId"] },
-  { collection: "writtenexams", fields: ["organizationId", "branchId", "academicSessionId"] },
+  { collection: "batches", fields: ["organizationId", "academicSessionId"] },
+  { collection: "batchenrollments", fields: ["organizationId", "academicSessionId"] },
+  { collection: "teacherassignments", fields: ["organizationId", "academicSessionId"] },
+  { collection: "routineslots", fields: ["organizationId", "academicSessionId", "batchId", "subjectId"] },
+  { collection: "classsessions", fields: ["organizationId", "academicSessionId", "batchId", "subjectId"] },
+  { collection: "attendancesheets", fields: ["organizationId", "academicSessionId", "batchId", "subjectId"] },
+  { collection: "attendancerecords", fields: ["organizationId"] },
+  { collection: "writtenexams", fields: ["organizationId", "academicSessionId"] },
 ] as const;
 
 export const orphanChecks: readonly OrphanCheck[] = [
-  { id: "branch.organization", collection: "branches", field: "organizationId", targetCollection: "organizations" },
   { id: "session.organization", collection: "academicsessions", field: "organizationId", targetCollection: "organizations" },
   { id: "subject.organization", collection: "academicsubjects", field: "organizationId", targetCollection: "organizations" },
   { id: "chapter.subject", collection: "academicchapters", field: "subjectId", targetCollection: "academicsubjects" },
   { id: "topic.chapter", collection: "academictopics", field: "chapterId", targetCollection: "academicchapters" },
-  { id: "batch.branch", collection: "batches", field: "branchId", targetCollection: "branches" },
   { id: "batch.session", collection: "batches", field: "academicSessionId", targetCollection: "academicsessions" },
   { id: "enrollment.batch", collection: "batchenrollments", field: "batchId", targetCollection: "batches" },
   { id: "enrollment.student", collection: "batchenrollments", field: "studentId", targetCollection: "users" },
@@ -73,7 +70,7 @@ export const orphanChecks: readonly OrphanCheck[] = [
 ] as const;
 
 export const duplicateChecks: readonly DuplicateCheck[] = [
-  { id: "batch.scope-code", collection: "batches", fields: ["branchId", "academicSessionId", "code"] },
+  { id: "batch.scope-code", collection: "batches", fields: ["organizationId", "academicSessionId", "code"] },
   { id: "user.phone", collection: "users", fields: ["phone"], match: { phone: { $exists: true, $nin: [null, ""] } } },
   { id: "user.email", collection: "users", fields: ["email"], match: { email: { $exists: true, $nin: [null, ""] } } },
   { id: "user.student-code", collection: "users", fields: ["studentCode"], match: { studentCode: { $exists: true, $nin: [null, ""] } } },
