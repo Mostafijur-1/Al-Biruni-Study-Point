@@ -36,7 +36,7 @@ for (const authority of deprecatedAuthorities) {
   staticReferences[authority.id] = { files, occurrences };
 }
 
-let database: { status: "skipped" } | { status: "available"; legacyRecordCounts: Record<string, number> } | { status: "unavailable"; detail: string } = { status: "skipped" };
+let database: { status: "skipped" } | { status: "available"; legacyRecordCounts: Record<string, number>; byCollection: Record<string, number> } | { status: "unavailable"; detail: string } = { status: "skipped" };
 if (!skipDatabase) {
   const uri = process.env.MONGODB_URI?.trim();
   if (!uri) database = { status: "unavailable", detail: "Database baseline unavailable. Verify MONGODB_URI and network policy." };
@@ -48,11 +48,21 @@ if (!skipDatabase) {
       if (!db) throw new Error("No database handle.");
       const names = new Set((await db.listCollections({}, { nameOnly: true }).toArray()).map((item) => item.name));
       const count = (collection: string, filter: Record<string, unknown>) => names.has(collection) ? db.collection(collection).countDocuments(filter) : Promise.resolve(0);
-      database = { status: "available", legacyRecordCounts: {
-        teacherDomain: await count("users", { role: "teacher", teacherDomain: { $exists: true } }),
-        stringCurriculum: (await count("courses", { subject: { $type: "string" } })) + (await count("practicequestions", { subject: { $type: "string" } })) + (await count("mcqexams", { subject: { $type: "string" } })),
-        duplicateResultsWithoutAuthority: (await count("practiceresults", { authoritativeAttempt: { $exists: false } })) + (await count("mcqexamattempts", { assessmentAttemptId: { $exists: false } })) + (await count("writtenexamresults", { publicationId: { $exists: false } })),
-        embeddedWrittenBinaries: await count("writtenexams", { "questionFile.data": { $exists: true } }),
+      const byCollection = {
+        usersWithTeacherDomain: await count("users", { role: "teacher", teacherDomain: { $exists: true } }),
+        coursesWithoutCanonicalSubject: await count("courses", { subject: { $type: "string" }, $or: [{ organizationId: null }, { subjectId: null }] }),
+        practiceQuestionsWithoutCanonicalCurriculum: await count("practicequestions", { subject: { $type: "string" }, $or: [{ organizationId: null }, { subjectId: null }, { chapterId: null }] }),
+        mcqExamsWithoutCanonicalSubject: await count("mcqexams", { subject: { $type: "string" }, $or: [{ organizationId: null }, { subjectId: null }] }),
+        practiceResultsWithoutAttempt: await count("practiceresults", { authoritativeAttempt: { $exists: false } }),
+        mcqExamAttemptsWithoutAssessmentAttempt: await count("mcqexamattempts", { assessmentAttemptId: { $exists: false } }),
+        writtenResultsWithoutPublication: await count("writtenexamresults", { publicationId: { $exists: false } }),
+        writtenExamsWithEmbeddedBinary: await count("writtenexams", { "questionFile.data": { $exists: true } }),
+      };
+      database = { status: "available", byCollection, legacyRecordCounts: {
+        teacherDomain: byCollection.usersWithTeacherDomain,
+        stringCurriculum: byCollection.coursesWithoutCanonicalSubject + byCollection.practiceQuestionsWithoutCanonicalCurriculum + byCollection.mcqExamsWithoutCanonicalSubject,
+        duplicateResultsWithoutAuthority: byCollection.practiceResultsWithoutAttempt + byCollection.mcqExamAttemptsWithoutAssessmentAttempt + byCollection.writtenResultsWithoutPublication,
+        embeddedWrittenBinaries: byCollection.writtenExamsWithEmbeddedBinary,
       } };
     } catch { database = { status: "unavailable", detail: "Database baseline unavailable. Verify MONGODB_URI and network policy." }; }
     finally { await connection.destroy().catch(() => undefined); }

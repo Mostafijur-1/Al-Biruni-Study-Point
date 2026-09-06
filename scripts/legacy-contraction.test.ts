@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { deprecatedAuthorities, evaluateLegacyContractionEvidence, legacyContractionEvidenceSchema, resolveLegacyEvidencePath } from "../lib/legacy-contraction.ts";
+import { readFileSync } from "node:fs";
 
 const commit = "a".repeat(40);
 function evidence() {
@@ -26,4 +27,12 @@ test("short observation windows require an explicit approval", () => {
 
 test("legacy evidence paths cannot escape the workspace", () => {
   assert.throws(() => resolveLegacyEvidencePath("D:/projects/absp", "../secret.json"), /inside the workspace/);
+});
+
+test("legacy curriculum counts only rows missing canonical authority", () => {
+  const source = readFileSync("scripts/check-legacy-contraction-readiness.ts", "utf8");
+  assert.match(source, /coursesWithoutCanonicalSubject/);
+  assert.match(source, /practiceQuestionsWithoutCanonicalCurriculum/);
+  assert.match(source, /subjectId: null/);
+  assert.match(source, /chapterId: null/);
 });
