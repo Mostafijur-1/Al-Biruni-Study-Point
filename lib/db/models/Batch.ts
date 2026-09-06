@@ -58,9 +58,9 @@ BatchSchema.pre("validate", function () {
 });
 
 BatchSchema.index(BATCH_SCOPE_CODE_INDEX.keys, BATCH_SCOPE_CODE_INDEX.options);
-BatchSchema.index({ organizationId: 1, branchId: 1, academicSessionId: 1, status: 1 });
+BatchSchema.index({ organizationId: 1, academicSessionId: 1, status: 1 });
 BatchSchema.index({ academicSessionId: 1, studentClass: 1, status: 1 });
-requireCanonicalPathsWhenEnabled(BatchSchema, ["organizationId", "branchId", "academicSessionId", "code"]);
+requireCanonicalPathsWhenEnabled(BatchSchema, ["organizationId", "academicSessionId", "code"]);
 
 export const Batch: Model<IBatch> =
   (mongoose.models.Batch as Model<IBatch> | undefined) ||

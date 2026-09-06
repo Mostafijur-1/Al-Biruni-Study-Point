@@ -10,17 +10,20 @@ export type CanonicalIndexDefinition = {
   }>;
 };
 
-export const LEGACY_BATCH_SCOPE_INDEX_NAME = "branchId_1_academicSessionId_1_code_1";
+export const LEGACY_BATCH_SCOPE_INDEX_NAMES = [
+  "branchId_1_academicSessionId_1_code_1",
+  "uq_batch_scope_code_canonical",
+] as const;
 
 export const BATCH_SCOPE_CODE_INDEX: CanonicalIndexDefinition = {
   id: "batch.scope-code",
   collection: "batches",
-  keys: { branchId: 1, academicSessionId: 1, code: 1 },
+  keys: { organizationId: 1, academicSessionId: 1, code: 1 },
   options: {
-    name: "uq_batch_scope_code_canonical",
+    name: "uq_batch_organization_session_code",
     unique: true,
     partialFilterExpression: {
-      branchId: { $type: "objectId" },
+      organizationId: { $type: "objectId" },
       academicSessionId: { $type: "objectId" },
       code: { $type: "string" },
     },
@@ -29,7 +32,6 @@ export const BATCH_SCOPE_CODE_INDEX: CanonicalIndexDefinition = {
 
 export const canonicalIntegrityIndexManifest: readonly CanonicalIndexDefinition[] = [
   { id: "organization.slug", collection: "organizations", keys: { slug: 1 }, options: { name: "slug_1", unique: true } },
-  { id: "branch.organization-code", collection: "branches", keys: { organizationId: 1, code: 1 }, options: { name: "organizationId_1_code_1", unique: true } },
   { id: "session.organization-name", collection: "academicsessions", keys: { organizationId: 1, name: 1 }, options: { name: "organizationId_1_name_1", unique: true } },
   { id: "subject.organization-code", collection: "academicsubjects", keys: { organizationId: 1, code: 1 }, options: { name: "organizationId_1_code_1", unique: true } },
   { id: "chapter.subject-code", collection: "academicchapters", keys: { subjectId: 1, code: 1 }, options: { name: "subjectId_1_code_1", unique: true } },

@@ -49,9 +49,9 @@ BatchEnrollmentSchema.index(
   { organizationId: 1, academicSessionId: 1, studentId: 1 },
   { unique: true, partialFilterExpression: { status: "active" } },
 );
-BatchEnrollmentSchema.index({ branchId: 1, batchId: 1, status: 1, studentId: 1 });
+BatchEnrollmentSchema.index({ organizationId: 1, batchId: 1, status: 1, studentId: 1 });
 BatchEnrollmentSchema.index({ studentId: 1, status: 1, effectiveFrom: -1 });
-requireCanonicalPathsWhenEnabled(BatchEnrollmentSchema, ["organizationId", "branchId", "academicSessionId"]);
+requireCanonicalPathsWhenEnabled(BatchEnrollmentSchema, ["organizationId", "academicSessionId"]);
 
 export const BatchEnrollment: Model<IBatchEnrollment> =
   (mongoose.models.BatchEnrollment as Model<IBatchEnrollment> | undefined) ||

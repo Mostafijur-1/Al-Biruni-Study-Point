@@ -42,8 +42,8 @@ try {
     status: before.duplicateGroupCount > 0 ? "blocked" : "ready",
     before,
     plannedOperations: [
-      "Create the named partial unique canonical batch scope index.",
-      "Drop the legacy unconditional unique batch scope index after successful creation.",
+      "Create the named partial unique organization/session batch code index.",
+      "Drop obsolete branch-scoped batch code indexes after successful creation.",
     ],
     rollback: "Retain the partial unique index. A compatibility non-unique index may be added only after a separate reviewed query-plan check.",
   };

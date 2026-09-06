@@ -6,19 +6,22 @@ import {
   BATCH_SCOPE_CODE_INDEX,
   canonicalIntegrityIndexManifest,
   duplicateCandidatePipeline,
-  LEGACY_BATCH_SCOPE_INDEX_NAME,
+  LEGACY_BATCH_SCOPE_INDEX_NAMES,
 } from "../lib/db/canonical-index-manifest.ts";
 import { Batch } from "../lib/db/models/Batch.ts";
 
 test("canonical integrity indexes use stable unique identifiers", () => {
   assert.equal(new Set(canonicalIntegrityIndexManifest.map((index) => index.id)).size, canonicalIntegrityIndexManifest.length);
-  assert.equal(BATCH_SCOPE_CODE_INDEX.options.name, "uq_batch_scope_code_canonical");
-  assert.equal(LEGACY_BATCH_SCOPE_INDEX_NAME, "branchId_1_academicSessionId_1_code_1");
+  assert.equal(BATCH_SCOPE_CODE_INDEX.options.name, "uq_batch_organization_session_code");
+  assert.deepEqual(LEGACY_BATCH_SCOPE_INDEX_NAMES, [
+    "branchId_1_academicSessionId_1_code_1",
+    "uq_batch_scope_code_canonical",
+  ]);
 });
 
 test("batch scope uniqueness applies only to fully canonical batches", () => {
   assert.deepEqual(BATCH_SCOPE_CODE_INDEX.options.partialFilterExpression, {
-    branchId: { $type: "objectId" },
+    organizationId: { $type: "objectId" },
     academicSessionId: { $type: "objectId" },
     code: { $type: "string" },
   });

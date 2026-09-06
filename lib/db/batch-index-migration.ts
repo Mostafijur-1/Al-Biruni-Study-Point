@@ -2,11 +2,11 @@ import type { Db } from "mongodb";
 
 import {
   BATCH_SCOPE_CODE_INDEX,
-  LEGACY_BATCH_SCOPE_INDEX_NAME,
+  LEGACY_BATCH_SCOPE_INDEX_NAMES,
   duplicateCandidatePipeline,
 } from "./canonical-index-manifest.ts";
 
-export const STEP2_INDEX_MIGRATION_ID = "20260830_step2_batch_scope_partial_unique";
+export const STEP2_INDEX_MIGRATION_ID = "20260906_batch_organization_session_unique_v1";
 
 export async function inspectBatchScopeIndexMigration(db: Db) {
   const collection = db.collection(BATCH_SCOPE_CODE_INDEX.collection);
@@ -18,7 +18,7 @@ export async function inspectBatchScopeIndexMigration(db: Db) {
     }>(duplicateCandidatePipeline(BATCH_SCOPE_CODE_INDEX)).toArray(),
     collection.countDocuments({
       $or: [
-        { branchId: { $exists: false } }, { branchId: null },
+        { organizationId: { $exists: false } }, { organizationId: null },
         { academicSessionId: { $exists: false } }, { academicSessionId: null },
         { code: { $exists: false } }, { code: null }, { code: "" },
       ],
@@ -30,7 +30,9 @@ export async function inspectBatchScopeIndexMigration(db: Db) {
     affectedDocumentCount: duplicate?.affectedDocumentCount ?? 0,
     missingCanonicalFields,
     desiredIndexPresent: indexes.some((index) => index.name === BATCH_SCOPE_CODE_INDEX.options.name),
-    legacyIndexPresent: indexes.some((index) => index.name === LEGACY_BATCH_SCOPE_INDEX_NAME),
+    legacyIndexNames: indexes
+      .map((index) => index.name)
+      .filter((name): name is string => Boolean(name) && LEGACY_BATCH_SCOPE_INDEX_NAMES.includes(name as typeof LEGACY_BATCH_SCOPE_INDEX_NAMES[number])),
     indexNames: indexes.map((index) => index.name).filter(Boolean).sort(),
   };
 }
@@ -38,18 +40,18 @@ export async function inspectBatchScopeIndexMigration(db: Db) {
 export async function applyBatchScopeIndexMigration(db: Db) {
   const before = await inspectBatchScopeIndexMigration(db);
   if (before.duplicateGroupCount > 0) {
-    throw new Error("Canonical batch scope contains duplicate branch/session/code groups.");
+    throw new Error("Canonical batch scope contains duplicate organization/session/code groups.");
   }
   const collection = db.collection(BATCH_SCOPE_CODE_INDEX.collection);
   await collection.createIndex(
     BATCH_SCOPE_CODE_INDEX.keys,
     BATCH_SCOPE_CODE_INDEX.options,
   );
-  if (before.legacyIndexPresent) {
-    await collection.dropIndex(LEGACY_BATCH_SCOPE_INDEX_NAME);
+  for (const indexName of before.legacyIndexNames) {
+    await collection.dropIndex(indexName);
   }
   const after = await inspectBatchScopeIndexMigration(db);
-  if (!after.desiredIndexPresent || after.legacyIndexPresent) {
+  if (!after.desiredIndexPresent || after.legacyIndexNames.length > 0) {
     throw new Error("Batch scope index migration did not reach the expected state.");
   }
   return { before, after };

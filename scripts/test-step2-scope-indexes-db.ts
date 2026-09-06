@@ -8,7 +8,7 @@ import {
 } from "../lib/db/batch-index-migration.ts";
 import {
   BATCH_SCOPE_CODE_INDEX,
-  LEGACY_BATCH_SCOPE_INDEX_NAME,
+  LEGACY_BATCH_SCOPE_INDEX_NAMES,
 } from "../lib/db/canonical-index-manifest.ts";
 
 const uri = process.env.ACADEMIC_TEST_MONGODB_URI?.trim();
@@ -34,7 +34,7 @@ const fixture = (name: string) => ({
 });
 const canonical = (code: string) => ({
   ...fixture(`Canonical ${code}`),
-  branchId: new mongoose.Types.ObjectId("64b000000000000000000001"),
+  organizationId: new mongoose.Types.ObjectId("64b000000000000000000001"),
   academicSessionId: new mongoose.Types.ObjectId("64b000000000000000000002"),
   code,
 });
@@ -51,22 +51,22 @@ try {
   await assert.rejects(batches.insertOne(canonical("B-1")), /duplicate key/i);
   let state = await inspectBatchScopeIndexMigration(database);
   assert.equal(state.desiredIndexPresent, true);
-  assert.equal(state.legacyIndexPresent, false);
+  assert.equal(state.legacyIndexNames.length, 0);
   assert.equal(state.missingCanonicalFields, 2);
 
   // Migrated fixture: create the replacement first, then remove the legacy index.
   await batches.drop();
   await batches.createIndex(
-    BATCH_SCOPE_CODE_INDEX.keys,
-    { name: LEGACY_BATCH_SCOPE_INDEX_NAME, unique: true },
+    { branchId: 1, academicSessionId: 1, code: 1 },
+    { name: LEGACY_BATCH_SCOPE_INDEX_NAMES[0], unique: true },
   );
   await batches.insertOne(fixture("Legacy fixture"));
   state = await inspectBatchScopeIndexMigration(database);
-  assert.equal(state.legacyIndexPresent, true);
+  assert.deepEqual(state.legacyIndexNames, [LEGACY_BATCH_SCOPE_INDEX_NAMES[0]]);
   await applyBatchScopeIndexMigration(database);
   state = await inspectBatchScopeIndexMigration(database);
   assert.equal(state.desiredIndexPresent, true);
-  assert.equal(state.legacyIndexPresent, false);
+  assert.equal(state.legacyIndexNames.length, 0);
 
   // Unsafe fixture: preflight blocks canonical duplicates before any index change.
   await batches.drop();
@@ -76,7 +76,7 @@ try {
   assert.equal(state.affectedDocumentCount, 2);
   await assert.rejects(
     applyBatchScopeIndexMigration(database),
-    /duplicate branch\/session\/code groups/,
+    /duplicate organization\/session\/code groups/,
   );
 
   console.log(JSON.stringify({
