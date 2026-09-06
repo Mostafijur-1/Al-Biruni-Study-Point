@@ -51,6 +51,7 @@ try {
   await assert.rejects(batches.insertOne(canonical("B-1")), /duplicate key/i);
   let state = await inspectBatchScopeIndexMigration(database);
   assert.equal(state.desiredIndexPresent, true);
+  assert.equal(state.desiredStatusIndexPresent, false);
   assert.equal(state.legacyIndexNames.length, 0);
   assert.equal(state.missingCanonicalFields, 2);
 
@@ -66,6 +67,7 @@ try {
   await applyBatchScopeIndexMigration(database);
   state = await inspectBatchScopeIndexMigration(database);
   assert.equal(state.desiredIndexPresent, true);
+  assert.equal(state.desiredStatusIndexPresent, true);
   assert.equal(state.legacyIndexNames.length, 0);
 
   // Unsafe fixture: preflight blocks canonical duplicates before any index change.

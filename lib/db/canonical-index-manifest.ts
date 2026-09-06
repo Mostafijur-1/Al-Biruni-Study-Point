@@ -13,7 +13,15 @@ export type CanonicalIndexDefinition = {
 export const LEGACY_BATCH_SCOPE_INDEX_NAMES = [
   "branchId_1_academicSessionId_1_code_1",
   "uq_batch_scope_code_canonical",
+  "organizationId_1_branchId_1_academicSessionId_1_status_1",
 ] as const;
+
+export const BATCH_STATUS_INDEX: CanonicalIndexDefinition = {
+  id: "batch.organization-session-status",
+  collection: "batches",
+  keys: { organizationId: 1, academicSessionId: 1, status: 1 },
+  options: { name: "organizationId_1_academicSessionId_1_status_1" },
+};
 
 export const BATCH_SCOPE_CODE_INDEX: CanonicalIndexDefinition = {
   id: "batch.scope-code",
@@ -37,6 +45,7 @@ export const canonicalIntegrityIndexManifest: readonly CanonicalIndexDefinition[
   { id: "chapter.subject-code", collection: "academicchapters", keys: { subjectId: 1, code: 1 }, options: { name: "subjectId_1_code_1", unique: true } },
   { id: "topic.chapter-code", collection: "academictopics", keys: { chapterId: 1, code: 1 }, options: { name: "chapterId_1_code_1", unique: true } },
   BATCH_SCOPE_CODE_INDEX,
+  BATCH_STATUS_INDEX,
   { id: "enrollment.active-student-session", collection: "batchenrollments", keys: { organizationId: 1, academicSessionId: 1, studentId: 1 }, options: { name: "organizationId_1_academicSessionId_1_studentId_1", unique: true, partialFilterExpression: { status: "active" } } },
   { id: "assignment.active-batch-teacher-subject", collection: "teacherassignments", keys: { batchId: 1, teacherId: 1, subjectId: 1 }, options: { name: "batchId_1_teacherId_1_subjectId_1", unique: true, partialFilterExpression: { status: "active" } } },
   { id: "class-session.routine-occurrence", collection: "classsessions", keys: { routineSlotId: 1, scheduledStart: 1 }, options: { name: "routineSlotId_1_scheduledStart_1", unique: true, sparse: true } },

@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   BATCH_SCOPE_CODE_INDEX,
+  BATCH_STATUS_INDEX,
   canonicalIntegrityIndexManifest,
   duplicateCandidatePipeline,
   LEGACY_BATCH_SCOPE_INDEX_NAMES,
@@ -16,7 +17,13 @@ test("canonical integrity indexes use stable unique identifiers", () => {
   assert.deepEqual(LEGACY_BATCH_SCOPE_INDEX_NAMES, [
     "branchId_1_academicSessionId_1_code_1",
     "uq_batch_scope_code_canonical",
+    "organizationId_1_branchId_1_academicSessionId_1_status_1",
   ]);
+  assert.deepEqual(BATCH_STATUS_INDEX.keys, {
+    organizationId: 1,
+    academicSessionId: 1,
+    status: 1,
+  });
 });
 
 test("batch scope uniqueness applies only to fully canonical batches", () => {

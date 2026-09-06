@@ -43,6 +43,7 @@ try {
     before,
     plannedOperations: [
       "Create the named partial unique organization/session batch code index.",
+      "Create the organization/session/status batch query index.",
       "Drop obsolete branch-scoped batch code indexes after successful creation.",
     ],
     rollback: "Retain the partial unique index. A compatibility non-unique index may be added only after a separate reviewed query-plan check.",
