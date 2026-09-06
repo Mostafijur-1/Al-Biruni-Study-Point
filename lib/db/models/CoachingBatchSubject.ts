@@ -27,7 +27,7 @@ const CoachingBatchSubjectSchema = new Schema<ICoachingBatchSubject>(
 
 CoachingBatchSubjectSchema.index({ batchId: 1, subjectId: 1 }, { unique: true });
 CoachingBatchSubjectSchema.index({ batchId: 1, status: 1, sortOrder: 1 });
-CoachingBatchSubjectSchema.index({ organizationId: 1, branchId: 1, status: 1 });
+CoachingBatchSubjectSchema.index({ organizationId: 1, status: 1 });
 
 export const CoachingBatchSubject: Model<ICoachingBatchSubject> =
   (mongoose.models.CoachingBatchSubject as Model<ICoachingBatchSubject> | undefined) ||

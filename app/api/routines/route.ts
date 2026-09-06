@@ -31,7 +31,6 @@ function serializeRoutine(slot: IRoutineSlot | Record<string, unknown>, context?
   return {
     id: String(item._id),
     organizationId: item.organizationId ? String(item.organizationId) : undefined,
-    branchId: item.branchId ? String(item.branchId) : undefined,
     academicSessionId: item.academicSessionId ? String(item.academicSessionId) : undefined,
     batchId: item.batchId ? String(item.batchId) : undefined,
     subjectId: item.subjectId ? String(item.subjectId) : undefined,
@@ -66,7 +65,6 @@ export async function GET(request: NextRequest) {
     const query: QueryFilter<IRoutineSlot> = { status: parsed.status };
 
     if (parsed.organizationId) query.organizationId = parsed.organizationId;
-    if (parsed.branchId) query.branchId = parsed.branchId;
     if (parsed.academicSessionId) query.academicSessionId = parsed.academicSessionId;
     if (parsed.batchId) query.batchId = parsed.batchId;
     if (parsed.subjectId) query.subjectId = parsed.subjectId;

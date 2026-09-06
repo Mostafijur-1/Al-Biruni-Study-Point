@@ -29,7 +29,6 @@ const batchNameSchema = z.string().trim().min(2).max(120).regex(/\b(?:19|20)\d{2
 
 export const batchListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
-  branchId: objectIdSchema.optional(),
   academicSessionId: objectIdSchema.optional(),
   studentClass: studentClassSchema.optional(),
   status: z.enum(["planned", "active", "closed", "archived", "all"]).default("active"),
@@ -59,7 +58,6 @@ export const batchUpdateSchema = z
 
 export const enrollmentListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
-  branchId: objectIdSchema.optional(),
   academicSessionId: objectIdSchema.optional(),
   batchId: objectIdSchema.optional(),
   studentId: objectIdSchema.optional(),
@@ -122,7 +120,6 @@ export type EnrollmentMutationInput = z.output<typeof enrollmentMutationSchema>;
 
 export const teacherAssignmentListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
-  branchId: objectIdSchema.optional(),
   academicSessionId: objectIdSchema.optional(),
   batchId: objectIdSchema.optional(),
   teacherId: objectIdSchema.optional(),
@@ -150,7 +147,6 @@ export const teacherAssignmentMutationSchema = z.discriminatedUnion("action", [
 
 export const routineListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
-  branchId: objectIdSchema.optional(),
   academicSessionId: objectIdSchema.optional(),
   batchId: objectIdSchema.optional(),
   teacherId: objectIdSchema.optional(),
@@ -217,7 +213,6 @@ export const routineMutationSchema = z.discriminatedUnion("action", [
 
 export const classSessionListQuerySchema = z.object({
   organizationId: objectIdSchema.optional(),
-  branchId: objectIdSchema.optional(),
   academicSessionId: objectIdSchema.optional(),
   batchId: objectIdSchema.optional(),
   teacherId: objectIdSchema.optional(),

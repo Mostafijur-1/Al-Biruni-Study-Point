@@ -4,6 +4,7 @@ export interface IOrganization extends Document {
   name: string;
   slug: string;
   timezone: string;
+  scheduleVersion: number;
   status: "active" | "archived";
   createdAt: Date;
   updatedAt: Date;
@@ -14,6 +15,7 @@ const OrganizationSchema = new Schema<IOrganization>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, trim: true, lowercase: true },
     timezone: { type: String, default: "Asia/Dhaka", trim: true },
+    scheduleVersion: { type: Number, default: 0, min: 0 },
     status: { type: String, enum: ["active", "archived"], default: "active" },
   },
   { timestamps: true },

@@ -4,7 +4,7 @@ import { isValidDateRange } from "../../academic-rules.ts";
 
 export interface IClassSession extends Document {
   organizationId: Types.ObjectId;
-  branchId: Types.ObjectId;
+  branchId?: Types.ObjectId;
   academicSessionId: Types.ObjectId;
   batchId: Types.ObjectId;
   subjectId: Types.ObjectId;
@@ -22,7 +22,7 @@ export interface IClassSession extends Document {
 const ClassSessionSchema = new Schema<IClassSession>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true },
-    branchId: { type: Schema.Types.ObjectId, ref: "Branch", required: true },
+    branchId: { type: Schema.Types.ObjectId, ref: "Branch" },
     academicSessionId: { type: Schema.Types.ObjectId, ref: "AcademicSession", required: true },
     batchId: { type: Schema.Types.ObjectId, ref: "Batch", required: true },
     subjectId: { type: Schema.Types.ObjectId, ref: "AcademicSubject", required: true },
@@ -53,7 +53,7 @@ ClassSessionSchema.pre("validate", function () {
 
 ClassSessionSchema.index({ batchId: 1, scheduledStart: 1 });
 ClassSessionSchema.index({ teacherId: 1, scheduledStart: 1 });
-ClassSessionSchema.index({ branchId: 1, status: 1, scheduledStart: 1 });
+ClassSessionSchema.index({ organizationId: 1, status: 1, scheduledStart: 1 });
 ClassSessionSchema.index(
   { routineSlotId: 1, scheduledStart: 1 },
   { unique: true, sparse: true },

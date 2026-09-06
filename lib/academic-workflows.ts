@@ -18,7 +18,6 @@ import { AcademicSubject } from "./db/models/AcademicSubject.ts";
 import { Batch, type IBatch } from "./db/models/Batch.ts";
 import { BatchEnrollment } from "./db/models/BatchEnrollment.ts";
 import { CoachingBatchSubject } from "./db/models/CoachingBatchSubject.ts";
-import { Branch } from "./db/models/Branch.ts";
 import { ClassSession } from "./db/models/ClassSession.ts";
 import { Organization } from "./db/models/Organization.ts";
 import { RoutineSlot } from "./db/models/RoutineSlot.ts";
@@ -38,7 +37,6 @@ type CreateBatchInput = WorkflowAuditContext & {
   defaultFeeTk: number;
   subjectNames: string[];
   organizationId?: string;
-  branchId?: string;
   academicSessionId?: string;
   code?: string;
   studentClass?: "class-9" | "class-10" | "class-11" | "class-12";
@@ -115,15 +113,11 @@ type TransitionClassSessionInput = WorkflowAuditContext & {
   nextStatus: Extract<ClassSessionStatus, "completed" | "cancelled">;
 };
 
-type LegacyContextBatch = IBatch & Required<Pick<
+type AcademicContextBatch = IBatch & Required<Pick<
   IBatch,
   | "organizationId"
-  | "branchId"
   | "academicSessionId"
   | "studentClass"
-  | "capacity"
-  | "startsAt"
-  | "endsAt"
 >>;
 
 async function runTransaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
@@ -144,7 +138,7 @@ async function runTransaction<T>(work: (session: ClientSession) => Promise<T>): 
   return result;
 }
 
-async function loadWritableBatch(batchId: string, session: ClientSession): Promise<LegacyContextBatch> {
+async function loadWritableBatch(batchId: string, session: ClientSession): Promise<AcademicContextBatch> {
   const batch = await Batch.findOne({
     _id: batchId,
     status: { $in: ["planned", "active"] },
@@ -153,23 +147,14 @@ async function loadWritableBatch(batchId: string, session: ClientSession): Promi
   if (!batch) throw new ApiRouteError("Batch not found or not open for changes.", 404);
   if (
     !batch.organizationId ||
-    !batch.branchId ||
     !batch.academicSessionId ||
-    !batch.studentClass ||
-    !batch.capacity ||
-    !batch.startsAt ||
-    !batch.endsAt
+    !batch.studentClass
   ) {
-    throw new ApiRouteError("This workflow requires legacy academic batch context.", 409);
+    throw new ApiRouteError("This workflow requires organization, session, and class context.", 409);
   }
 
-  const [organization, branch, academicSession] = await Promise.all([
+  const [organization, academicSession] = await Promise.all([
     Organization.findOne({ _id: batch.organizationId, status: "active" }).session(session),
-    Branch.findOne({
-      _id: batch.branchId,
-      organizationId: batch.organizationId,
-      status: "active",
-    }).session(session),
     AcademicSession.findOne({
       _id: batch.academicSessionId,
       organizationId: batch.organizationId,
@@ -177,28 +162,33 @@ async function loadWritableBatch(batchId: string, session: ClientSession): Promi
     }).session(session),
   ]);
 
-  if (!organization || !branch || !academicSession) {
+  if (!organization || !academicSession) {
     throw new ApiRouteError("Batch academic context is inactive or inconsistent.", 409);
   }
-  if (batch.startsAt < academicSession.startsAt || batch.endsAt > academicSession.endsAt) {
+  if (
+    (batch.startsAt && batch.startsAt < academicSession.startsAt) ||
+    (batch.endsAt && batch.endsAt > academicSession.endsAt)
+  ) {
     throw new ApiRouteError("Batch dates fall outside its academic session.", 409);
   }
 
-  return batch as LegacyContextBatch;
+  return batch as AcademicContextBatch;
 }
 
 async function reserveBatchSeat(
   batchId: string | Types.ObjectId,
-  capacity: number,
+  capacity: number | undefined,
   session: ClientSession,
 ) {
   const filter: QueryFilter<IBatch> = {
     _id: batchId,
     status: { $in: ["planned", "active"] },
-    $or: [
-      { activeEnrollmentCount: { $lt: capacity } },
-      { activeEnrollmentCount: { $exists: false } },
-    ],
+    ...(capacity ? {
+      $or: [
+        { activeEnrollmentCount: { $lt: capacity } },
+        { activeEnrollmentCount: { $exists: false } },
+      ],
+    } : {}),
   };
   const batch = await Batch.findOneAndUpdate(
     filter,
@@ -210,19 +200,19 @@ async function reserveBatchSeat(
   return batch;
 }
 
-async function lockBranchSchedule(branchId: Types.ObjectId, session: ClientSession) {
-  const result = await Branch.updateOne(
-    { _id: branchId, status: "active" },
+async function lockOrganizationSchedule(organizationId: Types.ObjectId, session: ClientSession) {
+  const result = await Organization.updateOne(
+    { _id: organizationId, status: "active" },
     { $inc: { scheduleVersion: 1 } },
     { session },
   );
   if (result.matchedCount !== 1) {
-    throw new ApiRouteError("Branch is not active for schedule changes.", 409);
+    throw new ApiRouteError("Organization is not active for schedule changes.", 409);
   }
 }
 
 async function syncBatchSubjects(input: {
-  batch: Pick<IBatch, "_id" | "organizationId" | "branchId">;
+  batch: Pick<IBatch, "_id" | "organizationId">;
   subjectNames: string[];
   actorId: string;
   session: ClientSession;
@@ -236,13 +226,13 @@ async function syncBatchSubjects(input: {
     throw new ApiRouteError("Duplicate batch subjects are not allowed.", 400, "VALIDATION_ERROR");
   }
   const documents = await Promise.all(unique.map((subject) => AcademicSubject.findOneAndUpdate(
-    { code: subject.code },
-    { $set: { status: "active" }, $setOnInsert: { code: subject.code, name: subject.name, nameBn: subject.nameBn, classLevels: ["class-9", "class-10", "class-11", "class-12"], aliases: [subject.name, subject.nameBn] } },
+    { organizationId: input.batch.organizationId, code: subject.code },
+    { $set: { status: "active" }, $setOnInsert: { organizationId: input.batch.organizationId, code: subject.code, name: subject.name, nameBn: subject.nameBn, classLevels: ["class-9", "class-10", "class-11", "class-12"], aliases: [subject.name, subject.nameBn] } },
     { upsert: true, new: true, runValidators: true, session: input.session },
   )));
   await Promise.all(documents.map((subject, index) => CoachingBatchSubject.findOneAndUpdate(
     { batchId: input.batch._id, subjectId: subject._id },
-    { $set: { organizationId: input.batch.organizationId, branchId: input.batch.branchId, status: "active", sortOrder: index, createdBy: input.actorId } },
+    { $set: { organizationId: input.batch.organizationId, status: "active", sortOrder: index, createdBy: input.actorId } },
     { upsert: true, runValidators: true, session: input.session },
   )));
   await CoachingBatchSubject.updateMany(
@@ -259,7 +249,6 @@ export async function createBatch(input: CreateBatchInput) {
       [
         {
           organizationId: input.organizationId,
-          branchId: input.branchId,
           academicSessionId: input.academicSessionId,
           code: input.code ?? `BATCH-${new mongoose.Types.ObjectId().toHexString().slice(-8).toUpperCase()}`,
           name: input.name,
@@ -326,16 +315,14 @@ export async function updateBatch(input: UpdateBatchInput) {
       batch.status !== "active" &&
       nextStatus === "active" &&
       batch.organizationId &&
-      batch.branchId &&
       batch.academicSessionId
     ) {
-      const [organization, branch, academicSession] = await Promise.all([
+      const [organization, academicSession] = await Promise.all([
         Organization.findOne({ _id: batch.organizationId, status: "active" }).session(session),
-        Branch.findOne({ _id: batch.branchId, organizationId: batch.organizationId, status: "active" }).session(session),
-        AcademicSession.findOne({ _id: batch.academicSessionId, status: { $in: ["planned", "active"] } }).session(session),
+        AcademicSession.findOne({ _id: batch.academicSessionId, organizationId: batch.organizationId, status: { $in: ["planned", "active"] } }).session(session),
       ]);
-      if (!organization || !branch || !academicSession) {
-        throw new ApiRouteError("Legacy batch academic context must be active before activation.", 409);
+      if (!organization || !academicSession) {
+        throw new ApiRouteError("Batch academic context must be active before activation.", 409);
       }
     }
     const before = { name: batch.name, mode: batch.mode, defaultFeeTk: batch.defaultFeeTk, status: batch.status };
@@ -350,7 +337,7 @@ export async function updateBatch(input: UpdateBatchInput) {
       await syncBatchSubjects({ batch, subjectNames: input.subjectNames, actorId: input.actor.id, session });
     }
     await writeAuditLog({
-      request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId,
+      request: input.request, actor: input.actor, organizationId: batch.organizationId,
       action: "academic.batch.updated", resourceType: "Batch", resourceId: batch._id, reason: input.reason,
       before, after: { name: batch.name, mode: batch.mode, defaultFeeTk: batch.defaultFeeTk, status: batch.status, subjectNames: input.subjectNames }, session,
     });
@@ -371,7 +358,7 @@ export async function enrollStudent(input: EnrollStudentInput) {
     if (student.studentClass !== batch.studentClass) {
       throw new ApiRouteError("Student class does not match the batch class.", 409);
     }
-    if (input.effectiveFrom < batch.startsAt || input.effectiveFrom > batch.endsAt) {
+    if ((batch.startsAt && input.effectiveFrom < batch.startsAt) || (batch.endsAt && input.effectiveFrom > batch.endsAt)) {
       throw new ApiRouteError("Enrollment date must fall within the batch dates.", 409);
     }
 
@@ -408,7 +395,6 @@ export async function enrollStudent(input: EnrollStudentInput) {
       request: input.request,
       actor: input.actor,
       organizationId: batch.organizationId,
-      branchId: batch.branchId,
       action: "academic.enrollment.created",
       resourceType: "BatchEnrollment",
       resourceId: enrollment._id,
@@ -453,7 +439,7 @@ export async function transferStudent(input: TransferStudentInput) {
     ) {
       throw new ApiRouteError("Transfer target must use the same organization, session, and class.", 409);
     }
-    if (input.effectiveAt < targetBatch.startsAt || input.effectiveAt > targetBatch.endsAt) {
+    if ((targetBatch.startsAt && input.effectiveAt < targetBatch.startsAt) || (targetBatch.endsAt && input.effectiveAt > targetBatch.endsAt)) {
       throw new ApiRouteError("Transfer date must fall within the target batch dates.", 409);
     }
 
@@ -473,7 +459,6 @@ export async function transferStudent(input: TransferStudentInput) {
       [
         {
           organizationId: targetBatch.organizationId,
-          branchId: targetBatch.branchId,
           academicSessionId: targetBatch.academicSessionId,
           batchId: targetBatch._id,
           studentId: current.studentId,
@@ -491,7 +476,6 @@ export async function transferStudent(input: TransferStudentInput) {
       request: input.request,
       actor: input.actor,
       organizationId: current.organizationId,
-      branchId: targetBatch.branchId,
       action: "academic.enrollment.transferred",
       resourceType: "BatchEnrollment",
       resourceId: current._id,
@@ -537,7 +521,7 @@ export async function assignTeacher(input: AssignTeacherInput) {
     ) {
       throw new ApiRouteError("Teacher is not authorized for the selected subject.", 409);
     }
-    if (input.effectiveFrom < batch.startsAt || input.effectiveFrom > batch.endsAt) {
+    if ((batch.startsAt && input.effectiveFrom < batch.startsAt) || (batch.endsAt && input.effectiveFrom > batch.endsAt)) {
       throw new ApiRouteError("Assignment date must fall within the batch dates.", 409);
     }
 
@@ -569,7 +553,6 @@ export async function assignTeacher(input: AssignTeacherInput) {
       request: input.request,
       actor: input.actor,
       organizationId: batch.organizationId,
-      branchId: batch.branchId,
       action: "academic.teacher-assignment.created",
       resourceType: "TeacherAssignment",
       resourceId: assignment._id,
@@ -710,7 +693,6 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       request: input.request,
       actor: input.actor,
       organizationId: batch.organizationId,
-      branchId: batch.branchId,
       action: "academic.routine-slot.created",
       resourceType: "RoutineSlot",
       resourceId: routineSlot._id,
@@ -787,13 +769,13 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
 
     const before = { teacherId: String(routineSlot.teacherId), studentIds: (routineSlot.studentIds ?? []).map(String), weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute };
     routineSlot.set({
-      organizationId: batch.organizationId, branchId: batch.branchId, academicSessionId: batch.academicSessionId,
+      organizationId: batch.organizationId, academicSessionId: batch.academicSessionId,
       batchId: batch._id, subjectId: subject?._id, subjectName, teacherId: teacher._id, teacherAssignmentId: undefined,
       studentIds: [], weekday: input.weekday, startMinute: input.startMinute, endMinute: input.endMinute,
       room: input.room?.trim() || undefined, effectiveFrom: input.effectiveFrom, effectiveTo,
     });
     await routineSlot.save({ session });
-    await writeAuditLog({ request: input.request, actor: input.actor, organizationId: batch.organizationId, branchId: batch.branchId, action: "academic.routine-slot.updated", resourceType: "RoutineSlot", resourceId: routineSlot._id, reason: input.reason, before, after: { teacherId: String(routineSlot.teacherId), targeting: "batch-subject", weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute }, session });
+    await writeAuditLog({ request: input.request, actor: input.actor, organizationId: batch.organizationId, action: "academic.routine-slot.updated", resourceType: "RoutineSlot", resourceId: routineSlot._id, reason: input.reason, before, after: { teacherId: String(routineSlot.teacherId), targeting: "batch-subject", weekday: routineSlot.weekday, startMinute: routineSlot.startMinute, endMinute: routineSlot.endMinute }, session });
     return routineSlot;
   });
 }
@@ -813,8 +795,8 @@ export async function endRoutineSlot(input: EndRoutineSlotInput) {
       throw new ApiRouteError("Routine end date cannot extend its approved window.", 409);
     }
 
-    if (!routineSlot.branchId) throw new ApiRouteError("Legacy academic branch is unavailable.", 409);
-    await lockBranchSchedule(routineSlot.branchId, session);
+    if (!routineSlot.organizationId) throw new ApiRouteError("Academic organization is unavailable.", 409);
+    await lockOrganizationSchedule(routineSlot.organizationId, session);
     const laterClassSession = await ClassSession.exists({
       routineSlotId: routineSlot._id,
       status: { $in: ["scheduled", "completed"] },
@@ -834,7 +816,6 @@ export async function endRoutineSlot(input: EndRoutineSlotInput) {
       request: input.request,
       actor: input.actor,
       organizationId: routineSlot.organizationId,
-      branchId: routineSlot.branchId,
       action: "academic.routine-slot.ended",
       resourceType: "RoutineSlot",
       resourceId: routineSlot._id,
@@ -863,8 +844,8 @@ export async function createClassSession(input: CreateClassSessionInput) {
     }
     const batch = await loadWritableBatch(String(assignment.batchId), session);
     if (
-      input.scheduledStart < batch.startsAt ||
-      input.scheduledEnd > batch.endsAt ||
+      (batch.startsAt && input.scheduledStart < batch.startsAt) ||
+      (batch.endsAt && input.scheduledEnd > batch.endsAt) ||
       !isEffectiveOn(assignment.effectiveFrom, assignment.effectiveTo, input.scheduledStart) ||
       (assignment.effectiveTo !== undefined && input.scheduledEnd > assignment.effectiveTo)
     ) {
@@ -901,7 +882,7 @@ export async function createClassSession(input: CreateClassSessionInput) {
       }
     }
 
-    await lockBranchSchedule(batch.branchId, session);
+    await lockOrganizationSchedule(batch.organizationId, session);
     const conflict = await ClassSession.findOne({
       status: { $in: ["scheduled", "completed"] },
       scheduledStart: { $lt: input.scheduledEnd },
@@ -914,7 +895,6 @@ export async function createClassSession(input: CreateClassSessionInput) {
       [
         {
           organizationId: batch.organizationId,
-          branchId: batch.branchId,
           academicSessionId: batch.academicSessionId,
           batchId: assignment.batchId,
           subjectId: assignment.subjectId,
@@ -933,7 +913,6 @@ export async function createClassSession(input: CreateClassSessionInput) {
       request: input.request,
       actor: input.actor,
       organizationId: batch.organizationId,
-      branchId: batch.branchId,
       action: "academic.class-session.created",
       resourceType: "ClassSession",
       resourceId: classSession._id,
@@ -972,7 +951,6 @@ export async function transitionClassSession(input: TransitionClassSessionInput)
       request: input.request,
       actor: input.actor,
       organizationId: classSession.organizationId,
-      branchId: classSession.branchId,
       action: `academic.class-session.${input.nextStatus}`,
       resourceType: "ClassSession",
       resourceId: classSession._id,

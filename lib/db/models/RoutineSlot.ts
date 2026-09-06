@@ -62,9 +62,9 @@ RoutineSlotSchema.index({ batchId: 1, weekday: 1, startMinute: 1, status: 1 });
 RoutineSlotSchema.index({ batchId: 1, subjectId: 1, weekday: 1, status: 1 });
 RoutineSlotSchema.index({ teacherId: 1, weekday: 1, startMinute: 1, status: 1 });
 RoutineSlotSchema.index({ studentIds: 1, weekday: 1, status: 1 });
-RoutineSlotSchema.index({ branchId: 1, academicSessionId: 1, status: 1 });
+RoutineSlotSchema.index({ organizationId: 1, academicSessionId: 1, status: 1 });
 requireCanonicalPathsWhenEnabled(RoutineSlotSchema, [
-  "organizationId", "branchId", "academicSessionId", "batchId", "subjectId",
+  "organizationId", "academicSessionId", "batchId", "subjectId",
 ]);
 
 export const RoutineSlot: Model<IRoutineSlot> =

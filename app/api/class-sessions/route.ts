@@ -19,7 +19,6 @@ function serializeClassSession(value: IClassSession | Record<string, unknown>) {
   return {
     id: String(item._id),
     organizationId: String(item.organizationId),
-    branchId: String(item.branchId),
     academicSessionId: String(item.academicSessionId),
     batchId: String(item.batchId),
     subjectId: String(item.subjectId),
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
     const query: QueryFilter<IClassSession> = { status: parsed.status };
 
     if (parsed.organizationId) query.organizationId = parsed.organizationId;
-    if (parsed.branchId) query.branchId = parsed.branchId;
     if (parsed.academicSessionId) query.academicSessionId = parsed.academicSessionId;
     if (parsed.batchId) query.batchId = parsed.batchId;
     if (parsed.subjectId) query.subjectId = parsed.subjectId;

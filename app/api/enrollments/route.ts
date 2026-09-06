@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
     const input = enrollmentListQuerySchema.parse(Object.fromEntries(request.nextUrl.searchParams.entries()));
     const context = createRequestContext(request, actor, {
       organizationId: input.organizationId,
-      branchId: input.branchId,
       academicSessionId: input.academicSessionId,
     });
     return success(await listEnrollments(context, input));

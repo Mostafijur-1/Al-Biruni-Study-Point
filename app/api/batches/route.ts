@@ -13,7 +13,6 @@ import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
 import { CoachingBatchSubject } from "@/lib/db/models/CoachingBatchSubject";
 import { AcademicSubject } from "@/lib/db/models/AcademicSubject";
 import { AcademicSession } from "@/lib/db/models/AcademicSession";
-import { Branch } from "@/lib/db/models/Branch";
 import { Organization } from "@/lib/db/models/Organization";
 import { TeacherAssignment } from "@/lib/db/models/TeacherAssignment";
 import { batchCreateSchema, batchListQuerySchema, batchUpdateSchema } from "@/lib/validations/academic.schema";
@@ -21,7 +20,6 @@ import { batchCreateSchema, batchListQuerySchema, batchUpdateSchema } from "@/li
 function serializeBatch(batch: {
   _id: unknown;
   organizationId?: unknown;
-  branchId?: unknown;
   academicSessionId?: unknown;
   code?: string;
   name: string;
@@ -38,7 +36,6 @@ function serializeBatch(batch: {
   return {
     id: String(batch._id),
     organizationId: batch.organizationId ? String(batch.organizationId) : undefined,
-    branchId: batch.branchId ? String(batch.branchId) : undefined,
     academicSessionId: batch.academicSessionId ? String(batch.academicSessionId) : undefined,
     code: batch.code,
     name: batch.name,
@@ -93,7 +90,6 @@ export async function GET(request: NextRequest) {
     const query: QueryFilter<IBatch> = parsed.status === "all" ? {} : { status: parsed.status };
 
     if (parsed.organizationId) query.organizationId = parsed.organizationId;
-    if (parsed.branchId) query.branchId = parsed.branchId;
     if (parsed.academicSessionId) query.academicSessionId = parsed.academicSessionId;
     if (parsed.studentClass) query.studentClass = parsed.studentClass;
     if (scope.kind === "assigned") query._id = { $in: scope.batchIds };
@@ -109,11 +105,10 @@ export async function GET(request: NextRequest) {
     const configuredSubjectMap = new Map(configuredSubjects.map((subject) => [String(subject._id), subject]));
 
     const includeContext = user.role === "admin" && request.nextUrl.searchParams.get("includeContext") === "true";
-    const [organizations, branches, academicSessions] = includeContext ? await Promise.all([
+    const [organizations, academicSessions] = includeContext ? await Promise.all([
       Organization.find({ status: "active" }).select("name slug").sort({ name: 1 }).lean(),
-      Branch.find({ status: "active" }).select("organizationId name code").sort({ name: 1 }).lean(),
       AcademicSession.find({ status: { $in: ["planned", "active"] } }).select("organizationId name startsAt endsAt status").sort({ startsAt: -1 }).lean(),
-    ]) : [[], [], []];
+    ]) : [[], []];
     return success({
       batches: batches.map((batch) => ({
         ...serializeBatch(batch),
@@ -123,7 +118,6 @@ export async function GET(request: NextRequest) {
       })),
       context: includeContext ? {
         organizations: organizations.map((item) => ({ id: String(item._id), name: item.name, slug: item.slug })),
-        branches: branches.map((item) => ({ id: String(item._id), organizationId: String(item.organizationId), name: item.name, code: item.code })),
         academicSessions: academicSessions.map((item) => ({ id: String(item._id), organizationId: String(item.organizationId), name: item.name, startsAt: item.startsAt.toISOString(), endsAt: item.endsAt.toISOString(), status: item.status })),
         subjects: ACADEMIC_SUBJECT_CATALOG,
       } : undefined,
