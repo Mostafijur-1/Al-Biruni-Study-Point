@@ -20,6 +20,7 @@
     "migrate:single-organization-video": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-single-organization-video.ts",
     "migrate:teacher-assignments": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-teacher-assignments.ts",
     "migrate:assessment-references": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step6-assessment-references.ts",
+    "migrate:historical-practice-attempts": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-historical-practice-attempts.ts",
     "migrate:written-exams": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step7-written-exams.ts",
     "migrate:finance-ledger": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/migrate-step8-finance-ledger.ts",
     "rebuild:reporting-projections": "node --env-file=.env.local --no-warnings --experimental-strip-types scripts/rebuild-reporting-projections.ts",

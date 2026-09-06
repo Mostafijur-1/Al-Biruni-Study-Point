@@ -14,6 +14,7 @@ export interface IPracticeAnswer {
 export interface IPracticeAttempt extends Document {
   attemptSession?: Types.ObjectId;
   assessmentAttemptId?: Types.ObjectId;
+  legacySource?: { collection: "PracticeResult"; id: string };
   student: Types.ObjectId;
   subject: string;
   answers: IPracticeAnswer[];
@@ -59,6 +60,10 @@ const PracticeAttemptSchema = new Schema<IPracticeAttempt>(
   {
     attemptSession: { type: Schema.Types.ObjectId, ref: "AttemptSession" },
     assessmentAttemptId: { type: Schema.Types.ObjectId, ref: "AssessmentAttempt" },
+    legacySource: {
+      collection: { type: String, enum: ["PracticeResult"] },
+      id: { type: String, trim: true },
+    },
     student: { type: Schema.Types.ObjectId, ref: "User", required: true },
     subject: { type: String, required: true },
     answers: { type: [PracticeAnswerSchema], default: [] },
