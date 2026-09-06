@@ -94,5 +94,7 @@ test("authorization evidence is commit-bound and redacts teacher identifiers", (
   const source = readFileSync(join(process.cwd(), "scripts", "audit-phase2-teacher-scope.ts"), "utf8");
   assert.match(source, /Evidence mode requires --commit=<deployed-git-sha>/);
   assert.match(source, /teacherRef: anonymousTeacherRef/);
+  assert.match(source, /canonicalOnlyStudents: result\.differences\.canonicalOnlyStudents\.map\(anonymousStudentRef\)/);
+  assert.match(source, /legacyOnlyStudents: result\.differences\.legacyOnlyStudents\.map\(anonymousStudentRef\)/);
   assert.doesNotMatch(source, /teacherId: String\(teacher\._id\)/);
 });

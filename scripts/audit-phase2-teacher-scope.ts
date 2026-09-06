@@ -16,6 +16,7 @@ if (process.argv.includes("--fail-on-mismatch") && !/^[a-f\d]{7,40}$/i.test(sour
   throw new Error("Evidence mode requires --commit=<deployed-git-sha>.");
 }
 const anonymousTeacherRef = (id: unknown) => createHash("sha256").update(`teacher:${String(id)}`).digest("hex").slice(0, 16);
+const anonymousStudentRef = (id: unknown) => createHash("sha256").update(`student:${String(id)}`).digest("hex").slice(0, 16);
 
 await mongoose.connect(uri, { dbName: "absp" });
 
@@ -81,9 +82,14 @@ try {
           ]
         : [];
     });
-    const canonicalStudents = teacherAssignments.flatMap(
-      (assignment) => studentsByBatch.get(String(assignment.batchId)) ?? [],
-    );
+    const canonicalStudents = teacherAssignments.flatMap((assignment) => {
+      const batchStudents = studentsByBatch.get(String(assignment.batchId)) ?? [];
+      const assignedStudents = assignment.studentIds?.map(String);
+      const assignedStudentSet = assignedStudents ? new Set(assignedStudents) : undefined;
+      return assignment.studentIds === undefined
+        ? batchStudents
+        : batchStudents.filter((studentId) => assignedStudentSet?.has(studentId));
+    });
     const legacy = teacher.teacherDomain
       ? {
           isAll: teacher.teacherDomain.isAll,
@@ -98,11 +104,21 @@ try {
       students: canonicalStudents,
     });
 
-    return {
+    const result = {
       teacherRef: anonymousTeacherRef(teacher._id),
       canonicalAssignmentCount: teacherAssignments.length,
       ...parity,
     };
+    return includeDetails
+      ? {
+          ...result,
+          differences: {
+            ...result.differences,
+            canonicalOnlyStudents: result.differences.canonicalOnlyStudents.map(anonymousStudentRef),
+            legacyOnlyStudents: result.differences.legacyOnlyStudents.map(anonymousStudentRef),
+          },
+        }
+      : result;
   });
   const summary = {
     generatedAt: now.toISOString(),
@@ -113,11 +129,15 @@ try {
     legacyAllRequiresReview: results.filter(
       (result) => result.status === "legacy_all_requires_review",
     ).length,
-    unauthorizedExpansionCount: results.filter((result) =>
-      result.status === "legacy_all_requires_review" ||
+    canonicalExpansionCount: results.filter((result) =>
       result.differences.canonicalOnlyClasses.length > 0 ||
       result.differences.canonicalOnlySubjects.length > 0 ||
       result.differences.canonicalOnlyStudents.length > 0
+    ).length,
+    safeNarrowingCount: results.filter((result) =>
+      result.differences.legacyOnlyClasses.length > 0 ||
+      result.differences.legacyOnlySubjects.length > 0 ||
+      result.differences.legacyOnlyStudents.length > 0
     ).length,
     ...(includeDetails ? { results } : {}),
   };
