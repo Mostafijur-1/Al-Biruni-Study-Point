@@ -64,3 +64,12 @@ test("teacher write APIs expose only assigned subjects and accept a non-empty co
   assert.match(coachingSubjects, /subjects: visibleRows\.map/);
   assert.match(studentReports, /comment: z\.string\(\)\.trim\(\)\.min\(1\)\.max\(1_000\)/);
 });
+
+test("written exam marks stay inside their panel instead of expanding the dashboard", async () => {
+  const source = await readFile("components/exam/WrittenExamWorkspace.tsx", "utf8");
+
+  assert.match(source, /grid items-start gap-6 xl:grid-cols-\[380px_minmax\(0,1fr\)\]/);
+  assert.match(source, /section className="min-w-0 overflow-hidden rounded-3xl/);
+  assert.match(source, /max-w-full overflow-x-auto overscroll-x-contain/);
+  assert.match(source, /min-w-\[680px\] table-fixed/);
+});
