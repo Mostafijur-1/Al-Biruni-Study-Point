@@ -52,3 +52,15 @@ test("written exam creation and report comments submit their forms", async () =>
   assert.match(studentReport, /<form onSubmit=\{addComment\}/);
   assert.match(studentReport, /<Button type="submit" disabled=\{saving \|\| !comment\.trim\(\)\}/);
 });
+
+test("teacher write APIs expose only assigned subjects and accept a non-empty comment", async () => {
+  const [coachingSubjects, studentReports] = await Promise.all([
+    readFile("app/api/coaching-subjects/route.ts", "utf8"),
+    readFile("app/api/student-reports/route.ts", "utf8"),
+  ]);
+
+  assert.match(coachingSubjects, /assignedSubjectIds/);
+  assert.match(coachingSubjects, /rows\.filter\(\(row\) => assignedSubjectIds\.has/);
+  assert.match(coachingSubjects, /subjects: visibleRows\.map/);
+  assert.match(studentReports, /comment: z\.string\(\)\.trim\(\)\.min\(1\)\.max\(1_000\)/);
+});

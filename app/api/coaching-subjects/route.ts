@@ -33,8 +33,26 @@ export async function GET(request: NextRequest) {
     await assertBatchReadScope(actor.role, actor.id, batchId);
     const batch = await Batch.findById(batchId).select("organizationId studentClass").lean();
     if (!batch) throw new ApiRouteError("Batch not found.", 404);
-    const rows = await CoachingBatchSubject.find({ batchId, status: "active" }).sort({ sortOrder: 1 }).lean();
-    const subjects = await AcademicSubject.find({ _id: { $in: rows.map((row) => row.subjectId) } }).select("code name nameBn").lean();
+    const now = new Date();
+    const [rows, teacherAssignments] = await Promise.all([
+      CoachingBatchSubject.find({ batchId, status: "active" }).sort({ sortOrder: 1 }).lean(),
+      actor.role === "teacher"
+        ? TeacherAssignment.find({
+            batchId,
+            teacherId: actor.id,
+            status: "active",
+            effectiveFrom: { $lte: now },
+            $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: now } }],
+          }).select("subjectId").lean()
+        : [],
+    ]);
+    const assignedSubjectIds = actor.role === "teacher"
+      ? new Set(teacherAssignments.map((assignment) => String(assignment.subjectId)))
+      : null;
+    const visibleRows = assignedSubjectIds
+      ? rows.filter((row) => assignedSubjectIds.has(String(row.subjectId)))
+      : rows;
+    const subjects = await AcademicSubject.find({ _id: { $in: visibleRows.map((row) => row.subjectId) } }).select("code name nameBn").lean();
     const byId = new Map(subjects.map((subject) => [String(subject._id), subject]));
     const availableSubjects = actor.role === "admin"
       ? await AcademicSubject.find({
@@ -45,7 +63,7 @@ export async function GET(request: NextRequest) {
       : [];
     return success({
       batchId,
-      subjects: rows.map((row) => ({ id: String(row.subjectId), ...(byId.get(String(row.subjectId)) ?? {}) })),
+      subjects: visibleRows.map((row) => ({ id: String(row.subjectId), ...(byId.get(String(row.subjectId)) ?? {}) })),
       availableSubjects: availableSubjects.map((subject) => ({ id: String(subject._id), code: subject.code, name: subject.name, nameBn: subject.nameBn })),
     });
   } catch (error) { return handleApiError(error); }

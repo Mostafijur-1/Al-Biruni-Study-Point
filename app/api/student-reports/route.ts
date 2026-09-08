@@ -17,7 +17,7 @@ const commentSchema = z.object({
   studentId: z.string().regex(/^[a-f\d]{24}$/i),
   period: z.enum(["week", "month"]),
   date: z.coerce.date(),
-  comment: z.string().trim().min(2).max(1_000),
+  comment: z.string().trim().min(1).max(1_000),
 });
 
 export async function GET(request: NextRequest) {

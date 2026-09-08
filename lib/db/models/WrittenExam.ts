@@ -60,7 +60,12 @@ WrittenExamSchema.index({ createdBy: 1, examDate: -1 });
 WrittenExamSchema.index({ isPublished: 1, examDate: -1 });
 WrittenExamSchema.index({ organizationId: 1, branchId: 1, academicSessionId: 1, examDate: -1 });
 WrittenExamSchema.pre("validate", function () {
-  if (!this.questionLink) return;
+  if (
+    !this.questionLink?.provider &&
+    !this.questionLink?.url &&
+    !this.questionLink?.setBy &&
+    !this.questionLink?.setAt
+  ) return;
   try {
     const host = new URL(this.questionLink.url).hostname.toLowerCase();
     if ((host !== "drive.google.com" && host !== "docs.google.com") || this.questionLink.provider !== "google-drive" || !this.questionLink.setBy || !this.questionLink.setAt) this.invalidate("questionLink", "Question reference must be a complete Google Drive link.");

@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { replayWrittenResultCorrections } from "../lib/written-exam/correction-history.ts";
 import { writtenExamMutationSchema } from "../lib/validations/written-exam.schema.ts";
 import { QuestionVersion } from "../lib/db/models/QuestionVersion.ts";
+import { WrittenExam } from "../lib/db/models/WrittenExam.ts";
 
 const examId = "507f1f77bcf86cd799439011";
 
@@ -20,6 +21,20 @@ test("question versions may omit the optional source reference", async () => {
   const version = new QuestionVersion({ questionId: new mongoose.Types.ObjectId(), version: 1, prompt: "Manual question", options: [], correctResponse: { mode: "manual", optionKeys: [], acceptedTexts: [] }, marks: 10, difficulty: "medium", language: "mixed", status: "draft", contentHash: "pending", createdBy: new mongoose.Types.ObjectId() });
   await version.validate();
   assert.match(version.contentHash, /^[a-f\d]{64}$/);
+});
+
+test("written exams may omit the optional Google Drive question reference", async () => {
+  const exam = new WrittenExam({
+    batchId: new mongoose.Types.ObjectId(),
+    subjectId: new mongoose.Types.ObjectId(),
+    title: "Model validation test",
+    examDate: new Date("2026-09-08T00:00:00.000Z"),
+    totalMarks: 100,
+    createdBy: new mongoose.Types.ObjectId(),
+    creatorRole: "teacher",
+  });
+
+  await exam.validate();
 });
 
 test("written correction replay reproduces current state and rejects broken history", () => {
