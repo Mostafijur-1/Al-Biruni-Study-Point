@@ -1,7 +1,8 @@
 # MCQ exam load testing
 
-This test measures how many students can start and submit the same MCQ exam at
-the same time. It tests the API and database path rather than browser rendering.
+This test measures how many students can start and submit the same MCQ exam and
+then load their dashboard at the same time. It tests the API and database paths
+rather than browser rendering.
 
 Use an isolated staging deployment and staging database. Do not point the test
 at production while real students are active.
@@ -13,7 +14,7 @@ at production while real students are active.
 2. Creates short-lived access tokens so login rate limiting does not distort the
    exam measurement.
 3. Runs stages of synchronized `start` requests followed by synchronized
-   `submit` requests.
+   `submit` and dashboard-summary requests.
 4. Reports p50, p95, p99, throughput, HTTP statuses, and error rate.
 
 Each stage uses different students because the application permits one attempt
@@ -61,8 +62,8 @@ npm run load:exam
 ```
 
 `LOAD_TEST_STUDENTS` must be at least the sum of all stages because students are
-not reused. A stage passes when both start and submit p95 latency are within the
-configured limit and their combined error rate is within the configured limit.
+not reused. A stage passes when start, submit, and dashboard p95 latency are
+within the configured limit and their combined error rate is within the configured limit.
 The highest passing stage is the tested concurrency capacity, not a guarantee
 beyond that number.
 

@@ -21,29 +21,39 @@ const eventSchema = z.object({
   surface: z.string().trim().min(1).max(60),
   properties: z
     .record(z.string().trim().min(1).max(50), propertyValueSchema)
+    .refine((value) => Object.keys(value).length <= 20, {
+      message: "An event can contain at most 20 properties.",
+    })
     .optional(),
 });
+
+const eventBatchSchema = z
+  .union([eventSchema, z.array(eventSchema).min(1).max(20)])
+  .transform((value) => (Array.isArray(value) ? value : [value]));
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request, ["student"]);
-    const parsed = eventSchema.parse(await request.json());
+    const events = eventBatchSchema.parse(await request.json());
 
     await connectDB();
     const rateLimit = await consumeRateLimit("student:analytics", user.id, {
       limit: 60,
       windowMs: 60_000,
+      cost: events.length,
     });
     if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
-    await ProductEvent.create({
-      user: user.id,
-      name: parsed.name,
-      surface: parsed.surface,
-      properties: parsed.properties ?? {},
-    });
+    await ProductEvent.insertMany(
+      events.map((event) => ({
+        user: user.id,
+        name: event.name,
+        surface: event.surface,
+        properties: event.properties ?? {},
+      })),
+    );
 
-    return success({ recorded: true }, { status: 201 });
+    return success({ recorded: true, count: events.length }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

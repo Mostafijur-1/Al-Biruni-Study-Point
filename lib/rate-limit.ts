@@ -7,6 +7,7 @@ import { RateLimitBucket } from "@/lib/db/models/RateLimitBucket";
 type RateLimitOptions = {
   limit: number;
   windowMs: number;
+  cost?: number;
 };
 
 export type RateLimitResult = {
@@ -29,6 +30,7 @@ export async function consumeRateLimit(
   const now = Date.now();
   const bucket = Math.floor(now / options.windowMs);
   const resetAt = (bucket + 1) * options.windowMs;
+  const cost = Math.max(1, Math.floor(options.cost ?? 1));
   const digest = createHash("sha256").update(identifier).digest("hex");
   const key = `${scope}:${digest}:${bucket}`;
   const expiresAt = new Date(resetAt + options.windowMs);
@@ -38,7 +40,7 @@ export async function consumeRateLimit(
     record = await RateLimitBucket.findOneAndUpdate(
       { _id: key },
       {
-        $inc: { count: 1 },
+        $inc: { count: cost },
         $setOnInsert: { expiresAt },
       },
       { upsert: true, new: true },
@@ -47,7 +49,7 @@ export async function consumeRateLimit(
     if (!isDuplicateKeyError(error)) throw error;
     record = await RateLimitBucket.findOneAndUpdate(
       { _id: key },
-      { $inc: { count: 1 } },
+      { $inc: { count: cost } },
       { new: true },
     ).lean();
   }

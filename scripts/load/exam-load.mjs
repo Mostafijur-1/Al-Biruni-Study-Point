@@ -1,5 +1,5 @@
 /**
- * Run synchronized exam-start and exam-submit bursts using unique students.
+ * Run synchronized exam-start, exam-submit, and dashboard bursts using unique students.
  * This intentionally excludes login so the authentication rate limiter does
  * not hide the capacity of the exam endpoints.
  */
@@ -43,12 +43,14 @@ for (const concurrency of stages) {
   const startPhase = await runStartPhase(students, fixture.examId);
   const successfulStarts = startPhase.operations.filter((operation) => operation.ok);
   const submitPhase = await runSubmitPhase(successfulStarts, fixture.examId);
+  const dashboardPhase = await runDashboardPhase(students);
   const combinedErrorRate =
-    (startPhase.failed + submitPhase.failed) /
-    Math.max(1, startPhase.total + submitPhase.total);
+    (startPhase.failed + submitPhase.failed + dashboardPhase.failed) /
+    Math.max(1, startPhase.total + submitPhase.total + dashboardPhase.total);
   const passed =
     startPhase.p95 <= p95LimitMs &&
     submitPhase.p95 <= p95LimitMs &&
+    dashboardPhase.p95 <= p95LimitMs &&
     combinedErrorRate <= maxErrorRate;
 
   const stageResult = {
@@ -57,12 +59,14 @@ for (const concurrency of stages) {
     combinedErrorRate,
     start: withoutOperations(startPhase),
     submit: withoutOperations(submitPhase),
+    dashboard: withoutOperations(dashboardPhase),
   };
   results.push(stageResult);
 
   console.log(`\n${concurrency} simultaneous students: ${passed ? "PASS" : "FAIL"}`);
   printPhase("start", startPhase);
   printPhase("submit", submitPhase);
+  printPhase("dashboard", dashboardPhase);
   console.log(`  combined errors: ${(combinedErrorRate * 100).toFixed(2)}%`);
 }
 
@@ -119,6 +123,16 @@ async function runSubmitPhase(startOperations, examId) {
         body: JSON.stringify({ answers, timeTaken: 60 }),
       });
     }),
+  );
+}
+
+async function runDashboardPhase(students) {
+  return runBurst(
+    students.map((student) => async () =>
+      timedFetch("/api/student/dashboard/summary", {
+        headers: authHeaders(student.token),
+      }),
+    ),
   );
 }
 
