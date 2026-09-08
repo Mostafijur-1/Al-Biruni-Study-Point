@@ -29,6 +29,7 @@ export function serializeUser(user: {
   schoolCollege?: string;
   reference?: string;
   studentCode?: string;
+  isAbspMember?: boolean;
   teacherUsage?: {
     imageQuestionUploadMonth?: string;
     imageQuestionUploadCount?: number;
@@ -51,6 +52,7 @@ export function serializeUser(user: {
     schoolCollege: user.schoolCollege,
     reference: user.reference,
     studentCode: user.studentCode,
+    isAbspMember: Boolean(user.isAbspMember),
     teacherUsage,
   };
 }
@@ -77,7 +79,7 @@ export async function requireAuth(
   const user = await User.findById(payload.userId)
     .select(
       "name phone email role studentClass schoolCollege reference studentCode " +
-      "teacherUsage isActive approvalStatus sessionVersion",
+      "isAbspMember teacherUsage isActive approvalStatus sessionVersion",
     )
     .lean();
 
@@ -112,6 +114,7 @@ export async function requireAuth(
     schoolCollege: user.schoolCollege,
     reference: user.reference,
     studentCode: user.studentCode,
+    isAbspMember: Boolean(user.isAbspMember),
     teacherUsage: user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined,
   } satisfies SessionUser;
 }

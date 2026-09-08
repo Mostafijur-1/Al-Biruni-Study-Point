@@ -172,7 +172,7 @@ export function StudentCommunityHub() {
         { xp: result.payload.data.reward.xp },
       );
       setMessage(
-        `অভিনন্দন! দলের সঙ্গে মিশন শেষ করে ${result.payload.data.reward.xp} XP পেয়েছ।`,
+        `অভিনন্দন! দলের সঙ্গে মিশন শেষ করে ${result.payload.data.reward.xp} Study Stars পেয়েছ।`,
       );
       await refresh();
     } else {
@@ -306,7 +306,7 @@ export function StudentCommunityHub() {
             <div className="mt-4">
               {mission.claimed ? (
                 <span className="flex items-center justify-center gap-2 rounded-xl bg-emerald-100 px-3 py-2.5 text-xs font-black text-emerald-800">
-                  <Check className="size-4" /> {mission.rewardXp} XP সংগ্রহ হয়েছে
+                  <Check className="size-4" /> {mission.rewardXp} Study Stars সংগ্রহ হয়েছে
                 </span>
               ) : mission.eligible ? (
                 <Button
@@ -315,7 +315,7 @@ export function StudentCommunityHub() {
                   onClick={() => void claimMission()}
                 >
                   <Gift className="size-4" />
-                  {mission.rewardXp} XP নাও
+                  {mission.rewardXp} Study Stars নাও
                 </Button>
               ) : (
                 <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/70 px-3 py-2.5 text-xs font-black text-muted">

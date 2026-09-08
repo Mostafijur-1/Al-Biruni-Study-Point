@@ -476,7 +476,7 @@ export function DailyChallengeArena() {
         <article className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5">
           <div className="flex items-center gap-2">
             <Trophy className="size-6 text-violet-700" />
-            <h2 className="text-lg font-black text-primary">কীভাবে XP পাবে</h2>
+            <h2 className="text-lg font-black text-primary">কীভাবে Study Stars পাবে</h2>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-center">
             <div className="rounded-xl bg-white p-3">
@@ -507,7 +507,7 @@ export function DailyChallengeArena() {
               <div key={item.dateKey} className="rounded-xl bg-secondary/70 p-3">
                 <p className="text-xs font-black text-primary">{item.dateKey}</p>
                 <p className="mt-1 text-sm font-bold text-violet-700">
-                  {item.score}/{item.totalQuestions} · +{item.xpEarned} XP
+                  {item.score}/{item.totalQuestions} · +{item.xpEarned} Study Stars
                 </p>
               </div>
             ))}
@@ -544,7 +544,7 @@ function ChallengeResultView({
         </p>
         <div className="mx-auto mt-5 flex max-w-sm justify-center gap-3">
           <span className="rounded-xl bg-white/10 px-4 py-3 text-sm font-black">
-            +{result.xpEarned} XP
+            +{result.xpEarned} Study Stars
           </span>
           <span className="rounded-xl bg-white/10 px-4 py-3 text-sm font-black">
             <Flame className="mr-1 inline size-4 text-orange-300" />

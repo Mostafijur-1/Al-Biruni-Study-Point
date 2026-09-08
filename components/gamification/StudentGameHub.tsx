@@ -190,8 +190,8 @@ export function StudentGameHub() {
       });
       setMessage(
         quest.streakFreezes > 0
-          ? `দারুণ! ${quest.xp} XP ও ${quest.streakFreezes}টি স্ট্রিক ফ্রিজ পেয়েছ।`
-          : `দারুণ! ${quest.xp} XP সংগ্রহ হয়েছে।`,
+          ? `দারুণ! ${quest.xp} Study Stars ও ${quest.streakFreezes}টি স্ট্রিক ফ্রিজ পেয়েছ।`
+          : `দারুণ! ${quest.xp} Study Stars সংগ্রহ হয়েছে।`,
       );
       await loadHub();
     } else {
@@ -309,8 +309,8 @@ export function StudentGameHub() {
         </div>
         <div className="relative mt-6">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span>{profile.totalXp} XP</span>
-            <span>পরের লেভেলে আর {100 - levelProgress} XP</span>
+            <span>{profile.totalXp} Study Stars</span>
+            <span>পরের লেভেলে আর {100 - levelProgress} Study Stars</span>
           </div>
           <div className="mt-2 h-3 overflow-hidden rounded-full bg-black/20">
             <div
@@ -371,7 +371,7 @@ export function StudentGameHub() {
             <Zap className="mx-auto size-8 text-sky-600" />
             <p className="mt-2 font-black text-primary">প্রথম বিষয় লেভেল খোলো</p>
             <p className="mt-1 text-sm text-muted">
-              যেকোনো একটি MCQ অনুশীলন শেষ করলেই বিষয়ভিত্তিক XP শুরু হবে।
+              যেকোনো একটি MCQ অনুশীলন শেষ করলেই বিষয়ভিত্তিক Study Stars শুরু হবে।
             </p>
           </div>
         ) : (
@@ -403,7 +403,7 @@ export function StudentGameHub() {
                   />
                 </div>
                 <div className="mt-2 flex justify-between text-2xs font-bold text-muted">
-                  <span>{subject.xp} বিষয় XP</span>
+                  <span>{subject.xp} বিষয় Study Stars</span>
                   <span>{subject.personalBestCount}টি ব্যক্তিগত সেরা</span>
                 </div>
               </article>
@@ -502,7 +502,7 @@ function QuestGroup({
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-2xs font-black text-amber-800">
-                  +{quest.xp} XP{quest.streakFreezes > 0 ? " + ফ্রিজ" : ""}
+                  +{quest.xp} Study Stars{quest.streakFreezes > 0 ? " + ফ্রিজ" : ""}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-3">

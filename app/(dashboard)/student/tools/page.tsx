@@ -1,43 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Compass,
   FlaskConical,
-  Gamepad2,
-  Map,
   NotebookPen,
-  Sigma,
-  Swords,
-  Target,
-  TimerReset,
   UserCircle,
-  UsersRound,
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "শেখার সরঞ্জাম | ABSP",
-  description: "পড়াশোনার সহায়ক সরঞ্জাম, লক্ষ্য, ল্যাব ও চ্যালেঞ্জ এক জায়গায়।",
+  title: "Learning Resources | ABSP",
+  description: "Mistake Recovery ও Science Lab—দুটি প্রয়োজনীয় শেখার সহায়ক এক জায়গায়।",
 };
 
 const toolGroups = [
   {
-    title: "পড়াশোনার সহায়তা",
+    title: "Learning Resources",
     items: [
-      { href: "/student/coach", label: "স্টাডি কোচ", icon: Compass },
-      { href: "/student/learning", label: "শেখার পরিকল্পনা", icon: Map },
-      { href: "/student/mistakes", label: "ভুলের খাতা", icon: NotebookPen },
-      { href: "/student/focus", label: "ফোকাস স্টুডিও", icon: TimerReset },
-      { href: "/student/goals", label: "সাপ্তাহিক লক্ষ্য", icon: Target },
-    ],
-  },
-  {
-    title: "অনুশীলন ও অনুসন্ধান",
-    items: [
-      { href: "/student/labs", label: "সায়েন্স ল্যাব", icon: FlaskConical },
-      { href: "/student/formulas", label: "ফর্মুলা স্প্রিন্ট", icon: Sigma },
-      { href: "/student/challenge", label: "দৈনিক চ্যালেঞ্জ", icon: Swords },
-      { href: "/student/game", label: "গেম হাব", icon: Gamepad2 },
-      { href: "/student/community", label: "ক্লাস কমিউনিটি", icon: UsersRound },
+      { href: "/student/mistakes", label: "Mistake Recovery", icon: NotebookPen },
+      { href: "/student/labs", label: "Science Lab", icon: FlaskConical },
     ],
   },
 ];
@@ -47,9 +26,9 @@ export default function StudentToolsPage() {
     <div className="space-y-6">
       <header>
         <p className="text-xs font-bold uppercase tracking-widest text-accent">শিক্ষার্থী</p>
-        <h1 className="mt-2 text-2xl font-black text-primary sm:text-3xl">শেখার সরঞ্জাম</h1>
+        <h1 className="mt-2 text-2xl font-black text-primary sm:text-3xl">Learning Resources</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
-          মূল পড়াশোনার বাইরে প্রয়োজন অনুযায়ী সহায়ক সরঞ্জাম বেছে নাও।
+          ভুল থেকে শেখো এবং হাতে-কলমে বিজ্ঞানের ধারণা অনুশীলন করো।
         </p>
       </header>
 

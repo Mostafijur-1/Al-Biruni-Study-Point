@@ -14,6 +14,7 @@ export type SessionUser = {
   schoolCollege?: string;
   reference?: string;
   studentCode?: string;
+  isAbspMember?: boolean;
   teacherUsage?: {
     imageQuestionUploadMonth: string;
     imageQuestionUploadCount: number;

@@ -77,7 +77,7 @@ export function GameProfileCard() {
             <div>
               <p className="text-3xl font-black text-primary">লেভেল {profile.level}</p>
               <p className="mt-1 text-xs font-semibold text-muted">
-                মোট {profile.totalXp} XP
+                মোট {profile.totalXp} Study Stars
               </p>
             </div>
             <Trophy className="size-10 text-amber-500" />
@@ -89,7 +89,7 @@ export function GameProfileCard() {
             />
           </div>
           <p className="mt-1 text-right text-2xs font-bold text-violet-700">
-            পরের লেভেলে যেতে আর {100 - levelProgress} XP
+            পরের লেভেলে যেতে আর {100 - levelProgress} Study Stars
           </p>
         </div>
 

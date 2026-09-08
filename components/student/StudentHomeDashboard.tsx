@@ -23,6 +23,7 @@ import {
   Trophy,
   UsersRound,
   Swords,
+  NotebookPen,
 } from "lucide-react";
 
 import { apiFetch, isApiSuccess } from "@/lib/api/client";
@@ -235,7 +236,7 @@ export function StudentHomeDashboard() {
 
   return (
     <section className="space-y-6">
-      <RoutineDashboard />
+      {user?.isAbspMember && <RoutineDashboard />}
       <div className="relative overflow-hidden rounded-3xl bg-primary px-5 py-6 text-primary-foreground shadow-[var(--shadow-lg)] sm:px-7 sm:py-8">
         <div
           className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-brand-blue/20"
@@ -260,7 +261,7 @@ export function StudentHomeDashboard() {
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
             ছোট একটি লক্ষ্য দিয়ে শুরু করো। আজকের অনুশীলন শেষ করলেই তোমার
-            ধারাবাহিকতা ও XP দুটোই বাড়বে।
+            ধারাবাহিকতা ও Study Stars দুটোই বাড়বে।
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             {dashboardLink(
@@ -311,7 +312,7 @@ export function StudentHomeDashboard() {
           <p className="mt-2 text-2xl font-black text-primary">
             লেভেল {profile?.level ?? 1}
           </p>
-          <p className="mt-1 text-xs text-muted">{profile?.totalXp ?? 0} মোট XP</p>
+          <p className="mt-1 text-xs text-muted">{profile?.totalXp ?? 0} Study Stars</p>
         </article>
 
         <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
@@ -433,6 +434,14 @@ export function StudentHomeDashboard() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             {
+              href: "/student/mistakes",
+              action: "mistake_recovery",
+              title: "Mistake Recovery",
+              description: "ভুল উত্তরগুলো আবার অনুশীলন করে দুর্বলতা কাটিয়ে ওঠো",
+              icon: NotebookPen,
+              tone: "bg-rose-100 text-rose-700",
+            },
+            {
               href: `/student/courses?level=${studentLevel}`,
               action: "courses",
               title: "কোর্স ও ক্লাস",
@@ -528,7 +537,9 @@ export function StudentHomeDashboard() {
               icon: LineChart,
               tone: "bg-emerald-100 text-emerald-700",
             },
-          ].map(({ href, action, title, description, icon: Icon, tone }) =>
+          ]
+            .filter(({ action }) => ["mistake_recovery", "science_labs"].includes(action))
+            .map(({ href, action, title, description, icon: Icon, tone }) =>
             dashboardLink(
               href,
               action,

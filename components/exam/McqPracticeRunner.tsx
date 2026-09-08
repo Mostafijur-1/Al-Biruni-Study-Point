@@ -1497,7 +1497,7 @@ export function McqPracticeRunner({
                   Practice reward
                 </div>
                 <p className="mt-2 text-3xl font-black text-primary">
-                  +{result.gamification.xpEarned} XP
+                  +{result.gamification.xpEarned} Study Stars
                 </p>
                 <p className="mt-1 text-xs font-semibold text-muted">
                   Correct answers {result.gamification.xpBreakdown.correctAnswers} ·
@@ -1571,7 +1571,7 @@ export function McqPracticeRunner({
                   {result.subjectProgress.progress.level}
                 </p>
                 <p className="mt-1 text-xs font-semibold text-muted">
-                  +{result.subjectProgress.xpEarned} বিষয় XP · সেরা{" "}
+                  +{result.subjectProgress.xpEarned} বিষয় Study Stars · সেরা{" "}
                   {Math.round(result.subjectProgress.progress.bestAccuracy)}%
                 </p>
               </div>

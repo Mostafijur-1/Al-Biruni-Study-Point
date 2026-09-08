@@ -243,8 +243,8 @@ export function FocusStudio() {
       const xp = result.payload.data.reward?.xp ?? current.xpEarned;
       setNotice(
         xp > 0
-          ? `দারুণ! সেশন সম্পন্ন হয়েছে—তুমি +${xp} XP পেয়েছ।`
-          : "দারুণ! আজকের XP সীমা পূর্ণ হলেও সেশনটি তোমার অগ্রগতিতে যোগ হয়েছে।",
+          ? `দারুণ! সেশন সম্পন্ন হয়েছে—তুমি +${xp} Study Stars পেয়েছ।`
+          : "দারুণ! আজকের Study Stars সীমা পূর্ণ হলেও সেশনটি তোমার অগ্রগতিতে যোগ হয়েছে।",
       );
       trackStudentEvent("student_focus_completed", "focus_studio", {
         subject: current.subject,
@@ -474,7 +474,7 @@ export function FocusStudio() {
             কম সময়ে মনোযোগ দিয়ে শেখো
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-            একটি বিষয়, একটি লক্ষ্য, একটি টাইমার। সেশন শেষ করলে XP পাবে এবং
+            একটি বিষয়, একটি লক্ষ্য, একটি টাইমার। সেশন শেষ করলে Study Stars পাবে এবং
             তোমার শেখার ধারাবাহিকতাও বাড়বে।
           </p>
           <div className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold">
@@ -644,7 +644,7 @@ export function FocusStudio() {
             ফোকাস সেশন শুরু করো
           </Button>
           <p className="mt-3 text-center text-xs leading-5 text-muted">
-            সম্পন্ন মিনিট অনুযায়ী দিনে সর্বোচ্চ ৬০ XP পাওয়া যাবে।
+            সম্পন্ন মিনিট অনুযায়ী দিনে সর্বোচ্চ ৬০ Study Stars পাওয়া যাবে।
           </p>
         </article>
 
@@ -709,7 +709,7 @@ export function FocusStudio() {
                         {session.durationMinutes} মিনিট
                       </p>
                       <p className="text-2xs font-bold text-muted">
-                        +{session.xpEarned} XP
+                        +{session.xpEarned} Study Stars
                       </p>
                     </div>
                   </div>

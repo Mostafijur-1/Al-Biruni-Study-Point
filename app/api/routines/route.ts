@@ -59,6 +59,9 @@ function serializeRoutine(slot: IRoutineSlot | Record<string, unknown>, context?
 export async function GET(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin", "teacher", "student"]);
+    if (actor.role === "student" && !actor.isAbspMember) {
+      return success({ routines: [] });
+    }
     const parsed = routineListQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
     );

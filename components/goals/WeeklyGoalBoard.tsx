@@ -238,7 +238,7 @@ export function WeeklyGoalBoard() {
     if (result.ok && isApiSuccess(result.payload)) {
       const data = result.payload.data;
       setBoard(data.board);
-      setMessage(`লক্ষ্য জয়! তোমার অ্যাকাউন্টে +${data.reward.xp} XP যোগ হয়েছে।`);
+      setMessage(`লক্ষ্য জয়! তোমার অ্যাকাউন্টে +${data.reward.xp} Study Stars যোগ হয়েছে।`);
       trackStudentEvent("student_weekly_goal_claimed", "weekly_goal_board", {
         metric: board.current.metric,
         target: board.current.target,
@@ -383,7 +383,7 @@ export function WeeklyGoalBoard() {
                 </div>
               </div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-900">
-                <Gift className="size-4" /> +{goal.rewardXp} XP
+                <Gift className="size-4" /> +{goal.rewardXp} Study Stars
               </span>
             </div>
 
@@ -444,7 +444,7 @@ export function WeeklyGoalBoard() {
                     onClick={claimReward}
                   >
                     <Gift className="size-4" />
-                    +{goal.rewardXp} XP সংগ্রহ করো
+                    +{goal.rewardXp} Study Stars সংগ্রহ করো
                   </Button>
                 ) : (
                   <Link
@@ -557,7 +557,7 @@ export function WeeklyGoalBoard() {
                       {item.target} {selectedOption.unit}
                     </span>
                     <span className="mt-1 block text-2xs font-bold opacity-80">
-                      {item.label} · +{item.xp} XP
+                      {item.label} · +{item.xp} Study Stars
                     </span>
                   </button>
                 ))}

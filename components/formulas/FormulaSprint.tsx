@@ -236,7 +236,7 @@ export function FormulaSprint() {
         setStatus(refreshed.payload.data);
         setAttempt(refreshed.payload.data.today ?? data.attempt);
       }
-      setMessage(`স্প্রিন্ট সম্পন্ন—তুমি +${data.reward.xp} XP পেয়েছ।`);
+      setMessage(`স্প্রিন্ট সম্পন্ন—তুমি +${data.reward.xp} Study Stars পেয়েছ।`);
       trackStudentEvent("student_formula_sprint_completed", "formula_sprint", {
         confidence_percent: data.attempt.confidencePercent,
         xp_earned: data.reward.xp,
@@ -570,7 +570,7 @@ function CompletedSprint({
           </h2>
           <p className="mt-2 text-sm font-semibold text-muted">
             {remembered}টি মনে ছিল · {again}টি আবার অনুশীলনে আসবে · +
-            {attempt.xpEarned} XP
+            {attempt.xpEarned} Study Stars
           </p>
         </div>
 
@@ -652,7 +652,7 @@ function RecentSprints({ recent }: { recent: FormulaStatus["recent"] }) {
                 </p>
               </div>
               <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-black text-violet-800">
-                +{item.xpEarned} XP
+                +{item.xpEarned} Study Stars
               </span>
             </div>
           ))}

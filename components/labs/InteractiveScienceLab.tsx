@@ -275,7 +275,7 @@ export function InteractiveScienceLab() {
       setMessage(
         data.alreadyCompleted
           ? "এই অধ্যায়ের মাস্টারি আগেই সম্পন্ন হয়েছে—নতুন মান দিয়ে আরও পরীক্ষা করো।"
-          : `চমৎকার! অধ্যায় মাস্টারি সম্পন্ন হয়েছে এবং +${data.reward.xp} XP যোগ হয়েছে।`,
+          : `চমৎকার! অধ্যায় মাস্টারি সম্পন্ন হয়েছে এবং +${data.reward.xp} Study Stars যোগ হয়েছে।`,
       );
       trackStudentEvent("student_science_lab_completed", "science_lab", {
         lab_id: selected.id,
@@ -353,7 +353,7 @@ export function InteractiveScienceLab() {
               <div>
                 <p className="text-sm font-black">ল্যাব মাস্টারি</p>
                 <p className="mt-1 text-xs font-semibold text-white/65">
-                  {hub.progress.xpEarned} XP অর্জিত
+                  {hub.progress.xpEarned} Study Stars অর্জিত
                 </p>
               </div>
             </div>
@@ -631,7 +631,7 @@ export function InteractiveScienceLab() {
                   <Sparkles className="size-4 text-amber-600" />
                   এককালীন পুরস্কার
                 </span>
-                <span>+{selected.xp} XP</span>
+                <span>+{selected.xp} Study Stars</span>
               </div>
               <Button
                 className={cn("mt-3 min-h-12 w-full rounded-xl", theme.button)}
