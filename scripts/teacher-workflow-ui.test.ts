@@ -40,3 +40,15 @@ test("written exams load all eligible current batches from their workspace API",
   assert.match(service, /batches: availableBatches\.map/);
   assert.match(repository, /limit\(1_000\)/);
 });
+
+test("written exam creation and report comments submit their forms", async () => {
+  const [writtenExam, studentReport] = await Promise.all([
+    readFile("components/exam/WrittenExamWorkspace.tsx", "utf8"),
+    readFile("components/reports/StudentReportWorkspace.tsx", "utf8"),
+  ]);
+
+  assert.match(writtenExam, /<form onSubmit=\{createExam\}/);
+  assert.match(writtenExam, /<Button type="submit" className="w-full"/);
+  assert.match(studentReport, /<form onSubmit=\{addComment\}/);
+  assert.match(studentReport, /<Button type="submit" disabled=\{saving \|\| !comment\.trim\(\)\}/);
+});
