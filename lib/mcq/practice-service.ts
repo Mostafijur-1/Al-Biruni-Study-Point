@@ -393,7 +393,14 @@ export async function scorePracticeAttempt(
   }
 
   let correctCount = 0;
-  const solutions: { questionId: string; correctIndex: number; explanation?: string }[] = [];
+  const solutions: Array<{
+    questionId: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation?: string;
+    imageUrl?: string;
+  }> = [];
 
   for (const ans of uniqueAnswers) {
     const question = allQuestionsMap.get(ans.questionId);
@@ -407,8 +414,11 @@ export async function scorePracticeAttempt(
 
     solutions.push({
       questionId: ans.questionId,
+      question: question.question,
+      options: question.options,
       correctIndex: question.correctIndex,
       explanation: question.explanation,
+      imageUrl: question.imageUrl,
     });
   }
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent } from "lucide-react";
+import { BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent, PlayCircle } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -16,7 +16,8 @@ type HomeSectionProps = {
 };
 
 export function HomeSection({ dict, brand }: HomeSectionProps) {
-    const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoRequested, setVideoRequested] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   return (
     <>
@@ -85,31 +86,52 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
 
               <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black shadow-[var(--shadow-md)]">
                 <div className="relative aspect-video w-full">
-                  <iframe
-                    className="w-full h-full border-0"
-                    src="https://www.youtube.com/embed/N2DQmxN0alo?si=OuXu62shYZ9ZGYpW"
-                    title="HSC 2028 Offline Batch"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    loading="lazy"
-                    onLoad={() => setVideoLoaded(true)}
-                  />
-                  <div
-                    className={cn(
-                      "absolute inset-0 z-10 transition-opacity duration-500",
-                      videoLoaded ? "opacity-0 pointer-events-none" : "opacity-100"
-                    )}
-                  >
-                    <Image
-                      src="/hsc2028-thumbnail.jpg"
-                      alt="HSC 2028 Offline Batch"
-                      fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover"
-                      priority
-                    />
-                  </div>
+                  {videoRequested ? (
+                    <>
+                      <iframe
+                        className="h-full w-full border-0"
+                        src="https://www.youtube-nocookie.com/embed/N2DQmxN0alo?autoplay=1"
+                        title="HSC 2028 Offline Batch"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        onLoad={() => setVideoLoaded(true)}
+                      />
+                      {!videoLoaded && (
+                        <div className="pointer-events-none absolute inset-0 z-10">
+                          <Image
+                            src="/hsc2028-thumbnail.jpg"
+                            alt=""
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="group absolute inset-0 w-full cursor-pointer"
+                      aria-label="Play HSC 2028 Offline Batch video"
+                      onClick={() => setVideoRequested(true)}
+                    >
+                      <Image
+                        src="/hsc2028-thumbnail.jpg"
+                        alt="HSC 2028 Offline Batch"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                        priority
+                      />
+                      <span className="absolute inset-0 bg-black/20 transition group-hover:bg-black/30" aria-hidden />
+                      <span className="absolute inset-0 grid place-items-center" aria-hidden>
+                        <span className="grid size-16 place-items-center rounded-full bg-brand-red text-white shadow-xl transition group-hover:scale-110 sm:size-20">
+                          <PlayCircle className="size-9 sm:size-11" fill="currentColor" />
+                        </span>
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -314,7 +336,6 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                   fill
                   sizes="(max-width: 768px) 112px, 144px"
                   className="object-cover object-top transition duration-500 group-hover/tutor-img:scale-105"
-                  priority
                 />
               </div>
             </div>

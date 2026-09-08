@@ -61,6 +61,7 @@ const McqExamSchema = new Schema<IMcqExam>(
   { timestamps: true }
 );
 McqExamSchema.index({ organizationId: 1, subjectId: 1, isPublished: 1, createdAt: -1 });
+McqExamSchema.index({ teacher: 1, isPublished: 1, targetClasses: 1, createdAt: -1 });
 requireCanonicalPathsWhenEnabled(McqExamSchema, ["organizationId", "subjectId"]);
 
 // Prevent Next.js hot-reloading model duplication error

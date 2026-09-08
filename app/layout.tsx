@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     siteName: "Al-Biruni Study Point",
     title: "ABSP - Al-Biruni Study Point",
     description: "Science coaching and learning support for SSC and HSC students.",
-    images: [{ url: "/absp-logo.png", width: 1254, height: 1254, alt: "ABSP logo" }],
+    images: [{ url: "/absp-logo-optimized.png", width: 768, height: 768, alt: "ABSP logo" }],
   },
   twitter: {
     card: "summary",
     title: "ABSP - Al-Biruni Study Point",
     description: "Science coaching and learning support for SSC and HSC students.",
-    images: ["/absp-logo.png"],
+    images: ["/absp-logo-optimized.png"],
   },
   icons: {
     icon: [
@@ -71,7 +71,7 @@ export default function RootLayout({
         name: "Al-Biruni Study Point",
         alternateName: "ABSP",
         url: siteOrigin,
-        logo: `${siteOrigin}/absp-logo.png`,
+        logo: `${siteOrigin}/absp-logo-optimized.png`,
         description: "Science coaching and learning support for SSC and HSC students.",
       },
       {

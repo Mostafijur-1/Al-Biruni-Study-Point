@@ -19,8 +19,8 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
       {
-        src: "/absp-logo.png",
-        sizes: "1254x1254",
+        src: "/absp-logo-optimized.png",
+        sizes: "768x768",
         type: "image/png",
         purpose: "any",
       },

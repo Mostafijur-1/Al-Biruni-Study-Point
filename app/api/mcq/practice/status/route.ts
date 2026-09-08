@@ -10,43 +10,15 @@ import { connectDB } from "@/lib/db/connect";
 import { PracticeResult, type IPracticeResult } from "@/lib/db/models/PracticeResult";
 import { PracticeQuestion, type IPracticeQuestion } from "@/lib/db/models/PracticeQuestion";
 import { User } from "@/lib/db/models/User";
-import { getSchoolLevel, getSyllabusChapters, COURSE_TO_MCQ_SUBJECT_MAP, BENGALI_TO_ENGLISH_SUBJECT_MAP } from "@/lib/content/syllabus";
+import {
+  getSchoolLevel,
+  getSyllabusChapters,
+  COURSE_TO_MCQ_SUBJECT_MAP,
+  BENGALI_TO_ENGLISH_SUBJECT_MAP,
+  SSC_MCQ_SUBJECTS,
+  HSC_MCQ_SUBJECTS,
+} from "@/lib/content/syllabus";
 import type { CourseSubject } from "@/types";
-
-/** Subjects shown for SSC students */
-const SSC_SUBJECTS: CourseSubject[] = [
-  "পদার্থবিজ্ঞান",
-  "রসায়ন",
-  "সাধারণ গণিত",
-  "উচ্চতর গণিত",
-  "জীববিজ্ঞান",
-  "তথ্য ও যোগাযোগ প্রযুক্তি",
-  "বাংলা ১ম পত্র",
-  "বাংলা ২য় পত্র",
-  "ইংরেজি ১ম পত্র",
-  "ইংরেজি ২য় পত্র",
-  "ইসলাম ও নৈতিক শিক্ষা",
-  "বাংলাদেশ ও বিশ্বপরিচয়",
-];
-
-/**
- * Subjects shown for HSC students.
- */
-const HSC_SUBJECTS: CourseSubject[] = [
-  "পদার্থবিজ্ঞান ১ম পত্র",
-  "পদার্থবিজ্ঞান ২য় পত্র",
-  "রসায়ন ১ম পত্র",
-  "রসায়ন ২য় পত্র",
-  "উচ্চতর গণিত ১ম পত্র",
-  "উচ্চতর গণিত ২য় পত্র",
-  "জীববিজ্ঞান ১ম পত্র",
-  "জীববিজ্ঞান ২য় পত্র",
-  "তথ্য ও যোগাযোগ প্রযুক্তি",
-  "বাংলা ১ম পত্র",
-  "বাংলা ২য় পত্র",
-  "ইংরেজি ১ম পত্র",
-  "ইংরেজি ২য় পত্র",
-];
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Pick subject list based on level
     const isHsc = studentClass === "class-11" || studentClass === "class-12";
-    const SUBJECTS = isHsc ? HSC_SUBJECTS : SSC_SUBJECTS;
+    const SUBJECTS = (isHsc ? HSC_MCQ_SUBJECTS : SSC_MCQ_SUBJECTS) as CourseSubject[];
 
     const levelKey = getSchoolLevel(studentClass);
 
@@ -133,12 +105,17 @@ export async function GET(request: NextRequest) {
       activeQuestionsQuery.isTeacherSet = { $ne: true };
     }
 
-    const activeQuestions = await PracticeQuestion.find(activeQuestionsQuery)
-      .select("subject chapter")
-      .lean();
+    const activeQuestionGroups = await PracticeQuestion.aggregate<{
+      subject: string;
+      chapter: string;
+    }>([
+      { $match: activeQuestionsQuery },
+      { $group: { _id: { subject: "$subject", chapter: "$chapter" } } },
+      { $project: { _id: 0, subject: "$_id.subject", chapter: "$_id.chapter" } },
+    ]);
 
     const populatedSet = new Set(
-      activeQuestions.map((q) => `${q.subject}_${q.chapter}`)
+      activeQuestionGroups.map((q) => `${q.subject}_${q.chapter}`)
     );
 
     const statusList = [];

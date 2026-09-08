@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import mongoose from "mongoose";
 
-import { getSchoolLevel, COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
+import { COURSE_TO_MCQ_SUBJECT_MAP } from "@/lib/content/syllabus";
 import { requireStudentClass } from "@/lib/content/student-access";
 import { fail, handleApiError, success } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/session";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
-import { loadFullQuestionById, scorePracticeAttempt } from "@/lib/mcq/practice-service";
+import { scorePracticeAttempt } from "@/lib/mcq/practice-service";
 import { connectDB } from "@/lib/db/connect";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
 import { User } from "@/lib/db/models/User";
@@ -176,24 +176,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Build detailed answer records (including question text and options)
-    const level = getSchoolLevel(studentClass);
-    const detailedAnswers = await Promise.all(
-      scoring.solutions.map(async (sol) => {
-        const studentAns = submittedAnswers.find((a) => a.questionId === sol.questionId);
-        const full = await loadFullQuestionById(level, parsed.subject, sol.questionId);
-        const selectedIndex = studentAns?.selectedIndex ?? null;
-        return {
-          questionId: sol.questionId,
-          question: full?.question ?? "",
-          options: full?.options ?? [],
-          selectedIndex,
-          isCorrect: selectedIndex !== null && selectedIndex === sol.correctIndex,
-          correctIndex: sol.correctIndex,
-          explanation: sol.explanation,
-          imageUrl: full?.imageUrl,
-        };
-      })
-    );
+    const detailedAnswers = scoring.solutions.map((sol) => {
+      const studentAns = submittedAnswers.find((a) => a.questionId === sol.questionId);
+      const selectedIndex = studentAns?.selectedIndex ?? null;
+      return {
+        questionId: sol.questionId,
+        question: sol.question,
+        options: sol.options,
+        selectedIndex,
+        isCorrect: selectedIndex !== null && selectedIndex === sol.correctIndex,
+        correctIndex: sol.correctIndex,
+        explanation: sol.explanation,
+        imageUrl: sol.imageUrl,
+      };
+    });
     const authoritativeAttempt = await recordAuthoritativeAssessmentAttempt({
       attemptSessionId: submissionSession.session._id.toString(), studentId: user.id,
       responses: detailedAnswers.map((answer) => ({ questionId: String(answer.questionId), selectedIndex: answer.selectedIndex, isCorrect: answer.isCorrect, awardedMarks: answer.isCorrect ? 1 : 0 })),

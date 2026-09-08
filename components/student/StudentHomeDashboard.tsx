@@ -149,39 +149,13 @@ export function StudentHomeDashboard() {
     let active = true;
     void (async () => {
       setLoading(true);
-      const [gameResult, practiceResult, examsResult, assignmentsResult, videosResult] =
-        await Promise.all([
-          apiFetch<GameProfileData>("/api/gamification/profile"),
-          apiFetch<{ status: SubjectStatus[] }>("/api/mcq/practice/status"),
-          apiFetch<{ exams: StudentExam[] }>("/api/mcq/exams"),
-          apiFetch<{ assignments: Assignment[] }>("/api/cq/assignments?scope=student"),
-          apiFetch<{ videos: Video[] }>("/api/videos?scope=student"),
-        ]);
+      const result = await apiFetch<DashboardData>("/api/student/dashboard/summary");
 
       if (!active) return;
 
-      const nextData: DashboardData = {
-        game:
-          gameResult.ok && isApiSuccess(gameResult.payload)
-            ? gameResult.payload.data
-            : null,
-        subjects:
-          practiceResult.ok && isApiSuccess(practiceResult.payload)
-            ? practiceResult.payload.data.status
-            : [],
-        exams:
-          examsResult.ok && isApiSuccess(examsResult.payload)
-            ? examsResult.payload.data.exams
-            : [],
-        assignments:
-          assignmentsResult.ok && isApiSuccess(assignmentsResult.payload)
-            ? assignmentsResult.payload.data.assignments
-            : [],
-        videos:
-          videosResult.ok && isApiSuccess(videosResult.payload)
-            ? videosResult.payload.data.videos
-            : [],
-      };
+      const nextData = result.ok && isApiSuccess(result.payload)
+        ? result.payload.data
+        : emptyData;
 
       setData(nextData);
       setHasAnyData(

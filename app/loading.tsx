@@ -10,7 +10,7 @@ export default function Loading() {
       <div>
         <div className="relative mx-auto size-32 sm:size-40">
           <Image
-            src="/absp-logo.png"
+            src="/absp-logo-optimized.png"
             alt=""
             fill
             sizes="160px"

@@ -91,6 +91,8 @@ if (!mongoose.models.User) {
   UserSchema.index({ email: 1 }, { unique: true, sparse: true });
   UserSchema.index({ role: 1, isActive: 1 });
   UserSchema.index({ role: 1, studentClass: 1 });
+  UserSchema.index({ role: 1, "teacherDomain.students": 1 });
+  UserSchema.index({ role: 1, "teacherDomain.isAll": 1 });
   UserSchema.index({ approvalStatus: 1 });
   UserSchema.index({ studentCode: 1 }, { unique: true, sparse: true });
 }

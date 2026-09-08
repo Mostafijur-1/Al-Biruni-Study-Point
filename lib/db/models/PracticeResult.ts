@@ -53,6 +53,7 @@ const PracticeResultSchema = new Schema<IPracticeResult>(
 
 // Index for quick queries of student practice history
 PracticeResultSchema.index({ student: 1, subject: 1 });
+PracticeResultSchema.index({ student: 1, isTeacherSet: 1, subject: 1, submittedAt: -1 });
 PracticeResultSchema.index({ attemptSession: 1 }, { unique: true, sparse: true });
 PracticeResultSchema.index({ authoritativeAttempt: 1 }, { unique: true, sparse: true });
 

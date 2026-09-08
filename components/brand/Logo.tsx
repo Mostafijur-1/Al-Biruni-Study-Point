@@ -70,7 +70,7 @@ function LogoMark({ size, tone }: { size: keyof typeof sizeStyles; tone: LogoTon
     <span className={cn("inline-flex items-center", styles.spacing)}>
       <span className={cn("relative shrink-0", styles.mark)}>
         <Image
-          src="/absp-logo.png"
+          src="/absp-logo-optimized.png"
           alt=""
           fill
           sizes="(max-width: 640px) 64px, 112px"

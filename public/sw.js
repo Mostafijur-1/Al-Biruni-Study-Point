@@ -1,10 +1,9 @@
-const CACHE_NAME = "absp-cache-v4-home-app-actions";
+const CACHE_NAME = "absp-cache-v5-performance";
 const ASSETS_TO_CACHE = [
   "/",
   "/favicon.ico",
   "/icon.png",
-  "/apple-icon.png",
-  "/absp-logo.png"
+  "/apple-icon.png"
 ];
 
 // Install Event - cache core static assets
