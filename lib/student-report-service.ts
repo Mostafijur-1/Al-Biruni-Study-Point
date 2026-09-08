@@ -77,17 +77,24 @@ async function assignedBatchIds(actor: SessionUser) {
   return [...new Set((await assignedStudentAccess(actor)).map((row) => row.batchId))];
 }
 
-function assignmentAllowsStudent(assignments: Awaited<ReturnType<typeof assignedStudentAccess>>, batchId: string, studentId: string) {
-  return assignments.some((row) => row.batchId === batchId && (!row.studentIds?.length || row.studentIds.includes(studentId)));
+async function teacherReportDomain(actor: SessionUser) {
+  if (actor.role !== "teacher") return null;
+  const teacher = await User.findById(actor.id).select("teacherDomain").lean();
+  if (!teacher?.teacherDomain) return null;
+  return {
+    isAll: Boolean(teacher.teacherDomain.isAll),
+    classes: teacher.teacherDomain.classes?.map(String) ?? [],
+    students: teacher.teacherDomain.students?.map(String) ?? [],
+  };
 }
 
 export async function listReportStudents(actor: SessionUser) {
-  const teacherAssignments = await assignedStudentAccess(actor);
-  const teacherBatches = [...new Set(teacherAssignments.map((row) => row.batchId))];
+  const domain = await teacherReportDomain(actor);
+  if (actor.role === "teacher" && (!domain || (!domain.isAll && !domain.students.length))) return [];
   const enrollmentQuery = actor.role === "student"
     ? { studentId: actor.id }
     : actor.role === "teacher"
-      ? { batchId: { $in: teacherBatches } }
+      ? domain?.isAll ? {} : { studentId: { $in: domain?.students ?? [] } }
       : {};
   const enrollments = await BatchEnrollment.find(enrollmentQuery)
     .sort({ effectiveFrom: -1 })
@@ -98,9 +105,16 @@ export async function listReportStudents(actor: SessionUser) {
     const id = String(enrollment.studentId);
     if (!latestByStudent.has(id)) latestByStudent.set(id, enrollment);
   }
-  const latest = [...latestByStudent.values()].filter((row) => actor.role !== "teacher" || assignmentAllowsStudent(teacherAssignments, String(row.batchId), String(row.studentId)));
+  const latest = [...latestByStudent.values()];
+  const studentQuery: Record<string, unknown> = {
+    _id: { $in: latest.map((row) => row.studentId) },
+    role: "student",
+  };
+  if (actor.role === "teacher" && !domain?.isAll) {
+    studentQuery.studentClass = { $in: domain?.classes ?? [] };
+  }
   const [students, batches] = await Promise.all([
-    User.find({ _id: { $in: latest.map((row) => row.studentId) }, role: "student" })
+    User.find(studentQuery)
       .select("name studentCode studentClass isActive").sort({ name: 1 }).lean(),
     Batch.find({ _id: { $in: latest.map((row) => row.batchId) } }).select("name").lean(),
   ]);
@@ -124,21 +138,27 @@ export async function listReportStudents(actor: SessionUser) {
 async function resolveStudentContext(actor: SessionUser, studentId: string, periodEnd: Date) {
   if (!mongoose.Types.ObjectId.isValid(studentId)) throw new ApiRouteError("Student not found.", 404);
   if (actor.role === "student" && actor.id !== studentId) throw new ApiRouteError("Forbidden", 403);
-  const teacherAssignments = actor.role === "teacher" ? await assignedStudentAccess(actor) : [];
-  const allowedBatchIds = teacherAssignments
-    .filter((row) => !row.studentIds?.length || row.studentIds.includes(studentId))
-    .map((row) => row.batchId);
+  const [domain, student] = await Promise.all([
+    teacherReportDomain(actor),
+    User.findOne({ _id: studentId, role: "student" }).select("name studentCode studentClass").lean(),
+  ]);
+  if (!student) throw new ApiRouteError("Student not found.", 404);
+  if (actor.role === "teacher") {
+    const allowed = Boolean(
+      domain?.isAll ||
+      (domain?.students.includes(studentId) &&
+        student.studentClass &&
+        domain.classes.includes(student.studentClass)),
+    );
+    if (!allowed) throw new ApiRouteError("This student is outside your teacher domain.", 403);
+  }
   const enrollment = await BatchEnrollment.findOne({
     studentId,
     effectiveFrom: { $lt: periodEnd },
-    ...(actor.role === "teacher" ? { batchId: { $in: allowedBatchIds } } : {}),
   }).sort({ effectiveFrom: -1 });
   if (!enrollment) throw new ApiRouteError("Student has no batch enrollment.", 404);
-  const [student, batch] = await Promise.all([
-    User.findOne({ _id: studentId, role: "student" }).select("name studentCode studentClass").lean(),
-    Batch.findById(enrollment.batchId).select("name").lean(),
-  ]);
-  if (!student || !batch) throw new ApiRouteError("Student or batch not found.", 404);
+  const batch = await Batch.findById(enrollment.batchId).select("name").lean();
+  if (!batch) throw new ApiRouteError("Student batch not found.", 404);
   return { student, batch, enrollment };
 }
 

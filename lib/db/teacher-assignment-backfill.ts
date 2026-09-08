@@ -30,7 +30,9 @@ export async function inspectTeacherAssignmentBackfill(db: Db, limit = 100) {
   for (const teacher of teachers) {
     const domain = teacher.teacherDomain ?? {};
     const classes = Array.isArray(domain.classes) ? domain.classes.map(String) : [];
-    const teacherBatches = batches.filter((batch) => classes.includes(String(batch.studentClass)));
+    const teacherBatches = domain.isAll
+      ? batches
+      : batches.filter((batch) => classes.includes(String(batch.studentClass)));
     if (!teacherBatches.length) {
       exceptions.push({ teacherRef: ref(teacher._id), reason: "no_batch_matches_legacy_classes" });
       continue;

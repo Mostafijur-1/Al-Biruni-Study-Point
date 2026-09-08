@@ -15,15 +15,17 @@ test("teacher result screens expose comments without result cancellation control
   }
 });
 
-test("batch-wide teacher assignments allow comments and student reports", async () => {
+test("teacher comments accept batch-wide assignments and reports follow teacher domains", async () => {
   const [policy, reports] = await Promise.all([
     readFile("lib/auth/teacher-domain-policy.ts", "utf8"),
     readFile("lib/student-report-service.ts", "utf8"),
   ]);
 
   assert.match(policy, /"studentIds\.0": \{ \$exists: false \}/);
-  assert.match(reports, /!row\.studentIds\?\.length \|\| row\.studentIds\.includes\(studentId\)/);
-  assert.match(reports, /batchId: \{ \$in: allowedBatchIds \}/);
+  assert.match(reports, /teacherReportDomain/);
+  assert.match(reports, /domain\?\.isAll \? \{\} : \{ studentId:/);
+  assert.match(reports, /domain\?\.students\.includes\(studentId\)/);
+  assert.match(reports, /domain\.classes\.includes\(student\.studentClass\)/);
 });
 
 test("written exams load all eligible current batches from their workspace API", async () => {
