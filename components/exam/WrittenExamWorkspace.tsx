@@ -38,14 +38,14 @@ export function WrittenExamWorkspace({ role }: { role: "admin" | "teacher" }) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const [examResult, activeResult, plannedResult] = await Promise.all([
-      apiFetch<{ exams: Exam[] }>("/api/written-exams"),
-      apiFetch<{ batches: Batch[] }>("/api/batches?status=active&limit=100"),
-      apiFetch<{ batches: Batch[] }>("/api/batches?status=planned&limit=100"),
-    ]);
-    if (examResult.ok && isApiSuccess(examResult.payload)) setExams(examResult.payload.data.exams);
-    const available = [activeResult, plannedResult].flatMap((result) => result.ok && isApiSuccess(result.payload) ? result.payload.data.batches : []);
-    setBatches([...new Map(available.map((batch) => [batch.id, batch])).values()]);
+    const result = await apiFetch<{ exams: Exam[]; batches: Batch[] }>("/api/written-exams");
+    if (result.ok && isApiSuccess(result.payload)) {
+      setExams(result.payload.data.exams);
+      setBatches(result.payload.data.batches);
+      return;
+    }
+    setIsError(true);
+    setMessage(getApiErrorMessage(result.payload, "Written exam data could not be loaded."));
   }, []);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);

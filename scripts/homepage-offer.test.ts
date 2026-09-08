@@ -20,7 +20,7 @@ test("homepage promotes the October 2026 HSC 2028 offer", async () => {
   assert.equal(dictionary.home.batches.sample.some((batch) => /HSC ২০২৮/.test(batch.name) && batch.mode === "offline" && /01 October, 2026/.test(batch.schedule)), true);
 });
 
-test("install and notification actions live only in the footer", async () => {
+test("English install and notification actions live only in the footer", async () => {
   const home = await readFile("components/home/HomeSection.tsx", "utf8");
   const footer = await readFile("components/layout/Footer.tsx", "utf8");
   const actions = await readFile("components/shared/PwaInstallPrompt.tsx", "utf8");
@@ -28,8 +28,8 @@ test("install and notification actions live only in the footer", async () => {
   assert.doesNotMatch(home, /PwaInstallPrompt/);
   assert.match(footer, /<PwaInstallPrompt \/>/);
   assert.doesNotMatch(actions, /<section/);
-  assert.match(actions, /App ইনস্টল করুন/);
-  assert.match(actions, /Notification চালু করুন/);
+  assert.match(actions, /Install app/);
+  assert.match(actions, /Enable notifications/);
   assert.match(actions, /min-h-12 w-full border-2 border-brand-yellow bg-brand-yellow/);
   assert.match(actions, /min-h-12 w-full border-2 border-white bg-white/);
 });

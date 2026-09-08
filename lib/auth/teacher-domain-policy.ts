@@ -90,6 +90,7 @@ export async function authorizeTeacherForStudentSubject(
     $and: [{
       $or: [
         { studentIds: { $exists: false } },
+        { "studentIds.0": { $exists: false } },
         { studentIds: student._id },
       ],
     }],

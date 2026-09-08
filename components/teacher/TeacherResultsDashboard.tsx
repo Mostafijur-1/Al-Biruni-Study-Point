@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
-  Ban,
   BookOpen,
   ChevronDown,
   GraduationCap,
@@ -153,18 +152,14 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
 // ---------------------------------------------------------------------------
 function ResultRow({
   result, onCommentSaved,
-  onDeleted,
 }: {
   result: StudentResult;
-    onCommentSaved: (id: string, comment: string) => void;
-  onDeleted: (id: string) => void;
+  onCommentSaved: (id: string, comment: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState(result.teacherComment || "");
   const [commentSaving, setCommentSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const hasWrong = result.wrongAnswers.length > 0;
 
@@ -179,35 +174,12 @@ function ResultRow({
       if (ok && isApiSuccess(payload)) {
         onCommentSaved(result.id, commentText);
       } else {
-        alert("Could not save comment");
+        alert(getApiErrorMessage(payload, "Could not save comment."));
       }
     } catch {
       alert("Error saving comment");
     } finally {
       setCommentSaving(false);
-    }
-  }
-
-  async function handleDeleteAttempt() {
-    const reason = window.prompt("Why should this result be voided?");
-    if (!reason?.trim()) return;
-    setIsDeleting(true);
-    try {
-      const { ok, payload } = await apiFetch(`/api/teacher/results/${result.id}/void`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reason.trim() }),
-      });
-      if (ok && isApiSuccess(payload)) {
-        onDeleted(result.id);
-      } else {
-        alert("Could not void result");
-      }
-    } catch {
-      alert("Error voiding result");
-    } finally {
-      setIsDeleting(false);
-      setConfirmDelete(false);
     }
   }
 
@@ -240,6 +212,11 @@ function ResultRow({
                 <p className="font-semibold text-primary truncate max-w-[150px] sm:max-w-none">
                   {result.student.name}
                 </p>
+                {result.isCancelled && (
+                  <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                    Cancelled
+                  </span>
+                )}
                 <span className="font-mono text-[10px] font-bold text-muted">ID {result.student.studentCode ?? "Unassigned"}</span>
                 {result.student.class && (
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-accent uppercase shrink-0">
@@ -322,7 +299,7 @@ function ResultRow({
             <TrendingDown className="size-5 text-orange-500 shrink-0" />
           )}
 
-          {/* Inline header buttons: comment and void */}
+          {/* Inline comment button */}
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -337,16 +314,6 @@ function ResultRow({
               title="Add/Edit Comment"
             >
               <MessageSquare className="size-4" />
-            </button>
-
-            {/* No inline layout-shift confirmation */}
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
-              title="Void result"
-            >
-              <Ban className="size-4" />
             </button>
           </div>
 
@@ -382,14 +349,6 @@ function ResultRow({
               <span>মন্তব্য</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red text-xs font-semibold hover:bg-red-100 transition cursor-pointer"
-            >
-              <Ban className="size-3.5" />
-              <span>Cancelled Result</span>
-            </button>
           </div>
 
           {/* Chevron toggler */}
@@ -455,46 +414,6 @@ function ResultRow({
         </div>
       )}
 
-      {/* Void confirmation modal */}
-      {confirmDelete && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
-          onClick={(e) => {
-            e.stopPropagation();
-            setConfirmDelete(false);
-          }}
-        >
-          <div
-            className="bg-surface rounded-2xl border border-border p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-              <Ban className="size-5 text-brand-red" />
-              Confirm void
-            </h3>
-            <p className="text-sm text-muted leading-relaxed">
-              Void the result attempt for <strong>{result.student.name}</strong>? The record will be preserved with your reason in the audit history.
-            </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted hover:bg-secondary cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteAttempt}
-                disabled={isDeleting}
-                className="rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:bg-brand-red-hover disabled:opacity-50 cursor-pointer"
-              >
-                {isDeleting ? "Voiding..." : "Void result"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -523,12 +442,6 @@ export function TeacherResultsDashboard() {
   const handleCommentSaved = useCallback((id: string, comment: string) => {
     setResults((prev) =>
       prev.map((r) => (r.id === id ? { ...r, teacherComment: comment } : r))
-    );
-  }, []);
-
-  const handleDeleted = useCallback((id: string) => {
-    setResults((prev) =>
-      prev.map((result) => result.id === id ? { ...result, isCancelled: true } : result)
     );
   }, []);
 
@@ -844,7 +757,6 @@ export function TeacherResultsDashboard() {
               key={result.id}
               result={result}
               onCommentSaved={handleCommentSaved}
-              onDeleted={handleDeleted}
             />
           ))}
         </div>

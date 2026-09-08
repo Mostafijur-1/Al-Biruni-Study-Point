@@ -8,10 +8,7 @@ import { getPushDeviceId, syncPushSubscription } from "@/lib/push/client-subscri
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
-    platform: string;
-  }>;
+  readonly userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
   prompt(): Promise<void>;
 }
 
@@ -54,7 +51,7 @@ export function PwaInstallPrompt() {
     const handleAppInstalled = () => {
       setIsStandalone(true);
       setDeferredPrompt(null);
-      setStatusMessage("ABSP অ্যাপ ইনস্টল হয়েছে।");
+      setStatusMessage("ABSP has been installed successfully.");
       fetch("/api/pwa/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,22 +72,22 @@ export function PwaInstallPrompt() {
       await deferredPrompt.prompt();
       const choice = await deferredPrompt.userChoice;
       setDeferredPrompt(null);
-      setStatusMessage(choice.outcome === "accepted" ? "ইনস্টলেশন শুরু হয়েছে।" : "ইনস্টলেশন Cancel হয়েছে।");
+      setStatusMessage(choice.outcome === "accepted" ? "Installation started." : "Installation was cancelled.");
       return;
     }
     if (isIos) {
-      setStatusMessage("Safari-এর Share মেনু থেকে ‘Add to Home Screen’ চাপুন।");
+      setStatusMessage("Open Safari's Share menu and tap 'Add to Home Screen'.");
     } else if (isFirefoxAndroid) {
-      setStatusMessage("ব্রাউজারের মেনু থেকে ‘Install’ বা ‘Add to Home Screen’ চাপুন।");
+      setStatusMessage("Open the browser menu and tap 'Install' or 'Add to Home Screen'.");
     } else {
-      setStatusMessage("Chrome/ব্রাউজারের মেনু থেকে ‘Install app’ চাপুন।");
+      setStatusMessage("Open the Chrome or browser menu and choose 'Install app'.");
     }
   }
 
   async function handleNotifications() {
     if (!("Notification" in window)) {
       setNotificationPermission("unsupported");
-      setStatusMessage("এই ব্রাউজারে নোটিফিকেশন সমর্থিত নয়।");
+      setStatusMessage("Notifications are not supported by this browser.");
       return;
     }
     setNotificationBusy(true);
@@ -100,13 +97,13 @@ export function PwaInstallPrompt() {
       setNotificationPermission(permission);
       if (permission === "granted") {
         const subscribed = await syncPushSubscription();
-        setStatusMessage(subscribed ? "দৈনিক পরীক্ষার নোটিফিকেশন চালু হয়েছে।" : "অনুমতি হয়েছে, কিন্তু সাবস্ক্রিপশন সম্পন্ন হয়নি।");
+        setStatusMessage(subscribed ? "Notifications are now enabled." : "Permission was granted, but notification setup could not be completed.");
       } else if (permission === "denied") {
-        setStatusMessage("ব্রাউজার সেটিংস থেকে নোটিফিকেশন অনুমতি চালু করুন।");
+        setStatusMessage("Enable notifications for ABSP in your browser settings.");
       }
     } catch (error) {
       console.error("Error requesting notification permission:", error);
-      setStatusMessage("নোটিফিকেশন চালু করা যায়নি। পরে আবার চেষ্টা করুন।");
+      setStatusMessage("Notifications could not be enabled. Please try again later.");
     } finally {
       setNotificationBusy(false);
     }
@@ -126,7 +123,7 @@ export function PwaInstallPrompt() {
           onClick={() => void handleInstall()}
           disabled={isStandalone}
         >
-          {isStandalone ? <><CheckCircle2 className="size-5" /> App ইনস্টল হয়েছে</> : <><Download className="size-5" /> App ইনস্টল করুন</>}
+          {isStandalone ? <><CheckCircle2 className="size-5" /> App installed</> : <><Download className="size-5" /> Install app</>}
         </Button>
         <Button
           type="button"
@@ -137,7 +134,7 @@ export function PwaInstallPrompt() {
           loading={notificationBusy}
           disabled={notificationGranted || notificationUnavailable}
         >
-          {notificationGranted ? <><CheckCircle2 className="size-5" /> Notification চালু</> : <><BellRing className="size-5" /> Notification চালু করুন</>}
+          {notificationGranted ? <><CheckCircle2 className="size-5" /> Notifications on</> : <><BellRing className="size-5" /> Enable notifications</>}
         </Button>
       </div>
       {statusMessage && <p className="mt-2 text-xs leading-5 text-white/70" role="status" aria-live="polite">{statusMessage}</p>}

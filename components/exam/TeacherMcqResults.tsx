@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Ban, MessageSquare, XCircle } from "lucide-react";
+import { MessageSquare, XCircle } from "lucide-react";
 
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 
 import { formatDurationSeconds } from "@/lib/format/time";
 import type { McqResultTeacherRow } from "@/types/mcq";
-import { apiFetch, isApiSuccess } from "@/lib/api/client";
+import { apiFetch, getApiErrorMessage, isApiSuccess } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type TeacherMcqResultsProps = {
@@ -76,18 +76,14 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
 
 function McqResultRow({
   row,
-  onDelete,
   onCommentSave,
 }: {
   row: McqResultTeacherRow;
-  onDelete: (id: string) => void;
   onCommentSave: (id: string, comment: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [commentText, setCommentText] = useState(row.teacherComment || "");
   const [commentSaving, setCommentSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleSaveComment() {
     setCommentSaving(true);
@@ -100,35 +96,12 @@ function McqResultRow({
       if (ok && isApiSuccess(payload)) {
         onCommentSave(row._id, commentText);
       } else {
-        alert("Could not save comment");
+        alert(getApiErrorMessage(payload, "Could not save comment."));
       }
     } catch {
       alert("Error saving comment");
     } finally {
       setCommentSaving(false);
-    }
-  }
-
-  async function handleDeleteResult() {
-    const reason = window.prompt("Why should this result be voided?");
-    if (!reason?.trim()) return;
-    setIsDeleting(true);
-    try {
-      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}/void`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reason.trim() }),
-      });
-      if (ok && isApiSuccess(payload)) {
-        onDelete(row._id);
-      } else {
-        alert("Could not void result");
-      }
-    } catch {
-      alert("Error voiding result");
-    } finally {
-      setIsDeleting(false);
-      setConfirmDelete(false);
     }
   }
 
@@ -189,35 +162,6 @@ function McqResultRow({
               <MessageSquare className="size-3.5" />
             </button>
 
-            {confirmDelete ? (
-              <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5 text-left">
-                <span className="text-[9px] text-brand-red font-bold px-1">Cancel?</span>
-                <button
-                  type="button"
-                  onClick={handleDeleteResult}
-                  disabled={isDeleting}
-                  className="rounded bg-brand-red px-2 py-0.5 text-[9px] font-bold text-white hover:bg-brand-red-hover cursor-pointer"
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="rounded border border-border bg-surface px-2 py-0.5 text-[9px] font-bold text-muted hover:bg-secondary cursor-pointer"
-                >
-                  No
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
-                title="Void result"
-              >
-                <Ban className="size-3.5" />
-              </button>
-            )}
           </div>
         </td>
       </tr>
@@ -277,18 +221,14 @@ function McqResultRow({
 
 function McqResultMobileCard({
   row,
-  onDelete,
   onCommentSave,
 }: {
   row: McqResultTeacherRow;
-  onDelete: (id: string) => void;
   onCommentSave: (id: string, comment: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [commentText, setCommentText] = useState(row.teacherComment || "");
   const [commentSaving, setCommentSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleSaveComment() {
     setCommentSaving(true);
@@ -301,35 +241,12 @@ function McqResultMobileCard({
       if (ok && isApiSuccess(payload)) {
         onCommentSave(row._id, commentText);
       } else {
-        alert("Could not save comment");
+        alert(getApiErrorMessage(payload, "Could not save comment."));
       }
     } catch {
       alert("Error saving comment");
     } finally {
       setCommentSaving(false);
-    }
-  }
-
-  async function handleDeleteResult() {
-    const reason = window.prompt("Why should this result be voided?");
-    if (!reason?.trim()) return;
-    setIsDeleting(true);
-    try {
-      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}/void`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reason.trim() }),
-      });
-      if (ok && isApiSuccess(payload)) {
-        onDelete(row._id);
-      } else {
-        alert("Could not void result");
-      }
-    } catch {
-      alert("Error voiding result");
-    } finally {
-      setIsDeleting(false);
-      setConfirmDelete(false);
     }
   }
 
@@ -395,35 +312,6 @@ function McqResultMobileCard({
           {expanded ? "Hide Details" : "Show Details"}
         </button>
 
-        {confirmDelete ? (
-          <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg p-0.5 text-left">
-            <span className="text-[9px] text-brand-red font-bold px-1">Cancel?</span>
-            <button
-              type="button"
-              onClick={handleDeleteResult}
-              disabled={isDeleting}
-              className="rounded bg-brand-red px-2 py-0.5 text-[9px] font-bold text-white hover:bg-brand-red-hover cursor-pointer"
-            >
-              Yes
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(false)}
-              className="rounded border border-border bg-surface px-2 py-0.5 text-[9px] font-bold text-muted hover:bg-secondary cursor-pointer"
-            >
-              No
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            className="p-1.5 rounded-lg border border-red-150 bg-red-50 text-brand-red hover:bg-red-100 transition cursor-pointer"
-            title="Void result"
-          >
-            <Ban className="size-3.5" />
-          </button>
-        )}
       </div>
 
       {expanded && (
@@ -481,18 +369,6 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
 
   const results = data?.results ?? [];
   const examTitle = results[0]?.exam?.title;
-
-  function handleDeleteRow(deletedId: string) {
-    setData((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        results: prev.results.map((result) =>
-          result._id === deletedId ? { ...result, isCancelled: true } : result
-        ),
-      };
-    });
-  }
 
   function handleCommentSaveRow(id: string, comment: string) {
     setData((prev) => {
@@ -612,7 +488,6 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
                   <McqResultRow
                     key={row._id}
                     row={row}
-                    onDelete={handleDeleteRow}
                     onCommentSave={handleCommentSaveRow}
                   />
                 ))}
@@ -626,7 +501,6 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
               <McqResultMobileCard
                 key={row._id}
                 row={row}
-                onDelete={handleDeleteRow}
                 onCommentSave={handleCommentSaveRow}
               />
             ))}

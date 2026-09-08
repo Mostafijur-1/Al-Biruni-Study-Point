@@ -72,6 +72,19 @@ export async function listManagedWrittenExams(context: RequestContext, assignmen
   return { exams, batches, subjects };
 }
 
+export async function listWrittenExamBatches(
+  context: RequestContext,
+  assignmentScopes: Array<{ batchId: Types.ObjectId; subjectId: Types.ObjectId }>,
+) {
+  const batchIds = [...new Set(assignmentScopes.map((row) => String(row.batchId)))];
+  const access = context.actor.role === "teacher" ? { _id: { $in: batchIds } } : {};
+  return Batch.find({
+    ...canonicalScopeFilter(context.scope),
+    ...access,
+    status: { $in: ["planned", "active"] },
+  }).select("name status").sort({ name: 1 }).limit(1_000).lean();
+}
+
 export async function loadWrittenExamRoster(context: RequestContext, exam: { _id: Types.ObjectId; batchId: Types.ObjectId }) {
   const enrollments = await BatchEnrollment.find({ ...canonicalScopeFilter(context.scope), batchId: exam.batchId, status: "active" }).select("studentId").limit(1_000).lean();
   const [students, storedResults] = await Promise.all([

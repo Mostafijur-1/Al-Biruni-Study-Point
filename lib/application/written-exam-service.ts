@@ -5,7 +5,7 @@ import { runIdempotentMutation } from "@/lib/application/idempotency";
 import type { RequestContext } from "@/lib/application/request-context";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { isCanonicalAcademicAuthorityEnabled } from "@/lib/db/canonical-scope-guard";
-import { countWrittenExamResults, createWrittenExamRecord, findActiveWrittenExamAssignments, findWrittenExam, findWrittenExamBatchAndSubject, isStudentEnrolledForExam, listManagedWrittenExams, listStudentWrittenExams, loadWrittenExamRoster, saveWrittenExamMarks, saveWrittenExamRecord } from "@/lib/repositories/written-exam-repository";
+import { countWrittenExamResults, createWrittenExamRecord, findActiveWrittenExamAssignments, findWrittenExam, findWrittenExamBatchAndSubject, isStudentEnrolledForExam, listManagedWrittenExams, listStudentWrittenExams, listWrittenExamBatches, loadWrittenExamRoster, saveWrittenExamMarks, saveWrittenExamRecord } from "@/lib/repositories/written-exam-repository";
 import { WrittenExamResult } from "@/lib/db/models/WrittenExamResult";
 import type { WrittenExamMutationInput } from "@/lib/validations/written-exam.schema";
 import { materializeWrittenExamAssessment } from "@/lib/written-exam/assessment-adapter";
@@ -59,10 +59,19 @@ export async function getWrittenExamData(context: RequestContext, input: { examI
     }) } };
   }
   const assignments = context.actor.role === "teacher" ? await findActiveWrittenExamAssignments(context) : [];
-  const rows = await listManagedWrittenExams(context, assignments);
+  const [rows, availableBatches] = await Promise.all([
+    listManagedWrittenExams(context, assignments),
+    listWrittenExamBatches(context, assignments),
+  ]);
   const batchById = new Map(rows.batches.map((row) => [String(row._id), row.name]));
   const subjectById = new Map(rows.subjects.map((row) => [String(row._id), row.nameBn || row.name]));
-  return { kind: "json" as const, data: { exams: rows.exams.map((exam) => serializeExam(exam, batchById.get(String(exam.batchId)), subjectById.get(String(exam.subjectId)))) } };
+  return {
+    kind: "json" as const,
+    data: {
+      exams: rows.exams.map((exam) => serializeExam(exam, batchById.get(String(exam.batchId)), subjectById.get(String(exam.subjectId)))),
+      batches: availableBatches.map((batch) => ({ id: String(batch._id), name: batch.name })),
+    },
+  };
 }
 
 export async function uploadWrittenExamQuestion(context: RequestContext, input: { examId: string; file: File }) {

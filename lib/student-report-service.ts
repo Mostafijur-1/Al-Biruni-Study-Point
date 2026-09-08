@@ -78,7 +78,7 @@ async function assignedBatchIds(actor: SessionUser) {
 }
 
 function assignmentAllowsStudent(assignments: Awaited<ReturnType<typeof assignedStudentAccess>>, batchId: string, studentId: string) {
-  return assignments.some((row) => row.batchId === batchId && (row.studentIds === undefined || row.studentIds.includes(studentId)));
+  return assignments.some((row) => row.batchId === batchId && (!row.studentIds?.length || row.studentIds.includes(studentId)));
 }
 
 export async function listReportStudents(actor: SessionUser) {
@@ -124,15 +124,16 @@ export async function listReportStudents(actor: SessionUser) {
 async function resolveStudentContext(actor: SessionUser, studentId: string, periodEnd: Date) {
   if (!mongoose.Types.ObjectId.isValid(studentId)) throw new ApiRouteError("Student not found.", 404);
   if (actor.role === "student" && actor.id !== studentId) throw new ApiRouteError("Forbidden", 403);
+  const teacherAssignments = actor.role === "teacher" ? await assignedStudentAccess(actor) : [];
+  const allowedBatchIds = teacherAssignments
+    .filter((row) => !row.studentIds?.length || row.studentIds.includes(studentId))
+    .map((row) => row.batchId);
   const enrollment = await BatchEnrollment.findOne({
     studentId,
     effectiveFrom: { $lt: periodEnd },
+    ...(actor.role === "teacher" ? { batchId: { $in: allowedBatchIds } } : {}),
   }).sort({ effectiveFrom: -1 });
   if (!enrollment) throw new ApiRouteError("Student has no batch enrollment.", 404);
-  if (actor.role === "teacher") {
-    const allowed = assignmentAllowsStudent(await assignedStudentAccess(actor), String(enrollment.batchId), studentId);
-    if (!allowed) throw new ApiRouteError("This student is outside your assigned batches.", 403);
-  }
   const [student, batch] = await Promise.all([
     User.findOne({ _id: studentId, role: "student" }).select("name studentCode studentClass").lean(),
     Batch.findById(enrollment.batchId).select("name").lean(),
