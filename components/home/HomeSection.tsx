@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent, PlayCircle } from "lucide-react";
+import { BookOpen, Calculator, Calendar, CheckCircle2, FlaskConical, GraduationCap, Monitor, Percent, Play } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -124,10 +124,9 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                         className="object-cover transition duration-300 group-hover:scale-[1.02]"
                         priority
                       />
-                      <span className="absolute inset-0 bg-black/20 transition group-hover:bg-black/30" aria-hidden />
                       <span className="absolute inset-0 grid place-items-center" aria-hidden>
-                        <span className="grid size-16 place-items-center rounded-full bg-brand-red text-white shadow-xl transition group-hover:scale-110 sm:size-20">
-                          <PlayCircle className="size-9 sm:size-11" fill="currentColor" />
+                        <span className="grid h-12 w-[4.25rem] place-items-center rounded-xl bg-[#ff0000] text-white shadow-xl transition group-hover:bg-[#cc0000] sm:h-14 sm:w-20">
+                          <Play className="ml-0.5 size-7 sm:size-8" fill="currentColor" strokeWidth={0} />
                         </span>
                       </span>
                     </button>
