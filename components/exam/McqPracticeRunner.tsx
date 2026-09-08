@@ -10,6 +10,7 @@ import {
   Brain,
   CheckCircle2,
   Flame,
+  LoaderCircle,
   Sparkles,
   Star,
   Trophy,
@@ -349,9 +350,7 @@ export function McqPracticeRunner({
   const [phase, setPhase] = useState<"configuring" | "loading" | "running" | "result">("configuring");
   const [availableChapters, setAvailableChapters] = useState<Array<{ name: string; hasMcqs: boolean }>>([]);
   
-  // Countdown and tab switching warning states
-  const [countdownSeconds, setCountdownSeconds] = useState(3);
-  const [loadingDone, setLoadingDone] = useState(false);
+  // Tab switching warning states
   const [, setTabSwitchCount] = useState(0);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
   const tabSwitchCountRef = useRef(0);
@@ -546,41 +545,6 @@ export function McqPracticeRunner({
     }
   }, [availableChapters, selectedChapters]);
 
-  // Countdown timer for starting practice
-  useEffect(() => {
-    if (phase !== "loading") return;
-    if (countdownSeconds <= 0) {
-      if (loadingDone && attemptSessionId) {
-        const timer = window.setTimeout(() => {
-          void (async () => {
-            const { ok, payload } = await apiFetch<{
-              remainingSeconds: number;
-              startedAt: string;
-            }>("/api/mcq/practice/start", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ attemptSessionId }),
-            });
-            if (!ok || !isApiSuccess(payload)) {
-              setErrorMessage(getApiErrorMessage(payload, "Could not begin practice test."));
-              setPhase("configuring");
-              return;
-            }
-            setTotalDurationSeconds(payload.data.remainingSeconds);
-            setStartTime(Date.now());
-            setPhase("running");
-          })();
-        }, 0);
-        return () => window.clearTimeout(timer);
-      }
-      return;
-    }
-    const timer = setTimeout(() => {
-      setCountdownSeconds((s) => s - 1);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [phase, countdownSeconds, loadingDone, attemptSessionId]);
-
   // Start practice session
   const startPractice = useCallback(async () => {
     if (selectedChapters.length === 0) return;
@@ -591,8 +555,6 @@ export function McqPracticeRunner({
       return;
     }
 
-    setCountdownSeconds(3);
-    setLoadingDone(false);
     tabSwitchCountRef.current = 0;
     setTabSwitchCount(0);
     setShowTabSwitchWarning(false);
@@ -644,7 +606,24 @@ export function McqPracticeRunner({
       setAnswers(loadedAnswers);
       setResult(null);
       setIsTimeUp(false);
-      setLoadingDone(true);
+
+      const beginResponse = await apiFetch<{
+        remainingSeconds: number;
+        startedAt: string;
+      }>("/api/mcq/practice/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptSessionId: data.attemptSessionId }),
+      });
+      if (!beginResponse.ok || !isApiSuccess(beginResponse.payload)) {
+        setErrorMessage(getApiErrorMessage(beginResponse.payload, "Could not begin practice test."));
+        setPhase("configuring");
+        return;
+      }
+
+      setTotalDurationSeconds(beginResponse.payload.data.remainingSeconds);
+      setStartTime(Date.now());
+      setPhase("running");
     } catch (error) {
       console.error("[Start Practice Catch Technical Details]:", error);
       setErrorMessage("Could not connect to server to fetch practice questions.");
@@ -1108,28 +1087,17 @@ export function McqPracticeRunner({
   if (phase === "loading") {
     return (
       <div className="max-w-md mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-[var(--shadow-md)] flex flex-col items-center justify-center space-y-6 py-16 animate-in fade-in duration-300">
-        <div className="relative flex items-center justify-center size-24">
-          <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
-          <div className="size-20 rounded-full border-4 border-primary/20 border-t-primary flex items-center justify-center bg-background shadow-inner">
-            <span className="font-display text-4xl font-black text-primary animate-in zoom-in duration-200">
-              {countdownSeconds > 0 ? countdownSeconds : "✓"}
-            </span>
-          </div>
+        <div className="grid size-20 place-items-center rounded-full bg-primary/10 text-primary">
+          <LoaderCircle className="size-10 animate-spin" aria-hidden />
         </div>
         <div className="space-y-2">
           <h2 className="font-display text-xl font-bold text-primary">
-            {locale === "bn" 
-              ? (countdownSeconds > 0 ? "পরীক্ষা শুরু হচ্ছে" : "পরীক্ষা প্রস্তুত")
-              : (countdownSeconds > 0 ? "Starting Your Test" : "Test Ready")}
+            {locale === "bn" ? "প্রশ্ন প্রস্তুত হচ্ছে" : "Preparing Your Test"}
           </h2>
           <p className="text-xs text-muted font-semibold leading-relaxed">
             {locale === "bn"
-              ? (countdownSeconds > 0 
-                  ? `${countdownSeconds} সেকেন্ডের মধ্যে তোমার পরীক্ষাটি শুরু হতে যাচ্ছে...`
-                  : "পরীক্ষার প্রশ্ন লোড করা সম্পন্ন হয়েছে।")
-              : (countdownSeconds > 0
-                  ? `Your test is going to start in ${countdownSeconds} seconds...`
-                  : "Questions loaded successfully.")}
+              ? "প্রশ্ন তৈরি হলেই পরীক্ষা সরাসরি শুরু হবে।"
+              : "The test will start as soon as the questions are ready."}
           </p>
         </div>
       </div>

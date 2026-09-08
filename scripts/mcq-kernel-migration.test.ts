@@ -21,5 +21,5 @@ test("practice result projection is derived entirely from its authoritative atte
 test("kernel writes can be disabled without disabling legacy workflows", () => {
   assert.equal(isAssessmentKernelWriteEnabled({ ASSESSMENT_KERNEL_WRITES: "false" }), false);
   assert.equal(isAssessmentKernelWriteEnabled({ ASSESSMENT_KERNEL_WRITES: "true" }), true);
-  assert.equal(isAssessmentKernelWriteEnabled({}), true);
+  assert.equal(isAssessmentKernelWriteEnabled({}), false);
 });

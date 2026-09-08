@@ -8,6 +8,7 @@ import {
   BookOpen,
   CheckCircle2,
   Clock,
+  LoaderCircle,
   Play,
 } from "lucide-react";
 
@@ -176,9 +177,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Countdown and tab switching warning states
-  const [countdownSeconds, setCountdownSeconds] = useState(3);
-  const [loadingDone, setLoadingDone] = useState(false);
+  // Tab switching warning states
   const [, setTabSwitchCount] = useState(0);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
   const tabSwitchCountRef = useRef(0);
@@ -236,22 +235,6 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
     };
   }, []);
 
-  // Countdown timer for starting exam
-  useEffect(() => {
-    if (phase !== "loading") return;
-    if (countdownSeconds <= 0) {
-      if (loadingDone) {
-        const timer = window.setTimeout(() => setPhase("instructions"), 0);
-        return () => window.clearTimeout(timer);
-      }
-      return;
-    }
-    const timer = setTimeout(() => {
-      setCountdownSeconds((s) => s - 1);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [phase, countdownSeconds, loadingDone]);
-
   // Load Exam Data on mount
   useEffect(() => {
     const loadExam = async () => {
@@ -299,7 +282,7 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
             );
             setPhase("running");
           } else {
-            setLoadingDone(true);
+            setPhase("instructions");
           }
         } else {
           setErrorMessage(getApiErrorMessage(payload, "Exam শুরু করা যায়নি।"));
@@ -535,22 +518,15 @@ export function McqExamRunner({ examId }: McqExamRunnerProps) {
   if (phase === "loading") {
     return (
       <div className="max-w-md mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-[var(--shadow-md)] flex flex-col items-center justify-center space-y-6 py-16 animate-in fade-in duration-300">
-        <div className="relative flex items-center justify-center size-24">
-          <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
-          <div className="size-20 rounded-full border-4 border-primary/20 border-t-primary flex items-center justify-center bg-background shadow-inner">
-            <span className="font-display text-4xl font-black text-primary animate-in zoom-in duration-200">
-              {countdownSeconds > 0 ? countdownSeconds : "✓"}
-            </span>
-          </div>
+        <div className="grid size-20 place-items-center rounded-full bg-primary/10 text-primary">
+          <LoaderCircle className="size-10 animate-spin" aria-hidden />
         </div>
         <div className="space-y-2">
           <h2 className="font-display text-xl font-bold text-primary">
-            {countdownSeconds > 0 ? "তোমার পরীক্ষা শুরু হচ্ছে" : "পরীক্ষা প্রস্তুত"}
+            পরীক্ষা প্রস্তুত হচ্ছে
           </h2>
           <p className="text-xs text-muted font-semibold leading-relaxed">
-            {countdownSeconds > 0 
-              ? `${countdownSeconds} সেকেন্ডের মধ্যে পরীক্ষা শুরু হতে যাচ্ছে...` 
-              : "পরীক্ষার প্রশ্ন লোড করা সম্পন্ন হয়েছে।"}
+            প্রশ্ন প্রস্তুত হলেই নির্দেশনা দেখানো হবে।
           </p>
         </div>
       </div>

@@ -38,37 +38,34 @@ export async function GET(request: NextRequest, context: Context) {
       return fail("This exam is not available for your class.", 403);
     }
 
-    // Verify student is assigned to this teacher
     const studentIdObj = new mongoose.Types.ObjectId(user.id);
-    const isAssigned = await User.findOne({
-      _id: exam.teacher,
-      role: "teacher",
-      $or: [
-        { "teacherDomain.students": studentIdObj },
-        { "teacherDomain.isAll": true }
-      ]
-    }).lean();
+    const [isAssigned, existingAttempt, existingSession] = await Promise.all([
+      User.exists({
+        _id: exam.teacher,
+        role: "teacher",
+        $or: [
+          { "teacherDomain.students": studentIdObj },
+          { "teacherDomain.isAll": true },
+        ],
+      }),
+      McqExamAttempt.exists({ student: user.id, exam: id }),
+      AttemptSession.findOne({
+        student: user.id,
+        kind: "exam",
+        exam: id,
+        status: { $in: ["ready", "started"] },
+      }).sort({ createdAt: -1 }),
+    ]);
 
     if (!isAssigned) {
       return fail("You are not authorized to take this teacher's exam.", 403);
     }
 
-    // Enforce single-attempt check
-    const existingAttempt = await McqExamAttempt.findOne({
-      student: user.id,
-      exam: id,
-    }).lean();
-
     if (existingAttempt) {
       return fail("You have already completed this exam.", 400);
     }
 
-    let attemptSession = await AttemptSession.findOne({
-      student: user.id,
-      kind: "exam",
-      exam: id,
-      status: { $in: ["ready", "started"] },
-    }).sort({ createdAt: -1 });
+    let attemptSession = existingSession;
 
     let questions;
     if (attemptSession) {

@@ -102,16 +102,18 @@ export async function GET(request: NextRequest) {
       teacherId,
       user.id,
     );
-    const selectedRows = await PracticeQuestion.find({ _id: { $in: examData.questions.map((question) => question.id) } }).lean();
-    const selectedById = new Map(selectedRows.map((row) => [String(row._id), row]));
-    const orderedRows = examData.questions.map((question) => selectedById.get(question.id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
-    const owner = teacherId
-      ? await User.findOne({ _id: teacherId, role: "teacher" }).select("_id role").lean()
-      : await User.findOne({ role: "admin", isActive: true }).select("_id role").lean();
-    const commonOrganizationId = orderedRows[0]?.organizationId ? String(orderedRows[0].organizationId) : undefined;
-    const commonSubjectId = orderedRows[0]?.subjectId ? String(orderedRows[0].subjectId) : undefined;
-    const kernel = isAssessmentKernelWriteEnabled() && owner && orderedRows.length === examData.questions.length
-      ? await materializeLegacyMcqAssessment({
+    let kernel: Awaited<ReturnType<typeof materializeLegacyMcqAssessment>> = null;
+    if (isAssessmentKernelWriteEnabled()) {
+      const selectedRows = await PracticeQuestion.find({ _id: { $in: examData.questions.map((question) => question.id) } }).lean();
+      const selectedById = new Map(selectedRows.map((row) => [String(row._id), row]));
+      const orderedRows = examData.questions.map((question) => selectedById.get(question.id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
+      const owner = teacherId
+        ? await User.findOne({ _id: teacherId, role: "teacher" }).select("_id role").lean()
+        : await User.findOne({ role: "admin", isActive: true }).select("_id role").lean();
+      const commonOrganizationId = orderedRows[0]?.organizationId ? String(orderedRows[0].organizationId) : undefined;
+      const commonSubjectId = orderedRows[0]?.subjectId ? String(orderedRows[0].subjectId) : undefined;
+      const materializedKernel = owner && orderedRows.length === examData.questions.length
+        ? await materializeLegacyMcqAssessment({
           source: { collection: "PracticeSelection", id: practiceSelectionSourceId({ questionIds: examData.questions.map((question) => question.id), durationSeconds: examData.durationSeconds, passMarkPercent: settings.passMarkPercent }) },
           organizationId: commonOrganizationId, subjectId: commonSubjectId, title: `${subject} MCQ Practice`, kind: "practice",
           durationSeconds: examData.durationSeconds, passRule: { mode: "percent", threshold: settings.passMarkPercent },
@@ -122,10 +124,24 @@ export async function GET(request: NextRequest) {
             topicId: question.topicId ? String(question.topicId) : undefined, prompt: question.question, options: question.options,
             correctIndex: question.correctIndex, explanation: question.explanation, marks: 1, ownerId: String(owner._id), ownerRole: owner.role as "admin" | "teacher", collection: "PracticeQuestion",
           })),
-        })
-      : null;
-    if (kernel) {
-      await PracticeQuestion.bulkWrite(orderedRows.map((question, index) => ({ updateOne: { filter: { _id: question._id }, update: { $set: { questionId: kernel.questionIds[index], questionVersionId: kernel.questionVersionIds[index] } } } })));
+          })
+        : null;
+      kernel = materializedKernel;
+      if (materializedKernel) {
+        await PracticeQuestion.bulkWrite(
+          orderedRows.map((question, index) => ({
+            updateOne: {
+              filter: { _id: question._id },
+              update: {
+                $set: {
+                  questionId: materializedKernel.questionIds[index],
+                  questionVersionId: materializedKernel.questionVersionIds[index],
+                },
+              },
+            },
+          })),
+        );
+      }
     }
     const attemptSession = await createAttemptSession({
       studentId: user.id,

@@ -44,20 +44,32 @@ export async function beginAttemptSession(
   kind: AttemptKind,
 ) {
   const now = new Date();
-  const readySession = await AttemptSession.findOne({
-    _id: sessionId,
-    student: studentId,
-    kind,
-    status: "ready",
-  });
+  const readySession = await AttemptSession.findOneAndUpdate(
+    {
+      _id: sessionId,
+      student: studentId,
+      kind,
+      status: "ready",
+    },
+    [
+      {
+        $set: {
+          status: "started",
+          startedAt: now,
+          expiresAt: {
+            $dateAdd: {
+              startDate: now,
+              unit: "second",
+              amount: "$durationSeconds",
+            },
+          },
+        },
+      },
+    ],
+    { new: true },
+  );
 
-  if (readySession) {
-    readySession.status = "started";
-    readySession.startedAt = now;
-    readySession.expiresAt = new Date(now.getTime() + readySession.durationSeconds * 1000);
-    await readySession.save();
-    return readySession;
-  }
+  if (readySession) return readySession;
 
   return AttemptSession.findOne({
     _id: sessionId,
