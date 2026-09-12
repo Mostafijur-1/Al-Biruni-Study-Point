@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
   if (!config) {
     const url = new URL(flow === "login" ? "/login" : "/register", request.url);
     url.searchParams.set("googleError", "Google sign-in is not configured yet.");
+    const returnUrl = getSafeReturnUrl(request.nextUrl.searchParams.get("next"));
+    if (returnUrl) url.searchParams.set("next", returnUrl);
     return NextResponse.redirect(url);
   }
 

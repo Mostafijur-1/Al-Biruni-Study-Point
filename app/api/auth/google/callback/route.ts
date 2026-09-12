@@ -17,6 +17,7 @@ import {
 } from "@/lib/auth/session-version";
 import { connectDB } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/User";
+import { isTeacherChargeExpired } from "@/lib/teacher-charges";
 
 type GoogleTokenResponse = { access_token?: string };
 type GoogleUserInfo = {
@@ -85,16 +86,16 @@ export async function GET(request: NextRequest) {
 
     const isNewUser = !user;
     const wasGoogleAccount = Boolean(user?.googleId);
-    const flow = request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value;
-    if (user && user.role !== "student") {
-      return authError(request, "This Google email belongs to a non-student account.");
-    }
     if (user?.googleId && user.googleId !== profile.sub) {
       return authError(request, "This email is already linked to a different Google account.");
     }
+    if (user?.role === "teacher" && user.isActive && isTeacherChargeExpired(user.teacherUsage)) {
+      user.isActive = false;
+      await user.save();
+    }
     if (user && !user.isActive) return authError(request, "This account is inactive.");
-    if (!user && flow === "login") {
-      return authError(request, "No account found for this Google email. Please register first.");
+    if (user?.role === "teacher" && user.approvalStatus !== "approved") {
+      return authError(request, "Teacher account is pending admin approval.");
     }
 
     if (!user) {
@@ -115,7 +116,7 @@ export async function GET(request: NextRequest) {
 
     const currentSessionVersion = normalizeSessionVersion(user.sessionVersion);
     const sessionVersion = nextSessionVersion(currentSessionVersion);
-    const onboardingComplete = Boolean(
+    const onboardingComplete = user.role !== "student" || Boolean(
       user.onboardingCompletedAt || (!isNewUser && !wasGoogleAccount && user.phone && user.studentClass),
     );
     const tokenPayload = {
@@ -138,13 +139,13 @@ export async function GET(request: NextRequest) {
 
     const savedReturnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
     const destination = onboardingComplete
-      ? resolvePostAuthRedirect("student", savedReturnUrl)
+      ? resolvePostAuthRedirect(user.role, savedReturnUrl)
       : `/register/complete${savedReturnUrl ? `?next=${encodeURIComponent(savedReturnUrl)}` : ""}`;
     const response = NextResponse.redirect(new URL(destination, request.url));
     response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
     response.cookies.delete(GOOGLE_OAUTH_RETURN_COOKIE);
     response.cookies.delete(GOOGLE_OAUTH_FLOW_COOKIE);
-    setAuthCookies(response, { accessToken, refreshToken }, "student");
+    setAuthCookies(response, { accessToken, refreshToken }, user.role);
     return response;
   } catch (error) {
     console.error("Google OAuth callback failed", error);
