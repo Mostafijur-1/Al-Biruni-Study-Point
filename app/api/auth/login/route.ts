@@ -34,13 +34,15 @@ export async function POST(request: NextRequest) {
       isEmail
         ? { email: identifier.toLowerCase() }
         : { phone: normalizePhone(identifier) },
-    ).select("+password +refreshTokenHash");
+    ).select("+password +refreshTokenHash +googleId");
 
     if (!user) {
       return fail("Invalid phone/email or password.", 401);
     }
 
-    const isPasswordValid = await verifyPassword(parsed.password, user.password);
+    const isPasswordValid = user.password
+      ? await verifyPassword(parsed.password, user.password)
+      : false;
 
     if (!isPasswordValid) {
       return fail("Invalid phone/email or password.", 401);
@@ -67,6 +69,9 @@ export async function POST(request: NextRequest) {
       sessionVersion,
       phone: user.phone,
       email: user.email,
+      onboardingComplete: Boolean(
+        user.role !== "student" || user.onboardingCompletedAt || (!user.googleId && user.phone && user.studentClass),
+      ),
     };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);

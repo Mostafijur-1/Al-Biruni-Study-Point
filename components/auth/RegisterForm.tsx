@@ -31,6 +31,7 @@ type RegisterFormProps = {
   returnUrl?: string | null;
   reason?: string | null;
   initialClass?: string | null;
+  googleError?: string | null;
 };
 
 const selectClassName =
@@ -83,6 +84,7 @@ function StudentRegisterForm({ auth,
   returnUrl,
   reason,
   initialClass,
+  googleError,
 }: Omit<RegisterFormProps, "kind">) {
   const copy = auth.register.student;
   const [message, setMessage] = useState<string | null>(null);
@@ -157,6 +159,26 @@ function StudentRegisterForm({ auth,
       </CardHeader>
       <CardContent>
         <AuthReturnNotice reason={reason} copy={auth.guestAccess} />
+
+        {googleError && <Alert variant="destructive">{googleError}</Alert>}
+
+        <Button
+          type="button"
+          variant="outline"
+          className="mb-4 mt-2 w-full border-primary/30 bg-white text-foreground hover:bg-secondary/30 dark:bg-card"
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (returnUrl) params.set("next", returnUrl);
+            window.location.assign(`/api/auth/google${params.size ? `?${params.toString()}` : ""}`);
+          }}
+        >
+          <span className="grid size-6 place-items-center rounded-full bg-white text-base font-black text-[#4285F4] shadow-sm">G</span>
+          Continue with Google
+        </Button>
+
+        <div className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-muted">
+          <span className="h-px flex-1 bg-border" />or register with phone<span className="h-px flex-1 bg-border" />
+        </div>
         
         <div className="mb-4 rounded-xl bg-secondary/30 border border-border/40 p-3 text-center text-sm text-muted">
           {auth.register.hasAccount}{" "}
@@ -360,7 +382,7 @@ function TeacherRegisterForm({ auth }: Omit<RegisterFormProps, "kind">) {
   );
 }
 
-export function RegisterForm({ auth, kind, returnUrl, reason, initialClass }: RegisterFormProps) {
+export function RegisterForm({ auth, kind, returnUrl, reason, initialClass, googleError }: RegisterFormProps) {
   if (kind === "teacher") {
     return <TeacherRegisterForm auth={auth} />;
   }
@@ -371,6 +393,7 @@ export function RegisterForm({ auth, kind, returnUrl, reason, initialClass }: Re
       returnUrl={returnUrl}
       reason={reason}
       initialClass={initialClass}
+      googleError={googleError}
     />
   );
 }

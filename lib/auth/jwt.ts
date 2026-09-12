@@ -8,6 +8,7 @@ export interface TokenPayload extends JwtPayload {
   sessionVersion?: number;
   phone?: string;
   email?: string;
+  onboardingComplete?: boolean;
 }
 
 function getSecret(name: "JWT_ACCESS_SECRET" | "JWT_REFRESH_SECRET") {

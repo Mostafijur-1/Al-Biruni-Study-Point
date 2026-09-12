@@ -6,7 +6,8 @@ export interface IUser extends Document {
   name: string;
   phone?: string;
   email?: string;
-  password: string;
+  password?: string;
+  googleId?: string;
   role: UserRole;
   studentClass?: StudentClass;
   schoolCollege?: string;
@@ -36,6 +37,7 @@ export interface IUser extends Document {
     weakTopics?: string[];
     recommendations?: string[];
   };
+  onboardingCompletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,7 +47,8 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     phone: { type: String, trim: true },
     email: { type: String, sparse: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 8, select: false },
+    password: { type: String, minlength: 8, select: false },
+    googleId: { type: String, trim: true, select: false },
     role: {
       type: String,
       enum: ["admin", "teacher", "student"],
@@ -82,6 +85,7 @@ const UserSchema = new Schema<IUser>(
     refreshTokenHash: { type: String, select: false },
     sessionVersion: { type: Number, default: 0, min: 0 },
     aiProfile: { type: Schema.Types.Mixed, default: {} },
+    onboardingCompletedAt: { type: Date },
   },
   { timestamps: true },
 );
@@ -89,6 +93,7 @@ const UserSchema = new Schema<IUser>(
 if (!mongoose.models.User) {
   UserSchema.index({ phone: 1 }, { unique: true, sparse: true });
   UserSchema.index({ email: 1 }, { unique: true, sparse: true });
+  UserSchema.index({ googleId: 1 }, { unique: true, sparse: true });
   UserSchema.index({ role: 1, isActive: 1 });
   UserSchema.index({ role: 1, studentClass: 1 });
   UserSchema.index({ role: 1, "teacherDomain.students": 1 });
@@ -111,6 +116,9 @@ if (
     !ExistingUserModel.schema.path("reference") ||
     !ExistingUserModel.schema.path("studentCode") ||
     !ExistingUserModel.schema.path("isAbspMember") ||
+    !ExistingUserModel.schema.path("googleId") ||
+    !ExistingUserModel.schema.path("onboardingCompletedAt") ||
+    ExistingUserModel.schema.path("password")?.options.required ||
     ExistingUserModel.schema.path("phone")?.options.required)
 ) {
   mongoose.deleteModel("User");

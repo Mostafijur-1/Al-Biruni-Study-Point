@@ -78,6 +78,12 @@ export function proxy(request: NextRequest) {
     if (payload.role !== matchedRole) {
       return redirectToLogin();
     }
+
+    if (matchedRole === "student" && payload.onboardingComplete === false) {
+      const onboardingUrl = new URL("/register/complete", request.url);
+      onboardingUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(onboardingUrl);
+    }
   } catch {
     return refreshToken ? refreshAndReturn() : redirectToLogin();
   }

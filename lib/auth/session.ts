@@ -30,6 +30,8 @@ export function serializeUser(user: {
   reference?: string;
   studentCode?: string;
   isAbspMember?: boolean;
+  onboardingCompletedAt?: Date | string;
+  googleId?: string;
   teacherUsage?: {
     imageQuestionUploadMonth?: string;
     imageQuestionUploadCount?: number;
@@ -53,6 +55,9 @@ export function serializeUser(user: {
     reference: user.reference,
     studentCode: user.studentCode,
     isAbspMember: Boolean(user.isAbspMember),
+    onboardingComplete: Boolean(
+      user.role !== "student" || user.onboardingCompletedAt || (!user.googleId && user.phone && user.studentClass),
+    ),
     teacherUsage,
   };
 }
@@ -79,7 +84,7 @@ export async function requireAuth(
   const user = await User.findById(payload.userId)
     .select(
       "name phone email role studentClass schoolCollege reference studentCode " +
-      "isAbspMember teacherUsage isActive approvalStatus sessionVersion",
+      "isAbspMember teacherUsage isActive approvalStatus sessionVersion onboardingCompletedAt +googleId",
     )
     .lean();
 
@@ -115,6 +120,9 @@ export async function requireAuth(
     reference: user.reference,
     studentCode: user.studentCode,
     isAbspMember: Boolean(user.isAbspMember),
+    onboardingComplete: Boolean(
+      user.role !== "student" || user.onboardingCompletedAt || (!user.googleId && user.phone && user.studentClass),
+    ),
     teacherUsage: user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined,
   } satisfies SessionUser;
 }

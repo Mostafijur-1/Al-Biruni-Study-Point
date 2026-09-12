@@ -15,6 +15,7 @@ export type SessionUser = {
   reference?: string;
   studentCode?: string;
   isAbspMember?: boolean;
+  onboardingComplete?: boolean;
   teacherUsage?: {
     imageQuestionUploadMonth: string;
     imageQuestionUploadCount: number;

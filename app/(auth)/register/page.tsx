@@ -12,11 +12,11 @@ function classFromReturnUrl(returnUrl?: string | null) {
 }
 
 type RegisterPageProps = {
-  searchParams: Promise<{ next?: string; reason?: string }>;
+  searchParams: Promise<{ next?: string; reason?: string; googleError?: string }>;
 };
 
 export default async function StudentRegisterPage({ searchParams }: RegisterPageProps) {
-  const { next, reason } = await searchParams;
+  const { next, reason, googleError } = await searchParams;
   const dict = getDictionary();
 
   return (
@@ -28,9 +28,9 @@ export default async function StudentRegisterPage({ searchParams }: RegisterPage
           returnUrl={next ?? null}
           reason={reason ?? null}
           initialClass={classFromReturnUrl(next)}
+          googleError={googleError ?? null}
         />
       </div>
     </AuthShell>
   );
 }
-

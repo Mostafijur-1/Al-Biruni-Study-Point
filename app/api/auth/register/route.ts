@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       schoolCollege: parsed.schoolCollege || undefined,
       reference: parsed.reference || undefined,
       approvalStatus: "approved",
+      onboardingCompletedAt: new Date(),
     });
 
     const tokenPayload = {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       sessionVersion: normalizeSessionVersion(user.sessionVersion),
       phone: user.phone,
       email: user.email,
+      onboardingComplete: true,
     };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);

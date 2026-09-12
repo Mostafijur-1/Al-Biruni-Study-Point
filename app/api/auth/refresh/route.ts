@@ -30,7 +30,7 @@ async function rotateSession(request: NextRequest) {
   try {
     const payload = verifyRefreshToken(refreshToken);
     await connectDB();
-    const user = await User.findById(payload.userId).select("+refreshTokenHash");
+    const user = await User.findById(payload.userId).select("+refreshTokenHash +googleId");
 
     if (!user?.refreshTokenHash || !user.isActive) return null;
 
@@ -55,6 +55,9 @@ async function rotateSession(request: NextRequest) {
       sessionVersion,
       phone: user.phone,
       email: user.email,
+      onboardingComplete: Boolean(
+        user.role !== "student" || user.onboardingCompletedAt || (!user.googleId && user.phone && user.studentClass),
+      ),
     };
     const nextAccessToken = generateAccessToken(nextPayload);
     const nextRefreshToken = generateRefreshToken(nextPayload);
