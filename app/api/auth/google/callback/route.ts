@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import {
   getGoogleOAuthConfig,
+  GOOGLE_OAUTH_FLOW_COOKIE,
   GOOGLE_OAUTH_RETURN_COOKIE,
   GOOGLE_OAUTH_STATE_COOKIE,
 } from "@/lib/auth/google-oauth";
@@ -26,12 +27,16 @@ type GoogleUserInfo = {
   picture?: string;
 };
 
-function registrationError(request: NextRequest, message: string) {
-  const url = new URL("/register", request.url);
+function authError(request: NextRequest, message: string) {
+  const flow = request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value;
+  const url = new URL(flow === "login" ? "/login" : "/register", request.url);
   url.searchParams.set("googleError", message);
+  const returnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
+  if (returnUrl) url.searchParams.set("next", returnUrl);
   const response = NextResponse.redirect(url);
   response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
   response.cookies.delete(GOOGLE_OAUTH_RETURN_COOKIE);
+  response.cookies.delete(GOOGLE_OAUTH_FLOW_COOKIE);
   return response;
 }
 
@@ -41,9 +46,9 @@ export async function GET(request: NextRequest) {
   const expectedState = request.cookies.get(GOOGLE_OAUTH_STATE_COOKIE)?.value;
   const code = request.nextUrl.searchParams.get("code");
 
-  if (!config) return registrationError(request, "Google registration is not configured yet.");
+  if (!config) return authError(request, "Google sign-in is not configured yet.");
   if (!state || !expectedState || state !== expectedState || !code) {
-    return registrationError(request, "Google registration could not be verified. Please try again.");
+    return authError(request, "Google sign-in could not be verified. Please try again.");
   }
 
   try {
@@ -70,7 +75,7 @@ export async function GET(request: NextRequest) {
     if (!profileResponse.ok) throw new Error("Google profile request failed.");
     const profile = (await profileResponse.json()) as GoogleUserInfo;
     if (!profile.sub || !profile.email || !profile.email_verified) {
-      return registrationError(request, "A verified Google email address is required.");
+      return authError(request, "A verified Google email address is required.");
     }
 
     await connectDB();
@@ -80,8 +85,16 @@ export async function GET(request: NextRequest) {
 
     const isNewUser = !user;
     const wasGoogleAccount = Boolean(user?.googleId);
+    const flow = request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value;
     if (user && user.role !== "student") {
-      return registrationError(request, "This Google email belongs to a non-student account.");
+      return authError(request, "This Google email belongs to a non-student account.");
+    }
+    if (user?.googleId && user.googleId !== profile.sub) {
+      return authError(request, "This email is already linked to a different Google account.");
+    }
+    if (user && !user.isActive) return authError(request, "This account is inactive.");
+    if (!user && flow === "login") {
+      return authError(request, "No account found for this Google email. Please register first.");
     }
 
     if (!user) {
@@ -99,8 +112,6 @@ export async function GET(request: NextRequest) {
       if (!wasGoogleAccount && user.phone && user.studentClass) user.onboardingCompletedAt = new Date();
       await user.save();
     }
-
-    if (!user.isActive) return registrationError(request, "This account is inactive.");
 
     const currentSessionVersion = normalizeSessionVersion(user.sessionVersion);
     const sessionVersion = nextSessionVersion(currentSessionVersion);
@@ -123,7 +134,7 @@ export async function GET(request: NextRequest) {
       { $set: { refreshTokenHash, sessionVersion } },
       { new: true },
     );
-    if (!sessionUser) return registrationError(request, "Please try signing in with Google again.");
+    if (!sessionUser) return authError(request, "Please try signing in with Google again.");
 
     const savedReturnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
     const destination = onboardingComplete
@@ -132,10 +143,11 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(new URL(destination, request.url));
     response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
     response.cookies.delete(GOOGLE_OAUTH_RETURN_COOKIE);
+    response.cookies.delete(GOOGLE_OAUTH_FLOW_COOKIE);
     setAuthCookies(response, { accessToken, refreshToken }, "student");
     return response;
   } catch (error) {
     console.error("Google OAuth callback failed", error);
-    return registrationError(request, "Google registration failed. Please try again.");
+    return authError(request, "Google sign-in failed. Please try again.");
   }
 }

@@ -22,9 +22,10 @@ type LoginFormProps = {
     auth: Dictionary["auth"];
   returnUrl?: string | null;
   reason?: string | null;
+  googleError?: string | null;
 };
 
-export function LoginForm({ auth, returnUrl, reason }: LoginFormProps) {
+export function LoginForm({ auth, returnUrl, reason, googleError }: LoginFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const {
@@ -67,6 +68,23 @@ export function LoginForm({ auth, returnUrl, reason }: LoginFormProps) {
       </CardHeader>
       <CardContent>
         <AuthReturnNotice reason={reason} copy={auth.guestAccess} />
+        {googleError && <Alert variant="destructive" className="mb-4">{googleError}</Alert>}
+        <Button
+          type="button"
+          variant="outline"
+          className="mb-4 w-full border-primary/30 bg-white text-foreground hover:bg-secondary/30 dark:bg-card"
+          onClick={() => {
+            const params = new URLSearchParams({ flow: "login" });
+            if (returnUrl) params.set("next", returnUrl);
+            window.location.assign(`/api/auth/google?${params.toString()}`);
+          }}
+        >
+          <span className="grid size-6 place-items-center rounded-full bg-white text-base font-black text-[#4285F4] shadow-sm">G</span>
+          Login with Google
+        </Button>
+        <div className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-muted">
+          <span className="h-px flex-1 bg-border" />or login with password<span className="h-px flex-1 bg-border" />
+        </div>
         <form id="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <input type="hidden" {...register("returnUrl")} />
           <div className="space-y-2">

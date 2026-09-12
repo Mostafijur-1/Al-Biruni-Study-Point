@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 
 export const GOOGLE_OAUTH_STATE_COOKIE = "absp_google_oauth_state";
 export const GOOGLE_OAUTH_RETURN_COOKIE = "absp_google_oauth_return";
+export const GOOGLE_OAUTH_FLOW_COOKIE = "absp_google_oauth_flow";
 
 export const googleOAuthCookieOptions = {
   httpOnly: true,

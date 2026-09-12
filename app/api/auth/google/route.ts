@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   getGoogleOAuthConfig,
+  GOOGLE_OAUTH_FLOW_COOKIE,
   GOOGLE_OAUTH_RETURN_COOKIE,
   GOOGLE_OAUTH_STATE_COOKIE,
   googleOAuthCookieOptions,
@@ -10,10 +11,11 @@ import {
 import { getSafeReturnUrl } from "@/lib/auth/return-url";
 
 export async function GET(request: NextRequest) {
+  const flow = request.nextUrl.searchParams.get("flow") === "login" ? "login" : "register";
   const config = getGoogleOAuthConfig(request);
   if (!config) {
-    const url = new URL("/register", request.url);
-    url.searchParams.set("googleError", "Google registration is not configured yet.");
+    const url = new URL(flow === "login" ? "/login" : "/register", request.url);
+    url.searchParams.set("googleError", "Google sign-in is not configured yet.");
     return NextResponse.redirect(url);
   }
 
@@ -29,6 +31,7 @@ export async function GET(request: NextRequest) {
 
   const response = NextResponse.redirect(authorizationUrl);
   response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, googleOAuthCookieOptions);
+  response.cookies.set(GOOGLE_OAUTH_FLOW_COOKIE, flow, googleOAuthCookieOptions);
   if (returnUrl) {
     response.cookies.set(GOOGLE_OAUTH_RETURN_COOKIE, returnUrl, googleOAuthCookieOptions);
   } else {
