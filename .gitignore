@@ -21,6 +21,7 @@
 
 # production
 /build
+/tmp/restart.txt
 
 # misc
 .DS_Store
