@@ -4,14 +4,17 @@
 
 The repository also includes `.cpanel.yml` for the cPanel-managed checkout at
 `/home/abspoint/repositories/Al-Biruni-Study-Point`. Its deployment task installs
-locked dependencies, builds Next.js in that checkout, and signals Passenger to
-restart using the root-level `app.js` startup file. Do not copy this server-side
+locked dependencies, runs the `build:cpanel` script in that checkout, and signals
+Passenger to restart using the root-level `app.js` startup file. This separate
+build script forces the standard production `NODE_ENV` and disables Node.js's
+WebAssembly trap handler to reduce virtual-address-space reservations on the
+CloudLinux host. It requires Node.js 20.15+ or 22.2+. Do not copy this server-side
 application into `public_html` as a static website.
 
 Before using **Deploy HEAD Commit** in cPanel:
 
 1. Confirm the hosting plan offers **Application Manager** or **Setup Node.js App**
-   with Node.js 20.9 or newer. Register the application with the repository path
+   with Node.js 20.15+ or 22.2+. Register the application with the repository path
    above as its application root, `app.js` as its startup file, and the intended
    domain as its deployment domain. The host must supply a `PORT` to Passenger.
 2. Set production environment variables in the Node.js application settings.
@@ -28,6 +31,11 @@ The deployment task needs `node` and `npm` on the deployment shell's `PATH`.
 If the host exposes Node.js only through a versioned path or virtual environment,
 adjust the task for that environment before deploying. A successful Git deploy
 does not itself register or start the Node.js application.
+
+In cPanel **Web Applications**, run **NPM Install** before choosing the
+`build:cpanel` JS script. If that script still fails with out-of-memory, the
+account's LVE or address-space limits must be raised by the host, or builds must
+move off-server; this script cannot bypass a hard physical-memory limit.
 
 ## Vercel deployment (production)
 
