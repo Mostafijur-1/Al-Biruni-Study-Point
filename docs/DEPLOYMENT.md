@@ -6,7 +6,8 @@ The repository also includes `.cpanel.yml` for the cPanel-managed checkout at
 `/home/abspoint/repositories/Al-Biruni-Study-Point`. Its deployment task installs
 locked dependencies, runs the `build:cpanel` script in that checkout, and signals
 Passenger to restart using the root-level `app.js` startup file. This separate
-build script forces the standard production `NODE_ENV` and disables Node.js's
+build script forces the standard production `NODE_ENV`, uses Webpack instead of
+Turbopack with Next.js's Webpack memory optimization, and disables Node.js's
 WebAssembly trap handler to reduce virtual-address-space reservations on the
 CloudLinux host. It requires Node.js 20.15+ or 22.2+. Do not copy this server-side
 application into `public_html` as a static website.

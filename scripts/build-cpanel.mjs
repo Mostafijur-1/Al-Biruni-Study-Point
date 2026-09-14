@@ -18,13 +18,14 @@ const nodeOptions = [process.env.NODE_OPTIONS, wasmFlag]
   .filter(Boolean)
   .join(" ");
 
-const result = spawnSync(process.execPath, [nextCli, "build"], {
+const result = spawnSync(process.execPath, [nextCli, "build", "--webpack"], {
   cwd: projectRoot,
   stdio: "inherit",
   env: {
     ...process.env,
     NODE_ENV: "production",
     NODE_OPTIONS: nodeOptions,
+    ABSP_CPANEL_BUILD: "1",
   },
 });
 

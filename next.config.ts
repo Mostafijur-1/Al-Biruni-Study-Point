@@ -19,6 +19,10 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  experimental:
+    process.env.ABSP_CPANEL_BUILD === "1"
+      ? { webpackMemoryOptimizations: true }
+      : undefined,
   images: {
     remotePatterns: [
       {
