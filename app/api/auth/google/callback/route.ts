@@ -7,6 +7,7 @@ import {
   GOOGLE_OAUTH_FLOW_COOKIE,
   GOOGLE_OAUTH_RETURN_COOKIE,
   GOOGLE_OAUTH_STATE_COOKIE,
+  verifyGoogleOAuthState,
 } from "@/lib/auth/google-oauth";
 import { hashPassword } from "@/lib/auth/password";
 import { resolvePostAuthRedirect } from "@/lib/auth/return-url";
@@ -29,12 +30,17 @@ type GoogleUserInfo = {
   picture?: string;
 };
 
-function authError(request: NextRequest, message: string) {
+function authError(
+  request: NextRequest,
+  message: string,
+  defaultFlow = "login",
+  defaultReturnUrl?: string | null,
+) {
   const origin = getCanonicalSiteOrigin(request);
-  const flow = request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value;
+  const flow = request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value || defaultFlow;
   const url = new URL(flow === "login" ? "/login" : "/register", origin);
   url.searchParams.set("googleError", message);
-  const returnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
+  const returnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value || defaultReturnUrl;
   if (returnUrl) url.searchParams.set("next", returnUrl);
   const response = NextResponse.redirect(url);
   response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
@@ -43,7 +49,6 @@ function authError(request: NextRequest, message: string) {
   return response;
 }
 
-
 export async function GET(request: NextRequest) {
   const config = getGoogleOAuthConfig(request);
   const state = request.nextUrl.searchParams.get("state");
@@ -51,9 +56,20 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
 
   if (!config) return authError(request, "Google sign-in is not configured yet.");
-  if (!state || !expectedState || state !== expectedState || !code) {
+  if (!state || !code) {
     return authError(request, "Google sign-in could not be verified. Please try again.");
   }
+
+  const verifiedState = verifyGoogleOAuthState(state);
+  const cookieMatches = Boolean(expectedState && expectedState === state);
+
+  if (!verifiedState.valid && !cookieMatches) {
+    return authError(request, "Google sign-in could not be verified. Please try again.");
+  }
+
+  const effectiveFlow = verifiedState.flow || request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value || "login";
+  const effectiveReturnUrl = verifiedState.returnUrl || request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
+
 
   try {
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -79,7 +95,7 @@ export async function GET(request: NextRequest) {
     if (!profileResponse.ok) throw new Error("Google profile request failed.");
     const profile = (await profileResponse.json()) as GoogleUserInfo;
     if (!profile.sub || !profile.email || !profile.email_verified) {
-      return authError(request, "A verified Google email address is required.");
+      return authError(request, "A verified Google email address is required.", effectiveFlow, effectiveReturnUrl);
     }
 
     await connectDB();
@@ -90,15 +106,15 @@ export async function GET(request: NextRequest) {
     const isNewUser = !user;
     const wasGoogleAccount = Boolean(user?.googleId);
     if (user?.googleId && user.googleId !== profile.sub) {
-      return authError(request, "This email is already linked to a different Google account.");
+      return authError(request, "This email is already linked to a different Google account.", effectiveFlow, effectiveReturnUrl);
     }
     if (user?.role === "teacher" && user.isActive && isTeacherChargeExpired(user.teacherUsage)) {
       user.isActive = false;
       await user.save();
     }
-    if (user && !user.isActive) return authError(request, "This account is inactive.");
+    if (user && !user.isActive) return authError(request, "This account is inactive.", effectiveFlow, effectiveReturnUrl);
     if (user?.role === "teacher" && user.approvalStatus !== "approved") {
-      return authError(request, "Teacher account is pending admin approval.");
+      return authError(request, "Teacher account is pending admin approval.", effectiveFlow, effectiveReturnUrl);
     }
 
     if (!user) {
@@ -138,12 +154,11 @@ export async function GET(request: NextRequest) {
       { $set: { refreshTokenHash, sessionVersion } },
       { new: true },
     );
-    if (!sessionUser) return authError(request, "Please try signing in with Google again.");
+    if (!sessionUser) return authError(request, "Please try signing in with Google again.", effectiveFlow, effectiveReturnUrl);
 
-    const savedReturnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
     const destination = onboardingComplete
-      ? resolvePostAuthRedirect(user.role, savedReturnUrl)
-      : `/register/complete${savedReturnUrl ? `?next=${encodeURIComponent(savedReturnUrl)}` : ""}`;
+      ? resolvePostAuthRedirect(user.role, effectiveReturnUrl)
+      : `/register/complete${effectiveReturnUrl ? `?next=${encodeURIComponent(effectiveReturnUrl)}` : ""}`;
     const origin = getCanonicalSiteOrigin(request);
     const response = NextResponse.redirect(new URL(destination, origin));
 
@@ -155,6 +170,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("Google OAuth callback failed", error);
-    return authError(request, "Google sign-in failed. Please try again.");
+    return authError(request, "Google sign-in failed. Please try again.", effectiveFlow, effectiveReturnUrl);
   }
 }

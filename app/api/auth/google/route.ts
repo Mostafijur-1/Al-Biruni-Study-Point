@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  createGoogleOAuthState,
   getCanonicalSiteOrigin,
   getGoogleOAuthConfig,
   GOOGLE_OAUTH_FLOW_COOKIE,
@@ -23,9 +24,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-
-  const state = randomBytes(32).toString("base64url");
   const returnUrl = getSafeReturnUrl(request.nextUrl.searchParams.get("next"));
+  const state = createGoogleOAuthState(flow, returnUrl);
+
   const authorizationUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   authorizationUrl.searchParams.set("client_id", config.clientId);
   authorizationUrl.searchParams.set("redirect_uri", config.redirectUri);
