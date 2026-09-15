@@ -43,7 +43,6 @@ const filesToCopy = [
   ".env.cpanel.example",
 ];
 
-
 for (const file of filesToCopy) {
   const src = path.join(projectRoot, file);
   const dest = path.join(outputDir, file);
@@ -112,7 +111,7 @@ if (fs.existsSync(zipFile)) {
 try {
   if (process.platform === "win32") {
     execSync(
-      `powershell.exe -NoProfile -Command "Compress-Archive -Path '${outputDir}/*' -DestinationPath '${zipFile}' -Force"`,
+      `tar.exe -a -c -f "${zipFile}" -C "${outputDir}" .`,
       { stdio: "inherit" },
     );
   } else {

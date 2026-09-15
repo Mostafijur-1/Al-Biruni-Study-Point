@@ -4,8 +4,7 @@ deployment:
     - if [ -d "/home/abspoint/repositories/Al-Biruni-Study-Point" ]; then cd /home/abspoint/repositories/Al-Biruni-Study-Point; fi
     - node --version
     - npm --version
-    - npm install --production=false
-    - npm run build:cpanel
+    - npm install --omit=dev --no-audit --no-fund
+    - test -f .next/BUILD_ID
     - mkdir -p tmp
     - touch tmp/restart.txt
-

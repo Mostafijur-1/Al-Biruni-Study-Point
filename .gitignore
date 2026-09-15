@@ -26,6 +26,7 @@
 /tmp/restart.txt
 /deploy-cpanel/
 /cpanel-deploy.zip
+/.htaccess
 
 # misc
 .DS_Store
