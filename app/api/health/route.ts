@@ -14,10 +14,38 @@ export async function GET() {
     }
     await database.admin().ping();
 
+    const jwtAccess = process.env.JWT_ACCESS_SECRET?.trim() || "";
+    const jwtRefresh = process.env.JWT_REFRESH_SECRET?.trim() || "";
+    const jwtAccessOk = jwtAccess.length >= 32;
+    const jwtRefreshOk = jwtRefresh.length >= 32;
+
+    const isHealthy = jwtAccessOk && jwtRefreshOk;
+
     return NextResponse.json(
-      { status: "ok", timestamp: new Date().toISOString() },
-      { headers: { "Cache-Control": "no-store" } },
+      {
+        status: isHealthy ? "ok" : "config_error",
+        database: "connected",
+        checks: {
+          JWT_ACCESS_SECRET: jwtAccessOk
+            ? "valid"
+            : jwtAccess
+              ? `too_short (${jwtAccess.length} chars, min 32 required)`
+              : "MISSING",
+          JWT_REFRESH_SECRET: jwtRefreshOk
+            ? "valid"
+            : jwtRefresh
+              ? `too_short (${jwtRefresh.length} chars, min 32 required)`
+              : "MISSING",
+          NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "not_set",
+        },
+        timestamp: new Date().toISOString(),
+      },
+      {
+        status: isHealthy ? 200 : 500,
+        headers: { "Cache-Control": "no-store" },
+      },
     );
+
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const hasMongoUri = Boolean(process.env.MONGODB_URI);
