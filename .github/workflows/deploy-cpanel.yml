@@ -14,10 +14,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Install Dependencies
@@ -28,6 +28,11 @@ jobs:
         env:
           NODE_ENV: production
           NEXT_PUBLIC_APP_URL: https://abspoint.top
+          MONGODB_URI: mongodb://localhost:27017/absp_build_dummy
+          JWT_ACCESS_SECRET: build_dummy_access_secret_with_32_characters_minimum
+          JWT_REFRESH_SECRET: build_dummy_refresh_secret_with_32_characters_minimum
+          CRON_SECRET: build_dummy_cron_secret_random
+
 
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
