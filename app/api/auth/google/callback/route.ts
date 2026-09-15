@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 import {
+  getCanonicalSiteOrigin,
   getGoogleOAuthConfig,
   GOOGLE_OAUTH_FLOW_COOKIE,
   GOOGLE_OAUTH_RETURN_COOKIE,
@@ -29,8 +30,9 @@ type GoogleUserInfo = {
 };
 
 function authError(request: NextRequest, message: string) {
+  const origin = getCanonicalSiteOrigin(request);
   const flow = request.cookies.get(GOOGLE_OAUTH_FLOW_COOKIE)?.value;
-  const url = new URL(flow === "login" ? "/login" : "/register", request.url);
+  const url = new URL(flow === "login" ? "/login" : "/register", origin);
   url.searchParams.set("googleError", message);
   const returnUrl = request.cookies.get(GOOGLE_OAUTH_RETURN_COOKIE)?.value;
   if (returnUrl) url.searchParams.set("next", returnUrl);
@@ -40,6 +42,7 @@ function authError(request: NextRequest, message: string) {
   response.cookies.delete(GOOGLE_OAUTH_FLOW_COOKIE);
   return response;
 }
+
 
 export async function GET(request: NextRequest) {
   const config = getGoogleOAuthConfig(request);
@@ -141,12 +144,15 @@ export async function GET(request: NextRequest) {
     const destination = onboardingComplete
       ? resolvePostAuthRedirect(user.role, savedReturnUrl)
       : `/register/complete${savedReturnUrl ? `?next=${encodeURIComponent(savedReturnUrl)}` : ""}`;
-    const response = NextResponse.redirect(new URL(destination, request.url));
+    const origin = getCanonicalSiteOrigin(request);
+    const response = NextResponse.redirect(new URL(destination, origin));
+
     response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
     response.cookies.delete(GOOGLE_OAUTH_RETURN_COOKIE);
     response.cookies.delete(GOOGLE_OAUTH_FLOW_COOKIE);
     setAuthCookies(response, { accessToken, refreshToken }, user.role);
     return response;
+
   } catch (error) {
     console.error("Google OAuth callback failed", error);
     return authError(request, "Google sign-in failed. Please try again.");

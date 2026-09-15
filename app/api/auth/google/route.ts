@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  getCanonicalSiteOrigin,
   getGoogleOAuthConfig,
   GOOGLE_OAUTH_FLOW_COOKIE,
   GOOGLE_OAUTH_RETURN_COOKIE,
@@ -13,13 +14,15 @@ import { getSafeReturnUrl } from "@/lib/auth/return-url";
 export async function GET(request: NextRequest) {
   const flow = request.nextUrl.searchParams.get("flow") === "login" ? "login" : "register";
   const config = getGoogleOAuthConfig(request);
+  const origin = getCanonicalSiteOrigin(request);
   if (!config) {
-    const url = new URL(flow === "login" ? "/login" : "/register", request.url);
+    const url = new URL(flow === "login" ? "/login" : "/register", origin);
     url.searchParams.set("googleError", "Google sign-in is not configured yet.");
     const returnUrl = getSafeReturnUrl(request.nextUrl.searchParams.get("next"));
     if (returnUrl) url.searchParams.set("next", returnUrl);
     return NextResponse.redirect(url);
   }
+
 
   const state = randomBytes(32).toString("base64url");
   const returnUrl = getSafeReturnUrl(request.nextUrl.searchParams.get("next"));
