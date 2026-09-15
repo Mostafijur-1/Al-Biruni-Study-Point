@@ -21,10 +21,11 @@ const hasMaxOldSpace = userNodeOptions.includes("--max-old-space-size");
 const nodeOptions = [
   userNodeOptions,
   supportsWasmFlag ? wasmFlag : null,
-  hasMaxOldSpace ? null : "--max-old-space-size=2048",
+  hasMaxOldSpace ? null : "--max-old-space-size=1024",
 ]
   .filter(Boolean)
   .join(" ");
+
 
 console.log("[cPanel Build] Starting Next.js Webpack production build...");
 console.log(`[cPanel Build] Node options: ${nodeOptions}`);
