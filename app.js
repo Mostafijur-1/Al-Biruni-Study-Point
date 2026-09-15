@@ -1,7 +1,25 @@
 // Passenger looks for app.js by default. Keep the existing Next.js build and
 // request handling while listening on the port or socket assigned by the host.
+const fs = require("node:fs");
+const path = require("node:path");
 const { createServer } = require("node:http");
 const next = require("next");
+
+// Auto-load .env or .env.production if present in the directory
+for (const envFile of [".env.production", ".env"]) {
+  const fullPath = path.join(__dirname, envFile);
+  if (fs.existsSync(fullPath)) {
+    if (typeof process.loadEnvFile === "function") {
+      try {
+        process.loadEnvFile(fullPath);
+        console.log(`> Loaded environment variables from ${envFile}`);
+      } catch (err) {
+        console.warn(`> Could not load ${envFile}:`, err.message);
+      }
+    }
+    break;
+  }
+}
 
 const rawPort = process.env.PORT || 3000;
 const port =
@@ -11,6 +29,7 @@ const port =
 
 const app = next({ dev: false, dir: __dirname });
 const handle = app.getRequestHandler();
+
 
 app
   .prepare()
