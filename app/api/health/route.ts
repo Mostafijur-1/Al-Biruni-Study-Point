@@ -18,10 +18,24 @@ export async function GET() {
       { status: "ok", timestamp: new Date().toISOString() },
       { headers: { "Cache-Control": "no-store" } },
     );
-  } catch {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const hasMongoUri = Boolean(process.env.MONGODB_URI);
+    const hasJwtAccess = Boolean(process.env.JWT_ACCESS_SECRET);
+    const hasJwtRefresh = Boolean(process.env.JWT_REFRESH_SECRET);
+
     return NextResponse.json(
-      { status: "unavailable" },
+      {
+        status: "unavailable",
+        error: message,
+        envCheck: {
+          MONGODB_URI: hasMongoUri ? "configured" : "MISSING",
+          JWT_ACCESS_SECRET: hasJwtAccess ? "configured" : "MISSING",
+          JWT_REFRESH_SECRET: hasJwtRefresh ? "configured" : "MISSING",
+        },
+      },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
+
