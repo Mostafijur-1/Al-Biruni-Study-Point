@@ -1,0 +1,44 @@
+# ==============================================================================
+# ABSP cPanel / Apache / LiteSpeed Configuration
+# Domain: abspoint.top
+# ==============================================================================
+
+# Disable directory listings
+Options -Indexes
+
+# Follow symbolic links
+Options +FollowSymLinks
+
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Pass Authorization Header to Next.js API / Passenger
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+    # Enforce HTTPS for abspoint.top
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP_HOST} ^(www\.)?abspoint\.top [NC]
+    RewriteRule ^(.*)$ https://abspoint.top/$1 [L,R=301]
+
+    # Block direct access to hidden / dot files (.env, .git, etc.)
+    RewriteRule (^\.|/\.) - [F]
+
+    # Block direct access to source configuration & documentation
+    RewriteRule ^(package\.json|package-lock\.json|tsconfig\.json|next\.config\.(ts|mjs|js)|\.cpanel\.yml)$ - [F]
+    RewriteRule ^(docs|scripts)/ - [F]
+</IfModule>
+
+# Block access to environment and sensitive files by extension/pattern
+<FilesMatch "^(\.env.*|.*\.config\.(ts|mjs|js)|package.*\.json)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Custom error pages or passenger configurations will be added by cPanel Node.js App selector below

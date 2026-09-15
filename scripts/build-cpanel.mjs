@@ -2,21 +2,32 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const wasmFlag = "--disable-wasm-trap-handler";
+const supportsWasmFlag = process.allowedNodeEnvironmentFlags?.has(wasmFlag);
 
-if (!process.allowedNodeEnvironmentFlags.has(wasmFlag)) {
-  console.error(
-    `This cPanel build requires Node.js 20.15+ or 22.2+ for ${wasmFlag}.`,
+if (!supportsWasmFlag) {
+  console.warn(
+    `[cPanel Build Warning] Node ${process.version} does not support ${wasmFlag}. Continuing with standard memory optimizations...`,
   );
-  process.exit(1);
 }
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const nextCli = fileURLToPath(
   new URL("../node_modules/next/dist/bin/next", import.meta.url),
 );
-const nodeOptions = [process.env.NODE_OPTIONS, wasmFlag]
+
+const userNodeOptions = process.env.NODE_OPTIONS || "";
+const hasMaxOldSpace = userNodeOptions.includes("--max-old-space-size");
+
+const nodeOptions = [
+  userNodeOptions,
+  supportsWasmFlag ? wasmFlag : null,
+  hasMaxOldSpace ? null : "--max-old-space-size=2048",
+]
   .filter(Boolean)
   .join(" ");
+
+console.log("[cPanel Build] Starting Next.js Webpack production build...");
+console.log(`[cPanel Build] Node options: ${nodeOptions}`);
 
 const result = spawnSync(process.execPath, [nextCli, "build", "--webpack"], {
   cwd: projectRoot,
@@ -34,3 +45,4 @@ if (result.error) {
 }
 
 process.exit(result.status ?? 1);
+

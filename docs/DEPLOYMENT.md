@@ -1,42 +1,78 @@
 # Deploy ABSP
 
-## cPanel Git deployment (abspoint.top)
+## cPanel Deployment Guide for Procloudify (abspoint.top)
 
-The repository also includes `.cpanel.yml` for the cPanel-managed checkout at
-`/home/abspoint/repositories/Al-Biruni-Study-Point`. Its deployment task installs
-locked dependencies, runs the `build:cpanel` script in that checkout, and signals
-Passenger to restart using the root-level `app.js` startup file. This separate
-build script forces the standard production `NODE_ENV`, uses Webpack instead of
-Turbopack with Next.js's Webpack memory optimization, and disables Node.js's
-WebAssembly trap handler to reduce virtual-address-space reservations on the
-CloudLinux host. It requires Node.js 20.15+ or 22.2+. Do not copy this server-side
-application into `public_html` as a static website.
+The application runs as a production Node.js application managed by CloudLinux Phusion Passenger in cPanel.
 
-Before using **Deploy HEAD Commit** in cPanel:
+There are two recommended deployment workflows:
+- **Method A (Recommended for Shared Hosting)**: Build locally using `npm run package:cpanel`, upload `cpanel-deploy.zip` to cPanel, extract, run `npm install --omit=dev`, and start the app. This avoids out-of-memory (OOM) errors during Next.js compilation on memory-limited cPanel accounts.
+- **Method B (Git Version Control)**: Push to GitHub and deploy directly in cPanel via Git Version Control using `.cpanel.yml`.
 
-1. Confirm the hosting plan offers **Application Manager** or **Setup Node.js App**
-   with Node.js 20.15+ or 22.2+. Register the application with the repository path
-   above as its application root, `app.js` as its startup file, and the intended
-   domain as its deployment domain. The host must supply a `PORT` to Passenger.
-2. Set production environment variables in the Node.js application settings.
-   At minimum, configure `MONGODB_URI`, `JWT_ACCESS_SECRET`,
-   `JWT_REFRESH_SECRET`, and `NEXT_PUBLIC_APP_URL=https://abspoint.top`. Review
-   the rollout flags in the Vercel section below before enabling any writes.
-3. Commit and push `.cpanel.yml`, `app.js`, and `.gitignore` to GitHub. In cPanel
-   Git Version Control, use **Update from Remote**, then **Deploy HEAD Commit**.
-   cPanel requires the `.cpanel.yml` file to be checked in at the repository root
-   and the **cPanel-managed checkout** to have a clean working tree. Local
-   untracked files on a different computer do not affect that checkout.
+---
 
-The deployment task needs `node` and `npm` on the deployment shell's `PATH`.
-If the host exposes Node.js only through a versioned path or virtual environment,
-adjust the task for that environment before deploying. A successful Git deploy
-does not itself register or start the Node.js application.
+### Prerequisites & cPanel Setup
 
-In cPanel **Web Applications**, run **NPM Install** before choosing the
-`build:cpanel` JS script. If that script still fails with out-of-memory, the
-account's LVE or address-space limits must be raised by the host, or builds must
-move off-server; this script cannot bypass a hard physical-memory limit.
+1. **Domain & DNS**:
+   - In your domain registrar (or DNS zone editor), ensure `abspoint.top` and `www.abspoint.top` have an `A` record pointing to your Procloudify server IP.
+   - Run cPanel **AutoSSL** (or Let's Encrypt SSL) to enable HTTPS on `abspoint.top`.
+
+2. **Setup Node.js App in cPanel**:
+   - In cPanel, navigate to **Software** -> **Setup Node.js App**.
+   - Click **Create Application**.
+   - **Node.js version**: Choose `20.x` or `22.x` (LTS recommended).
+   - **Application mode**: `Production`.
+   - **Application root**: e.g., `abspoint.top` (or `repositories/Al-Biruni-Study-Point`).
+   - **Application URL**: `abspoint.top`.
+   - **Application startup file**: `app.js`.
+   - Click **Create**.
+   - (Optional) Copy the command shown at the top of the page to enter the virtual environment via SSH/terminal (e.g. `source /home/<username>/nodevenv/abspoint.top/.../bin/activate`).
+
+3. **Configure Environment Variables**:
+   In the same Node.js App page, scroll down to **Environment variables** (or click **Add Variable**), and configure:
+   - `NODE_ENV`: `production`
+   - `NEXT_PUBLIC_APP_URL`: `https://abspoint.top`
+   - `NEXT_PUBLIC_DEFAULT_LOCALE`: `bn`
+   - `MONGODB_URI`: `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/absp?retryWrites=true&w=majority`
+   - `JWT_ACCESS_SECRET`: `<minimum 32 random characters>`
+   - `JWT_REFRESH_SECRET`: `<different minimum 32 random characters>`
+   - `JWT_ACCESS_EXPIRES`: `15m`
+   - `JWT_REFRESH_EXPIRES`: `30d`
+   - (Optional) `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+   - (Optional) `GROQ_API_KEYS`, `GEMINI_API_KEYS`, `OPENROUTER_API_KEY`
+   *(Refer to `.env.cpanel.example` for the complete list of variables)*.
+
+---
+
+### Method A: Upload Pre-built Zip Package (Recommended)
+
+1. On your local machine, run:
+   ```bash
+   npm run package:cpanel
+   ```
+   This compiles the optimized production build and bundles `app.js`, `.next/`, `public/`, `.htaccess`, `package.json`, and `package-lock.json` into `cpanel-deploy.zip` (~8 MB).
+
+2. Open **cPanel File Manager** and open your Application Root directory (e.g., `/home/<username>/abspoint.top`).
+3. Upload `cpanel-deploy.zip` and extract its contents into the Application Root directory.
+4. Go back to **Setup Node.js App**, open your application, and click **Run NPM Install** (or run `npm install --omit=dev` via terminal).
+5. Click **Restart Application**.
+6. Visit `https://abspoint.top` to verify!
+
+---
+
+### Method B: Git Version Control with `.cpanel.yml`
+
+If your Procloudify hosting account has sufficient RAM (2 GB+ memory limit) to build on the server:
+
+1. In cPanel, navigate to **Files** -> **Git™ Version Control**.
+2. Clone your repository into your desired path (e.g., `/home/<username>/repositories/Al-Biruni-Study-Point`).
+3. Ensure the Application Root in **Setup Node.js App** points to this repository directory and `app.js` is the startup file.
+4. Under **Manage** -> **Pull or Deploy**, click **Deploy HEAD Commit**.
+   cPanel will run `.cpanel.yml`, which:
+   - Verifies Node.js and npm
+   - Installs dependencies
+   - Executes `npm run build:cpanel` (with Webpack and memory optimizations)
+   - Restarts Passenger via `tmp/restart.txt`.
+
 
 ## Vercel deployment (production)
 

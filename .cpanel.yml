@@ -1,4 +1,11 @@
 ---
 deployment:
   tasks:
-    - cd /home/abspoint/repositories/Al-Biruni-Study-Point && node --version && npm ci && npm run build:cpanel && mkdir -p tmp && touch tmp/restart.txt
+    - if [ -d "/home/abspoint/repositories/Al-Biruni-Study-Point" ]; then cd /home/abspoint/repositories/Al-Biruni-Study-Point; fi
+    - node --version
+    - npm --version
+    - npm install --production=false
+    - npm run build:cpanel
+    - mkdir -p tmp
+    - touch tmp/restart.txt
+

@@ -1,4 +1,4 @@
-const fallbackSiteUrl = "https://absp.vercel.app";
+const fallbackSiteUrl = "https://abspoint.top";
 
 function resolveSiteUrl() {
   try {

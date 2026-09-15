@@ -16,12 +16,16 @@
 /.backups/
 
 # next.js
+
+# next.js
 /.next/
 /out/
 
 # production
 /build
 /tmp/restart.txt
+/deploy-cpanel/
+/cpanel-deploy.zip
 
 # misc
 .DS_Store
@@ -41,6 +45,7 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 !.env.example
+!.env.cpanel.example
 
 # vercel
 .vercel
