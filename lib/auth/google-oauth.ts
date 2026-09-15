@@ -16,7 +16,14 @@ export function getGoogleOAuthConfig(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  const origin = configuredAppUrl || request.nextUrl.origin;
+  let origin = configuredAppUrl || request.nextUrl.origin;
+
+  if (
+    !origin.startsWith("http://localhost") &&
+    !origin.startsWith("http://127.0.0.1")
+  ) {
+    origin = origin.replace(/^http:\/\//, "https://");
+  }
 
   if (!clientId || !clientSecret) return null;
 
@@ -26,3 +33,4 @@ export function getGoogleOAuthConfig(request: NextRequest) {
     redirectUri: `${origin}/api/auth/google/callback`,
   };
 }
+
