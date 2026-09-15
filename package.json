@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@swc/helpers": "^0.5.23",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.8.0",

@@ -37,12 +37,12 @@ fs.mkdirSync(outputDir, { recursive: true });
 console.log("\n[3/4] Copying deployment files...");
 const filesToCopy = [
   "app.js",
-  ".htaccess",
   ".cpanel.yml",
   "package.json",
   "package-lock.json",
   ".env.cpanel.example",
 ];
+
 
 for (const file of filesToCopy) {
   const src = path.join(projectRoot, file);

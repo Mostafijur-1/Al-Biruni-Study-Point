@@ -21,7 +21,8 @@ jobs:
           cache: "npm"
 
       - name: Install Dependencies
-        run: npm ci --ignore-scripts
+        run: npm install
+
 
 
       - name: Build Next.js Production App
