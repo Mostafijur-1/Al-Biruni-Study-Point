@@ -1,9 +1,9 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { PushNotificationSync } from "@/components/shared/PushNotificationSync";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { siteOrigin, siteUrl } from "@/lib/site";
+import { FACEBOOK_PAGE_URL, siteOrigin, siteUrl } from "@/lib/site";
 
 import "./globals.css";
 
@@ -73,6 +73,7 @@ export default function RootLayout({
         url: siteOrigin,
         logo: `${siteOrigin}/absp-logo-optimized.png`,
         description: "Science coaching and learning support for SSC and HSC students.",
+        sameAs: [FACEBOOK_PAGE_URL],
       },
       {
         "@type": "WebSite",
@@ -113,4 +114,3 @@ export default function RootLayout({
     </html>
   );
 }
-

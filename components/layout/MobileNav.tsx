@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -7,22 +7,25 @@ import { Menu, X } from "lucide-react";
 
 import { GuestAuthLinks, UserMenu } from "@/components/layout/UserMenu";
 import { Logo } from "@/components/brand/Logo";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import { getLocalizedPath } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { publicNavPaths } from "@/lib/routes";
+import { FACEBOOK_PAGE_URL } from "@/lib/site";
 import type { SessionUser } from "@/types";
 import { pressableClasses } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 type MobileNavProps = {
-    navigation: Dictionary["navigation"];
+  navigation: Dictionary["navigation"];
   auth: Dictionary["auth"];
   session: SessionUser | null;
   checkingSession: boolean;
   onLogout: () => void;
 };
 
-export function MobileNav({ navigation,
+export function MobileNav({
+  navigation,
   auth,
   session,
   checkingSession,
@@ -122,6 +125,18 @@ export function MobileNav({ navigation,
                   <GuestAuthLinks navigation={navigation} mobile />
                 </div>
               )}
+
+              <div className="pt-2">
+                <a
+                  href={FACEBOOK_PAGE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2.5 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1877F2]"
+                >
+                  <FacebookIcon className="size-4 shrink-0 text-brand-yellow" />
+                  <span>আমাদের ফেসবুক পেজ</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>

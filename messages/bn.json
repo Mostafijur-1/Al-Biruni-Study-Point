@@ -234,12 +234,16 @@
     "email": "albirunistudypoint@gmail.com",
     "hoursTitle": "যোগাযোগের সময়",
     "hours": "সকাল ৭টা থেকে রাত ১১টা পর্যন্ত",
+    "facebookTitle": "ফেসবুক পেজ",
+    "facebookSubtitle": "ক্লাস আপডেট, রুটিন ও নোটিশ পেতে আমাদের অফিশিয়াল ফেসবুক পেজ ফলো করুন।",
+    "facebookCta": "ফেসবুক পেজে যান",
     "ctaRegister": "অনলাইনে ভর্তি হোন",
     "ctaCall": "এখনই Call করো",
     "mapHint": "Mollabari Mosjid Jamgora Fantasy Kingdom Ashulia Savar Dhaka জামগড়া মোল্লাবাড়ী মসজিদ ফ্যান্টাসি কিংডম আশুলিয়া সাভার ঢাকা"
   },
   "footer": {
     "quickLinks": "quick access",
+    "facebookPage": "অফিশিয়াল ফেসবুক পেজ",
     "rights": "©ABSP — আল-বিরুনি স্টাডি পয়েন্ট। All rights reserved."
   }
 }

@@ -1,20 +1,21 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import { PwaInstallPrompt } from "@/components/shared/PwaInstallPrompt";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { FACEBOOK_PAGE_URL } from "@/lib/site";
 
 type FooterProps = {
-    brand: Dictionary["brand"];
+  brand: Dictionary["brand"];
   footer: Dictionary["footer"];
   navigation: Dictionary["navigation"];
   contact: Dictionary["contact"];
 };
 
 export function Footer({ brand, footer, navigation, contact }: FooterProps) {
-  
   return (
     <footer className="mt-auto border-t-4 border-brand-yellow bg-navy text-primary-foreground">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10 lg:px-6">
@@ -22,6 +23,18 @@ export function Footer({ brand, footer, navigation, contact }: FooterProps) {
           <div className="max-w-sm sm:col-span-2 lg:col-span-1">
             <Logo size="md" />
             <p className="mt-3 text-sm leading-6 text-white/80">{brand.tagline}</p>
+            <div className="mt-4 mb-2">
+              <a
+                href={FACEBOOK_PAGE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Al-Biruni Study Point Facebook Page"
+                className="group inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white transition hover:border-[#1877F2] hover:bg-[#1877F2]"
+              >
+                <FacebookIcon className="size-4 shrink-0 text-brand-yellow transition group-hover:text-white" />
+                <span>{footer.facebookPage || "অফিশিয়াল ফেসবুক পেজ"}</span>
+              </a>
+            </div>
             <PwaInstallPrompt />
           </div>
 
@@ -84,6 +97,18 @@ export function Footer({ brand, footer, navigation, contact }: FooterProps) {
                 className="break-all font-semibold text-white/90 transition hover:text-brand-yellow"
               >
                 {contact.email}
+              </a>
+            </div>
+
+            <div className="flex gap-3">
+              <FacebookIcon className="mt-0.5 size-4 shrink-0 text-brand-yellow" aria-hidden />
+              <a
+                href={FACEBOOK_PAGE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-semibold text-white/90 transition hover:text-brand-yellow"
+              >
+                Facebook Page
               </a>
             </div>
 

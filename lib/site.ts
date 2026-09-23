@@ -11,3 +11,5 @@ function resolveSiteUrl() {
 export const siteUrl = resolveSiteUrl();
 export const siteOrigin = siteUrl.origin;
 
+export const FACEBOOK_PAGE_URL = "https://www.facebook.com/profile.php?id=61590844076118";
+

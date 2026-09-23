@@ -1,14 +1,15 @@
+﻿import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
-
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { buttonVariants, pressableClasses } from "@/components/ui/button-variants";
 import { formatPhoneDisplay, phoneTelHref } from "@/lib/format/phone";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { FACEBOOK_PAGE_URL } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 type ContactSectionProps = {
-    contact: Dictionary["contact"];
+  contact: Dictionary["contact"];
 };
 
 export function ContactSection({ contact }: ContactSectionProps) {
@@ -66,6 +67,34 @@ export function ContactSection({ contact }: ContactSectionProps) {
 
           <article className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6">
             <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#1877F2]/10 text-[#1877F2]">
+                <FacebookIcon className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-lg font-bold text-primary">{contact.facebookTitle || "ফেসবুক পেজ"}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {contact.facebookSubtitle || "ক্লাস আপডেট, রুটিন ও নোটিশ পেতে আমাদের অফিশিয়াল ফেসবুক পেজ ফলো করুন।"}
+                </p>
+                <div className="mt-3">
+                  <a
+                    href={FACEBOOK_PAGE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      pressableClasses,
+                      "inline-flex items-center gap-2 rounded-lg border border-[#1877F2]/30 bg-[#1877F2]/10 px-4 py-2 text-sm font-semibold text-[#1877F2] transition hover:bg-[#1877F2] hover:text-white",
+                    )}
+                  >
+                    <FacebookIcon className="size-4 shrink-0" />
+                    {contact.facebookCta || "ফেসবুক পেজে যান"}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)] sm:p-6">
+            <div className="flex items-start gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent/30 text-accent-foreground">
                 <Mail className="size-5" />
               </span>
@@ -99,7 +128,7 @@ export function ContactSection({ contact }: ContactSectionProps) {
               {"ভর্তি ও পরামর্শ"}
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
-              {"ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করো।"}
+              {"ভর্তি, ব্যাচ বা কোর্স সম্পর্কে জানতে আজই যোগাযোগ করো অথবা ফেসবুক পেজে যুক্ত থাকো।"}
             </p>
           </div>
 
@@ -110,6 +139,19 @@ export function ContactSection({ contact }: ContactSectionProps) {
             >
               <Phone className="size-4" />
               {contact.ctaCall}
+            </a>
+
+            <a
+              href={FACEBOOK_PAGE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "justify-center gap-2 border-[#1877F2]/40 bg-white/70 text-[#1877F2] transition hover:border-[#1877F2] hover:bg-[#1877F2] hover:text-white dark:bg-card/70",
+              )}
+            >
+              <FacebookIcon className="size-5 shrink-0" />
+              {"ফেসবুক পেজ ফলো করুন"}
             </a>
           </div>
 
