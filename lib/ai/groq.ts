@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Groq API utility for text-based MCQ parsing.
  * Uses the same extraction rules and message structure as Gemini.
  */
@@ -22,8 +22,16 @@ function getGroqKeys(): string[] {
   return raw.split(",").map((k) => k.trim()).filter(Boolean);
 }
 
-function getGroqModel(): string {
-  return process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+function getGroqModels(): string[] {
+  const configured = process.env.GROQ_MODEL?.trim();
+  const candidates = [
+    configured,
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-20b",
+  ].filter((m): m is string => Boolean(m));
+
+  return Array.from(new Set(candidates));
 }
 
 function parseGroqError(status: number, errText: string): string {
@@ -47,63 +55,82 @@ export async function callGroqText(
     return { ok: false, error: "GROQ_API_KEYS is not configured.", status: 500 };
   }
 
-  const model = getGroqModel();
-  const maxAttempts = keys.length;
+  const models = getGroqModels();
   let lastError = "";
   let lastStatus = 502;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const key = keys[keyIndex % keys.length];
-    keyIndex = (keyIndex + 1) % keys.length;
+  for (const model of models) {
+    const maxAttempts = keys.length;
+    let modelUnavailable = false;
 
-    try {
-      const response = await fetch(GROQ_API_BASE, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${key}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: prompt },
-            { role: "user", content: buildTextMcqUserMessage(rawText) },
-          ],
-          response_format: { type: "json_object" },
-        }),
-      });
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const key = keys[keyIndex % keys.length];
+      keyIndex = (keyIndex + 1) % keys.length;
 
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error(`Groq API error (key ${attempt + 1}/${maxAttempts}):`, response.status, errText);
+      try {
+        const response = await fetch(GROQ_API_BASE, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: prompt },
+              { role: "user", content: buildTextMcqUserMessage(rawText) },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
 
-        if (response.status === 429 || response.status >= 500) {
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`Groq API error (model ${model}, key ${attempt + 1}/${maxAttempts}):`, response.status, errText);
+
+          // 404 = model not found or decommissioned, 503 = service unavailable. Fall back to next model!
+          if (response.status === 404 || response.status === 503) {
+            lastError = parseGroqError(response.status, errText);
+            modelUnavailable = true;
+            break;
+          }
+
+          if (response.status === 429 || response.status >= 500) {
+            lastError = parseGroqError(response.status, errText);
+            lastStatus = 502;
+            continue;
+          }
+
           lastError = parseGroqError(response.status, errText);
           lastStatus = 502;
+          break;
+        }
+
+        const data = await response.json();
+        const text = data?.choices?.[0]?.message?.content || "";
+
+        if (!text) {
+          console.error("Groq returned empty response:", JSON.stringify(data));
+          lastError = "Groq returned an empty response.";
           continue;
         }
 
-        return { ok: false, error: parseGroqError(response.status, errText), status: 502 };
+        return { ok: true, text };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Groq API exception (model ${model}, key ${attempt + 1}/${maxAttempts}):`, err);
+        lastError = `Groq API error: ${message}`;
+        lastStatus = 502;
       }
+    }
 
-      const data = await response.json();
-      const text = data?.choices?.[0]?.message?.content || "";
-
-      if (!text) {
-        console.error("Groq returned empty response:", JSON.stringify(data));
-        return { ok: false, error: "Groq returned an empty response.", status: 502 };
-      }
-
-      return { ok: true, text };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`Groq API exception (key ${attempt + 1}/${maxAttempts}):`, err);
-      lastError = `Groq API error: ${message}`;
-      lastStatus = 502;
+    if (modelUnavailable) {
+      console.warn(`[Groq] Model ${model} is unavailable. Trying fallback model...`);
+      continue;
     }
   }
 
-  return { ok: false, error: lastError || "All Groq API keys exhausted.", status: lastStatus };
+  return { ok: false, error: lastError || "All Groq API keys and models exhausted.", status: lastStatus };
 }
 
 export function hasGroqKeys(): boolean {
