@@ -240,10 +240,10 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
 
               <section className="relative flex flex-col items-center justify-center overflow-hidden bg-linear-to-br from-red-600 via-brand-red to-[#f12a12] p-6 text-center text-white sm:p-8" aria-label="Combo offer price">
                 <span className="absolute -right-14 -top-14 size-40 rounded-full bg-white/10" aria-hidden />
-                <p className="relative text-xs font-bold">নিয়মিত ফি</p>
+                <p className="relative text-xs font-bold">রেগুলার ফি</p>
                 <p className="relative mt-0.5 text-2xl font-black line-through decoration-2 decoration-white/80">{dict.hsc2028.combo.regularFee}</p>
                 <div className="relative my-3 w-full border-t border-dashed border-white/60" />
-                <p className="relative text-xs font-bold">অফার মূল্য</p>
+                <p className="relative text-xs font-bold">অফার ফি</p>
                 <p className="relative mt-1 text-5xl font-black leading-none tracking-tight sm:text-6xl">{dict.hsc2028.combo.offerFee}</p>
                 <p className="relative mt-1 text-base font-bold">প্রতি মাসে</p>
               </section>
@@ -252,7 +252,7 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
             <footer className="grid items-center gap-3 bg-brand-yellow px-5 py-3 text-primary sm:grid-cols-[1fr_auto] sm:px-7">
               <p className="flex items-center justify-center gap-2 text-sm font-black sm:justify-start">
                 <Percent className="size-5" strokeWidth={3} />
-                সাশ্রয় 500 ৳ প্রতি মাসে!
+                প্রতি মাসে সাশ্রয় 500 ৳!
               </p>
               <Link href={"/contact"} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-black text-primary-foreground shadow-md transition hover:scale-[1.02] hover:bg-primary/90">
                 অফার চলবে 10 October পর্যন্ত
@@ -294,14 +294,18 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                   >
                     {batch.mode === "online" ? dict.batches.online : dict.batches.offline}
                   </span>
-                  <span className="text-xs font-medium text-muted">
-                    {dict.batches.seats}: {batch.seats}
-                  </span>
+                  {batch.seats ? (
+                    <span className="text-xs font-medium text-muted">
+                      {dict.batches.seats}: {batch.seats}
+                    </span>
+                  ) : null}
                 </div>
                 <h3 className="mt-3 text-base font-bold text-foreground sm:text-lg">{batch.name}</h3>
-                <p className="mt-1 text-sm text-muted">
-                  {dict.batches.schedule}: {batch.schedule}
-                </p>
+                {batch.schedule ? (
+                  <p className="mt-1 text-sm text-muted">
+                    {dict.batches.schedule}: {batch.schedule}
+                  </p>
+                ) : null}
               </article>
             ))}
           </div>

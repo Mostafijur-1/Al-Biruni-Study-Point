@@ -47,7 +47,7 @@
       },
       "math": {
         "title": "Higher Math",
-        "schedule": "সপ্তাহে ২/৩ টি ক্লাস",
+        "schedule": "সপ্তাহে ২ টি ক্লাস",
         "fee": "১৫০০ টাকা"
       },
       "ict": {
@@ -105,8 +105,8 @@
         {
           "name": "SSC ২০২৭ (অফলাইন)",
           "mode": "offline",
-          "schedule": "শনি–শুক্র,বিকাল ৩:২০ PM",
-          "seats": "৩/৯"
+          "schedule": "",
+          "seats": ""
         },
         {
           "name": "HSC ২০২৮ • নতুন অফলাইন ব্যাচ",
