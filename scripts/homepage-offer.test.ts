@@ -38,8 +38,8 @@ test("combo discount uses a compact split offer layout", async () => {
   const home = await readFile("components/home/HomeSection.tsx", "utf8");
 
   assert.match(home, /sm:grid-cols-\[0\.9fr_1\.1fr\]/);
-  assert.match(home, /নিয়মিত ফি/);
-  assert.match(home, /সাশ্রয় 500 ৳ প্রতি মাসে!/);
+  assert.match(home, /রেগুলার ফি/);
+  assert.match(home, /প্রতি মাসে সাশ্রয় 500 ৳!/);
   assert.match(home, /dict\.hsc2028\.combo\.regularFee/);
   assert.match(home, /dict\.hsc2028\.combo\.offerFee/);
   assert.match(home, /অফার চলবে 10 October পর্যন্ত/);

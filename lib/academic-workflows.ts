@@ -634,7 +634,7 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       throw new ApiRouteError("Routine subject is not active in this organization.", 404);
     }
     const subjectName = subject.nameBn || subject.name;
-    const assignment = await TeacherAssignment.findOne({
+    let assignment = await TeacherAssignment.findOne({
       batchId: batch._id,
       teacherId: teacher._id,
       subjectId: subject._id,
@@ -642,7 +642,38 @@ export async function createRoutineSlot(input: CreateRoutineSlotInput) {
       effectiveFrom: { $lte: input.effectiveFrom },
       $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
     }).session(session);
-    if (!assignment) throw new ApiRouteError("Selected teacher has no active assignment for this batch and subject.", 409);
+    if (!assignment) {
+      const existingAny = await TeacherAssignment.findOne({
+        batchId: batch._id,
+        teacherId: teacher._id,
+        subjectId: subject._id,
+      }).session(session);
+
+      if (existingAny) {
+        existingAny.status = "active";
+        existingAny.effectiveFrom = input.effectiveFrom;
+        existingAny.effectiveTo = undefined;
+        await existingAny.save({ session });
+        assignment = existingAny;
+      } else {
+        const [newAssignment] = await TeacherAssignment.create(
+          [
+            {
+              organizationId: batch.organizationId,
+              academicSessionId: batch.academicSessionId,
+              batchId: batch._id,
+              teacherId: teacher._id,
+              subjectId: subject._id,
+              status: "active",
+              effectiveFrom: input.effectiveFrom,
+              createdBy: input.actor.id,
+            },
+          ],
+          { session },
+        );
+        assignment = newAssignment;
+      }
+    }
     const effectiveTo = input.effectiveTo;
     const conflict = await RoutineSlot.findOne({
       status: "active",
@@ -749,7 +780,7 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
       throw new ApiRouteError("Routine subject is not active in this organization.", 404);
     }
     const subjectName = subject.nameBn || subject.name;
-    const assignment = await TeacherAssignment.findOne({
+    let assignment = await TeacherAssignment.findOne({
       batchId: batch._id,
       teacherId: teacher._id,
       subjectId: subject._id,
@@ -757,7 +788,38 @@ export async function updateRoutineSlot(input: UpdateRoutineSlotInput) {
       effectiveFrom: { $lte: input.effectiveFrom },
       $or: [{ effectiveTo: { $exists: false } }, { effectiveTo: null }, { effectiveTo: { $gte: input.effectiveFrom } }],
     }).session(session);
-    if (!assignment) throw new ApiRouteError("Selected teacher has no active assignment for this batch and subject.", 409);
+    if (!assignment) {
+      const existingAny = await TeacherAssignment.findOne({
+        batchId: batch._id,
+        teacherId: teacher._id,
+        subjectId: subject._id,
+      }).session(session);
+
+      if (existingAny) {
+        existingAny.status = "active";
+        existingAny.effectiveFrom = input.effectiveFrom;
+        existingAny.effectiveTo = undefined;
+        await existingAny.save({ session });
+        assignment = existingAny;
+      } else {
+        const [newAssignment] = await TeacherAssignment.create(
+          [
+            {
+              organizationId: batch.organizationId,
+              academicSessionId: batch.academicSessionId,
+              batchId: batch._id,
+              teacherId: teacher._id,
+              subjectId: subject._id,
+              status: "active",
+              effectiveFrom: input.effectiveFrom,
+              createdBy: input.actor.id,
+            },
+          ],
+          { session },
+        );
+        assignment = newAssignment;
+      }
+    }
     const linkedSession = await ClassSession.exists({ routineSlotId: routineSlot._id, status: "scheduled" }).session(session);
     if (linkedSession) throw new ApiRouteError("This legacy routine has a scheduled class session and cannot be edited.", 409);
 
