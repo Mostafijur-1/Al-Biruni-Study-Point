@@ -255,7 +255,7 @@ export function HomeSection({ dict, brand }: HomeSectionProps) {
                 প্রতি মাসে সাশ্রয় 500 ৳!
               </p>
               <Link href={"/contact"} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-black text-primary-foreground shadow-md transition hover:scale-[1.02] hover:bg-primary/90">
-                অফার চলবে 10 October পর্যন্ত
+                অফার চলবে 31 October পর্যন্ত
               </Link>
             </footer>
           </div>

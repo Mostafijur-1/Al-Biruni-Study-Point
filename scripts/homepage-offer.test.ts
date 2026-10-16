@@ -11,13 +11,13 @@ test("homepage promotes the October 2026 HSC 2028 offer", async () => {
     };
   };
 
-  assert.equal(dictionary.home.hero.classStartVal, "01 October, 2026");
-  assert.match(dictionary.home.hero.specialOfferVal, /10 October.*500 ৳/);
-  assert.match(dictionary.home.hsc2028.subtitle, /01 October, 2026/);
+  assert.equal(dictionary.home.hero.classStartVal, "04 October, 2026");
+  assert.match(dictionary.home.hero.specialOfferVal, /31 October.*500 ৳/);
+  assert.match(dictionary.home.hsc2028.subtitle, /04 October, 2026/);
   assert.equal(dictionary.home.hsc2028.combo.regularFee, "4,000 ৳");
   assert.equal(dictionary.home.hsc2028.combo.offerFee, "3,500 ৳");
   assert.equal(dictionary.home.batches.sample.some((batch) => /HSC ২০২৭/.test(batch.name)), false);
-  assert.equal(dictionary.home.batches.sample.some((batch) => /HSC ২০২৮/.test(batch.name) && batch.mode === "offline" && /01 October, 2026/.test(batch.schedule)), true);
+  assert.equal(dictionary.home.batches.sample.some((batch) => /HSC ২০২৮/.test(batch.name) && batch.mode === "offline" && /04 October, 2026/.test(batch.schedule)), true);
 });
 
 test("English install and notification actions live only in the footer", async () => {
@@ -42,7 +42,7 @@ test("combo discount uses a compact split offer layout", async () => {
   assert.match(home, /প্রতি মাসে সাশ্রয় 500 ৳!/);
   assert.match(home, /dict\.hsc2028\.combo\.regularFee/);
   assert.match(home, /dict\.hsc2028\.combo\.offerFee/);
-  assert.match(home, /অফার চলবে 10 October পর্যন্ত/);
+  assert.match(home, /অফার চলবে 31 October পর্যন্ত/);
   assert.match(home, /ICT FREE/);
 });
 
