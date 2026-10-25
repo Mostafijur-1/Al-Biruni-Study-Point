@@ -21,7 +21,7 @@ const hasMaxOldSpace = userNodeOptions.includes("--max-old-space-size");
 const nodeOptions = [
   userNodeOptions,
   supportsWasmFlag ? wasmFlag : null,
-  hasMaxOldSpace ? null : "--max-old-space-size=1024",
+  hasMaxOldSpace ? null : "--max-old-space-size=2048",
 ]
   .filter(Boolean)
   .join(" ");
