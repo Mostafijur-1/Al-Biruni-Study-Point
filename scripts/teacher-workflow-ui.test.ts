@@ -73,3 +73,28 @@ test("written exam marks stay inside their panel instead of expanding the dashbo
   assert.match(source, /max-w-full overflow-x-auto overscroll-x-contain/);
   assert.match(source, /min-w-\[680px\] table-fixed/);
 });
+
+test("teacher can remove cancelled mcq exam attempts but practice results remain guarded", async () => {
+  const [examResults, route] = await Promise.all([
+    readFile("components/exam/TeacherMcqResults.tsx", "utf8"),
+    readFile("app/api/mcq/results/[id]/route.ts", "utf8"),
+  ]);
+
+  assert.match(examResults, /handleRemoveCancelled/);
+  assert.match(examResults, /row\.isCancelled/);
+  assert.match(route, /mcq-result\.remove-cancelled/);
+  assert.match(route, /Only cancelled exam attempts can be removed/);
+  assert.match(route, /McqExamAttempt\.findByIdAndDelete\(id\)/);
+});
+
+test("mcq practice subject formatting avoids duplicated paper names", async () => {
+  const [practicePage, runner] = await Promise.all([
+    readFile("app/(dashboard)/student/practice/page.tsx", "utf8"),
+    readFile("components/exam/McqPracticeRunner.tsx", "utf8"),
+  ]);
+
+  assert.match(practicePage, /formatPracticeSubjectTitle/);
+  assert.doesNotMatch(practicePage, /item\.subject\.replace\(\/ \(1st\|2nd\) Paper\$\/, ""\) \{theme\.paperLabel \}/);
+  assert.match(runner, /displaySubjectTitle/);
+  assert.doesNotMatch(runner, /\{displaySubject\} \{paperLabel\} MCQ Test/);
+});

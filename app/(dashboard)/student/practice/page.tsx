@@ -228,6 +228,25 @@ const subjectThemeMap: Record<
   },
 };
 
+function formatPracticeSubjectTitle(subject: string, paperLabel?: string): string {
+  // Clean any duplicated paper suffix (e.g. "Physics 1st Paper 1st Paper" or "পদার্থবিজ্ঞান ১ম পত্র ১ম পত্র")
+  const cleaned = subject
+    .replace(/(?:\s*(?:1st|2nd)\s*Paper)+$/i, (match) => match.trim().startsWith("2") ? " 2nd Paper" : " 1st Paper")
+    .replace(/(?:\s*(?:১ম|২য়|২য়)\s*পত্র)+$/g, (match) => match.trim().startsWith("২") ? " ২য় পত্র" : " ১ম পত্র");
+
+  // If the subject string already contains a paper indicator (Bangla or English), return it directly
+  if (/(?:1st|2nd)\s*Paper|(?:১ম|২য়|২য়)\s*পত্র/i.test(cleaned)) {
+    return cleaned;
+  }
+
+  // If paperLabel is provided and not already present, append it once
+  if (paperLabel && !cleaned.includes(paperLabel)) {
+    return `${cleaned} ${paperLabel}`;
+  }
+
+  return cleaned;
+}
+
 function StudentPracticeDashboard() {
   const path = (p: string) => p;
   const { user, checking } = useSession({ listenToAuthChanges: true });
@@ -399,8 +418,7 @@ function StudentPracticeDashboard() {
                   </div>
 
                   <h2 className="mt-4 font-display text-xl font-bold text-primary">
-                    {/* Show base subject name (strip paper suffix for cleaner display) */}
-                    {item.subject.replace(/ (1st|2nd) Paper$/, "")} {theme.paperLabel }
+                    {formatPracticeSubjectTitle(item.subject, theme.paperLabel)}
                   </h2>
 
                   {mode === "teacher" && item.teacherName && (

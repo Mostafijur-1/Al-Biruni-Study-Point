@@ -11,6 +11,9 @@ import "@/lib/db/models/McqExam";
 import { McqQuestion } from "@/lib/db/models/McqQuestion";
 import { PracticeAttempt } from "@/lib/db/models/PracticeAttempt";
 import { PracticeResult } from "@/lib/db/models/PracticeResult";
+import { AttemptSession } from "@/lib/db/models/AttemptSession";
+import { AssessmentAttempt } from "@/lib/db/models/AssessmentAttempt";
+import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { canManageTeacherOwnedResource } from "@/lib/auth/resource-policy";
 
 const commentSchema = z.object({
@@ -192,12 +195,72 @@ export async function PUT(request: NextRequest, context: Context) {
 
 export async function DELETE(request: NextRequest, context: Context) {
   try {
-    await requireAuth(request, ["teacher", "admin"]);
-    await context.params;
-    return fail(
-      "Deleting academic results is disabled. Use the void action with a reason.",
-      405,
-    );
+    await connectDB();
+    const user = await requireAuth(request, ["teacher", "admin"]);
+    const { id } = await context.params;
+
+    const attempt = await McqExamAttempt.findById(id).populate("exam");
+    if (!attempt) {
+      return fail("Exam attempt not found.", 404);
+    }
+
+    const exam = attempt.exam as unknown as IMcqExam;
+    if (!canManageTeacherOwnedResource(user, exam.teacher)) {
+      return fail("You do not have permission to delete this student's result.", 403);
+    }
+
+    if (!attempt.isCancelled && !attempt.voidedAt) {
+      return fail("Only cancelled exam attempts can be removed.", 400);
+    }
+
+    const studentId = attempt.student;
+    const examId = exam._id;
+    const attemptSessionId = attempt.attemptSession;
+    const assessmentAttemptId = attempt.assessmentAttemptId;
+
+    // 1. Delete the McqExamAttempt
+    await McqExamAttempt.findByIdAndDelete(id);
+
+    // 2. Delete linked AttemptSession(s) so student can restart the exam
+    if (attemptSessionId) {
+      await AttemptSession.findByIdAndDelete(attemptSessionId);
+    }
+    await AttemptSession.deleteMany({
+      student: studentId,
+      kind: "exam",
+      exam: examId,
+    });
+
+    // 3. Delete linked AssessmentAttempt(s) if any
+    if (assessmentAttemptId) {
+      await AssessmentAttempt.findByIdAndDelete(assessmentAttemptId);
+    }
+    if (attemptSessionId) {
+      await AssessmentAttempt.deleteMany({
+        "legacySource.collection": "AttemptSession",
+        "legacySource.id": String(attemptSessionId),
+      });
+    }
+
+    // 4. Audit log
+    await writeAuditLog({
+      request,
+      actor: user,
+      action: "mcq-result.remove-cancelled",
+      resourceType: "McqExamAttempt",
+      resourceId: attempt._id,
+      reason: "Teacher removed cancelled attempt to allow student re-attempt",
+      before: {
+        studentId: String(studentId),
+        examId: String(examId),
+        isCancelled: attempt.isCancelled,
+        voidedAt: attempt.voidedAt ? attempt.voidedAt.toISOString() : null,
+      },
+    });
+
+    return success({
+      message: "Cancelled exam attempt removed successfully. The student can now attend the exam again.",
+    });
   } catch (error) {
     return handleApiError(error);
   }

@@ -852,11 +852,13 @@ export function McqPracticeRunner({
     }
   }, [reportingQuestionId, reportComment, isSubmittingReport]);
 
-  // Display subject name (strip "1st Paper" / "2nd Paper" suffix for heading)
-  const displaySubject = subject.replace(/ (1st|2nd) Paper$/, "");
-  const paperLabel = subject !== displaySubject
-    ? subject.match(/(1st|2nd) Paper$/)?.[0]
-    : null;
+  // Display subject name (clean any duplicate paper suffixes)
+  const displaySubjectTitle = (() => {
+    const cleaned = subject
+      .replace(/(?:\s*(?:1st|2nd)\s*Paper)+$/i, (match) => match.trim().startsWith("2") ? " 2nd Paper" : " 1st Paper")
+      .replace(/(?:\s*(?:১ম|২য়|২য়)\s*পত্র)+$/g, (match) => match.trim().startsWith("২") ? " ২য় পত্র" : " ১ম পত্র");
+    return cleaned.trim();
+  })();
 
   // UI Renderers
   if (!isMounted || loadingConfig) {
@@ -949,7 +951,7 @@ export function McqPracticeRunner({
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-widest text-accent">Test Mode</p>
               <h1 className="font-display text-xl font-bold text-primary sm:text-2xl">
-                {displaySubject} {paperLabel} MCQ Test
+                {displaySubjectTitle} MCQ Test
               </h1>
             </div>
           </div>
@@ -1148,7 +1150,7 @@ export function McqPracticeRunner({
                 Test Mode
               </span>
               <h1 className="mt-1.5 font-display text-2xl font-bold text-primary sm:text-3xl">
-                {displaySubject} {paperLabel} MCQ Test
+                {displaySubjectTitle} MCQ Test
               </h1>
               <p className="mt-2 text-sm text-muted">
                 {answeredCount}/{questions.length} answered · pass mark {passMarkPercent}% · blank == wrong

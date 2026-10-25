@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MessageSquare, XCircle } from "lucide-react";
+import { MessageSquare, Trash2, XCircle } from "lucide-react";
 
 import { useApiQuery } from "@/lib/hooks/use-api-query";
 
@@ -77,13 +77,38 @@ function WrongAnswerCard({ wa, index }: { wa: WrongAnswer; index: number }) {
 function McqResultRow({
   row,
   onCommentSave,
+  onRemoveCancelledExam,
 }: {
   row: McqResultTeacherRow;
   onCommentSave: (id: string, comment: string) => void;
+  onRemoveCancelledExam?: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [commentText, setCommentText] = useState(row.teacherComment || "");
   const [commentSaving, setCommentSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  async function handleRemoveCancelled() {
+    const studentName = row.student?.name || "শিক্ষার্থী";
+    const confirmMsg = `আপনি কি ${studentName}-এর বাতিল হওয়া এই পরীক্ষার রেজাল্ট মুছে ফেলতে চান?\n\nএটি মুছে ফেললে শিক্ষার্থী পুনরায় এই পরীক্ষায় অংশগ্রহণ করতে পারবে।`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsRemoving(true);
+    try {
+      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}`, {
+        method: "DELETE",
+      });
+      if (ok && isApiSuccess(payload)) {
+        onRemoveCancelledExam?.(row._id);
+      } else {
+        alert(getApiErrorMessage(payload, "বাতিল পরীক্ষা মুছে ফেলা যায়নি।"));
+      }
+    } catch {
+      alert("বাতিল পরীক্ষা মুছে ফেলার সময় সমস্যা হয়েছে।");
+    } finally {
+      setIsRemoving(false);
+    }
+  }
 
   async function handleSaveComment() {
     setCommentSaving(true);
@@ -161,7 +186,18 @@ function McqResultRow({
             >
               <MessageSquare className="size-3.5" />
             </button>
-
+            {row.isCancelled && (
+              <button
+                type="button"
+                onClick={handleRemoveCancelled}
+                disabled={isRemoving}
+                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50 cursor-pointer shadow-2xs"
+                title="বাতিল পরীক্ষা মুছে ফেলুন (শিক্ষার্থী পুনরায় পরীক্ষায় অংশ নিতে পারবে)"
+              >
+                <Trash2 className="size-3.5" />
+                <span>{isRemoving ? "মুছছে..." : "বাতিল সরান"}</span>
+              </button>
+            )}
           </div>
         </td>
       </tr>
@@ -222,13 +258,38 @@ function McqResultRow({
 function McqResultMobileCard({
   row,
   onCommentSave,
+  onRemoveCancelledExam,
 }: {
   row: McqResultTeacherRow;
   onCommentSave: (id: string, comment: string) => void;
+  onRemoveCancelledExam?: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [commentText, setCommentText] = useState(row.teacherComment || "");
   const [commentSaving, setCommentSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  async function handleRemoveCancelled() {
+    const studentName = row.student?.name || "শিক্ষার্থী";
+    const confirmMsg = `আপনি কি ${studentName}-এর বাতিল হওয়া এই পরীক্ষার রেজাল্ট মুছে ফেলতে চান?\n\nএটি মুছে ফেললে শিক্ষার্থী পুনরায় এই পরীক্ষায় অংশগ্রহণ করতে পারবে।`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsRemoving(true);
+    try {
+      const { ok, payload } = await apiFetch(`/api/mcq/results/${row._id}`, {
+        method: "DELETE",
+      });
+      if (ok && isApiSuccess(payload)) {
+        onRemoveCancelledExam?.(row._id);
+      } else {
+        alert(getApiErrorMessage(payload, "বাতিল পরীক্ষা মুছে ফেলা যায়নি।"));
+      }
+    } catch {
+      alert("বাতিল পরীক্ষা মুছে ফেলার সময় সমস্যা হয়েছে।");
+    } finally {
+      setIsRemoving(false);
+    }
+  }
 
   async function handleSaveComment() {
     setCommentSaving(true);
@@ -311,7 +372,18 @@ function McqResultMobileCard({
           <MessageSquare className="size-3.5" />
           {expanded ? "Hide Details" : "Show Details"}
         </button>
-
+        {row.isCancelled && (
+          <button
+            type="button"
+            onClick={handleRemoveCancelled}
+            disabled={isRemoving}
+            className="inline-flex items-center gap-1 text-2xs font-bold text-red-700 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg cursor-pointer disabled:opacity-50"
+            title="বাতিল পরীক্ষা মুছে ফেলুন যাতে শিক্ষার্থী আবার অংশ নিতে পারে"
+          >
+            <Trash2 className="size-3.5" />
+            <span>{isRemoving ? "মুছছে..." : "বাতিল সরান"}</span>
+          </button>
+        )}
       </div>
 
       {expanded && (
@@ -376,6 +448,16 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
       return {
         ...prev,
         results: prev.results.map((r) => (r._id === id ? { ...r, teacherComment: comment } : r)),
+      };
+    });
+  }
+
+  function handleRemoveCancelledExam(id: string) {
+    setData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        results: prev.results.filter((r) => r._id !== id),
       };
     });
   }
@@ -489,6 +571,7 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
                     key={row._id}
                     row={row}
                     onCommentSave={handleCommentSaveRow}
+                    onRemoveCancelledExam={handleRemoveCancelledExam}
                   />
                 ))}
               </tbody>
@@ -502,6 +585,7 @@ export function TeacherMcqResults({ examId }: TeacherMcqResultsProps) {
                 key={row._id}
                 row={row}
                 onCommentSave={handleCommentSaveRow}
+                onRemoveCancelledExam={handleRemoveCancelledExam}
               />
             ))}
           </div>
