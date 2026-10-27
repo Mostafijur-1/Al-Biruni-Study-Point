@@ -212,6 +212,35 @@ export function ProfilePanel() {
             <>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
+                  <Label htmlFor="edit-student-id" className="flex items-center gap-1.5">
+                    Student ID
+                    <Lock className="size-3.5 text-muted-foreground" />
+                  </Label>
+                  <Input
+                    id="edit-student-id"
+                    value={user.studentCode || "অ্যাসাইন করা হয়নি"}
+                    disabled
+                    className="bg-muted cursor-not-allowed text-muted-foreground font-mono"
+                  />
+                  <p className="text-2xs text-muted-foreground">Student ID অ্যাডমিন কর্তৃক ব্যাচ অনুযায়ী নির্ধারিত হয়।</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-enrolled-batch" className="flex items-center gap-1.5">
+                    Enrolled Batch
+                    <Lock className="size-3.5 text-muted-foreground" />
+                  </Label>
+                  <Input
+                    id="edit-enrolled-batch"
+                    value={user.enrolledBatch?.name || "কোনো ব্যাচে নথিভুক্ত নয়"}
+                    disabled
+                    className="bg-muted cursor-not-allowed text-muted-foreground"
+                  />
+                  <p className="text-2xs text-muted-foreground">ব্যাচ পরিবর্তনের জন্য কোচিং কর্তৃপক্ষের সাথে যোগাযোগ করো।</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
                   <Label htmlFor="edit-class">Class</Label>
                   <select
                     id="edit-class"
@@ -317,11 +346,78 @@ export function ProfilePanel() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-primary">{user.name}</h1>
-          <p className="mt-1 text-sm font-medium text-muted">{roleLabels[user.role]}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-muted">{roleLabels[user.role]}</span>
+            {user.role === "student" && user.studentCode && (
+              <span className="inline-flex items-center rounded-md bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-bold text-primary">
+                ID: {user.studentCode}
+              </span>
+            )}
+            {user.role === "student" && user.enrolledBatch?.name && (
+              <span className="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground">
+                ব্যাচ: {user.enrolledBatch.name}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       <dl className="mt-8 grid gap-4 sm:grid-cols-2">
+        {user.role === "student" && (
+          <>
+            <div className="rounded-lg border border-border bg-background p-4 shadow-[var(--shadow-xs)]">
+              <dt className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted">
+                <span>Student ID</span>
+                {user.studentCode ? (
+                  <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-2xs font-bold text-emerald-600 dark:text-emerald-400">
+                    Active
+                  </span>
+                ) : null}
+              </dt>
+              <dd className="mt-1.5 font-semibold text-foreground">
+                {user.studentCode ? (
+                  <span className="font-mono text-xl font-black tracking-wider text-primary">
+                    {user.studentCode}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium italic text-muted-foreground">
+                    এখনো প্রদান করা হয়নি (কোচিং ভর্তির পর স্বয়ংক্রিয়ভাবে প্রদান করা হবে)
+                  </span>
+                )}
+              </dd>
+            </div>
+
+            <div className="rounded-lg border border-border bg-background p-4 shadow-[var(--shadow-xs)]">
+              <dt className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted">
+                <span>Enrolled Batch</span>
+                {user.enrolledBatch?.mode && (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-2xs font-bold text-primary">
+                    {user.enrolledBatch.mode === "offline" ? "অফলাইন" : "অনলাইন"}
+                  </span>
+                )}
+              </dt>
+              <dd className="mt-1.5 font-semibold text-foreground">
+                {user.enrolledBatch?.name ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-base font-bold text-primary">
+                      {user.enrolledBatch.name}
+                    </span>
+                    {user.enrolledBatch.code && (
+                      <span className="font-mono text-xs text-muted-foreground">
+                        ({user.enrolledBatch.code})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs font-medium italic text-muted-foreground">
+                    কোনো ব্যাচে এখনো নথিভুক্ত নয়
+                  </span>
+                )}
+              </dd>
+            </div>
+          </>
+        )}
+
         <div className="rounded-lg border border-border bg-background p-4">
           <dt className="text-xs font-bold uppercase tracking-wide text-muted">ফোন</dt>
           <dd className="mt-1 font-semibold text-foreground">{user.phone || "Not provided"}</dd>

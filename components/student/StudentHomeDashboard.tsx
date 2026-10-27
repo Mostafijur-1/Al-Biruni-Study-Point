@@ -255,6 +255,16 @@ export function StudentHomeDashboard() {
                 {classLabel(user?.studentClass)}
               </span>
             )}
+            {user?.studentCode && (
+              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 font-mono font-bold text-white">
+                ID: {user.studentCode}
+              </span>
+            )}
+            {user?.enrolledBatch?.name && (
+              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 font-semibold text-white">
+                ব্যাচ: {user.enrolledBatch.name}
+              </span>
+            )}
           </div>
           <h1 className="mt-4 text-2xl font-black sm:text-4xl">
             স্বাগতম, {firstName(user?.name)}!

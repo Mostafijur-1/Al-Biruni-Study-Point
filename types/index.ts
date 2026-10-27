@@ -4,6 +4,14 @@ export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 export type StudentClass = "class-9" | "class-10" | "class-11" | "class-12";
 
+export type EnrolledBatchSummary = {
+  id: string;
+  name: string;
+  code?: string;
+  mode: "online" | "offline";
+  studentClass?: StudentClass;
+};
+
 export type SessionUser = {
   id: string;
   name: string;
@@ -11,11 +19,14 @@ export type SessionUser = {
   email?: string;
   role: UserRole;
   studentClass?: StudentClass;
+  avatar?: string;
+  approvalStatus?: ApprovalStatus;
   schoolCollege?: string;
   reference?: string;
   studentCode?: string;
   isAbspMember?: boolean;
   onboardingComplete?: boolean;
+  enrolledBatch?: EnrolledBatchSummary | null;
   teacherUsage?: {
     imageQuestionUploadMonth: string;
     imageQuestionUploadCount: number;

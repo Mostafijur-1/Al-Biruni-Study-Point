@@ -91,6 +91,7 @@ export const enrollmentMutationSchema = z.discriminatedUnion("action", [
     enrollmentId: objectIdSchema,
     targetBatchId: objectIdSchema,
     subjectIds: z.array(objectIdSchema).min(1).max(30).optional(),
+    studentCode: z.string().trim().regex(/^\d{7}$/, "Student ID must be a 7-digit number.").optional(),
     feeTk: z.coerce.number().int().min(0).max(10_000_000),
     guardianPhone: guardianPhoneSchema,
     guardianRelation: guardianRelationSchema,

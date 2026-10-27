@@ -58,3 +58,30 @@ test("student codes are assigned only when absent and attendance is admin-wide",
     assert.match(register, new RegExp(column));
   }
 });
+
+test("batch switching reassigns student IDs for new cohort prefix and profile displays enrolled batch", async () => {
+  const enrollment = await readFile("lib/coaching-enrollment-service.ts", "utf8");
+  const profilePanel = await readFile("components/profile/ProfilePanel.tsx", "utf8");
+  const studentDashboard = await readFile("components/student/StudentHomeDashboard.tsx", "utf8");
+  const sessionAuth = await readFile("lib/auth/session.ts", "utf8");
+
+  // Transfer updates studentCode and studentClass when cohort changes (e.g. SSC 2027 -> HSC 2029)
+  assert.match(enrollment, /transferCoachingEnrollment/);
+  assert.match(enrollment, /isValidStudentCodeForPrefix\(nextStudentCode, targetPrefix\)/);
+  assert.match(enrollment, /userUpdates\.studentCode = nextStudentCode/);
+  assert.match(enrollment, /userUpdates\.studentClass = targetBatch\.studentClass/);
+
+  // Profile shows Student ID and Enrolled Batch
+  assert.match(profilePanel, /user\.studentCode/);
+  assert.match(profilePanel, /user\.enrolledBatch/);
+  assert.match(profilePanel, /Student ID/);
+  assert.match(profilePanel, /Enrolled Batch/);
+
+  // Session loader resolves enrolledBatch for active students
+  assert.match(sessionAuth, /enrolledBatch/);
+  assert.match(sessionAuth, /BatchEnrollment\.findOne/);
+
+  // Student dashboard shows studentCode and enrolledBatch badge
+  assert.match(studentDashboard, /user\?\.studentCode/);
+  assert.match(studentDashboard, /user\?\.enrolledBatch/);
+});

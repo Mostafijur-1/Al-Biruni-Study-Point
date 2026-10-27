@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest) {
 
     await user.save();
 
-    return success({ user: serializeUser(user) });
+    return success({ user: serializeUser(user, { enrolledBatch: sessionUser.enrolledBatch }) });
   } catch (error) {
     return handleApiError(error);
   }

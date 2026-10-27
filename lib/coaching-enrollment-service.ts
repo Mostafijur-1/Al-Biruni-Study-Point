@@ -13,7 +13,7 @@ import { CoachingEnrollmentSubject } from "./db/models/CoachingEnrollmentSubject
 import { PaymentProfile } from "./db/models/PaymentProfile.ts";
 import { User } from "./db/models/User.ts";
 import { StudentCodeCounter } from "./db/models/StudentCodeCounter.ts";
-import { formatStudentCode, getStudentCodePrefix, isSevenDigitStudentCode, parseStudentCodeSequence, suggestNextFromLastCode, suggestNextStudentCode } from "./student-code.ts";
+import { formatStudentCode, getStudentCodePrefix, isSevenDigitStudentCode, isValidStudentCodeForPrefix, parseStudentCodeSequence, suggestNextFromLastCode, suggestNextStudentCode } from "./student-code.ts";
 import { withMongoTransaction } from "./application/transaction.ts";
 
 type AuditInput = { request: NextRequest; actor: SessionUser; reason: string };
@@ -165,12 +165,15 @@ async function persistNewStudentCode(input: {
   student: InstanceType<typeof User>;
   studentCode: string;
   session: ClientSession;
+  allowUpdate?: boolean;
 }) {
   const result = await User.collection.updateOne(
-    {
-      _id: input.student._id,
-      $or: [{ studentCode: { $exists: false } }, { studentCode: null }, { studentCode: "" }],
-    },
+    input.allowUpdate
+      ? { _id: input.student._id }
+      : {
+          _id: input.student._id,
+          $or: [{ studentCode: { $exists: false } }, { studentCode: null }, { studentCode: "" }],
+        },
     { $set: { studentCode: input.studentCode, updatedAt: new Date() } },
     { session: input.session },
   );
@@ -181,7 +184,8 @@ async function persistNewStudentCode(input: {
       input.student.studentCode = input.studentCode;
       return input.studentCode;
     }
-    if (currentCode) {
+    const prefix = input.studentCode.slice(0, 5);
+    if (currentCode && isValidStudentCodeForPrefix(currentCode, prefix)) {
       throw new ApiRouteError("Student already has a permanent ID that cannot be changed.", 409, "CONFLICT");
     }
     const retry = await User.collection.updateOne(
@@ -202,6 +206,7 @@ async function assignManualStudentCode(input: {
   batch: InstanceType<typeof Batch>;
   requestedCode: string;
   session: ClientSession;
+  allowUpdate?: boolean;
 }) {
   if (!isSevenDigitStudentCode(input.requestedCode)) {
     throw new ApiRouteError("Student ID must be a 7-digit number.", 400, "VALIDATION_ERROR");
@@ -216,6 +221,7 @@ async function assignManualStudentCode(input: {
     student: input.student,
     studentCode: input.requestedCode,
     session: input.session,
+    allowUpdate: input.allowUpdate,
   });
   if (prefix) {
     const sequence = parseStudentCodeSequence(input.requestedCode, prefix);
@@ -229,17 +235,22 @@ async function assignPermanentStudentCode(input: {
   batch: InstanceType<typeof Batch>;
   session: ClientSession;
   requestedCode?: string;
+  forceReassign?: boolean;
 }) {
-  if (input.student.studentCode) return input.student.studentCode;
+  const prefix = getStudentCodePrefix(input.batch);
+  if (input.student.studentCode && (!prefix || isValidStudentCodeForPrefix(input.student.studentCode, prefix))) {
+    if (input.student.studentCode) return input.student.studentCode;
+  }
+  const isCohortSwitch = Boolean(input.student.studentCode && prefix && !isValidStudentCodeForPrefix(input.student.studentCode, prefix));
   if (input.requestedCode) {
     return assignManualStudentCode({
       student: input.student,
       batch: input.batch,
       requestedCode: input.requestedCode,
       session: input.session,
+      allowUpdate: isCohortSwitch || input.forceReassign,
     });
   }
-  const prefix = getStudentCodePrefix(input.batch);
   if (!prefix) {
     throw new ApiRouteError(
       "Enter a 7-digit Student ID. Batch name or code should include a four-digit year so the next ID can be suggested automatically.",
@@ -250,9 +261,14 @@ async function assignPermanentStudentCode(input: {
   let sequence = (await lastSequenceForPrefix(prefix, input.session)) + 1;
   while (sequence <= 99) {
     const candidate = formatStudentCode(prefix, sequence);
-    const taken = await User.exists(codeTakenFilter(candidate)).session(input.session);
+    const taken = await User.exists(codeTakenFilter(candidate, input.student._id)).session(input.session);
     if (!taken) {
-      await persistNewStudentCode({ student: input.student, studentCode: candidate, session: input.session });
+      await persistNewStudentCode({
+        student: input.student,
+        studentCode: candidate,
+        session: input.session,
+        allowUpdate: isCohortSwitch || input.forceReassign,
+      });
       await syncStudentCodeCounter({ prefix, sequence, session: input.session });
       return candidate;
     }
@@ -456,6 +472,7 @@ export async function transferCoachingEnrollment(input: AuditInput & {
   enrollmentId: string;
   targetBatchId: string;
   subjectIds?: string[];
+  studentCode?: string;
   effectiveAt: Date;
   feeTk: number;
   guardianPhone?: string;
@@ -465,11 +482,13 @@ export async function transferCoachingEnrollment(input: AuditInput & {
     const current = await BatchEnrollment.findOne({ _id: input.enrollmentId, status: "active" }).session(session);
     if (!current) throw new ApiRouteError("Active coaching enrollment not found.", 404);
     if (String(current.batchId) === input.targetBatchId) throw new ApiRouteError("Student is already in the target batch.", 409);
-    const [currentBatch, selection] = await Promise.all([
+    const [currentBatch, selection, student] = await Promise.all([
       Batch.findById(current.batchId).session(session),
       loadSelection(input.targetBatchId, input.subjectIds, session),
+      User.findById(current.studentId).session(session),
     ]);
     if (!currentBatch) throw new ApiRouteError("Current batch not found.", 409);
+    if (!student) throw new ApiRouteError("Student not found.", 404);
     const { batch: targetBatch, selectedSubjectIds } = selection;
     const reserved = await Batch.findOneAndUpdate(
       { _id: targetBatch._id, status: { $in: ["planned", "active"] }, ...(targetBatch.capacity ? { $or: [{ activeEnrollmentCount: { $lt: targetBatch.capacity } }, { activeEnrollmentCount: { $exists: false } }] } : {}) },
@@ -494,11 +513,81 @@ export async function transferCoachingEnrollment(input: AuditInput & {
     }], { session });
     await addSubjectRows({ enrollment: next, subjectIds: selectedSubjectIds, effectiveFrom: input.effectiveAt, actorId: input.actor.id, session });
     await syncPaymentProfile({ studentId: current.studentId, subjectIds: selectedSubjectIds, feeTk: input.feeTk, actorId: input.actor.id, session });
+
+    // Handle student code and class transition for the new batch:
+    const targetPrefix = getStudentCodePrefix(targetBatch);
+    let nextStudentCode = student.studentCode ? String(student.studentCode) : null;
+    let studentCodeChanged = false;
+
+    if (input.studentCode) {
+      if (!isSevenDigitStudentCode(input.studentCode)) {
+        throw new ApiRouteError("Student ID must be a 7-digit number.", 400, "VALIDATION_ERROR");
+      }
+      if (targetPrefix && !input.studentCode.startsWith(targetPrefix)) {
+        throw new ApiRouteError(`Student ID must be 7 digits and start with ${targetPrefix}.`, 400, "VALIDATION_ERROR");
+      }
+      const taken = await User.exists(codeTakenFilter(input.studentCode, student._id)).session(session);
+      if (taken) throw new ApiRouteError("This Student ID is already assigned to another student.", 409, "CONFLICT");
+      nextStudentCode = input.studentCode;
+      studentCodeChanged = nextStudentCode !== student.studentCode;
+      if (targetPrefix) {
+        const seq = parseStudentCodeSequence(nextStudentCode, targetPrefix);
+        if (seq) await syncStudentCodeCounter({ prefix: targetPrefix, sequence: seq, session });
+      }
+    } else if (targetPrefix) {
+      if (!nextStudentCode || !isValidStudentCodeForPrefix(nextStudentCode, targetPrefix)) {
+        let sequence = (await lastSequenceForPrefix(targetPrefix, session)) + 1;
+        let candidateCode: string | null = null;
+        while (sequence <= 99) {
+          const candidate = formatStudentCode(targetPrefix, sequence);
+          const taken = await User.exists(codeTakenFilter(candidate, student._id)).session(session);
+          if (!taken) {
+            candidateCode = candidate;
+            await syncStudentCodeCounter({ prefix: targetPrefix, sequence, session });
+            break;
+          }
+          sequence += 1;
+        }
+        if (!candidateCode) {
+          throw new ApiRouteError("No remaining Student IDs are available for this batch prefix.", 409, "CONFLICT");
+        }
+        nextStudentCode = candidateCode;
+        studentCodeChanged = true;
+      }
+    }
+
+    const userUpdates: Record<string, unknown> = {
+      isAbspMember: true,
+      updatedAt: new Date(),
+    };
+    if (studentCodeChanged && nextStudentCode) {
+      userUpdates.studentCode = nextStudentCode;
+    }
+    if (targetBatch.studentClass && targetBatch.studentClass !== student.studentClass) {
+      userUpdates.studentClass = targetBatch.studentClass;
+    }
+
+    await User.collection.updateOne(
+      { _id: student._id },
+      { $set: userUpdates },
+      { session },
+    );
+    if (nextStudentCode) student.studentCode = nextStudentCode;
+    if (targetBatch.studentClass) student.studentClass = targetBatch.studentClass;
+
     await writeAuditLog({
       request: input.request, actor: input.actor, organizationId: current.organizationId, branchId: targetBatch.branchId,
       action: "coaching.enrollment.transferred", resourceType: "BatchEnrollment", resourceId: current._id, reason: input.reason,
-      before: { batchId: String(current.batchId), status: "active" },
-      after: { batchId: String(targetBatch._id), nextEnrollmentId: String(next._id), subjectIds: selectedSubjectIds, feeTk: input.feeTk }, session,
+      before: { batchId: String(current.batchId), status: "active", studentCode: student.studentCode },
+      after: {
+        batchId: String(targetBatch._id),
+        nextEnrollmentId: String(next._id),
+        subjectIds: selectedSubjectIds,
+        feeTk: input.feeTk,
+        studentCode: nextStudentCode,
+        studentClass: student.studentClass,
+      },
+      session,
     });
     return next;
   });

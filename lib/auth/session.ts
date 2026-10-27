@@ -1,8 +1,10 @@
-import type { SessionUser, UserRole } from "@/types";
+import type { ApprovalStatus, EnrolledBatchSummary, SessionUser, StudentClass, UserRole } from "@/types";
 import { ACCESS_COOKIE } from "@/lib/auth/cookies";
 import { verifyAccessToken } from "@/lib/auth/jwt";
 import { sessionVersionMatches } from "@/lib/auth/session-version";
 import { User } from "@/lib/db/models/User";
+import { Batch } from "@/lib/db/models/Batch";
+import { BatchEnrollment } from "@/lib/db/models/BatchEnrollment";
 import { connectDB } from "@/lib/db/connect";
 import { getTeacherMonthlyUsage, isTeacherChargeExpired } from "@/lib/teacher-charges";
 import type { NextRequest } from "next/server";
@@ -23,7 +25,7 @@ export function serializeUser(user: {
   phone?: string;
   email?: string;
   role: UserRole;
-  studentClass?: string;
+  studentClass?: StudentClass | string;
   avatar?: string;
   approvalStatus?: string;
   schoolCollege?: string;
@@ -39,7 +41,9 @@ export function serializeUser(user: {
     chargeDueAt?: Date | string;
     lastChargeRefreshedAt?: Date | string;
   };
-}) {
+}, extra?: {
+  enrolledBatch?: EnrolledBatchSummary | null;
+}): SessionUser {
   const teacherUsage = user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined;
 
   return {
@@ -48,9 +52,9 @@ export function serializeUser(user: {
     phone: user.phone,
     email: user.email,
     role: user.role,
-    studentClass: user.studentClass,
+    studentClass: user.studentClass as StudentClass | undefined,
     avatar: user.avatar,
-    approvalStatus: user.approvalStatus,
+    approvalStatus: user.approvalStatus as ApprovalStatus | undefined,
     schoolCollege: user.schoolCollege,
     reference: user.reference,
     studentCode: user.studentCode,
@@ -58,6 +62,7 @@ export function serializeUser(user: {
     onboardingComplete: Boolean(
       user.role !== "student" || user.onboardingCompletedAt || (!user.googleId && user.phone && user.studentClass),
     ),
+    enrolledBatch: extra?.enrolledBatch ?? null,
     teacherUsage,
   };
 }
@@ -109,20 +114,29 @@ export async function requireAuth(
     throw new AuthError("Teacher account is pending admin approval.", 403);
   }
 
+  let enrolledBatch: EnrolledBatchSummary | null = null;
+  if (user.role === "student") {
+    const activeEnrollment = await BatchEnrollment.findOne({ studentId: user._id, status: "active" })
+      .sort({ effectiveFrom: -1 })
+      .select("batchId")
+      .lean();
+    if (activeEnrollment?.batchId) {
+      const batchDoc = await Batch.findById(activeEnrollment.batchId)
+        .select("name code mode studentClass")
+        .lean();
+      if (batchDoc) {
+        enrolledBatch = {
+          id: String(batchDoc._id),
+          name: batchDoc.name,
+          code: batchDoc.code,
+          mode: batchDoc.mode,
+          studentClass: batchDoc.studentClass,
+        };
+      }
+    }
+  }
+
   return {
-    id: String(user._id),
-    name: user.name,
-    phone: user.phone,
-    email: user.email,
-    role: user.role,
-    studentClass: user.studentClass,
-    schoolCollege: user.schoolCollege,
-    reference: user.reference,
-    studentCode: user.studentCode,
-    isAbspMember: Boolean(user.isAbspMember),
-    onboardingComplete: Boolean(
-      user.role !== "student" || user.onboardingCompletedAt || (!user.googleId && user.phone && user.studentClass),
-    ),
-    teacherUsage: user.role === "teacher" ? getTeacherMonthlyUsage(user.teacherUsage) : undefined,
+    ...serializeUser(user, { enrolledBatch }),
   } satisfies SessionUser;
 }
