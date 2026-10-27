@@ -15,7 +15,7 @@ const pct = (value: number | null) => value === null ? "—" : `${value}%`;
 export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "student" }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [studentId, setStudentId] = useState("");
-  const [period, setPeriod] = useState<"week" | "month">("week");
+  const [period, setPeriod] = useState<"week" | "month">("month");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [report, setReport] = useState<StudentReport>();
   const [query, setQuery] = useState("");
@@ -66,11 +66,11 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
   return <div className="space-y-6">
     <header className="rounded-3xl bg-[radial-gradient(circle_at_88%_14%,rgba(255,198,40,.28),transparent_30%),linear-gradient(125deg,#09233f,#124d78)] p-6 text-white shadow-lg sm:p-8"><p className="text-xs font-black uppercase tracking-[.2em] text-brand-yellow">Progress Report</p><h1 className="mt-2 text-3xl font-black">Student Report</h1><p className="mt-2 max-w-3xl text-sm text-white/75">Attendance, Daily MCQ Practice, Weekly Test, Written Exam ও Staff Comment—সব একসঙ্গে সাপ্তাহিক বা মাসিক Report-এ দেখুন।</p></header>
     {message && <Alert variant={isError ? "destructive" : "success"}>{message}</Alert>}
-    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"><label className="space-y-1 text-xs font-black text-primary"><span>Report Period</span><select className="h-11 rounded-xl border border-input bg-white px-3" value={period} onChange={(event) => setPeriod(event.target.value as "week" | "month")}><option value="week">সাপ্তাহিক Report</option><option value="month">মাসিক Report</option></select></label><label className="space-y-1 text-xs font-black text-primary"><span>Reference Date</span><Input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><Button onClick={() => void loadReport()} disabled={loading || (role !== "student" && !studentId)}><CalendarRange className="size-4" />Report তৈরি করুন</Button>{role === "admin" && report && <Button type="button" variant="outline" disabled={downloading} onClick={() => void downloadPdf()}><Download className="size-4" />{downloading ? "PDF তৈরি হচ্ছে…" : "PDF Download"}</Button>}</div>
+    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"><label className="space-y-1 text-xs font-black text-primary"><span>Report Period</span><select className="h-11 rounded-xl border border-input bg-white px-3 font-medium" value={period} onChange={(event) => setPeriod(event.target.value as "week" | "month")}><option value="month">মাসিক Report (Default)</option><option value="week">সাপ্তাহিক Report</option></select></label><label className="space-y-1 text-xs font-black text-primary"><span>Reference Date</span><Input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><Button onClick={() => void loadReport()} disabled={loading || (role !== "student" && !studentId)}><CalendarRange className="size-4" />Report তৈরি করুন</Button>{role === "admin" && report && <Button type="button" variant="outline" disabled={downloading} onClick={() => void downloadPdf()}><Download className="size-4" />{downloading ? "PDF তৈরি হচ্ছে…" : "PDF Download"}</Button>}</div>
     <div className={`grid gap-6 ${role === "student" ? "" : "xl:grid-cols-[310px_minmax(0,1fr)]"}`}>
       {role !== "student" && <aside className="h-fit space-y-3 rounded-3xl border border-border bg-card p-4 xl:sticky xl:top-24"><div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="নাম, ID বা Batch" /></div><div className="max-h-[65vh] space-y-2 overflow-y-auto">{visible.map((student) => <button type="button" key={student.id} onClick={() => { setStudentId(student.id); void loadReport(student.id); }} className={`w-full rounded-xl border p-3 text-left ${studentId === student.id ? "border-primary bg-secondary" : "border-border"}`}><b className="text-sm text-primary">{student.name}</b><p className="mt-1 text-xs text-muted"><span className="font-mono font-black">{student.studentCode ?? "ID নেই"}</span> · {student.batchName}</p>{student.enrollmentStatus !== "active" && <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 text-[10px] font-black text-amber-800">{student.enrollmentStatus}</span>}</button>)}</div></aside>}
       <main>{!report ? <div className="grid min-h-96 place-items-center rounded-3xl border border-dashed border-border bg-card text-center"><div><TrendingUp className="mx-auto size-10 text-muted" /><h2 className="mt-3 text-xl font-black text-primary">{loading ? "Report তৈরি হচ্ছে…" : role === "student" ? "কোনো Report নেই" : "একজন শিক্ষার্থী Select করুন"}</h2></div></div> : <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        {/* TOP HEADER: Logo & আল-বিরুনী স্টাডি পয়েন্ট */}
+        {/* TOP HEADER: Logo & আল-বিরুনি স্টাডি পয়েন্ট */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-border/80 pb-6 text-center sm:text-left">
           <div className="flex items-center gap-3.5">
             <img
@@ -80,7 +80,7 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
             />
             <div>
               <h2 className="text-2xl sm:text-3xl font-black text-primary tracking-tight">
-                আল-বিরুনী স্টাডি পয়েন্ট
+                আল-বিরুনি স্টাডি পয়েন্ট
               </h2>
               <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted">
                 Al-Biruni Study Point · Student Progress Report
@@ -103,11 +103,6 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
           <h3 className="text-base sm:text-lg font-bold text-primary">
             প্রিয় অভিভাবক, আপনার সন্তান <span className="font-black text-foreground underline decoration-amber-400 decoration-2">{report.student.name}</span>-এর {report.periodType === "month" ? "এই মাসের" : "এই সপ্তাহের"} রিপোর্ট:
           </h3>
-          {report.guardian.phone && (
-            <p className="mt-1 text-xs text-muted font-medium">
-              Guardian যোগাযোগ: {report.guardian.phone} {report.guardian.relation ? `(${report.guardian.relation})` : ""}
-            </p>
-          )}
         </div>
 
         {/* SECTION 1: CLASS ATTENDANCE */}

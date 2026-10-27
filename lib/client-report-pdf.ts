@@ -2,7 +2,7 @@ import type { StudentReport } from "@/lib/student-report-service";
 
 const PAGE_WIDTH = 1240;
 const PAGE_HEIGHT = 1754;
-const MARGIN = 80;
+const MARGIN = 72;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
 function bytesFromBase64(value: string) {
@@ -98,7 +98,8 @@ function drawRoundedRect(
   height: number,
   radius: number,
   fillColor?: string,
-  strokeColor?: string
+  strokeColor?: string,
+  strokeWidth = 1.5
 ) {
   context.beginPath();
   context.moveTo(x + radius, y);
@@ -117,7 +118,7 @@ function drawRoundedRect(
   }
   if (strokeColor) {
     context.strokeStyle = strokeColor;
-    context.lineWidth = 1.5;
+    context.lineWidth = strokeWidth;
     context.stroke();
   }
 }
@@ -143,12 +144,12 @@ export async function downloadStudentReportPdf(report: StudentReport) {
     y = MARGIN;
     if (continued) {
       context.fillStyle = "#0b2545";
-      context.font = "700 22px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-      context.fillText("আল-বিরুনী স্টাডি পয়েন্ট — Student Progress Report (চলমান)", MARGIN, y);
-      y += 36;
-      context.fillStyle = "#dce5ee";
+      context.font = "700 24px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillText("আল-বিরুনি স্টাডি পয়েন্ট — Student Progress Report (চলমান)", MARGIN, y + 20);
+      y += 42;
+      context.fillStyle = "#cbd5e1";
       context.fillRect(MARGIN, y, CONTENT_WIDTH, 2);
-      y += 24;
+      y += 32;
     }
   }
 
@@ -158,230 +159,369 @@ export async function downloadStudentReportPdf(report: StudentReport) {
     }
   }
 
-  function line(
-    value: string,
-    options?: { size?: number; weight?: number | string; color?: string; indent?: number; lineHeight?: number }
-  ) {
-    const size = options?.size ?? 23;
-    const indent = options?.indent ?? 0;
-    const lineHeight = options?.lineHeight ?? size + 10;
-    context.font = `${options?.weight ?? 400} ${size}px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif`;
-    context.fillStyle = options?.color ?? "#1e293b";
-    const words = value.split(/\s+/);
-    const lines: string[] = [];
-    let current = "";
-    for (const word of words) {
-      const candidate = `${current} ${word}`.trim();
-      if (context.measureText(candidate).width > CONTENT_WIDTH - indent && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = candidate;
-      }
-    }
-    if (current) lines.push(current);
-    ensureSpace(lines.length * lineHeight);
-    lines.forEach((row) => {
-      context.fillText(row, MARGIN + indent, y);
-      y += lineHeight;
-    });
-  }
-
   function sectionHeading(title: string, badgeText?: string) {
-    ensureSpace(60);
-    y += 12;
-    drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, 38, 8, "#f1f5f9", "#e2e8f0");
-    context.font = "700 22px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-    context.fillStyle = "#0b2545";
-    context.fillText(title, MARGIN + 14, y + 26);
+    ensureSpace(70);
+    const barHeight = 48;
+    drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, barHeight, 10, "#0b2545");
+    context.font = "800 23px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    context.fillStyle = "#ffffff";
+    context.fillText(title, MARGIN + 18, y + 32);
+
     if (badgeText) {
-      context.font = "700 18px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-      const badgeWidth = context.measureText(badgeText).width + 24;
-      const badgeX = MARGIN + CONTENT_WIDTH - badgeWidth - 10;
-      drawRoundedRect(context, badgeX, y + 5, badgeWidth, 28, 6, "#e0f2fe", "#93c5fd");
-      context.fillStyle = "#0369a1";
-      context.fillText(badgeText, badgeX + 12, y + 24);
+      context.font = "700 19px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      const textWidth = context.measureText(badgeText).width;
+      const badgeWidth = textWidth + 28;
+      const badgeX = MARGIN + CONTENT_WIDTH - badgeWidth - 12;
+      drawRoundedRect(context, badgeX, y + 8, badgeWidth, 32, 8, "#ffffff");
+      context.fillStyle = "#0b2545";
+      context.fillText(badgeText, badgeX + 14, y + 30);
     }
-    y += 50;
+    y += barHeight + 20;
   }
 
-  function renderStatCards(cards: Array<{ title: string; value: string; color?: string }>) {
-    ensureSpace(80);
-    const gap = 16;
+  function highlightLine(text: string) {
+    ensureSpace(38);
+    context.font = "600 22px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    context.fillStyle = "#1e293b";
+    context.fillText(text, MARGIN + 4, y + 20);
+    y += 34;
+  }
+
+  function renderStatCards(
+    cards: Array<{ title: string; value: string; color: string; bg?: string; border?: string }>
+  ) {
+    ensureSpace(110);
+    const gap = 18;
     const cardWidth = Math.floor((CONTENT_WIDTH - gap * (cards.length - 1)) / cards.length);
-    const cardHeight = 70;
+    const cardHeight = 94;
+
     cards.forEach((card, idx) => {
       const cardX = MARGIN + idx * (cardWidth + gap);
-      drawRoundedRect(context, cardX, y, cardWidth, cardHeight, 10, "#f8fafc", "#e2e8f0");
-      context.font = "600 16px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      drawRoundedRect(
+        context,
+        cardX,
+        y,
+        cardWidth,
+        cardHeight,
+        14,
+        card.bg ?? "#f8fafc",
+        card.border ?? "#e2e8f0",
+        1.5
+      );
+      // Title
+      context.font = "600 17px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
       context.fillStyle = "#64748b";
-      context.fillText(card.title, cardX + 14, y + 26);
-      context.font = "800 24px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-      context.fillStyle = card.color ?? "#0b2545";
-      context.fillText(card.value, cardX + 14, y + 56);
+      context.fillText(card.title, cardX + 18, y + 32);
+      // Value
+      context.font = "800 32px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillStyle = card.color;
+      context.fillText(card.value, cardX + 18, y + 74);
     });
-    y += cardHeight + 16;
+    y += cardHeight + 28;
+  }
+
+  function renderSmartResultCard(item: {
+    title: string;
+    subject: string;
+    date: string;
+    scoreText: string;
+    percentage: number;
+    accentColor: string;
+    comment?: string;
+  }) {
+    const hasComment = Boolean(item.comment);
+    const cardHeight = hasComment ? 116 : 76;
+    ensureSpace(cardHeight + 14);
+
+    const cardY = y;
+    drawRoundedRect(context, MARGIN, cardY, CONTENT_WIDTH, cardHeight, 12, "#ffffff", "#cbd5e1", 1.5);
+
+    // Left accent vertical bar
+    context.save();
+    context.beginPath();
+    context.moveTo(MARGIN + 12, cardY);
+    context.lineTo(MARGIN + 7, cardY);
+    context.lineTo(MARGIN + 7, cardY + cardHeight);
+    context.lineTo(MARGIN + 12, cardY + cardHeight);
+    context.closePath();
+    context.fillStyle = item.accentColor;
+    context.fill();
+    context.restore();
+
+    // Title
+    context.font = "800 22px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    context.fillStyle = "#0b2545";
+    context.fillText(item.title, MARGIN + 22, cardY + 30);
+
+    // Subject and Date
+    context.font = "600 17px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    context.fillStyle = "#64748b";
+    context.fillText(`${item.subject}   •   তারিখ: ${item.date}`, MARGIN + 22, cardY + 56);
+
+    // Right Side: Score Pill & Percentage Badge
+    const pctBadgeWidth = 78;
+    const pctBadgeX = MARGIN + CONTENT_WIDTH - pctBadgeWidth - 16;
+    const pctBg = item.percentage >= 80 ? "#ecfdf5" : item.percentage >= 50 ? "#eff6ff" : "#fef2f2";
+    const pctBorder = item.percentage >= 80 ? "#a7f3d0" : item.percentage >= 50 ? "#bfdbfe" : "#fecaca";
+    const pctText = item.percentage >= 80 ? "#047857" : item.percentage >= 50 ? "#1d4ed8" : "#b91c1c";
+
+    drawRoundedRect(context, pctBadgeX, cardY + 18, pctBadgeWidth, 40, 8, pctBg, pctBorder, 1.2);
+    context.font = "800 21px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    context.fillStyle = pctText;
+    const pctWidth = context.measureText(`${item.percentage}%`).width;
+    context.fillText(`${item.percentage}%`, pctBadgeX + (pctBadgeWidth - pctWidth) / 2, cardY + 45);
+
+    // Score pill
+    context.font = "700 19px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    const scoreValWidth = context.measureText(item.scoreText).width;
+    const scoreBoxWidth = scoreValWidth + 30;
+    const scoreBoxX = pctBadgeX - scoreBoxWidth - 12;
+    drawRoundedRect(context, scoreBoxX, cardY + 18, scoreBoxWidth, 40, 8, "#f8fafc", "#e2e8f0", 1.2);
+    context.fillStyle = "#0b2545";
+    context.fillText(item.scoreText, scoreBoxX + 15, cardY + 44);
+
+    // Comment if exists
+    if (hasComment && item.comment) {
+      const commentY = cardY + 70;
+      drawRoundedRect(context, MARGIN + 22, commentY, CONTENT_WIDTH - 44, 34, 6, "#f8fafc", "#e2e8f0", 1);
+      context.font = "600 16px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillStyle = "#475569";
+      context.fillText(`মন্তব্য: "${item.comment}"`, MARGIN + 32, commentY + 23);
+    }
+
+    y += cardHeight + 14;
+  }
+
+  function renderEmptyBox(message: string) {
+    ensureSpace(70);
+    drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, 64, 10, "#f8fafc", "#cbd5e1", 1);
+    context.font = "600 18px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+    context.fillStyle = "#64748b";
+    context.fillText(`• ${message}`, MARGIN + 24, y + 38);
+    y += 78;
   }
 
   // --- PAGE 1: HEADER & CORE CONTENT ---
   newPage();
 
-  // Top branding: Logo + Bangla Center Name + Subtitle
-  const logoSize = 88;
+  // Top Header: ABSP Logo + Bangla Branding
+  const logoSize = 92;
   if (logo) {
     try {
       context.drawImage(logo, MARGIN, y, logoSize, logoSize);
     } catch {
-      // Fallback if image draw encounters canvas cross-origin
+      // safe fallback if image draw encounters issue
     }
   }
-  const textX = logo ? MARGIN + logoSize + 20 : MARGIN;
-  context.font = "800 40px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  const textX = logo ? MARGIN + logoSize + 22 : MARGIN;
+  context.font = "800 44px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
   context.fillStyle = "#0b2545";
-  context.fillText("আল-বিরুনী স্টাডি পয়েন্ট", textX, y + 42);
+  context.fillText("আল-বিরুনি স্টাডি পয়েন্ট", textX, y + 44);
 
-  context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  context.font = "700 21px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
   context.fillStyle = "#64748b";
-  context.fillText("AL-BIRUNI STUDY POINT · Student Progress Report", textX, y + 74);
+  context.fillText("AL-BIRUNI STUDY POINT · Student Academic Progress Report", textX, y + 78);
 
-  y += logoSize + 16;
+  y += logoSize + 18;
   context.fillStyle = "#f5c518";
-  context.fillRect(MARGIN, y, CONTENT_WIDTH, 4);
-  y += 20;
+  context.fillRect(MARGIN, y, CONTENT_WIDTH, 5);
+  y += 24;
 
-  // Student details box
-  drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, 84, 12, "#f8fafc", "#cbd5e1");
-  context.font = "800 26px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  // Student Details Banner (Without Guardian Phone Number)
+  const studentBoxHeight = 84;
+  drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, studentBoxHeight, 14, "#f8fafc", "#cbd5e1", 1.5);
+  context.font = "800 30px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
   context.fillStyle = "#0b2545";
-  context.fillText(report.student.name, MARGIN + 18, y + 36);
+  context.fillText(report.student.name, MARGIN + 22, y + 36);
 
-  context.font = "600 18px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  context.font = "700 19px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
   context.fillStyle = "#475569";
-  const studentMeta = `Student ID: ${report.student.studentCode || "—"}   |   ব্যাচ: ${report.batch.name}   |   সময়কাল: ${new Date(report.periodStart).toLocaleDateString("en-GB")} – ${new Date(report.periodEnd).toLocaleDateString("en-GB")}`;
-  context.fillText(studentMeta, MARGIN + 18, y + 66);
-  y += 98;
+  const startDate = new Date(report.periodStart).toLocaleDateString("en-GB");
+  const endDate = new Date(report.periodEnd).toLocaleDateString("en-GB");
+  const studentMeta = `Student ID: ${report.student.studentCode || "—"}   |   ব্যাচ: ${report.batch.name}   |   সময়কাল: ${startDate} – ${endDate}`;
+  context.fillText(studentMeta, MARGIN + 22, y + 66);
+  y += studentBoxHeight + 22;
 
-  // Guardian Greeting
-  drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, 68, 12, "#eff6ff", "#bfdbfe");
-  context.font = "700 22px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  // Guardian Greeting Callout (No phone number, smart and prominent)
+  const greetingBoxHeight = 66;
+  drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, greetingBoxHeight, 14, "#eff6ff", "#bfdbfe", 1.5);
+  // Left blue decorative accent line
+  context.fillStyle = "#2563eb";
+  context.fillRect(MARGIN, y + 10, 6, greetingBoxHeight - 20);
+
+  context.font = "700 24px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
   context.fillStyle = "#1e3a8a";
   const periodLabel = report.periodType === "month" ? "এই মাসের" : "এই সপ্তাহের";
   context.fillText(
     `প্রিয় অভিভাবক, আপনার সন্তান ${report.student.name}-এর ${periodLabel} রিপোর্ট:`,
-    MARGIN + 18,
-    y + 34
+    MARGIN + 24,
+    y + 41
   );
-  if (report.guardian.phone) {
-    context.font = "500 16px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-    context.fillStyle = "#3b82f6";
-    context.fillText(
-      `অভিভাবক মোবাইল: ${report.guardian.phone}${report.guardian.relation ? ` (${report.guardian.relation})` : ""}`,
-      MARGIN + 18,
-      y + 56
-    );
-  }
-  y += 82;
+  y += greetingBoxHeight + 30;
 
-  // --- 1. CLASS ATTENDANCE ---
+  // --- SECTION 1: CLASS ATTENDANCE ---
   sectionHeading(
     "১. ক্লাস উপস্থিতি (Class Attendance)",
     report.attendance.percentage !== null ? `উপস্থিতির হার: ${report.attendance.percentage}%` : undefined
   );
-  line(
-    `Total Class হয়েছে ${report.attendance.total} টি, সে Present ছিল ${report.attendance.present} টি, সে Absent ছিল ${report.attendance.absent} টি।`,
-    { size: 21, weight: 600, color: "#1e293b" }
+  highlightLine(
+    `Total Class হয়েছে ${report.attendance.total} টি, সে Present ছিল ${report.attendance.present} টি, সে Absent ছিল ${report.attendance.absent} টি।`
   );
-  y += 6;
   renderStatCards([
-    { title: "Total Class হয়েছে", value: `${report.attendance.total} টি`, color: "#0b2545" },
-    { title: "সে Present ছিল", value: `${report.attendance.present} টি`, color: "#16a34a" },
-    { title: "সে Absent ছিল", value: `${report.attendance.absent} টি`, color: "#dc2626" },
-  ]);
-
-  // --- 2. DAILY MCQ EXAM ---
-  sectionHeading(
-    "২. ডেইলি MCQ এক্সাম (Daily MCQ Exam)",
-    report.dailyMcqPractice.averagePercent !== null ? `Overall Result: ${report.dailyMcqPractice.averagePercent}%` : undefined
-  );
-  line(
-    `মোট ${report.dailyMcqPractice.totalDays} দিনের মধ্যে সে Daily MCQ Exam দিয়েছে ${report.dailyMcqPractice.daysAttended} দিন, Daily Exam মিস করেছে ${report.dailyMcqPractice.daysMissed} দিন।`,
-    { size: 21, weight: 600, color: "#1e293b" }
-  );
-  y += 6;
-  renderStatCards([
-    { title: "Daily Exam দিয়েছে", value: `${report.dailyMcqPractice.daysAttended} দিন`, color: "#16a34a" },
-    { title: "Daily Exam মিস করেছে", value: `${report.dailyMcqPractice.daysMissed} দিন`, color: "#dc2626" },
     {
-      title: "Overall Result (গড়)",
-      value: report.dailyMcqPractice.averagePercent !== null ? `${report.dailyMcqPractice.averagePercent}%` : "—",
+      title: "Total Class হয়েছে",
+      value: `${report.attendance.total} টি`,
       color: "#0b2545",
+      bg: "#f8fafc",
+      border: "#e2e8f0",
+    },
+    {
+      title: "সে Present ছিল",
+      value: `${report.attendance.present} টি`,
+      color: "#16a34a",
+      bg: "#f0fdf4",
+      border: "#bbf7d0",
+    },
+    {
+      title: "সে Absent ছিল",
+      value: `${report.attendance.absent} টি`,
+      color: "#dc2626",
+      bg: "#fef2f2",
+      border: "#fecaca",
     },
   ]);
 
-  // --- 3. WEEKLY MCQ EXAM ---
-  sectionHeading("৩. উইকলি MCQ টেস্ট (Weekly MCQ Exam)", `মোট: ${report.weeklyMcqSummary.total} টি`);
-  line(
-    `মোট ${report.weeklyMcqSummary.total} টির মধ্যে সে Weekly MCQ Exam দিয়েছে ${report.weeklyMcqSummary.attended} টি, Weekly MCQ Exam মিস করেছে ${report.weeklyMcqSummary.missed} টি।`,
-    { size: 21, weight: 600, color: "#1e293b" }
+  // --- SECTION 2: DAILY MCQ EXAM ---
+  sectionHeading(
+    "২. ডেইলি MCQ এক্সাম (Daily MCQ Exam)",
+    report.dailyMcqPractice.averagePercent !== null
+      ? `Overall Result: ${report.dailyMcqPractice.averagePercent}%`
+      : undefined
   );
-  y += 10;
-  line("প্রতিটি পরীক্ষার ফলাফল আলাদাভাবে:", { size: 19, weight: 700, color: "#64748b" });
+  highlightLine(
+    `মোট ${report.dailyMcqPractice.totalDays} দিনের মধ্যে সে Daily MCQ Exam দিয়েছে ${report.dailyMcqPractice.daysAttended} দিন, Daily Exam মিস করেছে ${report.dailyMcqPractice.daysMissed} দিন।`
+  );
+  renderStatCards([
+    {
+      title: "Daily Exam দিয়েছে",
+      value: `${report.dailyMcqPractice.daysAttended} দিন`,
+      color: "#16a34a",
+      bg: "#f0fdf4",
+      border: "#bbf7d0",
+    },
+    {
+      title: "Daily Exam মিস করেছে",
+      value: `${report.dailyMcqPractice.daysMissed} দিন`,
+      color: "#dc2626",
+      bg: "#fef2f2",
+      border: "#fecaca",
+    },
+    {
+      title: "Overall Result (গড়)",
+      value:
+        report.dailyMcqPractice.averagePercent !== null
+          ? `${report.dailyMcqPractice.averagePercent}%`
+          : "—",
+      color: "#0b2545",
+      bg: "#f8fafc",
+      border: "#e2e8f0",
+    },
+  ]);
+
+  // --- SECTION 3: WEEKLY MCQ EXAM ---
+  sectionHeading("৩. উইকলি MCQ টেস্ট (Weekly MCQ Exam)", `মোট: ${report.weeklyMcqSummary.total} টি`);
+  highlightLine(
+    `মোট ${report.weeklyMcqSummary.total} টির মধ্যে সে Weekly MCQ Exam দিয়েছে ${report.weeklyMcqSummary.attended} টি, Weekly MCQ Exam মিস করেছে ${report.weeklyMcqSummary.missed} টি।`
+  );
+
+  ensureSpace(42);
+  context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  context.fillStyle = "#64748b";
+  context.fillText("প্রতিটি পরীক্ষার বিস্তারিত ফলাফল:", MARGIN + 4, y + 20);
+  y += 32;
+
   if (!report.weeklyMcqTests.length) {
-    line("• এই সময়ে কোনো Weekly MCQ Exam দেওয়া হয়নি বা Publish হয়নি।", { size: 19, color: "#94a3b8", indent: 14 });
+    renderEmptyBox("এই সময়ে কোনো Weekly MCQ Exam অনুষ্ঠিত হয়নি বা Publish হয়নি।");
   } else {
     report.weeklyMcqTests.forEach((test) => {
-      const dateStr = new Date(test.date).toLocaleDateString("en-GB");
-      line(
-        `• ${test.title} (${test.subject}) — প্রাপ্ত নম্বর: ${test.score}/${test.totalMarks} (${test.percentage}%)  ·  তারিখ: ${dateStr}`,
-        { size: 20, weight: 600, color: "#0b2545", indent: 14 }
-      );
+      renderSmartResultCard({
+        title: test.title,
+        subject: test.subject,
+        date: new Date(test.date).toLocaleDateString("en-GB"),
+        scoreText: `প্রাপ্ত নম্বর: ${test.score} / ${test.totalMarks}`,
+        percentage: test.percentage,
+        accentColor: "#3b82f6",
+      });
     });
+    y += 16;
   }
 
-  // --- 4. WRITTEN EXAM ---
+  // --- SECTION 4: WRITTEN EXAM ---
   sectionHeading("৪. লিখিত পরীক্ষা (Written Exam)", `মোট: ${report.writtenExamSummary.total} টি`);
-  line(
-    `মোট ${report.writtenExamSummary.total} টির মধ্যে সে Written Exam দিয়েছে ${report.writtenExamSummary.attended} টি, Written Exam মিস করেছে ${report.writtenExamSummary.missed} টি।`,
-    { size: 21, weight: 600, color: "#1e293b" }
+  highlightLine(
+    `মোট ${report.writtenExamSummary.total} টির মধ্যে সে Written Exam দিয়েছে ${report.writtenExamSummary.attended} টি, Written Exam মিস করেছে ${report.writtenExamSummary.missed} টি।`
   );
-  y += 10;
-  line("প্রতিটি লিখিত পরীক্ষার ফলাফল আলাদাভাবে:", { size: 19, weight: 700, color: "#64748b" });
+
+  ensureSpace(42);
+  context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  context.fillStyle = "#64748b";
+  context.fillText("প্রতিটি লিখিত পরীক্ষার বিস্তারিত ফলাফল:", MARGIN + 4, y + 20);
+  y += 32;
+
   if (!report.writtenExams.length) {
-    line("• এই সময়ে কোনো Written Exam দেওয়া হয়নি বা Publish হয়নি।", { size: 19, color: "#94a3b8", indent: 14 });
+    renderEmptyBox("এই সময়ে কোনো Written Exam অনুষ্ঠিত হয়নি বা Publish হয়নি।");
   } else {
     report.writtenExams.forEach((exam) => {
-      const dateStr = new Date(exam.date).toLocaleDateString("en-GB");
-      line(
-        `• ${exam.title} (${exam.subject}) — প্রাপ্ত নম্বর: ${exam.marks}/${exam.totalMarks} (${exam.percentage}%)  ·  তারিখ: ${dateStr}`,
-        { size: 20, weight: 600, color: "#0b2545", indent: 14 }
-      );
-      if (exam.comment) {
-        line(`মন্তব্য: ${exam.comment}`, { size: 18, color: "#475569", indent: 36 });
-      }
+      renderSmartResultCard({
+        title: exam.title,
+        subject: exam.subject,
+        date: new Date(exam.date).toLocaleDateString("en-GB"),
+        scoreText: `প্রাপ্ত নম্বর: ${exam.marks} / ${exam.totalMarks}`,
+        percentage: exam.percentage,
+        accentColor: "#f59e0b",
+        comment: exam.comment,
+      });
     });
+    y += 16;
   }
 
-  // --- 5. TEACHER COMMENTS ---
+  // --- SECTION 5: TEACHER COMMENTS ---
   sectionHeading("৫. শিক্ষক / কর্তৃপক্ষের মন্তব্য (Teacher Comments)");
   if (!report.comments.length) {
-    line("• এই সময়ে কোনো মন্তব্য যোগ করা হয়নি।", { size: 19, color: "#94a3b8", indent: 14 });
+    renderEmptyBox("এই সময়ে কোনো বিশেষ মন্তব্য যোগ করা হয়নি।");
   } else {
     report.comments.forEach((row) => {
-      line(`"${row.comment}"`, { size: 20, weight: 600, color: "#0b2545", indent: 14 });
-      line(`— ${row.authorName} (${row.authorRole})`, { size: 18, color: "#64748b", indent: 32 });
-      y += 6;
+      ensureSpace(86);
+      const cardHeight = 82;
+      drawRoundedRect(context, MARGIN, y, CONTENT_WIDTH, cardHeight, 12, "#f8fafc", "#e2e8f0", 1.5);
+      // Left yellow quote accent
+      context.fillStyle = "#f5c518";
+      context.fillRect(MARGIN, y + 10, 6, cardHeight - 20);
+
+      context.font = "700 21px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillStyle = "#0b2545";
+      context.fillText(`"${row.comment}"`, MARGIN + 22, y + 36);
+
+      context.font = "600 17px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillStyle = "#64748b";
+      context.fillText(`— ${row.authorName} (${row.authorRole === "teacher" ? "শিক্ষক" : "কর্তৃপক্ষ"})`, MARGIN + 22, y + 64);
+      y += cardHeight + 14;
     });
   }
 
-  ensureSpace(70);
-  y += 16;
-  context.fillStyle = "#e2e8f0";
-  context.fillRect(MARGIN, y, CONTENT_WIDTH, 1.5);
+  // --- FOOTER ---
+  ensureSpace(80);
   y += 24;
-  line("Al-Biruni Study Point (ABSP) • স্বয়ংক্রিয় ডিজিটাল একাডেমিক রিপোর্ট", {
-    size: 17,
-    color: "#94a3b8",
-  });
+  context.fillStyle = "#cbd5e1";
+  context.fillRect(MARGIN, y, CONTENT_WIDTH, 2);
+  y += 28;
+  context.font = "600 18px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+  context.fillStyle = "#94a3b8";
+  context.fillText(
+    "আল-বিরুনি স্টাডি পয়েন্ট (ABSP) • ডিজিটাল একাডেমিক রিপোর্ট • www.abspoint.top",
+    MARGIN + 4,
+    y
+  );
 
   const images = pages.map((page) => bytesFromBase64(page.toDataURL("image/jpeg", 0.92).split(",")[1]));
   const pdf = imagePagesToPdf(images);

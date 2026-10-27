@@ -8,7 +8,7 @@ import { buildStudentReport } from "@/lib/student-report-service";
 
 const querySchema = z.object({
   studentId: z.string().regex(/^[a-f\d]{24}$/i),
-  period: z.enum(["week", "month"]).default("week"),
+  period: z.enum(["week", "month"]).default("month"),
   date: z.coerce.date().default(() => new Date()),
 });
 
@@ -28,15 +28,12 @@ export async function GET(request: NextRequest) {
     });
     const pdf = createTextPdf("Al-Biruni Study Point - Student Progress Report", [
       {
-        heading: "Student & Guardian",
+        heading: "Student Details",
         lines: [
           `Student Name: ${report.student.name}`,
           `Student ID: ${report.student.studentCode ?? "Not assigned"}`,
           `Batch: ${report.batch.name}`,
           `Period: ${report.periodStart.slice(0, 10)} to ${report.periodEnd.slice(0, 10)}`,
-          `Guardian Phone: ${report.guardian.phone || "Not recorded"}${
-            report.guardian.relation ? ` (${report.guardian.relation})` : ""
-          }`,
         ],
       },
       {

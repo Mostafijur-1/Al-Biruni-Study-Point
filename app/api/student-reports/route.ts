@@ -9,7 +9,7 @@ import { buildStudentReport, listReportStudents } from "@/lib/student-report-ser
 
 const querySchema = z.object({
   studentId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-  period: z.enum(["week", "month"]).default("week"),
+  period: z.enum(["week", "month"]).default("month"),
   date: z.coerce.date().default(() => new Date()),
 });
 
