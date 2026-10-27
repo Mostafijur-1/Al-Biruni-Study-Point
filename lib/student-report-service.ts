@@ -33,9 +33,26 @@ export type StudentReport = {
     excused: number;
     percentage: number | null;
   };
-  dailyMcqPractice: { attempts: number; averagePercent: number | null; bestPercent: number | null };
+  dailyMcqPractice: {
+    attempts: number;
+    daysAttended: number;
+    daysMissed: number;
+    totalDays: number;
+    averagePercent: number | null;
+    bestPercent: number | null;
+  };
   weeklyMcqTests: Array<{ title: string; subject: string; score: number; totalMarks: number; percentage: number; date: string }>;
+  weeklyMcqSummary: {
+    total: number;
+    attended: number;
+    missed: number;
+  };
   writtenExams: Array<{ title: string; subject: string; marks: number; totalMarks: number; percentage: number; date: string; comment?: string }>;
+  writtenExamSummary: {
+    total: number;
+    attended: number;
+    missed: number;
+  };
   comments: Array<{ id: string; comment: string; authorName: string; authorRole: string; createdAt: string }>;
   weeklyBreakdown: Array<{ start: string; end: string; attendancePercent: number | null; practiceAverage: number | null; mcqTestAverage: number | null; writtenAverage: number | null }>;
 };
@@ -190,7 +207,7 @@ export async function buildStudentReport(input: {
   ]);
   const writtenResults = await resolveCurrentWrittenResults(storedWrittenResults);
 
-  const [attendanceRows, publishedMcqExams, publishedWrittenExams] = await Promise.all([
+  const [attendanceRows, publishedMcqExams, publishedWrittenExams, allBatchWrittenExams, allPeriodPublishedMcqExams] = await Promise.all([
     AttendanceRecord.find({ sheetId: { $in: sheets.map((sheet) => sheet._id) }, studentId: student._id, status: { $ne: "unmarked" } })
       .select("sheetId status").lean(),
     McqExam.find({ _id: { $in: mcqAttempts.map((row) => row.exam) }, resultsPublished: true })
@@ -201,6 +218,28 @@ export async function buildStudentReport(input: {
       isPublished: true,
       examDate: { $gte: start, $lt: end },
     }).populate("subjectId", "name nameBn").lean(),
+    WrittenExam.find({
+      batchId: enrollment.batchId,
+      isPublished: true,
+      examDate: { $gte: start, $lt: end },
+    }).select("_id").lean(),
+    McqExam.find({
+      $and: [
+        {
+          $or: [
+            { batchIds: enrollment.batchId },
+            ...(student.studentClass ? [{ targetClasses: student.studentClass }] : []),
+          ],
+        },
+        {
+          $or: [
+            { publishedAt: { $gte: start, $lt: end } },
+            { createdAt: { $gte: start, $lt: end } },
+          ],
+        },
+      ],
+      resultsPublished: true,
+    }).select("_id").lean(),
   ]);
 
   const sheetDate = new Map(sheets.map((sheet) => [String(sheet._id), sheet.submittedAt ?? start]));
@@ -210,7 +249,8 @@ export async function buildStudentReport(input: {
   const absent = attendanceRows.filter((row) => row.status === "absent").length;
   const late = attendanceRows.filter((row) => row.status === "late").length;
   const excused = attendanceRows.filter((row) => row.status === "excused").length;
-  const denominator = present + absent + late;
+  const totalClasses = present + absent;
+  const attendanceRate = totalClasses ? Math.round((present / totalClasses) * 1_000) / 10 : null;
   const weeklyMcqTests = mcqAttempts.flatMap((row) => {
     const exam = mcqExamById.get(String(row.exam));
     return exam ? [{
@@ -236,6 +276,23 @@ export async function buildStudentReport(input: {
       comment: row.comment,
     }];
   });
+
+  const daysInPeriod = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000));
+  const practiceDaysSet = new Set(
+    practiceRows.map((row) =>
+      new Date(row.submittedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }),
+    ),
+  );
+  const practiceDaysCount = practiceDaysSet.size;
+  const practiceDaysMissed = Math.max(0, daysInPeriod - practiceDaysCount);
+
+  const totalWeeklyMcqExams = Math.max(allPeriodPublishedMcqExams.length, weeklyMcqTests.length);
+  const attendedWeeklyMcqExams = weeklyMcqTests.length;
+  const missedWeeklyMcqExams = Math.max(0, totalWeeklyMcqExams - attendedWeeklyMcqExams);
+
+  const totalWrittenExams = Math.max(allBatchWrittenExams.length, writtenExams.length);
+  const attendedWrittenExams = writtenExams.length;
+  const missedWrittenExams = Math.max(0, totalWrittenExams - attendedWrittenExams);
 
   const weeklyBreakdown: StudentReport["weeklyBreakdown"] = [];
   if (input.periodType === "month") {
@@ -266,20 +323,33 @@ export async function buildStudentReport(input: {
       ? { phone: enrollment.guardianPhone ?? "", relation: enrollment.guardianRelation ?? "other" }
       : { phone: "", relation: "" },
     attendance: {
-      total: attendanceRows.length,
+      total: totalClasses,
       present,
       absent,
       late,
       excused,
-      percentage: denominator ? Math.round(((present + late) / denominator) * 1_000) / 10 : null,
+      percentage: attendanceRate,
     },
     dailyMcqPractice: {
       attempts: practiceRows.length,
+      daysAttended: practiceDaysCount,
+      daysMissed: practiceDaysMissed,
+      totalDays: daysInPeriod,
       averagePercent: average(practiceRows.map((row) => row.percentage)),
       bestPercent: practiceRows.length ? Math.max(...practiceRows.map((row) => row.percentage)) : null,
     },
     weeklyMcqTests,
+    weeklyMcqSummary: {
+      total: totalWeeklyMcqExams,
+      attended: attendedWeeklyMcqExams,
+      missed: missedWeeklyMcqExams,
+    },
     writtenExams,
+    writtenExamSummary: {
+      total: totalWrittenExams,
+      attended: attendedWrittenExams,
+      missed: missedWrittenExams,
+    },
     comments: comments.map((comment) => ({
       id: String(comment._id),
       comment: comment.comment,

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -263,8 +263,6 @@ export function AdminAttendanceRegister() {
       ...dateColumns.map((d) => formatDateHeader(d).top),
       "Present (P)",
       "Absent (A)",
-      "Late (L)",
-      "Excused (E)",
       "Total Classes",
       "Attendance Rate (%)",
     ];
@@ -291,8 +289,6 @@ export function AdminAttendanceRegister() {
         ...dateValues,
         row.presentCount,
         row.absentCount,
-        row.lateCount,
-        row.excusedCount,
         row.totalMarked,
         `${row.rate}%`,
       ];
@@ -440,18 +436,6 @@ export function AdminAttendanceRegister() {
               A
             </span>
             অনুপস্থিত (Absent)
-          </span>
-          <span className="inline-flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
-            <span className="grid size-5 place-items-center rounded border border-amber-300 bg-amber-100 font-bold dark:border-amber-800 dark:bg-amber-950">
-              L
-            </span>
-            দেরিতে (Late)
-          </span>
-          <span className="inline-flex items-center gap-1.5 font-semibold text-sky-700 dark:text-sky-400">
-            <span className="grid size-5 place-items-center rounded border border-sky-300 bg-sky-100 font-bold dark:border-sky-800 dark:bg-sky-950">
-              E
-            </span>
-            ছুটি (Excused)
           </span>
           <span className="inline-flex items-center gap-1.5 text-muted">
             <span className="grid size-5 place-items-center rounded border border-border bg-secondary/50 font-medium">

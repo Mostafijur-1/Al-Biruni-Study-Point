@@ -20,37 +20,70 @@ export async function GET(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin"]);
     const parsed = querySchema.parse(Object.fromEntries(request.nextUrl.searchParams.entries()));
-    const report = await buildStudentReport({ actor, studentId: parsed.studentId, periodType: parsed.period, selectedDate: parsed.date });
-    const pdf = createTextPdf("ABSP Student Progress Report", [
+    const report = await buildStudentReport({
+      actor,
+      studentId: parsed.studentId,
+      periodType: parsed.period,
+      selectedDate: parsed.date,
+    });
+    const pdf = createTextPdf("Al-Biruni Study Point - Student Progress Report", [
       {
-        heading: "Student",
+        heading: "Student & Guardian",
         lines: [
-          `Name: ${report.student.name}`,
+          `Student Name: ${report.student.name}`,
           `Student ID: ${report.student.studentCode ?? "Not assigned"}`,
           `Batch: ${report.batch.name}`,
           `Period: ${report.periodStart.slice(0, 10)} to ${report.periodEnd.slice(0, 10)}`,
-          `Guardian: ${report.guardian.phone} (${report.guardian.relation})`,
+          `Guardian Phone: ${report.guardian.phone || "Not recorded"}${
+            report.guardian.relation ? ` (${report.guardian.relation})` : ""
+          }`,
         ],
       },
       {
-        heading: "Attendance",
-        lines: [`Attendance: ${percent(report.attendance.percentage)} | Present ${report.attendance.present}, Absent ${report.attendance.absent}, Late ${report.attendance.late}, Excused ${report.attendance.excused}`],
+        heading: "1. Class Attendance",
+        lines: [
+          `Total Classes: ${report.attendance.total} | Present: ${report.attendance.present} | Absent: ${report.attendance.absent}`,
+          `Attendance Rate: ${percent(report.attendance.percentage)}`,
+        ],
       },
       {
-        heading: "Daily MCQ Practice",
-        lines: [`Attempts: ${report.dailyMcqPractice.attempts} | Average: ${percent(report.dailyMcqPractice.averagePercent)} | Best: ${percent(report.dailyMcqPractice.bestPercent)}`],
+        heading: "2. Daily MCQ Exam",
+        lines: [
+          `Total Days: ${report.dailyMcqPractice.totalDays} | Attended: ${report.dailyMcqPractice.daysAttended} days | Missed: ${report.dailyMcqPractice.daysMissed} days`,
+          `Overall Result: ${percent(report.dailyMcqPractice.averagePercent)}`,
+        ],
       },
       {
-        heading: "Weekly MCQ Tests",
-        lines: report.weeklyMcqTests.length ? report.weeklyMcqTests.map((row) => `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.score}/${row.totalMarks} (${row.percentage}%)`) : ["No published MCQ test result."],
+        heading: `3. Weekly MCQ Exam (Total: ${report.weeklyMcqSummary.total})`,
+        lines: [
+          `Attended: ${report.weeklyMcqSummary.attended} | Missed: ${report.weeklyMcqSummary.missed}`,
+          ...(report.weeklyMcqTests.length
+            ? report.weeklyMcqTests.map(
+                (row) =>
+                  `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.score}/${row.totalMarks} (${row.percentage}%)`
+              )
+            : ["No published Weekly MCQ Exam in this period."]),
+        ],
       },
       {
-        heading: "Written Exams",
-        lines: report.writtenExams.length ? report.writtenExams.map((row) => `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.marks}/${row.totalMarks} (${row.percentage}%)${row.comment ? ` | ${row.comment}` : ""}`) : ["No published written exam result."],
+        heading: `4. Written Exam (Total: ${report.writtenExamSummary.total})`,
+        lines: [
+          `Attended: ${report.writtenExamSummary.attended} | Missed: ${report.writtenExamSummary.missed}`,
+          ...(report.writtenExams.length
+            ? report.writtenExams.map(
+                (row) =>
+                  `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.marks}/${row.totalMarks} (${row.percentage}%)${
+                    row.comment ? ` | Comment: ${row.comment}` : ""
+                  }`
+              )
+            : ["No published Written Exam in this period."]),
+        ],
       },
       {
-        heading: "Teacher / Admin Comments",
-        lines: report.comments.length ? report.comments.map((row) => `${row.authorName} (${row.authorRole}): ${row.comment}`) : ["No comment."],
+        heading: "5. Teacher Comments",
+        lines: report.comments.length
+          ? report.comments.map((row) => `${row.authorName} (${row.authorRole}): ${row.comment}`)
+          : ["No comment recorded for this period."],
       },
     ]);
     const filename = `ABSP-${report.student.studentCode ?? "student"}-${parsed.period}-report.pdf`;

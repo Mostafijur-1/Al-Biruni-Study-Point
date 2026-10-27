@@ -35,8 +35,6 @@ const statusOptions: Array<{
 }> = [
   { value: "present", label: "P", fullLabel: "উপস্থিত" },
   { value: "absent", label: "A", fullLabel: "অনুপস্থিত" },
-  { value: "late", label: "L", fullLabel: "দেরিতে" },
-  { value: "excused", label: "E", fullLabel: "ছুটি" },
 ];
 
 function sameMark(left: RecordRow, right: RecordRow) {
@@ -253,17 +251,24 @@ export function TeacherAttendanceWorkspace() {
             {sheet?.status === "submitted" && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-700"><CheckCircle2 className="size-4" /> Submitted</span>}
             {sheet?.status === "submitted" && !editingSubmitted && <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => { setSubmittedRecords(records.map((record) => ({ ...record }))); setEditingSubmitted(true); setMessage(""); }}><Pencil className="size-4" /> Edit attendance</Button>}
             {editingSubmitted && <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => { setRecords(submittedRecords.map((record) => ({ ...record }))); setEditingSubmitted(false); }}><X className="size-4" /> Cancel edit</Button>}
-            {sheet?.status === "draft" && <Button type="button" variant="outline" size="sm" disabled={saving || !records.length} onClick={() => setRecords((current) => current.map((row) => ({ ...row, status: "present", minutesLate: undefined })))}><Check className="size-4" /> সবাই P</Button>}
+            {sheet?.status === "draft" && (
+              <>
+                <Button type="button" variant="outline" size="sm" disabled={saving || !records.length} onClick={() => setRecords((current) => current.map((row) => ({ ...row, status: "present", minutesLate: undefined })))}><Check className="size-4" /> সবাই P</Button>
+                <Button type="button" variant="outline" size="sm" disabled={saving || !records.length} onClick={() => setRecords((current) => current.map((row) => ({ ...row, status: "absent", minutesLate: undefined })))}><X className="size-4" /> সবাই A</Button>
+              </>
+            )}
           </div>
         </div>
-        <div className="my-4 grid grid-cols-5 gap-2 text-center text-xs">
-          <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700">P<br /><b>{counts.present}</b></span><span className="rounded-lg bg-red-50 p-2 text-red-700">A<br /><b>{counts.absent}</b></span><span className="rounded-lg bg-amber-50 p-2 text-amber-700">L<br /><b>{counts.late}</b></span><span className="rounded-lg bg-sky-50 p-2 text-sky-700">E<br /><b>{counts.excused}</b></span><span className="rounded-lg bg-secondary p-2 text-muted">বাকি<br /><b>{counts.unmarked}</b></span>
+        <div className="my-4 grid grid-cols-3 gap-2 text-center text-xs">
+          <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700">P (উপস্থিত)<br /><b>{counts.present}</b></span>
+          <span className="rounded-lg bg-red-50 p-2 text-red-700">A (অনুপস্থিত)<br /><b>{counts.absent}</b></span>
+          <span className="rounded-lg bg-secondary p-2 text-muted">বাকি (Unmarked)<br /><b>{counts.unmarked}</b></span>
         </div>
         <div className="space-y-2">{records.map((row) => (
           <div key={row.enrollmentId} className="grid gap-3 rounded-xl border border-border p-3 lg:grid-cols-[1fr_auto] lg:items-center">
             <div><p className="font-bold text-primary">{row.studentName}</p><p className="text-xs text-muted">ID {row.studentCode ?? "Unassigned"} · {row.studentClass}</p></div>
-            <div role="group" aria-label={`${row.studentName} attendance`} className="grid grid-cols-4 gap-1">{statusOptions.map((option) => (
-              <button type="button" key={option.value} title={option.fullLabel} aria-label={`${row.studentName}: ${option.fullLabel}`} disabled={controlsDisabled} onClick={() => mark(row.enrollmentId, option.value)} className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm font-black", row.status === option.value ? "border-primary bg-primary text-white" : "border-border bg-white text-muted", option.value === "absent" && row.status === option.value && "border-red-600 bg-red-600")}>{option.label}</button>
+            <div role="group" aria-label={`${row.studentName} attendance`} className="grid grid-cols-2 gap-1.5 w-32">{statusOptions.map((option) => (
+              <button type="button" key={option.value} title={option.fullLabel} aria-label={`${row.studentName}: ${option.fullLabel}`} disabled={controlsDisabled} onClick={() => mark(row.enrollmentId, option.value)} className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm font-black", row.status === option.value ? "border-primary bg-primary text-white" : "border-border bg-white text-muted", option.value === "absent" && row.status === option.value && "border-red-600 bg-red-600 text-white")}>{option.label}</button>
             ))}</div>
           </div>
         ))}</div>

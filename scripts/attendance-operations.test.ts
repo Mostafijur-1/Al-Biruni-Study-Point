@@ -38,7 +38,7 @@ test("teacher attendance is routine-owned and exposes P A L E controls", async (
   assert.match(service, /batchId: routine\.batchId/);
   assert.match(service, /subjectId: routine\.subjectId/);
   assert.match(workspace, /action: "open-routine"/);
-  for (const label of ["P", "A", "L", "E"]) {
+  for (const label of ["P", "A"]) {
     assert.match(workspace, new RegExp(`label: "${label}"`));
   }
   assert.equal(config.env?.ATTENDANCE_WRITES_ENABLED, "true");
