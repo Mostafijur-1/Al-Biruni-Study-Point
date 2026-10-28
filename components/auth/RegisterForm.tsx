@@ -246,12 +246,12 @@ function StudentRegisterForm({ auth,
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="reference">
-              {"রেফারেন্স (শিক্ষকের নাম - Optional)"}
+              {"Reference"}
             </Label>
             <Input
               id="reference"
               {...register("reference")}
-              placeholder= "যদি না থাকে, খালি রাখো"
+              placeholder="রেফারেন্স (যদি না থাকে, খালি রাখো)"
             />
             {errors.reference && <p className="text-sm text-destructive">{errors.reference.message}</p>}
           </div>

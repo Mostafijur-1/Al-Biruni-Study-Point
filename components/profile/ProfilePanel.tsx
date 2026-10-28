@@ -266,7 +266,7 @@ export function ProfilePanel() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-reference">Reference (Teacher-এর নাম)</Label>
+                <Label htmlFor="edit-reference">Reference</Label>
                 <Input
                   id="edit-reference"
                   value={reference}
@@ -439,7 +439,7 @@ export function ProfilePanel() {
               <dd className="mt-1 font-semibold text-foreground">{user.schoolCollege || "Not provided"}</dd>
             </div>
             <div className="rounded-lg border border-border bg-background p-4 sm:col-span-2">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Reference (Teacher)</dt>
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted">Reference</dt>
               <dd className="mt-1 font-semibold text-foreground">{user.reference || "None"}</dd>
             </div>
           </>

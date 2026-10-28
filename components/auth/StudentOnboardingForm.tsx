@@ -78,7 +78,7 @@ function StudentOnboardingWizard({ user, returnUrl, setData }: {
       <CardHeader>
         <div className="flex items-center justify-between gap-4"><p className="text-xs font-bold uppercase tracking-widest text-accent">Set up your profile</p><span className="text-xs font-semibold text-muted">{step + 1} of 4</span></div>
         <div className="grid grid-cols-4 gap-2" aria-hidden>{[0, 1, 2, 3].map((item) => <span key={item} className={`h-1.5 rounded-full ${item <= step ? "bg-primary" : "bg-secondary"}`} />)}</div>
-        <CardTitle className="pt-2">{step === 0 ? "Which class are you in?" : step === 1 ? "What is your phone number?" : step === 2 ? `Which ${isSchool ? "school" : "college"} do you attend?` : "Were you referred by a teacher?"}</CardTitle>
+        <CardTitle className="pt-2">{step === 0 ? "Which class are you in?" : step === 1 ? "What is your phone number?" : step === 2 ? `Which ${isSchool ? "school" : "college"} do you attend?` : "Do you have a reference?"}</CardTitle>
         <CardDescription>{optional ? "This is optional. You can add or update it later from your profile." : "This information is required to personalize your learning."}</CardDescription>
       </CardHeader>
       <CardContent>
@@ -86,7 +86,7 @@ function StudentOnboardingWizard({ user, returnUrl, setData }: {
           {step === 0 && <div className="grid grid-cols-2 gap-3">{classes.map((item) => <button key={item.value} type="button" onClick={() => setStudentClass(item.value)} className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left font-bold transition ${studentClass === item.value ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/15" : "border-border bg-background hover:border-primary/50"}`}>{item.label}{studentClass === item.value && <Check className="size-5" />}</button>)}</div>}
           {step === 1 && <div className="space-y-2"><Label htmlFor="onboarding-phone">Phone number</Label><Input id="onboarding-phone" value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" inputMode="tel" placeholder="016339****2" aria-describedby="onboarding-phone-example" autoFocus /><p id="onboarding-phone-example" className="text-xs text-muted">Example: 016339****2</p></div>}
           {step === 2 && <div className="space-y-2"><Label htmlFor="onboarding-school">{isSchool ? "School" : "College"} name</Label><Input id="onboarding-school" value={schoolCollege} onChange={(event) => setSchoolCollege(event.target.value)} placeholder={`Enter your ${isSchool ? "school" : "college"} name`} autoFocus /></div>}
-          {step === 3 && <div className="space-y-2"><Label htmlFor="onboarding-reference">Teacher name</Label><Input id="onboarding-reference" value={reference} onChange={(event) => setReference(event.target.value)} placeholder="Enter the teacher's name" autoFocus /></div>}
+          {step === 3 && <div className="space-y-2"><Label htmlFor="onboarding-reference">Reference</Label><Input id="onboarding-reference" value={reference} onChange={(event) => setReference(event.target.value)} placeholder="Enter reference (optional)" autoFocus /></div>}
           {error && <Alert variant="destructive">{error}</Alert>}
           <div className="flex items-center gap-3">
             {step > 0 && <Button type="button" variant="ghost" onClick={() => { setError(""); setStep(step - 1); }} disabled={saving}><ChevronLeft className="size-4" />Back</Button>}
