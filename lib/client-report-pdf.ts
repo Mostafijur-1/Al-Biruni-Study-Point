@@ -364,26 +364,23 @@ export async function downloadStudentReportPdf(report: StudentReport) {
     "১. ক্লাস উপস্থিতি (Class Attendance)",
     report.attendance.percentage !== null ? `উপস্থিতির হার: ${report.attendance.percentage}%` : undefined
   );
-  highlightLine(
-    `Total Class হয়েছে ${report.attendance.total} টি, সে Present ছিল ${report.attendance.present} টি, সে Absent ছিল ${report.attendance.absent} টি।`
-  );
   renderStatCards([
     {
-      title: "Total Class হয়েছে",
+      title: "মোট ক্লাস",
       value: `${report.attendance.total} টি`,
       color: "#0b2545",
       bg: "#f8fafc",
       border: "#e2e8f0",
     },
     {
-      title: "সে Present ছিল",
+      title: "উপস্থিত",
       value: `${report.attendance.present} টি`,
       color: "#16a34a",
       bg: "#f0fdf4",
       border: "#bbf7d0",
     },
     {
-      title: "সে Absent ছিল",
+      title: "অনুপস্থিত",
       value: `${report.attendance.absent} টি`,
       color: "#dc2626",
       bg: "#fef2f2",
@@ -399,18 +396,18 @@ export async function downloadStudentReportPdf(report: StudentReport) {
       : undefined
   );
   highlightLine(
-    `মোট ${report.dailyMcqPractice.totalDays} দিনের মধ্যে সে Daily MCQ Exam দিয়েছে ${report.dailyMcqPractice.daysAttended} দিন, Daily Exam মিস করেছে ${report.dailyMcqPractice.daysMissed} দিন।`
+    `মোট ${report.dailyMcqPractice.totalDays} দিনের মধ্যে Daily MCQ Exam দিয়েছে ${report.dailyMcqPractice.daysAttended} দিন, Daily Exam মিস করেছে ${report.dailyMcqPractice.daysMissed} দিন।`
   );
   renderStatCards([
     {
-      title: "Daily Exam দিয়েছে",
+      title: "অংশগ্রহণ",
       value: `${report.dailyMcqPractice.daysAttended} দিন`,
       color: "#16a34a",
       bg: "#f0fdf4",
       border: "#bbf7d0",
     },
     {
-      title: "Daily Exam মিস করেছে",
+      title: "মিস করেছে",
       value: `${report.dailyMcqPractice.daysMissed} দিন`,
       color: "#dc2626",
       bg: "#fef2f2",
@@ -429,60 +426,112 @@ export async function downloadStudentReportPdf(report: StudentReport) {
   ]);
 
   // --- SECTION 3: WEEKLY MCQ EXAM ---
-  sectionHeading("৩. উইকলি MCQ টেস্ট (Weekly MCQ Exam)", `মোট: ${report.weeklyMcqSummary.total} টি`);
-  highlightLine(
-    `মোট ${report.weeklyMcqSummary.total} টির মধ্যে সে Weekly MCQ Exam দিয়েছে ${report.weeklyMcqSummary.attended} টি, Weekly MCQ Exam মিস করেছে ${report.weeklyMcqSummary.missed} টি।`
+  sectionHeading(
+    "৩. উইকলি MCQ টেস্ট (Weekly MCQ Exam)",
+    report.weeklyMcqSummary.total > 0 ? `মোট: ${report.weeklyMcqSummary.total} টি` : undefined
   );
 
-  ensureSpace(42);
-  context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-  context.fillStyle = "#64748b";
-  context.fillText("প্রতিটি পরীক্ষার বিস্তারিত ফলাফল:", MARGIN + 4, y + 20);
-  y += 32;
-
-  if (!report.weeklyMcqTests.length) {
-    renderEmptyBox("এই সময়ে কোনো Weekly MCQ Exam অনুষ্ঠিত হয়নি বা Publish হয়নি।");
+  if (report.weeklyMcqSummary.total === 0) {
+    renderEmptyBox("এই সময়ে কোনো Weekly MCQ Exam Publish হয়নি।");
   } else {
-    report.weeklyMcqTests.forEach((test) => {
-      renderSmartResultCard({
-        title: test.title,
-        subject: test.subject,
-        date: new Date(test.date).toLocaleDateString("en-GB"),
-        scoreText: `প্রাপ্ত নম্বর: ${test.score} / ${test.totalMarks}`,
-        percentage: test.percentage,
-        accentColor: "#3b82f6",
+    renderStatCards([
+      {
+        title: "মোট পরীক্ষা",
+        value: `${report.weeklyMcqSummary.total} টি`,
+        color: "#0b2545",
+        bg: "#f8fafc",
+        border: "#e2e8f0",
+      },
+      {
+        title: "অংশগ্রহণ",
+        value: `${report.weeklyMcqSummary.attended} টি`,
+        color: "#16a34a",
+        bg: "#f0fdf4",
+        border: "#bbf7d0",
+      },
+      {
+        title: "অনুপস্থিত / মিস",
+        value: `${report.weeklyMcqSummary.missed} টি`,
+        color: "#dc2626",
+        bg: "#fef2f2",
+        border: "#fecaca",
+      },
+    ]);
+
+    if (report.weeklyMcqTests.length > 0) {
+      ensureSpace(42);
+      context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillStyle = "#64748b";
+      context.fillText("প্রতিটি পরীক্ষার ফলাফল:", MARGIN + 4, y + 20);
+      y += 32;
+
+      report.weeklyMcqTests.forEach((test) => {
+        renderSmartResultCard({
+          title: test.title,
+          subject: test.subject,
+          date: new Date(test.date).toLocaleDateString("en-GB"),
+          scoreText: `প্রাপ্ত নম্বর: ${test.score} / ${test.totalMarks}`,
+          percentage: test.percentage,
+          accentColor: "#3b82f6",
+        });
       });
-    });
-    y += 16;
+      y += 16;
+    }
   }
 
   // --- SECTION 4: WRITTEN EXAM ---
-  sectionHeading("৪. লিখিত পরীক্ষা (Written Exam)", `মোট: ${report.writtenExamSummary.total} টি`);
-  highlightLine(
-    `মোট ${report.writtenExamSummary.total} টির মধ্যে সে Written Exam দিয়েছে ${report.writtenExamSummary.attended} টি, Written Exam মিস করেছে ${report.writtenExamSummary.missed} টি।`
+  sectionHeading(
+    "৪. লিখিত পরীক্ষা (Written Exam)",
+    report.writtenExamSummary.total > 0 ? `মোট: ${report.writtenExamSummary.total} টি` : undefined
   );
 
-  ensureSpace(42);
-  context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
-  context.fillStyle = "#64748b";
-  context.fillText("প্রতিটি লিখিত পরীক্ষার বিস্তারিত ফলাফল:", MARGIN + 4, y + 20);
-  y += 32;
-
-  if (!report.writtenExams.length) {
-    renderEmptyBox("এই সময়ে কোনো Written Exam অনুষ্ঠিত হয়নি বা Publish হয়নি।");
+  if (report.writtenExamSummary.total === 0) {
+    renderEmptyBox("এই সময়ে কোনো Written Exam Publish হয়নি।");
   } else {
-    report.writtenExams.forEach((exam) => {
-      renderSmartResultCard({
-        title: exam.title,
-        subject: exam.subject,
-        date: new Date(exam.date).toLocaleDateString("en-GB"),
-        scoreText: `প্রাপ্ত নম্বর: ${exam.marks} / ${exam.totalMarks}`,
-        percentage: exam.percentage,
-        accentColor: "#f59e0b",
-        comment: exam.comment,
+    renderStatCards([
+      {
+        title: "মোট পরীক্ষা",
+        value: `${report.writtenExamSummary.total} টি`,
+        color: "#0b2545",
+        bg: "#f8fafc",
+        border: "#e2e8f0",
+      },
+      {
+        title: "অংশগ্রহণ",
+        value: `${report.writtenExamSummary.attended} টি`,
+        color: "#16a34a",
+        bg: "#f0fdf4",
+        border: "#bbf7d0",
+      },
+      {
+        title: "অনুপস্থিত / মিস",
+        value: `${report.writtenExamSummary.missed} টি`,
+        color: "#dc2626",
+        bg: "#fef2f2",
+        border: "#fecaca",
+      },
+    ]);
+
+    if (report.writtenExams.length > 0) {
+      ensureSpace(42);
+      context.font = "700 20px 'Noto Sans Bengali', 'Nirmala UI', Arial, sans-serif";
+      context.fillStyle = "#64748b";
+      context.fillText("প্রতিটি পরীক্ষার ফলাফল:", MARGIN + 4, y + 20);
+      y += 32;
+
+      report.writtenExams.forEach((exam) => {
+        renderSmartResultCard({
+          title: exam.title,
+          subject: exam.subject,
+          date: new Date(exam.date).toLocaleDateString("en-GB"),
+          scoreText: `প্রাপ্ত নম্বর: ${exam.marks} / ${exam.totalMarks}`,
+          percentage: exam.percentage,
+          accentColor: "#f59e0b",
+          comment: exam.comment,
+        });
       });
-    });
-    y += 16;
+      y += 16;
+    }
   }
 
   // --- SECTION 5: TEACHER COMMENTS ---

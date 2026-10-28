@@ -13,10 +13,11 @@ type Student = { id: string; name: string; studentCode?: string; batchName: stri
 const pct = (value: number | null) => value === null ? "—" : `${value}%`;
 
 export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "student" }) {
+  const todayStr = useMemo(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }), []);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentId, setStudentId] = useState("");
   const [period, setPeriod] = useState<"week" | "month">("month");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayStr);
   const [report, setReport] = useState<StudentReport>();
   const [query, setQuery] = useState("");
   const [comment, setComment] = useState("");
@@ -66,7 +67,39 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
   return <div className="space-y-6">
     <header className="rounded-3xl bg-[radial-gradient(circle_at_88%_14%,rgba(255,198,40,.28),transparent_30%),linear-gradient(125deg,#09233f,#124d78)] p-6 text-white shadow-lg sm:p-8"><p className="text-xs font-black uppercase tracking-[.2em] text-brand-yellow">Progress Report</p><h1 className="mt-2 text-3xl font-black">Student Report</h1><p className="mt-2 max-w-3xl text-sm text-white/75">Attendance, Daily MCQ Practice, Weekly Test, Written Exam ও Staff Comment—সব একসঙ্গে সাপ্তাহিক বা মাসিক Report-এ দেখুন।</p></header>
     {message && <Alert variant={isError ? "destructive" : "success"}>{message}</Alert>}
-    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"><label className="space-y-1 text-xs font-black text-primary"><span>Report Period</span><select className="h-11 rounded-xl border border-input bg-white px-3 font-medium" value={period} onChange={(event) => setPeriod(event.target.value as "week" | "month")}><option value="month">মাসিক Report (Default)</option><option value="week">সাপ্তাহিক Report</option></select></label><label className="space-y-1 text-xs font-black text-primary"><span>Reference Date</span><Input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><Button onClick={() => void loadReport()} disabled={loading || (role !== "student" && !studentId)}><CalendarRange className="size-4" />Report তৈরি করুন</Button>{role === "admin" && report && <Button type="button" variant="outline" disabled={downloading} onClick={() => void downloadPdf()}><Download className="size-4" />{downloading ? "PDF তৈরি হচ্ছে…" : "PDF Download"}</Button>}</div>
+    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
+      <label className="space-y-1 text-xs font-black text-primary">
+        <span>Report Period</span>
+        <select
+          className="h-11 rounded-xl border border-input bg-white px-3 font-medium"
+          value={period}
+          onChange={(event) => setPeriod(event.target.value as "week" | "month")}
+        >
+          <option value="month">মাসিক Report (পূর্ববর্তী ৩০ দিন - Default)</option>
+          <option value="week">সাপ্তাহিক Report (পূর্ববর্তী ৭ দিন)</option>
+        </select>
+      </label>
+      <label className="space-y-1 text-xs font-black text-primary">
+        <span>Reference Date (সর্বোচ্চ আজ)</span>
+        <Input
+          type="date"
+          max={todayStr}
+          value={date}
+          onChange={(event) => {
+            const val = event.target.value;
+            setDate(val > todayStr ? todayStr : val);
+          }}
+        />
+      </label>
+      <Button onClick={() => void loadReport()} disabled={loading || (role !== "student" && !studentId)}>
+        <CalendarRange className="size-4" />Report তৈরি করুন
+      </Button>
+      {role === "admin" && report && (
+        <Button type="button" variant="outline" disabled={downloading} onClick={() => void downloadPdf()}>
+          <Download className="size-4" />{downloading ? "PDF তৈরি হচ্ছে…" : "PDF Download"}
+        </Button>
+      )}
+    </div>
     <div className={`grid gap-6 ${role === "student" ? "" : "xl:grid-cols-[310px_minmax(0,1fr)]"}`}>
       {role !== "student" && <aside className="h-fit space-y-3 rounded-3xl border border-border bg-card p-4 xl:sticky xl:top-24"><div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-muted" /><Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="নাম, ID বা Batch" /></div><div className="max-h-[65vh] space-y-2 overflow-y-auto">{visible.map((student) => <button type="button" key={student.id} onClick={() => { setStudentId(student.id); void loadReport(student.id); }} className={`w-full rounded-xl border p-3 text-left ${studentId === student.id ? "border-primary bg-secondary" : "border-border"}`}><b className="text-sm text-primary">{student.name}</b><p className="mt-1 text-xs text-muted"><span className="font-mono font-black">{student.studentCode ?? "ID নেই"}</span> · {student.batchName}</p>{student.enrollmentStatus !== "active" && <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 text-[10px] font-black text-amber-800">{student.enrollmentStatus}</span>}</button>)}</div></aside>}
       <main>{!report ? <div className="grid min-h-96 place-items-center rounded-3xl border border-dashed border-border bg-card text-center"><div><TrendingUp className="mx-auto size-10 text-muted" /><h2 className="mt-3 text-xl font-black text-primary">{loading ? "Report তৈরি হচ্ছে…" : role === "student" ? "কোনো Report নেই" : "একজন শিক্ষার্থী Select করুন"}</h2></div></div> : <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm sm:p-8">
@@ -117,20 +150,17 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
               </span>
             )}
           </div>
-          <p className="mt-3 text-sm font-semibold text-foreground">
-            Total Class হয়েছে <span className="font-mono font-bold text-primary">{report.attendance.total}</span> টি, সে Present ছিল <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{report.attendance.present}</span> টি, সে Absent ছিল <span className="font-mono font-bold text-rose-700 dark:text-rose-400">{report.attendance.absent}</span> টি।
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3 text-sm">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm">
             <div className="rounded-xl bg-card border border-border p-3 text-center">
-              <p className="text-xs text-muted font-bold">Total Class হয়েছে</p>
+              <p className="text-xs text-muted font-bold">মোট ক্লাস</p>
               <p className="mt-1 text-2xl font-black text-primary">{report.attendance.total} টি</p>
             </div>
             <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
-              <p className="text-xs text-emerald-800 dark:text-emerald-300 font-bold">সে Present ছিল</p>
+              <p className="text-xs text-emerald-800 dark:text-emerald-300 font-bold">উপস্থিত</p>
               <p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-400">{report.attendance.present} টি</p>
             </div>
             <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-3 text-center">
-              <p className="text-xs text-rose-800 dark:text-rose-300 font-bold">সে Absent ছিল</p>
+              <p className="text-xs text-rose-800 dark:text-rose-300 font-bold">অনুপস্থিত</p>
               <p className="mt-1 text-2xl font-black text-rose-700 dark:text-rose-400">{report.attendance.absent} টি</p>
             </div>
           </div>
@@ -149,15 +179,15 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
             )}
           </div>
           <p className="mt-3 text-sm font-semibold text-foreground">
-            মোট <span className="font-mono font-bold text-primary">{report.dailyMcqPractice.totalDays}</span> দিনের মধ্যে সে Daily MCQ Exam দিয়েছে <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{report.dailyMcqPractice.daysAttended}</span> দিন, Daily Exam মিস করেছে <span className="font-mono font-bold text-rose-700 dark:text-rose-400">{report.dailyMcqPractice.daysMissed}</span> দিন।
+            মোট <span className="font-mono font-bold text-primary">{report.dailyMcqPractice.totalDays}</span> দিনের মধ্যে Daily MCQ Exam দিয়েছে <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{report.dailyMcqPractice.daysAttended}</span> দিন, Daily Exam মিস করেছে <span className="font-mono font-bold text-rose-700 dark:text-rose-400">{report.dailyMcqPractice.daysMissed}</span> দিন।
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3 text-sm">
             <div className="rounded-xl bg-card border border-border p-3 text-center">
-              <p className="text-xs text-muted font-bold">Daily Exam দিয়েছে</p>
+              <p className="text-xs text-muted font-bold">অংশগ্রহণ</p>
               <p className="mt-1 text-xl font-black text-emerald-600">{report.dailyMcqPractice.daysAttended} দিন</p>
             </div>
             <div className="rounded-xl bg-card border border-border p-3 text-center">
-              <p className="text-xs text-muted font-bold">Daily Exam মিস করেছে</p>
+              <p className="text-xs text-muted font-bold">মিস করেছে</p>
               <p className="mt-1 text-xl font-black text-rose-600">{report.dailyMcqPractice.daysMissed} দিন</p>
             </div>
             <div className="rounded-xl bg-card border border-border p-3 text-center">
@@ -173,40 +203,59 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
             <h4 className="text-base font-black text-primary">
               ৩. উইকলি MCQ টেস্ট (Weekly MCQ Exam)
             </h4>
-            <span className="text-xs font-bold text-muted">
-              মোট: {report.weeklyMcqSummary.total} টি
-            </span>
-          </div>
-          <p className="mt-3 text-sm font-semibold text-foreground">
-            মোট <span className="font-mono font-bold text-primary">{report.weeklyMcqSummary.total}</span> টির মধ্যে সে Weekly MCQ Exam দিয়েছে <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{report.weeklyMcqSummary.attended}</span> টি, Weekly MCQ Exam মিস করেছে <span className="font-mono font-bold text-rose-700 dark:text-rose-400">{report.weeklyMcqSummary.missed}</span> টি।
-          </p>
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">প্রতিটি পরীক্ষার ফলাফল আলাদাভাবে:</p>
-            {report.weeklyMcqTests.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-border bg-card p-4 text-center text-xs text-muted">
-                এই সময়ে কোনো Weekly MCQ Exam দেওয়া হয়নি বা Publish হয়নি।
-              </p>
-            ) : (
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {report.weeklyMcqTests.map((test, index) => (
-                  <div key={`${test.title}-${index}`} className="rounded-xl border border-border bg-card p-3.5 shadow-2xs">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-bold text-primary text-sm">{test.title}</p>
-                        <p className="text-xs text-muted">{test.subject} · {new Date(test.date).toLocaleDateString("en-GB")}</p>
-                      </div>
-                      <span className="rounded-lg bg-primary/10 px-2 py-0.5 font-mono text-xs font-bold text-primary">
-                        {test.percentage}%
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-foreground">
-                      প্রাপ্ত নম্বর: <span className="font-mono font-bold text-primary">{test.score}</span> / <span className="font-mono">{test.totalMarks}</span>
-                    </p>
-                  </div>
-                ))}
-              </div>
+            {report.weeklyMcqSummary.total > 0 && (
+              <span className="text-xs font-bold text-muted">
+                মোট পরীক্ষা: {report.weeklyMcqSummary.total} টি
+              </span>
             )}
           </div>
+
+          {report.weeklyMcqSummary.total === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-border bg-card p-5 text-center text-sm font-medium text-muted">
+              এই সময়ে কোনো Weekly MCQ Exam Publish হয়নি।
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm">
+                <div className="rounded-xl bg-card border border-border p-3 text-center">
+                  <p className="text-xs text-muted font-bold">মোট পরীক্ষা</p>
+                  <p className="mt-1 text-2xl font-black text-primary">{report.weeklyMcqSummary.total} টি</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
+                  <p className="text-xs text-emerald-800 dark:text-emerald-300 font-bold">অংশগ্রহণ</p>
+                  <p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-400">{report.weeklyMcqSummary.attended} টি</p>
+                </div>
+                <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-3 text-center">
+                  <p className="text-xs text-rose-800 dark:text-rose-300 font-bold">অনুপস্থিত / মিস</p>
+                  <p className="mt-1 text-2xl font-black text-rose-700 dark:text-rose-400">{report.weeklyMcqSummary.missed} টি</p>
+                </div>
+              </div>
+
+              {report.weeklyMcqTests.length > 0 && (
+                <div className="mt-5 space-y-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted">প্রতিটি পরীক্ষার ফলাফল:</p>
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {report.weeklyMcqTests.map((test, index) => (
+                      <div key={`${test.title}-${index}`} className="rounded-xl border border-border bg-card p-3.5 shadow-2xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-bold text-primary text-sm">{test.title}</p>
+                            <p className="text-xs text-muted">{test.subject} · {new Date(test.date).toLocaleDateString("en-GB")}</p>
+                          </div>
+                          <span className="rounded-lg bg-primary/10 px-2 py-0.5 font-mono text-xs font-bold text-primary">
+                            {test.percentage}%
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs font-semibold text-foreground">
+                          প্রাপ্ত নম্বর: <span className="font-mono font-bold text-primary">{test.score}</span> / <span className="font-mono">{test.totalMarks}</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* SECTION 4: WRITTEN EXAM */}
@@ -215,45 +264,64 @@ export function StudentReportWorkspace({ role }: { role: "admin" | "teacher" | "
             <h4 className="text-base font-black text-primary">
               ৪. লিখিত পরীক্ষা (Written Exam)
             </h4>
-            <span className="text-xs font-bold text-muted">
-              মোট: {report.writtenExamSummary.total} টি
-            </span>
-          </div>
-          <p className="mt-3 text-sm font-semibold text-foreground">
-            মোট <span className="font-mono font-bold text-primary">{report.writtenExamSummary.total}</span> টির মধ্যে সে Written Exam দিয়েছে <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{report.writtenExamSummary.attended}</span> টি, Written Exam মিস করেছে <span className="font-mono font-bold text-rose-700 dark:text-rose-400">{report.writtenExamSummary.missed}</span> টি।
-          </p>
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">প্রতিটি লিখিত পরীক্ষার ফলাফল আলাদাভাবে:</p>
-            {report.writtenExams.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-border bg-card p-4 text-center text-xs text-muted">
-                এই সময়ে কোনো Written Exam দেওয়া হয়নি বা Publish হয়নি।
-              </p>
-            ) : (
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {report.writtenExams.map((exam, index) => (
-                  <div key={`${exam.title}-${index}`} className="rounded-xl border border-border bg-card p-3.5 shadow-2xs">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-bold text-primary text-sm">{exam.title}</p>
-                        <p className="text-xs text-muted">{exam.subject} · {new Date(exam.date).toLocaleDateString("en-GB")}</p>
-                      </div>
-                      <span className="rounded-lg bg-primary/10 px-2 py-0.5 font-mono text-xs font-bold text-primary">
-                        {exam.percentage}%
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-foreground">
-                      প্রাপ্ত নম্বর: <span className="font-mono font-bold text-primary">{exam.marks}</span> / <span className="font-mono">{exam.totalMarks}</span>
-                    </p>
-                    {exam.comment && (
-                      <p className="mt-2 rounded-lg bg-secondary/80 p-2 text-xs italic text-primary">
-                        শিক্ষকের নোট: "{exam.comment}"
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
+            {report.writtenExamSummary.total > 0 && (
+              <span className="text-xs font-bold text-muted">
+                মোট পরীক্ষা: {report.writtenExamSummary.total} টি
+              </span>
             )}
           </div>
+
+          {report.writtenExamSummary.total === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-border bg-card p-5 text-center text-sm font-medium text-muted">
+              এই সময়ে কোনো Written Exam Publish হয়নি।
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm">
+                <div className="rounded-xl bg-card border border-border p-3 text-center">
+                  <p className="text-xs text-muted font-bold">মোট পরীক্ষা</p>
+                  <p className="mt-1 text-2xl font-black text-primary">{report.writtenExamSummary.total} টি</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
+                  <p className="text-xs text-emerald-800 dark:text-emerald-300 font-bold">অংশগ্রহণ</p>
+                  <p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-400">{report.writtenExamSummary.attended} টি</p>
+                </div>
+                <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-3 text-center">
+                  <p className="text-xs text-rose-800 dark:text-rose-300 font-bold">অনুপস্থিত / মিস</p>
+                  <p className="mt-1 text-2xl font-black text-rose-700 dark:text-rose-400">{report.writtenExamSummary.missed} টি</p>
+                </div>
+              </div>
+
+              {report.writtenExams.length > 0 && (
+                <div className="mt-5 space-y-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted">প্রতিটি পরীক্ষার ফলাফল:</p>
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {report.writtenExams.map((exam, index) => (
+                      <div key={`${exam.title}-${index}`} className="rounded-xl border border-border bg-card p-3.5 shadow-2xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-bold text-primary text-sm">{exam.title}</p>
+                            <p className="text-xs text-muted">{exam.subject} · {new Date(exam.date).toLocaleDateString("en-GB")}</p>
+                          </div>
+                          <span className="rounded-lg bg-primary/10 px-2 py-0.5 font-mono text-xs font-bold text-primary">
+                            {exam.percentage}%
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs font-semibold text-foreground">
+                          প্রাপ্ত নম্বর: <span className="font-mono font-bold text-primary">{exam.marks}</span> / <span className="font-mono">{exam.totalMarks}</span>
+                        </p>
+                        {exam.comment && (
+                          <p className="mt-2 rounded-lg bg-secondary/80 p-2 text-xs italic text-primary">
+                            শিক্ষকের নোট: "{exam.comment}"
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* SECTION 5: TEACHER COMMENTS */}

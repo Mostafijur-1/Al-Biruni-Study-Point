@@ -52,29 +52,33 @@ export async function GET(request: NextRequest) {
       },
       {
         heading: `3. Weekly MCQ Exam (Total: ${report.weeklyMcqSummary.total})`,
-        lines: [
-          `Attended: ${report.weeklyMcqSummary.attended} | Missed: ${report.weeklyMcqSummary.missed}`,
-          ...(report.weeklyMcqTests.length
-            ? report.weeklyMcqTests.map(
-                (row) =>
-                  `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.score}/${row.totalMarks} (${row.percentage}%)`
-              )
-            : ["No published Weekly MCQ Exam in this period."]),
-        ],
+        lines: report.weeklyMcqSummary.total === 0
+          ? ["No Weekly MCQ Exam published in this period."]
+          : [
+              `Attended: ${report.weeklyMcqSummary.attended} | Missed: ${report.weeklyMcqSummary.missed}`,
+              ...(report.weeklyMcqTests.length
+                ? report.weeklyMcqTests.map(
+                    (row) =>
+                      `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.score}/${row.totalMarks} (${row.percentage}%)`
+                  )
+                : []),
+            ],
       },
       {
         heading: `4. Written Exam (Total: ${report.writtenExamSummary.total})`,
-        lines: [
-          `Attended: ${report.writtenExamSummary.attended} | Missed: ${report.writtenExamSummary.missed}`,
-          ...(report.writtenExams.length
-            ? report.writtenExams.map(
-                (row) =>
-                  `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.marks}/${row.totalMarks} (${row.percentage}%)${
-                    row.comment ? ` | Comment: ${row.comment}` : ""
-                  }`
-              )
-            : ["No published Written Exam in this period."]),
-        ],
+        lines: report.writtenExamSummary.total === 0
+          ? ["No Written Exam published in this period."]
+          : [
+              `Attended: ${report.writtenExamSummary.attended} | Missed: ${report.writtenExamSummary.missed}`,
+              ...(report.writtenExams.length
+                ? report.writtenExams.map(
+                    (row) =>
+                      `${row.date.slice(0, 10)} | ${row.subject} | ${row.title}: ${row.marks}/${row.totalMarks} (${row.percentage}%)${
+                        row.comment ? ` | Comment: ${row.comment}` : ""
+                      }`
+                  )
+                : []),
+            ],
       },
       {
         heading: "5. Teacher Comments",

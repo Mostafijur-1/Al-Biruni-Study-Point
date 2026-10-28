@@ -57,20 +57,22 @@ export type StudentReport = {
   weeklyBreakdown: Array<{ start: string; end: string; attendancePercent: number | null; practiceAverage: number | null; mcqTestAverage: number | null; writtenAverage: number | null }>;
 };
 
-function startOfWeek(value: Date) {
-  const date = new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-  const day = date.getUTCDay();
-  date.setUTCDate(date.getUTCDate() - (day === 0 ? 6 : day - 1));
-  return date;
+function getDhakaDateString(date: Date = new Date()) {
+  return date.toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
 }
 
 function rangeFor(periodType: ReportPeriod, selectedDate: Date) {
-  const start = periodType === "month"
-    ? new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), 1))
-    : startOfWeek(selectedDate);
-  const end = periodType === "month"
-    ? new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth() + 1, 1))
-    : new Date(start.getTime() + 7 * 86_400_000);
+  const now = new Date();
+  const todayDhakaStr = getDhakaDateString(now);
+  const selectedDhakaStr = getDhakaDateString(selectedDate);
+  // Report duration cannot exceed today's date
+  const effectiveDhakaStr = selectedDhakaStr > todayDhakaStr ? todayDhakaStr : selectedDhakaStr;
+
+  const [y, m, d] = effectiveDhakaStr.split("-").map(Number);
+  // End of the day in Dhaka is next day 00:00:00 in Dhaka (UTC+6)
+  const end = new Date(Date.UTC(y, m - 1, d + 1, -6, 0, 0, 0));
+  const days = periodType === "month" ? 30 : 7;
+  const start = new Date(end.getTime() - days * 86_400_000);
   return { start, end };
 }
 
@@ -196,13 +198,13 @@ export async function buildStudentReport(input: {
     McqExamAttempt.find({ student: student._id, submittedAt: { $gte: start, $lt: end }, isCancelled: { $ne: true } })
       .select("exam score percentage totalMarksSnapshot submittedAt").lean(),
     WrittenExamResult.find({ studentId: student._id }).select("examId marks comment").lean(),
-    StudentReportComment.find(input.periodType === "month" ? {
+    StudentReportComment.find({
       studentId: student._id,
       $or: [
-        { periodType: "month", periodStart: start },
-        { periodType: "week", periodStart: { $gte: startOfWeek(start), $lt: end } },
+        { periodStart: { $gte: start, $lt: end } },
+        { createdAt: { $gte: start, $lt: end } },
       ],
-    } : { studentId: student._id, periodType: "week", periodStart: start })
+    })
       .populate("authorId", "name").sort({ createdAt: 1 }).lean(),
   ]);
   const writtenResults = await resolveCurrentWrittenResults(storedWrittenResults);
@@ -296,7 +298,7 @@ export async function buildStudentReport(input: {
 
   const weeklyBreakdown: StudentReport["weeklyBreakdown"] = [];
   if (input.periodType === "month") {
-    for (let weekStart = startOfWeek(start); weekStart < end; weekStart = new Date(weekStart.getTime() + 7 * 86_400_000)) {
+    for (let weekStart = new Date(start.getTime()); weekStart < end; weekStart = new Date(weekStart.getTime() + 7 * 86_400_000)) {
       const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
       const inWeek = (value: Date) => value >= weekStart && value < weekEnd && value >= start && value < end;
       const weekAttendance = attendanceRows.filter((row) => inWeek(sheetDate.get(String(row.sheetId)) ?? start));
