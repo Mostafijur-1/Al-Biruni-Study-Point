@@ -51,9 +51,22 @@ export const openRoutineAttendanceSheetSchema = z.object({
 
 export const markAttendanceSchema = z.object({
   version: z.coerce.number().int().min(1),
-  entries: z.array(markSchema).min(1).max(500),
-  reason: reasonSchema,
-}).superRefine((value, context) => {
+  entries: z.array(markSchema).min(1).max(500).optional(),
+  records: z.array(markSchema).min(1).max(500).optional(),
+  reason: reasonSchema.optional().default("Attendance marks recorded"),
+}).transform((data) => ({
+  version: data.version,
+  entries: data.entries ?? data.records ?? [],
+  reason: data.reason,
+})).superRefine((value, context) => {
+  if (value.entries.length === 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["entries"],
+      message: "At least one attendance entry is required.",
+    });
+    return;
+  }
   const enrollmentIds = value.entries.map((entry) => entry.enrollmentId);
   if (new Set(enrollmentIds).size !== enrollmentIds.length) {
     context.addIssue({
@@ -68,7 +81,7 @@ export const amendAttendanceSchema = markAttendanceSchema;
 
 export const submitAttendanceSchema = z.object({
   version: z.coerce.number().int().min(1),
-  reason: reasonSchema,
+  reason: reasonSchema.optional().default("Attendance sheet submitted"),
 });
 
 export const requestAttendanceCorrectionSchema = z
