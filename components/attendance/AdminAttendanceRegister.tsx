@@ -198,8 +198,15 @@ export function AdminAttendanceRegister() {
     });
 
     rows.sort((a, b) => {
-      if (a.studentCode && b.studentCode) {
-        return a.studentCode.localeCompare(b.studentCode);
+      const codeA = a.studentCode?.trim() || "";
+      const codeB = b.studentCode?.trim() || "";
+      if (codeA && codeB) {
+        const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+        if (cmp !== 0) return cmp;
+      } else if (codeA) {
+        return -1;
+      } else if (codeB) {
+        return 1;
       }
       return a.studentName.localeCompare(b.studentName);
     });

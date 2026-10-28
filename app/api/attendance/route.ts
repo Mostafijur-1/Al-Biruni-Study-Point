@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Types } from "mongoose";
 import { z } from "zod";
 
 import { handleApiError, success } from "@/lib/api/response";
@@ -21,6 +22,36 @@ function serializeSheet(sheet: InstanceType<typeof AttendanceSheet> | Record<str
   };
 }
 
+async function getSheetRecords(sheetId: Types.ObjectId | string) {
+  const records = await AttendanceRecord.find({ sheetId })
+    .select("enrollmentId studentNameSnapshot studentCodeSnapshot studentClassSnapshot status minutesLate")
+    .lean();
+
+  records.sort((a, b) => {
+    const codeA = a.studentCodeSnapshot?.trim() || "";
+    const codeB = b.studentCodeSnapshot?.trim() || "";
+    if (codeA && codeB) {
+      const cmp = codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) return cmp;
+    } else if (codeA) {
+      return -1;
+    } else if (codeB) {
+      return 1;
+    }
+    return (a.studentNameSnapshot || "").localeCompare(b.studentNameSnapshot || "");
+  });
+
+  return records.map((record) => ({
+    id: String(record._id),
+    enrollmentId: String(record.enrollmentId),
+    studentName: record.studentNameSnapshot,
+    studentCode: record.studentCodeSnapshot,
+    studentClass: record.studentClassSnapshot,
+    status: record.status,
+    minutesLate: record.minutesLate,
+  }));
+}
+
 export async function GET(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin", "teacher", "student"]);
@@ -36,8 +67,8 @@ export async function GET(request: NextRequest) {
     const sheet = sheetId ? await AttendanceSheet.findById(objectId.parse(sheetId)) : await AttendanceSheet.findOne({ classSessionId: objectId.parse(classSessionId) });
     if (!sheet) return success({ sheet: null, records: [] });
     if (!canManageAttendance(actor.role, actor.id, String(sheet.teacherId))) throw new ApiRouteError("Attendance sheet not found.", 404);
-    const records = await AttendanceRecord.find({ sheetId: sheet._id }).select("enrollmentId studentNameSnapshot studentCodeSnapshot studentClassSnapshot status minutesLate").sort({ studentNameSnapshot: 1 }).lean();
-    return success({ sheet: serializeSheet(sheet), records: records.map((record) => ({ id: String(record._id), enrollmentId: String(record.enrollmentId), studentName: record.studentNameSnapshot, studentCode: record.studentCodeSnapshot, studentClass: record.studentClassSnapshot, status: record.status, minutesLate: record.minutesLate })) });
+    const records = await getSheetRecords(sheet._id);
+    return success({ sheet: serializeSheet(sheet), records });
   } catch (error) { return handleApiError(error); }
 }
 
@@ -52,29 +83,34 @@ export async function POST(request: NextRequest) {
     if (body.action === "open") {
       const parsed = openAttendanceSheetSchema.parse(body);
       const result = await openAttendanceSheet({ request, actor, ...parsed });
-      return success({ sheet: serializeSheet(result.sheet), created: result.created }, result.created ? { status: 201 } : undefined);
+      const records = await getSheetRecords(result.sheet._id);
+      return success({ sheet: serializeSheet(result.sheet), created: result.created, records }, result.created ? { status: 201 } : undefined);
     }
     if (body.action === "open-routine") {
       const parsed = openRoutineAttendanceSheetSchema.parse(body);
       const result = await openRoutineAttendanceSheet({ request, actor, ...parsed });
-      return success({ sheet: serializeSheet(result.sheet), created: result.created }, result.created ? { status: 201 } : undefined);
+      const records = await getSheetRecords(result.sheet._id);
+      return success({ sheet: serializeSheet(result.sheet), created: result.created, records }, result.created ? { status: 201 } : undefined);
     }
     if (!body.sheetId) throw new ApiRouteError("sheetId is required.", 400);
     const sheetId = objectId.parse(body.sheetId);
     if (body.action === "mark") {
       const parsed = markAttendanceSchema.parse(body);
       const sheet = await markAttendance({ request, actor, sheetId, ...parsed });
-      return success({ sheet: serializeSheet(sheet) });
+      const records = await getSheetRecords(sheet._id);
+      return success({ sheet: serializeSheet(sheet), records });
     }
     if (body.action === "submit") {
       const parsed = submitAttendanceSchema.parse(body);
       const result = await submitAttendance({ request, actor, sheetId, ...parsed, idempotencyKey: getAttendanceIdempotencyKey(request) });
-      return success({ sheet: serializeSheet(result.sheet), replayed: result.replayed });
+      const records = await getSheetRecords(result.sheet._id);
+      return success({ sheet: serializeSheet(result.sheet), records, replayed: result.replayed });
     }
     if (body.action === "amend") {
       const parsed = amendAttendanceSchema.parse(body);
       const result = await amendSubmittedAttendance({ request, actor, sheetId, ...parsed, idempotencyKey: getAttendanceIdempotencyKey(request) });
-      return success({ sheet: serializeSheet(result.sheet), changedCount: result.changedCount, replayed: result.replayed });
+      const records = await getSheetRecords(result.sheet._id);
+      return success({ sheet: serializeSheet(result.sheet), records, changedCount: result.changedCount, replayed: result.replayed });
     }
     throw new ApiRouteError("Unsupported attendance action.", 400);
   } catch (error) { return handleApiError(error); }
