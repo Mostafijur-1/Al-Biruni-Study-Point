@@ -12,7 +12,7 @@ import {
   defaultAttendancePolicy,
   type AttendanceStatus,
 } from "./attendance-rules.ts";
-import { getDhakaRoutineOccurrence } from "./attendance-occurrence.ts";
+import { getDhakaDayBounds, getDhakaRoutineOccurrence } from "./attendance-occurrence.ts";
 import { ApiRouteError } from "./api-error.ts";
 import { getRequestId, writeAuditLog } from "./audit/write-audit-log.ts";
 import { AttendanceCorrection } from "./db/models/AttendanceCorrection.ts";
@@ -80,28 +80,37 @@ async function loadEffectiveRoster(classSession: {
   subjectId: string | mongoose.Types.ObjectId;
   scheduledStart: Date;
 }, session?: ClientSession) {
+  const { start: dayStart, end: dayEnd } = getDhakaDayBounds(classSession.scheduledStart);
+  const effectiveCutoff = new Date(Math.max(classSession.scheduledStart.getTime(), dayEnd.getTime()));
+
   const subjectQuery = CoachingEnrollmentSubject.find({
     batchId: classSession.batchId,
     subjectId: classSession.subjectId,
-    effectiveFrom: { $lte: classSession.scheduledStart },
+    effectiveFrom: { $lte: effectiveCutoff },
     $or: [
       { effectiveTo: { $exists: false } },
       { effectiveTo: null },
-      { effectiveTo: { $gte: classSession.scheduledStart } },
+      { effectiveTo: { $gte: dayStart } },
     ],
   }).select("enrollmentId");
   if (session) subjectQuery.session(session);
   const eligibleEnrollmentIds = await subjectQuery.distinct("enrollmentId");
-  const query = BatchEnrollment.find({
-    _id: { $in: eligibleEnrollmentIds },
+
+  const enrollmentFilter: Record<string, unknown> = {
     batchId: classSession.batchId,
-    effectiveFrom: { $lte: classSession.scheduledStart },
+    status: "active",
+    effectiveFrom: { $lte: effectiveCutoff },
     $or: [
       { effectiveTo: { $exists: false } },
       { effectiveTo: null },
-      { effectiveTo: { $gte: classSession.scheduledStart } },
+      { effectiveTo: { $gte: dayStart } },
     ],
-  }).sort({ studentId: 1, effectiveFrom: 1 });
+  };
+  if (eligibleEnrollmentIds.length > 0) {
+    enrollmentFilter._id = { $in: eligibleEnrollmentIds };
+  }
+
+  const query = BatchEnrollment.find(enrollmentFilter).sort({ studentId: 1, effectiveFrom: 1 });
   if (session) query.session(session);
   return query.lean();
 }
@@ -202,10 +211,18 @@ export async function openRoutineAttendanceSheet(
   assertAttendanceManager(input.actor, routine.teacherId, "Routine was not found.");
 
   const occurrence = getDhakaRoutineOccurrence(routine);
+  if (!occurrence) {
+    throw new ApiRouteError(
+      "Attendance is available only on the routine's scheduled day.",
+      409,
+      "ATTENDANCE_NOT_ELIGIBLE",
+    );
+  }
+
+  const { start: dayStart, end: dayEnd } = getDhakaDayBounds(occurrence.scheduledStart);
   if (
-    !occurrence ||
-    routine.effectiveFrom > occurrence.scheduledEnd ||
-    (routine.effectiveTo && routine.effectiveTo < occurrence.scheduledStart)
+    routine.effectiveFrom > dayEnd ||
+    (routine.effectiveTo && routine.effectiveTo < dayStart)
   ) {
     throw new ApiRouteError(
       "Attendance is available only on the routine's scheduled day.",
@@ -274,15 +291,17 @@ export async function openAttendanceSheet(
       }
       assertAttendanceManager(input.actor, classSession.teacherId);
 
+      const { start: dayStart, end: dayEnd } = getDhakaDayBounds(classSession.scheduledStart);
+      const effectiveCutoff = new Date(Math.max(classSession.scheduledStart.getTime(), dayEnd.getTime()));
       const assignment = await TeacherAssignment.findOne({
         batchId: classSession.batchId,
         subjectId: classSession.subjectId,
         teacherId: classSession.teacherId,
-        effectiveFrom: { $lte: classSession.scheduledStart },
+        effectiveFrom: { $lte: effectiveCutoff },
         $or: [
           { effectiveTo: { $exists: false } },
           { effectiveTo: null },
-          { effectiveTo: { $gte: classSession.scheduledStart } },
+          { effectiveTo: { $gte: dayStart } },
         ],
       }).session(session);
       if (!assignment) {

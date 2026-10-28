@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const actor = await requireAuth(request, ["admin", "teacher"]);
-    if (!areAttendanceWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED, process.env.ATTENDANCE_WRITES_ENABLED)) {
+    const attendanceWritesFlag = process.env.ATTENDANCE_WRITES_ENABLED ?? "true";
+    if (!areAttendanceWritesEnabled(process.env.ACADEMIC_WRITES_ENABLED, attendanceWritesFlag)) {
       throw new ApiRouteError("Attendance write workflow is not enabled.", 503);
     }
     const body = await request.json() as { action?: string; sheetId?: string };

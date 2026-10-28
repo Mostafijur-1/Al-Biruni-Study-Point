@@ -2,12 +2,27 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { getDhakaRoutineOccurrence } from "../lib/attendance-occurrence.ts";
+import { getDhakaDayBounds, getDhakaRoutineOccurrence } from "../lib/attendance-occurrence.ts";
 import { areAttendanceWritesEnabled } from "../lib/attendance-rules.ts";
 
 test("attendance activation is narrow and does not unlock other academic writes", () => {
   assert.equal(areAttendanceWritesEnabled(undefined, "true"), true);
   assert.equal(areAttendanceWritesEnabled("true", undefined), false);
+});
+
+test("routine attendance is accessible throughout the class day up to 11:59 pm", () => {
+  const lateEvening = new Date("2026-08-29T17:59:00.000Z"); // 23:59:00 Dhaka
+  const occurrence = getDhakaRoutineOccurrence(
+    { weekday: 6, startMinute: 9 * 60, endMinute: 10 * 60 + 30 },
+    lateEvening,
+  );
+  assert.ok(occurrence);
+  assert.equal(occurrence?.scheduledStart.toISOString(), "2026-08-29T03:00:00.000Z");
+  assert.equal(occurrence?.scheduledEnd.toISOString(), "2026-08-29T04:30:00.000Z");
+
+  const bounds = getDhakaDayBounds(occurrence!.scheduledStart);
+  assert.equal(bounds.start.toISOString(), "2026-08-28T18:00:00.000Z");
+  assert.equal(bounds.end.toISOString(), "2026-08-29T17:59:59.999Z");
 });
 
 test("routine attendance creates the correct Dhaka-day UTC occurrence", () => {
